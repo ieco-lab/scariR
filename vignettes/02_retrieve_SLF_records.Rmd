@@ -1,0 +1,62 @@
+---
+title: "Retrieve SLF records from GBIF and lydemapR"
+author: "Sam Owens"
+date: "2023-06-28"
+contact: 'sam.owens@temple.edu'
+output: html_document
+---
+
+This vignette will provide instructions to retrieve SLF presence records for use in the creation of MaxEnt models. Two data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility) and [lydemapR](https://github.com/ieco-lab/lydemapr). The GBIF dataset was taken from a variety of sources and represents globally distributed presences. The LydemapR dataset represents SLF occurrence data for the United States, which was largely obtained from biological field surveys and citizen science platforms.
+
+# Setup
+
+The `spocc` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States.
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+library(devtools)
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(spocc) #query gbif and format as a dataframe (most important)
+
+# devtools::install_github("ieco-lab/lydemapr", build_vignettes = TRUE)
+library(lydemapr) # field survey data for SLF
+
+library(spThin) # randpmized spatial thinning of occurrence data to eliminate possible sample bias
+library(scrubr) #clean records for gbif data
+library(patchwork) #easy combined plots
+
+```
+
+# Retrieve GBIF records
+
+```{r gbif queries}
+
+# get species ID from gbif database
+ids <- get_ids(sci_com = "Lycorma", db = "gbif")
+
+# ID = 7467468
+
+# gbif queries with limits of 10^5- it is passed to occ_data in rgbif
+vitis_gbif <- occ(ids = ids[[1]],
+                  # search by ID, not species name
+                  query = 'Vitis',
+                  from = 'gbif', 
+                  limit = 1e5, 
+                  has_coords = TRUE, 
+                  throw_warnings = TRUE,
+                  # list of commands to pass to rgbif
+                  gbifopts = list(hasCoordinate = TRUE,
+                                  occurrenceStatus = "PRESENT",
+                                  # all records except fossil records
+                                  basisOfRecord = c("HUMAN_OBSERVATION", "MATERIAL_CITATION", "MATERIAL_SAMPLE", "LIVING_SPECIMEN", "MACHINE_OBSERVATION", "OBSERVATION", "PRESERVED_SPECIMEN", "OCCURRENCE"),
+                                  hasGeospatialIssue = FALSE,
+                                  # verbatimScientificName = "Vitis L",
+                                  year = "1970, 2022"
+                             ))
+  
+```
