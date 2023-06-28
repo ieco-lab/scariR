@@ -1,0 +1,141 @@
+---
+title: "slfSpread_figures"
+author: "Sam Owens"
+date: "2022-10-04"
+output: html_document
+---
+
+This vignette will contain code that I used to create figures for EDA visualization purposes. Each numbered section is a figure.
+
+File paths edited 2023-01-24, 2023-06-01
+
+# 1. slf Jumps rarefication EDA
+
+```{r necessary packages}
+
+library(tidyverse)
+library(ggplot2)
+
+library(here)
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(USAboundaries)
+
+```
+
+```{r rarefication figure examples}
+
+# read in datasets
+raw_coords <- read_csv(file.path(here(), "data_raw", "slf_gbif_raw_coords_2022-07-13.csv")) %>%
+  select(name, longitude, latitude)
+
+rarefied_coords <- read_csv(file.path(here(), "data_root", "slf_points_cleaned_v0.csv"))
+
+# an object with the 
+states_map <- us_states()
+
+# map raw coords
+raw_map <- ggplot() +
+  geom_polygon(data = map_data('usa'), aes(x = long, y = lat, group = group), fill = "#FFFFFF", color = "black", lwd = 0.15) + #world map
+  geom_point(data = raw_coords, aes(x = longitude, y = latitude), color = "#d55e00", alpha = 0.50) +
+  theme_bw() +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#f0f8ff")) +
+  coord_quickmap(xlim = c(-125, -65), ylim = c(25, 50)) +
+  ggtitle(label = "SLF 2022 Raw")
+
+# map rarefied coords
+rarefied_map <- ggplot() +
+  geom_polygon(data = map_data('usa'), aes(x = long, y = lat, group = group), fill = "#FFFFFF", color = "black", lwd = 0.15) + #world map
+  geom_point(data = rarefied_coords, aes(x = x, y = y), color = "#d55e00", alpha = 0.50) +
+  theme_bw() +
+  labs(x = "", y = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#f0f8ff")) +
+  coord_quickmap(xlim = c(-125, -65), ylim = c(25, 50)) +
+  ggtitle(label = "SLF 2022 Rarefied")
+
+raw_map / rarefied_map
+
+ggsave((raw_map / rarefied_map), filename = file.path(here(), "figures", "slf_raw_vs_rarefied.png"), height = 10, width = 10)
+
+# not used
+
+```
+
+# 2. Pearson's correlation heatmap 
+
+This figure was created to compare the pearson's correlations between the environmental layers used to create the base models. This is the version I use for presentations.
+
+```{r pearsons correlation figure for presentations}
+
+if(FALSE) {
+
+# re-read in correlation table 
+env.cor <- read.csv(file = file.path(here(), "data_root/env_cor_v4_abs_2022_downsampled.csv"))
+# v3 not used because abs value of correlations not taken
+
+row.names(env.cor) <- env.cor$X
+# first column is rowname
+
+p_env_cor <- as.matrix(env.cor[, which(names(env.cor) != "X")])
+p_env_cor[upper.tri(p_env_cor, diag = FALSE)] <- NA
+
+# make correlations into absolute values and tidy data for plotting
+p_env_cor <- p_env_cor %>%
+  abs(.) %>%
+  as_tibble() %>%
+  mutate(covar = colnames(.)) %>%
+  dplyr::select(covar, everything()) %>%
+  pivot_longer(cols = -covar, names_to = "var") %>%
+  dplyr::select(var, covar, everything()) 
+
+(map_p_env_cor <- ggplot(p_env_cor) +
+  geom_tile(aes(x = var, y = covar, fill = value)) +
+  viridis::scale_fill_viridis(discrete = FALSE, direction = -1, limits = c(0,1), name = "Correlation", na.value = "white") +
+  theme_minimal() +
+  guides(x =  guide_axis(angle = 90)) +
+  labs(x = "", y = "")  +
+  labs(title = "Pearson's correlations between environmental variables") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  scale_y_discrete(labels = c(
+    "global_foresth" = "forest height",
+    "global_elev" = "elevation",
+    "global_atc" = "access to cities",
+    "global_bio_01" = "annual mean temperature",
+    "global_bio_02" = "mean diurnal range",
+    "global_bio_03" = "isothermality",
+    "global_bio_04" = "temperature seasonality",
+    "global_bio_05"	= "max temp of warmest month",
+    "global_bio_06" = "min temp of coldest month",
+    "global_bio_07" = "temperature annual range",
+    "global_bio_08"	= "mean temp of wettest quarter",
+    "global_bio_09" = "mean temp of driest quarter",
+    "global_bio_10" = "mean temp of warmest quarter",
+    "global_bio_11"	= "mean temp of coldest quarter",
+    "global_bio_12" = "annual precipitation",
+    "global_bio_13" = "precip of wettest month",
+    "global_bio_14" = "precip of driest month",
+    "global_bio_15" = "precipitation seasonality",
+    "global_bio_16" = "precip of wettest quarter",
+    "global_bio_17"	= "precip of driest quarter",
+    "global_bio_18" = "precip of warmest quarter",
+    "global_bio_19" = "precip of coldest quarter"
+  ))
+)
+
+map_p_env_cor
+
+ggsave(map_p_env_cor, filename = file.path(here(), "figures", "p_env_cor2022_v5_pres.png"), height = 8, width = 10)
+
+}
+
+```
+

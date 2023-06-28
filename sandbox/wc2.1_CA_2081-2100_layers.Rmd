@@ -1,0 +1,402 @@
+---
+title: "wc2.1_CA_2081-2100_layers"
+author: "Sam Owens"
+contact: "sam.owens@temple.edu"
+date: "2022-12-05"
+output: html_document
+---
+
+File paths edited 2023-01-24, 2023-06-01
+
+```{r install packages}
+
+install.packages("viridis")
+
+```
+
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(ENMTools) #enviro collinearity analyses
+library(patchwork) #easy combined plots
+library(scales) #rescale the plots easily
+library(rgdal) #load shapefiles
+library(doParallel) #parallized extraction
+library(raster)
+
+library(rgeos)
+library(maptools)
+library(sp)
+library(viridis)
+library(slfrsk)
+
+```
+
+This file was produced to extract layers from the 2081-2100 bioclim data retrieved from worldclim. Data will then be visualized. Lab notebook entry is Slf_gbif_CA+ 2081-2100 future projection. 
+
+# 1. Extract layers of downloaded raster stack
+
+```{r raster attributes}
+
+mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS")
+
+# load in raster
+bioclim <- stack(file.path(mypath, "originals", "wc2.1_30s_bioc_GISS-E2-1-G_ssp370_2081-2100.tif"))
+
+object.size(bioclim) 
+bioclim@layers # check # layers
+bioclim@crs # crs will get set later
+bioclim@extent #raster extent will get set later
+
+bioclim_stats <- data.frame(matrix(ncol = 3, nrow = 1))
+colnames(bioclim_stats) <- c("min", "max", "mean")
+
+bioclim_stats[1, ] <- c(cellStats(bioclim, min),
+                        cellStats(bioclim, max),
+                        cellStats(bioclim, mean)
+)
+
+```
+
+```{r write each layer of bioclim raster to a .tif}
+
+# used to extract specific layers if needed
+bioclim <- stack(file.path(mypath, "originals", "wc2.1_30s_bioc_GISS-E2-1-G_ssp370_2081-2100.tif"))
+
+bioclim@layers
+
+writeRaster(bioclim, 
+            filename = file.path(mypath, "orig_layers", "global_bio.tif"), 
+            format = "GTiff", 
+            bylayer = TRUE,
+            suffix = "numbers",
+            progress = "text",
+            # so it wont overwrite if you make a mistake
+            overwrite = FALSE
+            )
+
+```
+
+First, I extracted a bounding box of just CA for the bioclim projection layers. The bounding box was retrieved from https://anthonylouisdagostino.com/bounding-boxes-for-all-us-states/ and was x = -124.409591, -114.131211, y = 32.534156, 42.009518. This model was run 2022-11-28.
+
+# 2. map of CA and Napa to validate area selection
+
+```{r create map of CA to test lat/long range}
+
+map_CA <- ggplot() +
+  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = "#FFFFFF", color = "black", lwd = 0.15) + #world map
+  theme_bw() +
+  labs(x = "long", y = "lat") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #plot.background = element_rect(fill ="#f0f8ff"),
+        panel.background = element_rect(fill = "#f0f8ff")) +
+  coord_quickmap(xlim = c(-124.409591, -114.131211), ylim = c(32.534156, 42.009518)) +
+  ggtitle(label = "CA")
+
+```
+
+The bounding box was retrieved from https://anthonylouisdagostino.com/bounding-boxes-for-all-us-counties/ and was x = -124.409591, -114.131211, y = 32.534156, 42.009518. This model was run 2022-11-28.
+
+```{r create map of Napa county, CA to test lat/long range}
+
+map_napa <- ggplot() +
+  geom_polygon(data = map_data('county'), aes(x = long, y = lat, group = group), fill = "#FFFFFF", color = "black", lwd = 0.15) +
+  theme_bw() +
+  labs(x = "long", y = "lat") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        #plot.background = element_rect(fill ="#f0f8ff"),
+        panel.background = element_rect(fill = "#f0f8ff")) +
+  coord_quickmap(xlim = c(-122.646421, -122.061379), ylim = c(38.154933, 38.864245)) +
+  ggtitle(label = "Napa county, CA")
+
+```
+
+# 3. set extent to just CA, set crs, resample
+
+```{r set raster extent}
+
+if(TRUE){
+  
+  mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS")
+  
+  #ensure that extent is identical
+#get file names
+env.files <- list.files(file.path(mypath, "orig_layers"), pattern = "\\.tif$", full.names = T)
+env.short <- list.files(file.path(mypath, "orig_layers"), pattern = "\\.tif$", full.names = F)
+
+# selecting only the files I need for my analysis to speed up code, as of 2022-11-12
+env.files.1 <- env.files[env.files %in% c("C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/orig_layers/global_bio_1.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/orig_layers/global_bio_2.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/orig_layers/global_bio_7.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/orig_layers/global_bio_12.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/orig_layers/global_bio_15.tif"
+)]
+
+# select only those used in analysis
+env.short.1 <- env.short[env.short %in% c("global_bio_1.tif", 
+                                          "global_bio_2.tif",
+                                          "global_bio_7.tif", 
+                                          "global_bio_12.tif",
+                                          "global_bio_15.tif"
+                                          )]
+                                          
+#change the labeling of the output layers
+output.files <- env.short.1
+
+#crop one of the BIOCLIM layers to set the bounding box and resolution to have files fixed
+# bounding box for CA
+same.extent <- extent(-124.409591, -114.131211, 32.534156, 42.009518)
+main_layer <- crop(raster(file.path(mypath, "orig_layers", "global_bio_1.tif")), y = same.extent, overwrite = F)
+
+#reset extent stepwise
+for(a in seq_along(env.files.1)){
+
+  #ensure that the CRS is consistent
+  rast.hold <- raster(env.files.1[a])
+  crs(rast.hold) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+  #resample to fit the extent/resolution of the reference BIOCLIM layer
+  #use bilinear interpolation, since values are continuous
+  rast.hold <- resample(x = rast.hold, y = main_layer, method = "bilinear")
+
+  #write out the new resampled rasters!
+  writeRaster(x = rast.hold, filename = file.path(mypath, "v1_CA", output.files[a]), overwrite = T)
+}
+
+} #closes no run if
+  
+```
+
+# 3. conversion of file format for Maxent
+
+```{r conversion of .tif to .asc files}
+
+if(TRUE){
+  
+  mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS")
+  
+  # get/set file names
+  env.files <- list.files(path = file.path(mypath, "v1_CA"), pattern = "\\.tif$", full.names = T) 
+  
+  # subset of files needed for next model
+ env.files.2 <- env.files[env.files %in% c("C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/v1_CA/global_bio_1.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/v1_CA/global_bio_2.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/v1_CA/global_bio_7.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/v1_CA/global_bio_12.tif",
+                                          "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/future_climate_rasters_CMIP6/2081-2100_ssp370_30arcsec_GISS/v1_CA/global_bio_15.tif"
+                                          )]
+  
+  env.short <- list.files(path = file.path(mypath, "v1_CA"), pattern = "\\.tif$", full.names = F)
+  
+  # subset of the env short that I need for my next model
+  env.short.2 <- env.short[env.short %in% c("global_bio_1.tif", 
+                                          "global_bio_2.tif",
+                                          "global_bio_7.tif", 
+                                          "global_bio_12.tif",
+                                          "global_bio_15.tif"
+                                          )]
+  
+  env.asc <- gsub(pattern = ".tif", replacement = ".asc", x = env.short.2)
+  
+ # env.asc.1 <- env.asc[!env.asc %in% c("global_atc.asc", "global_bio_1.asc", "global_bio_10.asc", "global_bio_11.asc")]
+  # a copy to try only one entry of the list
+  
+  # loop to convert, set NAs equal to -9999 as required by Maxent
+for(a in seq_along(env.files.2)){
+    
+  file_to_asc <- raster(env.files.2[a])
+  NAvalue(file_to_asc) <- -9999
+  writeRaster(x = file_to_asc, filename = file.path(mypath, "v1_maxent_CA_2081-2100", env.asc[a]), format = "ascii", overwrite = F)
+    
+  }
+  
+   # file_to_asc <- env.files[1] %>%
+    #  raster(.) %>%
+     # NAvalue(.) <- -9999 %>%
+    #  writeRaster(x = file_to_asc, filename = file.path(mypath, "v1_maxent", env.asc[1]), format = "ascii", overwrite = F)
+    # just do 1 to start and see how large it is
+}
+
+```
+
+# RUN MODEL HERE
+
+I need to crop the output layer for the current day to just CA
+
+# crop extent/ set CRS/ export to tif for current CA predictions
+
+```{r crop extent of current prediction to just CA and set CRS}
+
+# I picked the avg of both replicates to crop
+
+# 1st, convert objects to .tif format
+# asc_to_tif <- raster(file.path("C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/Lycorma_delicatula_avg.asc")) 
+
+# next, set extent object and crop to an object
+current.extent <- extent(-124.409591, -114.131211, 32.534156, 42.009518)
+# crop raster to extent
+main_layer.2 <- crop(raster(file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/Lycorma_delicatula_avg.asc")),
+                     y = current.extent, overwrite = F)
+
+# writeRaster(x = asc_to_tif, filename = file.path("C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/asc_to_tif/Lycorma_delicatula_avg"), format = "GTiff", overwrite = F)
+
+current_tif <- raster(file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/Lycorma_delicatula_avg.asc")) 
+
+# set CRS
+crs(current_tif) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+current_tif@crs
+
+# resample
+current_tif <- resample(x = current_tif, y = main_layer.2, method = "bilinear")
+
+writeFormats()
+
+# write as a .tif
+writeRaster(x = current_tif, filename = file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/manipulated_outputs/Lycorma_delicatula_avg_CA.tif"), format = "GTiff", overwrite = F)
+
+#also write as a .asc
+writeRaster(x = current_tif, filename = file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/manipulated_outputs/Lycorma_delicatula_avg_CA.asc"), format = "ascii", overwrite = F)
+
+```
+
+# prep for data visualization
+
+```{r load in datasets used for mapping}
+
+# load in future CA prediction map
+future_CA <- raster(file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/Lycorma_delicatula_v1_maxent_CA_2081-2100_avg.asc")) 
+
+future_df <- as.data.frame(future_CA, xy = TRUE)
+
+# future CA map
+future_napa <- raster(file.path(here() %>% 
+                                        dirname(),
+                          "maxent/maxent_models/maxent_slf_2022_gbif_CA_2081-2100_withATC/Lycorma_delicatula_v1_maxent_CA_2081-2100_avg.asc")) 
+
+future_napa_df <- as.data.frame(future_napa, xy = TRUE)
+
+# CA 2019 grape data
+grapes <- read_csv(file.path(here() %>% 
+                               dirname(),
+                             "data/grapes_CA_2019_USDA.csv"))
+
+```
+
+```{r pull max suitability value from current and future cropped CA rasters}
+
+max_suitability <- max(future_df$Lycorma_delicatula_v1_maxent_CA_2081.2100_avg, na.rm = TRUE)
+
+```
+
+# Visualize future CA predictions
+
+### Visualize future CA predictions with global atc for the entire state
+
+```{r load and visualize future CA predictions with global_atc}
+
+# visualize
+visualize_CA_future <- ggplot() +
+  geom_polygon(data = map_data('state'), 
+               aes(x = long, y = lat, group = group), 
+               fill = "white", 
+               color = "black",
+               size = 0.75) +
+  # change scale of plots to be standard across figures
+  geom_raster(data = future_df, 
+              aes(x = x, y = y, fill = Lycorma_delicatula_v1_maxent_CA_2081.2100_avg)) +
+  geom_polygon(data = map_data('state'), 
+               aes(x = long, y = lat, group = group), 
+               fill = NA, 
+               color = "black",
+               size = 0.75) +
+  # set xlim and ylim to CA bounding box
+  geom_point(data = grapes, aes(x = x, y = y), size = 0.1, color = "purple", alpha = 0.1) +
+  coord_sf(xlim = c(-124.409591, -114.131211), 
+           ylim = c(32.534156, 42.5), 
+           expand = TRUE) +
+  # edit fill gradient
+  scale_fill_gradientn(name = "suitability", 
+                       colors = rev(c("#e31a1c","#fd8d3c", "#fecc5c", "#FFFFFF")),
+                       na.value = "white", 
+                       limits = c(0, 0.435)) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "California, 2081-2100") +
+  xlab("Longitude") + 
+  ylab("Latitude")
+
+
+ggsave(filename = "Predicted Suitability for Establishment of Lycorma delicatula in CA, 2081-2100, with global_atc and grape_v0.jpg", 
+       path = file.path(here(), "figures"), 
+       plot = visualize_CA_future,
+       device = "jpeg", 
+       dpi = "retina")
+
+```
+
+### Visualize future CA predictions with global atc for napa county CA
+
+```{r load and visualize future predictions for Napa county CA with global_atc}
+
+visualize_napa_future <- ggplot() +
+  geom_polygon(data = map_data('county'), 
+               aes(x = long, y = lat, group = group), 
+               fill = "white", 
+               color = "black",
+               size = 0.75) +
+  # change scale of plots to be standard across figures
+  geom_raster(data = future_napa_df, 
+              aes(x = x, y = y, fill = Lycorma_delicatula_v1_maxent_CA_2081.2100_avg)) +
+  geom_polygon(data = map_data('county'), 
+               aes(x = long, y = lat, group = group), 
+               fill = NA, 
+               color = "black",
+               size = 0.75) +
+  geom_point(data = grapes, aes(x = x, y = y), size = 0.1, color = "purple", alpha = 0.1) +
+  # set xlim and ylim to napa county bounding box
+  coord_sf(xlim = c(-122.646421, -122.061379), 
+           ylim = c(38.154933, 38.864245), 
+           expand = TRUE) +
+  # edit fill gradient
+  scale_fill_gradientn(name = "suitability", 
+                       colors = rev(c("#e31a1c","#fd8d3c", "#fecc5c", "#FFFFFF")),
+                       na.value = "white",
+                       limits = c(0, 0.435)) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "Napa county, CA, 2081-2100") +
+  xlab("Longitude") + 
+  ylab("Latitude")
+
+# export image
+ggsave(filename = "Predicted Suitability for Establishment of Lycorma delicatula in Napa county, CA, 2081-2100, with global_atc and grape_v0.jpg", 
+       plot = visualize_napa_future,
+       path = file.path(here(), "figures"), 
+       device = "jpeg", 
+       dpi = "retina")
+
+```
+

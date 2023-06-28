@@ -1,0 +1,134 @@
+---
+title: "jumps_leaflet_mapping"
+author: "Sam Owens"
+date: '2022-03-15'
+output: html_document
+---
+
+This vignette will use package "leaflet" to map each clustered jump event individually. Each jump event will be selected and mapped individually. Google maps will be used as a basemap. A standardized distance will be left on either side of the jump cluster in latitude and longitude. This process will then be standardized into a function that can be applied to each of the 42 clustered jump events found by Nadege Belouard.
+
+# Load packages and datasets
+
+```{r load necessary packages, eval=FALSE}
+
+# install.packages(c("tidyverse", "ggplot2", "here", "sf", "leaflet"))
+
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(lycormap)
+library(leaflet)
+
+```
+
+```{r load necessary datasets, echo=FALSE}
+
+tinyslf <- tinyslf %>%
+  filter(slf_present == "TRUE")
+
+jumps <- read_csv(
+  file.path(here(), "data_root/slfSpread_jumps_locations_SMO_v2.csv")
+)
+
+```
+
+# Data Manipulation- jumps- trim to single point and map
+
+``` {r tidy data table, make into a data frame, echo = FALSE}
+
+# First, I want to tidy the dataset.
+jumps %<>%
+  rename(longitude = longitude_rounded,
+         latitude = latitude_rounded
+  ) %>% # standardize the naming of the variables
+  select(ref_ID, longitude, latitude) %>%
+  as.data.frame()
+
+```
+
+``` {r create marker object, echo = FALSE}
+
+SLF_marker <- makeAwesomeIcon(
+  icon = "bug",
+  iconColor = "black",
+  markerColor = "orange",
+  library = "fa"
+)
+# This creates a custom icon object to call in the mapping
+
+```
+
+```{r map first point}
+
+jump_1 <- jumps %>%
+  slice(1) %>%
+  # select first row
+  leaflet() %>%
+  setView(lng = jumps[1,2],
+          lat = jumps[1,3],
+          zoom = 10
+          ) %>%
+  fitBounds(lng1 = jumps[1,2] + 0.01, 
+            lng2 = jumps[1,2] - 0.01,
+            lat1 = jumps[1,3] + 0.01,
+            lat2 = jumps[1,3] - 0.01
+            ) %>%
+  # this was calculated to be that at 40N latitude, 1 degree longitude change is equal to about 85km. 1 degree latitude change is equal to able 111km. Retrieved from https://www.nhc.noaa.gov/gccalc.shtml
+  # The margin of 0.01 latitude and longitude on either side of this marker will add about 1km on either side. This should set the map zoom to an acceptable distance
+  addTiles() %>%
+  addAwesomeMarkers(lng = jumps[1,2], 
+                    lat = jumps[1,3], 
+                    icon = SLF_marker,
+                    popup = jumps[1,1]
+  ) %>%
+  addScaleBar(position = "bottomleft") 
+
+```
+
+# Final Function- Wrap single map creation into function that can be used for any data table
+
+``` {r wrap mapping into function}
+
+maps_list <- list()
+# was thinking of creating an empty vector for the output of the plots?
+
+map_jumps <- function(jump_list, extent = 0.01, zoom = 10) {
+  # the variable "extent" is the width and height on either side of each point that you want mapped, in degrees latitude or longitude. If put into fitBounds(), this variable will fit the boundaries of the mapped area to the lat & long of the point, plus and minus the "extent" distance
+  # zoom is the zoom level that is required by the setView() function of leaflet
+  
+  for (i in 1:dim(jump_list)[1]) {
+    
+    jump_plots <- jump_list %>%
+      slice(1:dim(jump_list)[1]) %>%
+      leaflet() %>%
+      setView(lng = jump_list[i,2],
+              lat = jump_list[i,3],
+              zoom = zoom
+              ) %>%
+      fitBounds(lng1 = jump_list[i,2] + extent, 
+                lng2 = jump_list[i,2] - extent,
+                lat1 = jump_list[i,3] + extent,
+                lat2 = jump_list[i,3] - extent
+                ) %>%
+      addTiles() %>%
+      addAwesomeMarkers(lng = jump_list[i,2], 
+                        lat = jump_list[i,3], 
+                        icon = SLF_marker,
+                        popup = jump_list[i,1]
+                        ) %>%
+      addScaleBar(position = "bottomleft") 
+      
+      return(jump_plots)
+  }
+}
+# currently this loop just prints every single jump point- working towards dynamically created/named objects for each plot
+# list columns
+# use return for output of for loop
+
+map_jumps(jumps)
+
+assign(paste0("jump_", i), jump_list[[i]])
+# something I was playing with to create multiple objects with dynamic naming
+```
+
+

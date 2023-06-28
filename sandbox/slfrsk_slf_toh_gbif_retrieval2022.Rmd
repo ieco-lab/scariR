@@ -1,0 +1,290 @@
+---
+title: "slfSpread_maxent_gbif_retrieval2022 (slfrsk_practice_step-1-3)"
+author: "Sam Owens"
+date: '2022-07-07'
+contact: 'sam.owens@temple.edu'
+output: html_document
+---
+
+This file will practice execution of the analyses outlined in the slfrsk research compendium, written by Nick Huron. The goal of this analysis is to help me to understand SDMs and their creation. I will be performing these analyses using a randomized and reduced subset of tinyslf (n = 500). 
+
+file paths edited 2023-06-01
+
+```{r load necesssary packages, echo = FALSE}
+
+# install.packages("devtools")
+
+library(devtools)
+
+# install_github("ieco-lab/slfrsk")
+
+library(slfrsk) #this package, has extract_enm()
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(spocc) #query gbif and format as a dataframe (most important)
+library(scrubr) #clean records for gbif data
+library(humboldt) #rarefy points
+library(tcltk) #humboldt progress bar
+library(patchwork) #easy combined plots
+
+```
+
+# Acquire Data
+
+```{r gbif queries}
+
+# gbif queries with limits of 10^5
+slf_gbif <- occ(query = 'Lycorma delicatula', 
+                from = 'gbif', 
+                limit = 1e5, 
+                has_coords = TRUE, 
+                throw_warnings = TRUE)
+
+toh_gbif <- occ(query = 'Ailanthus altissima', 
+                from = 'gbif', 
+                limit = 1e5, 
+                has_coords = TRUE, 
+                throw_warnings = TRUE)
+  
+```
+
+```{r data frame setup and cleaning}
+  
+  # tibble raw queries
+slf_gbif_final <- as_tibble(slf_gbif$gbif$data$Lycorma_delicatula) # dont get this part
+toh_gbif_final <- as_tibble(toh_gbif$gbif$data$Ailanthus_altissima)  # dont get this part
+  
+  # de-listify TOH
+toh_gbif_final$networkKeys <- NULL
+  
+  # save raw queries with date stamp as current date
+write_csv(x = slf_gbif_final, 
+          file = file.path(here(), "data_raw", paste0( "slf_gbif_", format(Sys.Date(), "%Y-%d-%m"), ".csv")))
+write_csv(x = toh_gbif_final, 
+          file = file.path(here(), "data_raw", paste0( "toh_gbif_", format(Sys.Date(), "%Y-%d-%m"), ".csv")))
+  
+  # convert occ data to dataframe
+slf_coords1 <- occ2df(slf_gbif)
+toh_coords1 <- occ2df(toh_gbif)
+  
+  # save coords as-is
+write_csv(x = slf_coords1, 
+          file = file.path(
+            here(), "data_raw", 
+            paste0( "slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%d-%m"), ".csv"))
+          )
+  
+write_csv(x = toh_coords1, 
+          file = file.path(
+             here(), "data_raw", 
+             paste0( "toh_gbif_raw_coords_", format(Sys.Date(), "%Y-%d-%m"), ".csv"))
+          )
+
+```
+
+```{r read in raw data}
+
+slf_coords1 <- read_csv(file = file.path(here(), "data_raw", "slf_gbif_raw_coords_2022-07-13.csv"))
+
+toh_coords1 <- read_csv(file = file.path(here(), "data_raw", "toh_gbif_raw_coords_2022-07-19.csv"))
+
+```
+
+```{r Make taxonomic naming consistent}
+
+unique(slf_coords1$name)
+
+unique(toh_coords1$name)
+
+toh_coords1$name <- "Ailanthus altissima (Mill.) Swingle"
+
+```
+
+```{r coordinate veracity and cleaning}
+
+slf_coords1 <- slf_coords1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+toh_coords1 <- toh_coords1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+```
+
+```{r coordinate rarefication}
+
+#rarefy (adjusts for differences in library sizes: selects a number of samples per group equal to smallest group size)
+slf_coords2 <- humboldt.occ.rarefy(in.pts = slf_coords1, colxy = 2:3, rarefy.dist = 10, rarefy.units = "km", run.silent.rar = F)
+
+toh_coords2 <- humboldt.occ.rarefy(in.pts = toh_coords1, colxy = 2:3, rarefy.dist = 10, rarefy.units = "km", run.silent.rar = F)
+
+#dedup
+slf_coords3 <- slf_coords2 %>%
+  dedup(how = "one", tolerance = 0.99)
+
+toh_coords3 <- toh_coords2 %>%
+  dedup(how = "one", tolerance = 0.99)
+
+# remove incorrect points manually
+slf_coords3 <- slf_coords2 %>%
+  filter(key != "2860187641") %>% #rm OR---lat, lon:(43.63691, -121.85569)
+  filter(key != "2862292948") %>% #rm NE---lat, lon:(42.50641,-101.01562)
+  filter(key != "2864687343") %>% #rm DE---lat, lon:(37.91855, -75.14999)
+  filter(!key %in% c("2856537682", "2851117559")) #rm MA---lat, lon:(42.20994, -71.18331)
+
+slf_coords3 <- slf_coords3 %>%
+  dplyr::select(name, latitude, longitude, prov, date, key) %>%
+  # here down was cleaned using script cpnvert_data_rda.R- data table wont be converted to RDA file
+  dplyr::rename(species = name, x = longitude, y = latitude) %>%
+  mutate(species = "Lycorma delicatula") %>%
+  dplyr::select(species, x, y)
+
+toh_coords3 <- toh_coords3 %>%
+  dplyr::select(name, latitude, longitude, prov, date, key) %>%
+
+```  
+
+```{r write data to .csv}
+
+write_csv(slf_coords3, file = file.path(here(), "data_root", "slf_gbif_cleaned_coords_2022.csv"))
+
+write_csv(toh_coords3, file = file.path(here(), "data_root", "toh_gbif_cleaned_coords_2022.csv"))
+
+```
+
+```{r output to be used for modeling and conversion to .csv}
+
+slf_points_cleaned <- slf_coords3 %>%
+  dplyr::rename(species = name, x = longitude, y = latitude) %>%
+  mutate(species = "Lycorma delicatula") %>%
+  dplyr::select(species, x, y)
+
+write_csv(slf_points_cleaned, file = file.path(here(), "data_root", "slf_points_cleaned.csv"))
+
+toh_points_cleaned <- toh_coords3 %>%
+  dplyr::rename(species = name, x = longitude, y = latitude) %>%
+  mutate(species = "Ailanthus altissima") %>%
+  dplyr::select(species, x, y)
+
+write_csv(toh_points_cleaned, file = file.path(here(), "data_root", "toh_points_cleaned.csv"))
+
+```
+
+# Next chunk added 2022-11-21- to remove points that maxent was throwing errors for
+
+```{r }
+
+slf_coords4 <- read_csv(file = file.path(here(), "data_root", "slf_gbif_cleaned_v0.csv"))
+
+# locate coords that maxent threw errors for
+slf_error_points <- slf_coords4 %>%
+  filter(x %in% c(-73.817129,
+                  -74.166321, 
+                  -74.008017, 
+                  -73.972261, 
+                  -73.999422,
+                  -74.024064, 
+                  -73.720957,
+                  -74.189445,
+                  -76.041131,
+                  -76.340849,
+                  -71.718748,
+                  -74.574037, 
+                  -74.662098,
+                  120.230003,
+                  -74.914262, 
+                  -75.054844,
+                  126.160004, 
+                  122.154455,
+                  126.559998,
+                  126.589996,
+                  126.459999, 
+                  121.73337
+  ))
+
+# plot error points
+map_errors <- ggplot() +
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = slf_error_points, aes(x = x, y = y), color = "red", size = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("SLF errors") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# all points are real (I was concerned that a - sign may have been missed), so these points will need to be removed
+
+# remove error points, write to new csv
+slf_coords4 <- slf_coords4 %>% 
+   filter(!x %in% c(-73.817129,
+                  -74.166321, 
+                  -74.008017, 
+                  -73.972261, 
+                  -73.999422,
+                  -74.024064, 
+                  -73.720957,
+                  -74.189445,
+                  -76.041131,
+                  -76.340849,
+                  -71.718748,
+                  -74.574037, 
+                  -74.662098,
+                  120.230003,
+                  -74.914262, 
+                  -75.054844,
+                  126.160004, 
+                  122.154455,
+                  126.559998,
+                  126.589996,
+                  126.459999, 
+                  121.73337
+  ))
+
+write_csv(slf_coords4, file = file.path(here(), "data_root", "slf_gbif_cleaned_v1.csv"))
+
+```
+
+
+```{r visualize 2022 pulled gbif records vs 2020 pull}
+
+slf_coords3 <- read_csv(file = file.path(here(), "data_root", "slf_gbif_cleaned_coords_2022.csv"))
+
+toh_coords3 <- read_csv(file = file.path(here(), "data_root", "toh_gbif_cleaned_coords_2022.csv"))
+
+data("slf_points", package = "slfrsk")
+data("toh_points", package = "slfrsk")
+# we read in slightly modified versions of the same coords. lat/lon were changed to y/x respectively and the species names were cleaned up. see corresponding section in data-raw/convert_data_rda.R for details
+
+# plot toh
+map_toh <- ggplot() +
+  geom_polygon(data = map_data("world"), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = toh_coords3, aes(x = longitude, y = latitude), color = "red", size = 2) +
+  geom_point(data = toh_points, aes(x = x, y = y), color = "blue", shape = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("TOH") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# plot SLF
+map_slf <- ggplot() +
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = slf_coords3, aes(x = longitude, y = latitude), color = "red", size = 2) +
+  geom_point(data = slf_points, aes(x = x, y = y), color = "blue", shape = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("SLF") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+  
+```
