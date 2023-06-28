@@ -1,0 +1,44 @@
+
+### * home
+
+home:
+  links:
+    - text: Browse source code at
+      href: https/add_address
+
+### * template
+
+template:
+  params:
+    bootswatch: readable
+
+### * navbar
+
+navbar:
+  right:
+    - icon: fa-home fa-lg
+      href: index.html
+    - text: "Reference"
+      href: reference/index.html
+    - text: "Analyses"
+      menu:
+        - text: ----------------
+        - text: "Data Handling"
+        - text: ----------------
+        - text: "Tidying Data"
+          href: articles/010_Tidying_data.html
+        - text: ----------------
+        - text: "Analyses and Results"
+        - text: ----------------
+        - text: "Running Linear Models"
+          href: articles/020_Running_analyses.html
+        - text: "Plotting the results"
+          href: articles/030_Plotting_results.html
+        - text: ----------------
+
+
+  left:
+    - icon: fa-gitlab fa-lg
+      href:
+    - icon: fa-github fa-lg
+      href:

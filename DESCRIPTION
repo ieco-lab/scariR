@@ -1,0 +1,14 @@
+Package: slfSpread
+Type: Package
+Title: 
+Version: 0.1.0
+Authors@R: c(
+    person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut"),
+    person("Matthew", "Helmus", email = "mrhelmus@temple.edu", role = c("aut", "cre")))
+Description: blarg
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports:
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
