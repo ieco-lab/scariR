@@ -6,7 +6,7 @@ contact: 'sam.owens@temple.edu'
 output: html_document
 ---
 
-This vignette will provide instructions to retrieve SLF presence records for use in the creation of MaxEnt models. Two data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility) and [lydemapR](https://github.com/ieco-lab/lydemapr). The GBIF dataset was taken from a variety of sources and represents globally distributed presences. The LydemapR dataset represents SLF occurrence data for the United States, which was largely obtained from biological field surveys and citizen science platforms.
+This vignette will provide instructions to retrieve SLF presence records for the future creation of MaxEnt models. Two data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility) and [lydemapR](https://github.com/ieco-lab/lydemapr). The GBIF dataset was taken from a variety of sources and represents globally distributed presences. The LydemapR dataset represents SLF occurrence data for the United States, which was largely obtained from biological field surveys and citizen science platforms.
 
 # Setup
 

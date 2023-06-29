@@ -24,6 +24,7 @@ library(scales) #rescale the plots easily
 library(rgdal) #load shapefiles
 library(doParallel) #parallized extraction
 library(stringi)
+library(terra)
 
 ```
 
@@ -312,9 +313,119 @@ Maxent was used under the default parameters, excluding the following changes:
 
 ## At this point, run model in MaxEnt
 
-```{r summary of models}
-data("models_summary")
 
-knitr::kable(models_summary)
+
+# Cropping most used bioclim layers to N America bounding box and visualizing
+
+Library necessary packages
+
+```{r library packages}
+
+library(terra)
+library(raster)
+library(stringr)
+library(tidyverse)
+library(here)
 
 ```
+
+```{r cropping bioclim layers to N america}
+
+if(FALSE) {
+
+  # path to directory
+  mypath <- file.path(here::here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/wc2.1_30arcsec")
+
+  # load in bioclim layers to be cropped- the original .tif files
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = T) %>%
+  # extract the 6 bioclim layers (plus global_atc) that I expect to use in future regional models
+    grep("global_atc.tif|bio_1.tif|bio_2.tif|bio_7.tif|bio_12.tif|bio_15.tif", ., value = TRUE)
+
+   # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = F) %>%
+  # extract the 6 bioclim layers (plus global_atc) that I expect to use in future regional models
+    grep("global_atc.tif|bio_1.tif|bio_2.tif|bio_7.tif|bio_12.tif|bio_15.tif", ., value = TRUE) %>%
+    # get rid of filetype endings
+    gsub(pattern = ".tif", replacement = "") 
+  
+  
+  # define extent object
+  NAmerica_extent <- terra::ext(-133.593750, -52.294922, 25.085599, 55.304138)
+  
+  # create main layer to crop others to
+  main_layer <- terra::crop(terra::rast(x = env.files[2]),
+                            # crop global_bio_1 to extent
+                            y = NAmerica_extent, overwrite = FALSE)
+  
+  # ensure crs is correct
+  crs(main_layer, describe = TRUE)
+  
+  # crs isnt correct. will set in loop
+  
+  
+  
+  # convert to df for plotting 
+  main_layer_df <- terra::as.data.frame(main_layer, xy = TRUE)
+  
+  # plot main layer as example
+  main_plot <- ggplot() +
+    # change scale of plots to be standard across figures
+    geom_raster(data = main_layer_df, 
+              aes(x = x, y = y, fill = global_bio_1)) +
+    # set view to N America extent, plus 2 on each side to see if cropping worked
+    coord_cartesian() +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_void() +
+    theme(legend.position = "none")
+    
+  # the cropping worked
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    crs(rast.hold) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    #resample to fit the extent/resolution of the reference BIOCLIM layer
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica")), format = "ascii", overwrite = FALSE)
+    
+  }
+  
+}
+
+```
+
+
+```{r visualize new layers and MaxEnt output from slf_gbif_v5}
+
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                        dirname(),
+                      "maxent/maxent_models")
+
+# load in global model
+v5_global <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_global", "Lycorma_delicatula_avg.asc")) 
+
+v5_global_df <- terra::as.data.frame(v5_global, xy = TRUE)
+
+v5_global_plot <- ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = v5_global_df, 
+              aes(x = x, y = y, fill = "Lycorma_delicatula_avg")) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_void() +
+  theme(legend.position = "none",
+        title = "Predicted current global niche for \italic(Lycorma delicatula)")
+
+```
+
+
+
