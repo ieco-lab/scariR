@@ -321,11 +321,11 @@ Library necessary packages
 
 ```{r library packages}
 
-library(terra)
-library(raster)
-library(stringr)
+library(terra) # most of analyses done here
+library(raster) # used some for rasters
+library(sf) # dependency of terra
 library(tidyverse)
-library(here)
+library(here) # pathing
 
 ```
 
@@ -378,10 +378,12 @@ if(FALSE) {
     coord_cartesian() +
     xlab("longitude") +
     ylab("latitude") +
-    theme_void() +
+    theme_minimal() +
     theme(legend.position = "none")
-    
   # the cropping worked
+  
+  # view list of filetypes for terra, use .ascii
+  View(terra::gdal(drivers = TRUE))
   
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
@@ -392,9 +394,12 @@ if(FALSE) {
     #resample to fit the extent/resolution of the reference BIOCLIM layer
     #use bilinear interpolation, since values are continuous
     rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
-
+    
+    # set NA value, a requirement of maxent .asc files
+    rast.hold <- terra::subst(rast.hold, NA, -9999)
+    
     #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica")), format = "ascii", overwrite = FALSE)
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica")), filetype = "AAIGrid", overwrite = TRUE)
     
   }
   
@@ -411,19 +416,75 @@ if(FALSE) {
                       "maxent/maxent_models")
 
 # load in global model
-v5_global <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_global", "Lycorma_delicatula_avg.asc")) 
+v5_global <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_global", "Lycorma_delicatula_avg.asc")) %>%
+  # crop to only area of interest because entire raster too long (almost impossible) to convert to df
+  crop(., y = NAmerica_extent)
 
-v5_global_df <- terra::as.data.frame(v5_global, xy = TRUE)
+# do a quick plot
+terra::plot(v5_global)
 
+# convert to df to plot with other layers
+v5_global_df <- terra::as.data.frame(v5_global, xy = TRUE) %>%
+  # remove NAs
+  na.omit()
+
+# plot
 v5_global_plot <- ggplot() +
-  # change scale of plots to be standard across figures
   geom_raster(data = v5_global_df, 
-              aes(x = x, y = y, fill = "Lycorma_delicatula_avg")) +
+              aes(x = x, y = y, fill = Lycorma_delicatula_avg)) +
+  # keep lat/long ratio equal when plotting
+  coord_equal() +
   xlab("longitude") +
   ylab("latitude") +
-  theme_void() +
-  theme(legend.position = "none",
-        title = "Predicted current global niche for \italic(Lycorma delicatula)")
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Predicted current global niche for Lycorma delicatula")
+
+
+
+# load in regional model
+v5_regional <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_regional", "Lycorma_delicatula_avg.asc"))
+
+# quick plot
+terra::plot(v5_regional)
+
+# convert to df
+v5_regional_df <- terra::as.data.frame(v5_regional, xy = TRUE) %>%
+  na.omit()
+
+# plot
+v5_regional_plot <- ggplot() +
+  geom_raster(data = v5_regional_df, 
+              aes(x = x, y = y, fill = Lycorma_delicatula_avg)) +
+  coord_equal() +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Predicted current regional niche for Lycorma delicatula")
+
+```
+
+```{r overlay raster layers and resample to new thresholds}
+
+# this creates a spatRaster object with 2 layers
+v5_global_regional <- c(v5_regional, v5_global)
+nlyr(v5_global_regional)
+
+
+
+# plot both maps together
+v5_global_regional_plot <- ggplot() +
+  geom_raster(data = v5_global_df, 
+              aes(x = x, y = y, fill = Lycorma_delicatula_avg)) +
+  geom_raster(data = v5_regional_df, 
+              aes(x = x, y = y, fill = Lycorma_delicatula_avg)) +
+  coord_equal() +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Predicted niche overlap for Lycorma delicatula")
 
 ```
 
