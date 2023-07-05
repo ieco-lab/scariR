@@ -465,8 +465,68 @@ v5_regional_plot <- ggplot() +
 
 ```
 
-```{r overlay raster layers and resample to new thresholds}
+# Analyzing differences in regional vs global model outputs
 
+For my analysis, I need to compare the predictions of both the regional and global models in the invaded region. First, I will need to infer the amount of range filling by SLF according to each model. In Gallien et.al, this was done by plotting the points overtop of the raster of both the regional and global models and comparing the models for the level of agreement in suitability. There are a few steps to this process:
+
+1. Convert each output to binary (suitable/unsuitable) based on a suitability threshold (likely the threshold rule chosen in MaxEnt, MTP), but could also be 0.5 bc Gallien et.al used this.
+2. Overlay the regional and global model predictions
+3. Average rasters
+4. Re-classify averaged raster as areas where both agree on presence, both agree on absence, or one classifies and the other classifies absent (4 total categories)
+
+Second, I will need to compare the performance of each model at each point across the invaded range. Gallien et.al did this for both observed presences and pseudo-absences ("background points"). This was used to produce a boxplot of predicted suitability in the global vs the regional model. This process will also take a few steps:
+
+1. Start with overlaid binary suitability regional and global maps
+2. Extract point-wise suitability for presences and absences in each model (4 categories)
+3. Graph these suitability values- x-axis of plot is suitability in global model, y-axis is suitability in regional model
+
+Finally, these values can also be used to calculate the sensitivity and specificity of each model manually.
+
+1. Calculate sensitivity (proportion of presences correctly guessed) for each model
+2. calculate specificity (proportion of absences correctly guessed) for each model
+
+## infer level of range filling
+
+First, I will create matrix objects that will be used to reclassify the output rasters to a binary predictor of suitability. 0.5 will be the threshold: anything above 0.5 will be considered suitable, while anything below will not be. This threshold is essential for my invasion stage anaylsis further downstream.
+
+To reclassify, package terra takes a 3-column matrix for its "classify" function, which re-classifies groups of values to other values. I will create one for the global model output and one for the regional model output. The reason for having two separate matrices is because I will need to differentiate between a "suitable" spot on the global and regional rasters. Because of this, I will be encoding the rasters into base-2 binary so that the end result is 4 categories of values (the idea for this was found in this [forum](https://gis.stackexchange.com/questions/127055/comparing-and-finding-inaccuracies-in-two-raster-layers)). For the regional raster, I will encode the logistical output of MaxEnt into these values:
+
+*Regional unsuitable = 0-0.5 -> 00000001 = 1
+*Regional suitable = 0.51-1 ->  00000010 = 2
+
+For the global rasters, I will encode the outputs into these values:
+
+*Global unsuitable = 0-0.5 -> 00000100 = 4
+*Global suitable = 0.51-1 ->  00001000 = 8
+
+By encoding the rasters into base-2, I have created only 4 possible values of the raster layers, which can be translated into 4 categories:
+
+*Unsuitable Agreement = 5 (00000101)
+*Suitable Agreement = 10 (00001010)
+*unsuitable regional/suitable global = 9 (00001001)
+*Suitable regional/unsuitable global = 6 (00000110)
+
+```{r 1. convert output rasters to binary predictors}
+
+# create regional suitability value matrix for terra
+regional_classes <- data.frame(
+  from = c(0, 0.51),
+  to = c(0.50, 1),
+  becomes = c(strtoi(00000001, base = 2), strtoi(00000010, base = 2)) # the strtoi function converts to base-2
+)
+
+global_classes <- data.frame(
+  from = c(0, 0.51),
+  to = c(0.50, 1),
+  becomes = c(00000100, 00001000)
+)
+
+
+```
+
+
+
+```{r}
 # this creates a spatRaster object with 2 layers
 v5_global_regional <- c(v5_regional, v5_global)
 nlyr(v5_global_regional)
