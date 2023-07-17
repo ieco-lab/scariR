@@ -506,7 +506,11 @@ By encoding the rasters into base-2, I have created only 4 possible values of th
 *unsuitable regional/suitable global = 9 (00001001)
 *Suitable regional/unsuitable global = 6 (00000110)
 
-```{r 1. convert output rasters to binary predictors}
+### 1. convert output rasters to binary predictors
+
+To convert the rasters to binary predictors of presence / absence, first I will create the classification matrices needed by the \code(terra) package.
+
+```{r }
 
 # create regional suitability value matrix for terra
 regional_classes <- data.frame(
@@ -523,6 +527,11 @@ global_classes <- data.frame(
 
 
 ```
+
+Next, 
+
+
+
 
 
 

@@ -1,0 +1,9 @@
+---
+title: "deprecated_code"
+author: "Sam Owens"
+date: "2023-07-13"
+output: html_document
+---
+
+This file was written to hold deprecated code chunks. The original file will be listed for each code chunk.
+

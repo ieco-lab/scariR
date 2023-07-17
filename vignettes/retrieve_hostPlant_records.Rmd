@@ -1,0 +1,525 @@
+---
+title: "Retrieve host plant records from GBIF and tidy them for MaxEnt modeling"
+author: "Sam Owens"
+date: "2023-07-12"
+contact: 'sam.owens@temple.edu'
+output: html_document
+---
+
+This vignette will follow the same structure as part 1.1 of the SLF data retrieval vignette. As a result, this vignette will be less detailed about the choices that were made. For specific reasoning regarding workflow and functions used, please see the vignette `02_retrieve_SLF_records.Rmd`.
+
+Occurrence records for both *Ailanthus altissima* (TOH) and *Vitis spp* will be retrieved from `GBIF`. I am interested in the potential effects of host plant distribution on both the current *Lycorma delicatula* invasion stage and in the future due to climate change. We will be using the distribution of these host plants to upweight the final models. Upweighted versions of these models will be considered in the final invasion stage analysis. 
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(taxize) # get taxonomic ids
+library(spocc) #query gbif and format as a dataframe
+
+library(humboldt) # spatial thinning of points
+library(tcltk) #humboldt progress bar
+library(scrubr) #clean records for gbif data
+
+library(patchwork) #nice plots
+
+```
+
+# 1. Retrieve and tidy TOH data
+
+```{r get TOH gbif taxa ID}
+
+# get species ID from gbif database
+ids <- taxize::get_ids(sci_com = "Ailanthus altissima", db = "gbif")
+
+```
+
+The retrieved ID is `3190653`. This matches the ID for the [TOH repository](https://www.gbif.org/species/3190653) on GBIF.
+
+### 1.1- Retrieve and save records- TOH
+
+```{r retrieve toh records from GBIF}
+
+if(FALSE) {
+
+  toh_gbif <- spocc::occ(ids = ids[[1]], # search by ID, not species name
+                         from = 'gbif', 
+                         limit = 1e5, # gbif limits number of queries to this
+                         has_coords = TRUE, # only those with attached coordinate data
+                         throw_warnings = TRUE,
+                         # list of commands to pass to rgbif::occ_data()
+                         gbifopts = list(
+                           occurrenceStatus = "PRESENT",
+                           # all records except fossil records
+                           basisOfRecord = c("HUMAN_OBSERVATION", "MATERIAL_CITATION", "MATERIAL_SAMPLE", "LIVING_SPECIMEN", "MACHINE_OBSERVATION", "OBSERVATION", "PRESERVED_SPECIMEN", "OCCURRENCE"),
+                           hasGeospatialIssue = FALSE,
+                           year = "1981, 2023"
+                           ))
+  
+}
+
+```
+
+```{r save raw query and data}
+  
+if(FALSE) {
+
+  # tibble raw queries
+  toh_gbif_final <- as_tibble(toh_gbif$gbif$data$`3190653`) 
+  
+  # de-listify TOH
+  toh_gbif_final$networkKeys <- NULL
+  
+  # save raw queries with date stamp as current date
+  write_csv(x = toh_gbif_final, 
+            file = file.path(here(), "data-raw", paste0( "toh_gbif_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
+    
+  # convert occ data to dataframe
+  toh_gbif_coords1 <- spocc::occ2df(toh_gbif)
+    
+  # save coords as-is
+  write_csv(x = toh_gbif_coords1, 
+            file = file.path(
+              here(), "data-raw", 
+              paste0("toh_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+            )
+
+}
+
+```
+
+```{r read in raw data}
+
+toh_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "toh_gbif_raw_coords_2023-07-14.csv"))
+
+```
+
+### 1.2- Coordinate veracity and spatial thinning- TOH
+
+```{r coordinate veracity}
+
+toh_gbif_coords1 <- toh_gbif_coords1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+```
+
+```{r humboldt spatial thinning}
+
+if(FALSE) {
+  
+  toh_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = toh_gbif_coords1, 
+                                             colxy = 2:3, # coordinate columns
+                                             rarefy.dist = 1, 
+                                             rarefy.units = "km", 
+                                             run.silent.rar = F) # display progress bars
+   
+}
+
+```
+
+We use `humboldt::humboldt.occ.rarefy()` to perform the spatial thinning because it preserves the non-coordinate data. The spatial thinning left about 37,000 records out of 106,000.
+
+```{r de-duplicate}
+
+# de-duplicate
+toh_gbif_coords3 <- toh_gbif_coords2 %>%
+  scrubr::dedup(how = "one", tolerance = 0.99)
+
+```
+
+Unlike for SLF, TOH contains about 8 alternative species names. Since MaxEnt will treat other names as other species, we will change the name to the most common one, "Ailanthus altissima (Mill.) Swingle". This species name also matches the species name found on the GBIF repo (linked above). We will change the naming to be consistent and then save the output as the cleaned coordinates.
+
+```{r tidy and save cleaned data}
+
+# check species name
+unique(toh_gbif_coords3$name)
+
+# there are over 8- rename as the most common
+toh_gbif_coords3$name <- "Ailanthus altissima (Mill.) Swingle"
+
+# save
+write_csv(toh_gbif_coords3, file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.csv"))
+
+```
+
+We will perform a final round of spatial thinning using `spThin::thin()`, just to be consistent with the SLF data.
+
+```{r read in data}
+
+toh_gbif_coords4 <- read_csv(file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.csv"))
+
+```
+
+```{r spThin spatial thinning}
+
+if(TRUE) {
+
+  toh_gbif_coords4 <- spThin::thin(loc.data = toh_gbif_coords4, 
+                              lat.col = "latitude", long.col = "longitude",
+                              spec.col = "name",
+                              thin.par = 1,
+                              reps = 10, # number of passes
+                              # line below returns a list of data frames with the locations were preserved
+                              locs.thinned.list.return = TRUE, 
+                              write.files = TRUE, # returns list of thinned data as a separate .csv file
+                              # next, create a file that logs the thinning run, write the path to and name of the log file
+                              write.log.file = TRUE, 
+                              log.file = file.path(here(), "vignette-outputs", "data-tables", paste0("toh_coords_cleaned_thinning_log_", format(Sys.Date(), "%Y-%m-%d"), ".txt")),
+                              # finally, tell it where to write the new files and what to call the thinned dataset
+                              out.dir = file.path(here(), "vignette-outputs", "data-tables"),
+                              out.base = paste0("toh_coords_cleaned_", format(Sys.Date(), "%Y-%m-%d")),
+                              verbose = TRUE # give details of run in the console
+                              )
+
+}
+
+```
+
+```{r export for maxent}
+
+# reformat for MaxEnt
+toh_gbif_coords4 <- toh_gbif_coords4 %>%
+  dplyr::select(name, latitude, longitude, everything()) %>% # change order of columns to MaxEnt convention
+  dplyr::rename(species = name, x = longitude, y = latitude) %>% # change column names to MaxEnt convention
+  dplyr::select(species, x, y) # select only columns needed for MaxEnt
+
+# save
+write_csv(toh_gbif_coords4, file = file.path(here(), "data", "toh_gbif_final_coords_v1.csv"))
+
+```
+
+The occurrence data for TOH are now in a useable format for MaxEnt.
+
+### 1.3- Visualize spatial thinning
+
+First, we will visualize the results of the spatial thinning process.
+
+```{r visualize raw and thinned GBIF records}
+
+# raw data
+toh_raw <- read_csv(file = file.path(here(), "data-raw", "toh_gbif_raw_coords_2023-07-14.csv"))
+
+# thinned data
+toh_thinned <- read_csv(file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.csv"))
+
+# plot world map
+map_toh_thinned <- ggplot() +
+  # the second line is a basemap from ggplot2
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = toh_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = toh_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("TOH GBIF records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# plot map of NAmerica
+map_toh_thinned_NAmerica <- ggplot() +
+  # the second line is a basemap from ggplot2
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = toh_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = toh_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("TOH GBIF records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+  
+# patchwork display of plots
+map_toh_thinned + map_toh_thinned_NAmerica +
+  plot_layout(ncol = 2)
+
+```
+
+From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the SLF invaded range, and indeed every blue point is paired with at least 1 red point. So, our goal was met!
+
+# 2. Retrieve and tidy Vitis data
+
+```{r get vitis gbif taxa ID}
+
+# get species ID from gbif database
+ids <- taxize::get_ids(sci_com = "Vitis", db = "gbif")
+
+```
+
+The retrieved ID is `7467468`. This matches the ID for the [Vitis repository](https://www.gbif.org/species/7467468) on GBIF.
+
+I chose to retrieve records at the genus level, rather than the species level, because there isn't clear evidence in the literature that SLF prefers one species over another. These records may represent cultivated species, but the objective is to characterize the natural distribution of uncultivated species within this genus. While vineyards (monocultures) may be at higher risk, it is far more likely that these wild grape species will have a significant effect on SLF spread because of their global distribution. I will be referring to the entire genus of Vitis as "Vitis spp." moving forward.
+
+### 2.1- Retrieve and save records- Vitis
+
+```{r retrieve vitis records from GBIF}
+
+if(FALSE) {
+
+  vitis_gbif <- spocc::occ(ids = ids[[1]], # search by ID, not species name
+                         from = 'gbif', 
+                         limit = 1e5, # gbif limits number of queries to this
+                         has_coords = TRUE, # only those with attached coordinate data
+                         throw_warnings = TRUE,
+                         # list of commands to pass to rgbif::occ_data()
+                         gbifopts = list(
+                           occurrenceStatus = "PRESENT",
+                           # all records except fossil records
+                           basisOfRecord = c("HUMAN_OBSERVATION", "MATERIAL_CITATION", "MATERIAL_SAMPLE", "LIVING_SPECIMEN", "MACHINE_OBSERVATION", "OBSERVATION", "PRESERVED_SPECIMEN", "OCCURRENCE"),
+                           hasGeospatialIssue = FALSE,
+                           year = "1981, 2023"
+                           ))
+  
+}
+
+```
+
+```{r save raw query and data}
+
+if(FALSE) {
+
+  # tibble raw queries
+  vitis_gbif_final <- as_tibble(vitis_gbif$gbif$data$`7467468`) 
+  
+  # save raw queries with date stamp as current date
+  write_csv(x = vitis_gbif_final, 
+            file = file.path(here(), "data-raw", paste0( "vitis_gbif_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
+    
+  # convert occ data to dataframe
+  vitis_gbif_coords1 <- spocc::occ2df(vitis_gbif)
+    
+  # save coords as-is
+  write_csv(x = vitis_gbif_coords1, 
+            file = file.path(
+              here(), "data-raw", 
+              paste0("vitis_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+            )
+
+}
+
+```
+
+```{r read in raw data}
+
+vitis_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "vitis_gbif_raw_coords_2023-12-07.csv"))
+
+```
+
+### 2.2- Coordinate veracity and spatial thinning- Vitis
+
+```{r coordinate veracity}
+
+vitis_gbif_coords1 <- vitis_gbif_coords1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+```
+
+```{r spatial thinning}
+
+if(FALSE) {
+  
+  vitis_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = vitis_gbif_coords1, 
+                                             colxy = 2:3, # coordinate columns
+                                             rarefy.dist = 1, 
+                                             rarefy.units = "km", 
+                                             run.silent.rar = F) # display progress bars
+  
+}
+
+```
+
+### 2.3- Convert to format for MaxEnt and save- Vitis
+
+```{r de-duplicate}
+
+# de-duplicate
+vitis_gbif_coords3 <- vitis_gbif_coords2 %>%
+  scrubr::dedup(how = "one", tolerance = 0.99)
+
+```
+
+```{r save cleaned data and convert to maxent format}
+
+# check species name
+unique(vitis_coords3$name)
+
+vitis_gbif_coords3$name <- "Vitis spp"
+
+# tidy for maxent
+vitis_gbif_coords3 <- vitis_gbif_coords3 %>%
+  dplyr::select(name, latitude, longitude, everything()) %>% # change order of columns to MaxEnt convention
+  dplyr::rename(species = name, x = longitude, y = latitude) %>% # change column names to MaxEnt convention
+  dplyr::select(species, x, y) # select only columns needed for MaxEnt
+
+write_csv(vitis_gbif_coords3, file = file.path(here(), "data", "vitis_gbif_cleaned_coords_v1.csv"))
+
+```
+
+The occurrence data for Vitis spp. are now in a useable format for MaxEnt.
+
+# 3. Visualize Host Plant distributions
+
+```{r visualize raw and thinned lydemapr records}
+
+# raw data
+lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-07-13.csv"))
+
+# thinned data
+lyde_thinned <- read_csv(file = file.path(here(), "data", "slf_lyde_cleaned_coords_v1.csv"))
+
+# plot map of NAmerica
+map_lyde_thinned <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+  
+# include citizen science platforms
+lyde_raw1 <- lyde_raw %>%
+  filter(lyde_present == "TRUE", 
+         lyde_established == "TRUE") %>% 
+  mutate(species = "Lycorma delicatula")
+
+
+
+# plot map including these records
+map_lyde_allRecords <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# patchwork display of plots
+map_lyde_thinned + map_lyde_allRecords +
+  plot_layout(ncol = 2)
+
+```
+
+```{r map all points}
+
+ map_all <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("All SLF presences") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+
+ map_all_NAmerica <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+    ggtitle("SLF presences N AMerica") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+ 
+  map_all_Asia <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
+    ggtitle("SLF presences Asia") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+
+  # patchwork
+  map_all_NAmerica + map_all_Asia +
+  plot_layout(ncol = 2)
+  
+```
+
+
+# Appendix
+
+## Visualize changes in GBIF records between initial 2020 data pull and newest pull
+
+First, we will visualize record changes in TOH
+
+```{r visualize 2023 pulled gbif records vs 2020 pull- TOH}
+
+if(FALSE) {
+  
+  # old data
+  toh_2020 <- read_csv(file = file.path(here(), "data-raw", "data-old", "toh_gbif_cleaned_coords_2022.csv"))
+  
+  # new data
+  toh_new <- read_csv(file = file.path(here(), "data", "toh_gbif_cleaned_v1.csv"))
+  
+  # plot toh
+  map_toh <- ggplot() +
+    geom_polygon(data = map_data("world"), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = toh_2020, aes(x = longitude, y = latitude), color = "red", size = 2) +
+    geom_point(data = toh_new, aes(x = x, y = y), color = "blue", shape = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("TOH new points (red) vs old (blue)") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+  
+  # new points are in red, old are in blue
+}
+
+```
+
+Then for Vitis
+
+```{r visualize 2023 pulled gbif records vs 2020 pull- Vitis}
+
+if(FALSE) {
+  
+  # old data
+  vitis_2020 <- read_csv(file = file.path(here(), "data-raw", "data-old", "NAME OF FILE"))
+  
+  # new data
+  vitis_new <- read_csv(file = file.path(here(), "data", "vitis_gbif_cleaned_v1.csv"))
+  
+  # plot vitis
+  map_vitis <- ggplot() +
+    geom_polygon(data = map_data("world"), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = vitis_2020, aes(x = longitude, y = latitude), color = "red", size = 2) +
+    geom_point(data = vitis_new, aes(x = x, y = y), color = "blue", shape = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("vitis new points (red) vs old (blue)") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+  
+  # new points are in red, old are in blue
+}
+
+```
+
+# Citations
+
+1. Ailanthus altissima (Mill.) Swingle in GBIF Secretariat (2022). GBIF Backbone Taxonomy. Checklist dataset https://doi.org/10.15468/39omei accessed via GBIF.org on 2023-07-.
+
+2. Vitis L. in GBIF Secretariat (2022). GBIF Backbone Taxonomy. Checklist dataset https://doi.org/10.15468/39omei accessed via GBIF.org on 2023-07-.
+

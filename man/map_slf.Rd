@@ -2,7 +2,7 @@
 % Please edit documentation in R/map_slf.R
 \name{map_slf}
 \alias{map_slf}
-\title{THIS NEEDS TO BE FUNCTIONALIZED TO MAP FROM LAT / LON COLUMNS}
+\title{Create a \link{leaflet} map of SLF occurrences}
 \usage{
 map_slf(point_lon, point_lat, point_label, extent = 0.01, zoom = 10)
 }
@@ -21,10 +21,11 @@ A logical value (\code{TRUE} or \code{FALSE}) that answers the question
 "is any element of the vector not an NA.
 }
 \description{
-Map a list of
+This function is designed to map a set of coordinates of interest using the
+leaflet package.
 }
 \details{
-This function is designed to map a set of coordinates using the leaflet package
+using the leaflet package
 and in this package, it is used to map new SLF jump locations. It is designed
 to show the point with a specified latitude and longitude margin on all sides
 of the point (zoom level). It is suggested that this function be used to
@@ -42,5 +43,6 @@ library(leaflet)
 library(tidyverse)
 
 map_slf <-
+
 
 }

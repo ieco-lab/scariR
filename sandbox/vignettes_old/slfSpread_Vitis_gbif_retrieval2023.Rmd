@@ -112,7 +112,7 @@ vitis_coords3 <- vitis_coords3 %>%
   dplyr::select(name, latitude, longitude, prov, date, key) %>%
   # here down was cleaned using script cpnvert_data_rda.R- data table wont be converted to RDA file
   dplyr::rename(species = name, x = longitude, y = latitude) %>%
-  mutate(species = "Lycorma delicatula") %>%
+  mutate(species = "Vitis spp") %>%
   dplyr::select(species, x, y)
 
 ```  
