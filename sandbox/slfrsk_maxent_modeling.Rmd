@@ -467,6 +467,30 @@ v5_regional_plot <- ggplot() +
 ```
 
 # Analyzing differences in regional vs global model outputs
+<<<<<<< HEAD
+=======
+
+For my analysis, I need to compare the predictions of both the regional and global models in the invaded region. First, I will need to infer the amount of range filling by SLF according to each model. In Gallien et.al, this was done by plotting the points overtop of the raster of both the regional and global models and comparing the models for the level of agreement in suitability. There are a few steps to this process:
+
+1. Convert each output to binary (suitable/unsuitable) based on a suitability threshold (likely the threshold rule chosen in MaxEnt, MTP), but could also be 0.5 bc Gallien et.al used this.
+2. Overlay the regional and global model predictions
+3. Average rasters
+4. Re-classify averaged raster as areas where both agree on presence, both agree on absence, or one classifies and the other classifies absent (4 total categories)
+
+Second, I will need to compare the performance of each model at each point across the invaded range. Gallien et.al did this for both observed presences and pseudo-absences ("background points"). This was used to produce a boxplot of predicted suitability in the global vs the regional model. This process will also take a few steps:
+
+1. Start with overlaid binary suitability regional and global maps
+2. Extract point-wise suitability for presences and absences in each model (4 categories)
+3. Graph these suitability values- x-axis of plot is suitability in global model, y-axis is suitability in regional model
+
+Finally, these values can also be used to calculate the sensitivity and specificity of each model manually.
+
+1. Calculate sensitivity (proportion of presences correctly guessed) for each model
+2. calculate specificity (proportion of absences correctly guessed) for each model
+
+
+```{r overlay raster layers and resample to new thresholds}
+>>>>>>> 8ffd63adb5b65d664d88f5c99f6fd25117dd8379
 
 For my analysis, I need to compare the predictions of both the regional and global models in the invaded region. First, I will need to infer the amount of range filling by SLF according to each model. In Gallien et.al, this was done by plotting the points overtop of the raster of both the regional and global models and comparing the models for the level of agreement in suitability. There are a few steps to this process:
 
