@@ -17,7 +17,7 @@ library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
 here()
-# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 library(ENMTools) #enviro collinearity analyses
 library(patchwork) #easy combined plots
 library(scales) #rescale the plots easily
@@ -401,7 +401,7 @@ if(FALSE) {
     rast.hold <- terra::subst(rast.hold, NA, -9999)
     
     #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica")), filetype = "AAIGrid", overwrite = TRUE)
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica", ".asc")), filetype = "AAIGrid", overwrite = TRUE)
     
   }
   
@@ -463,6 +463,80 @@ v5_regional_plot <- ggplot() +
   theme(legend.position = "bottom") +
   labs(title = "Predicted current regional niche for \n Lycorma delicatula") +
   coord_equal()
+
+```
+
+# Creating reference layer cropped to Eastern USA
+
+```{r cropping bioclim layers to N america}
+
+if(TRUE) {
+
+  # path to directory
+  mypath <- file.path(here::here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/wc2.1_30arcsec")
+
+  # load in bioclim layers to be cropped- the original .tif files
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "global_bio_1.tif$", full.names = T)
+
+   # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "global_bio_1.tif$", full.names = F) %>%
+    # get rid of filetype endings
+    gsub(pattern = ".tif", replacement = "") %>%
+    gsub(pattern = "global_", replacement = "")
+  
+  
+  # define extent object
+  easternUSA_extent <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+  
+  # create main layer to crop others to
+  main_layer <- terra::crop(terra::rast(x = env.files),
+                            # crop global_bio_1 to extent
+                            y = easternUSA_extent, overwrite = FALSE)
+  
+  # ensure crs is correct
+  crs(main_layer, describe = TRUE)
+  
+  # convert to df for plotting 
+  main_layer_df <- terra::as.data.frame(main_layer, xy = TRUE)
+  
+  # plot main layer as example
+  main_plot <- ggplot() +
+    # change scale of plots to be standard across figures
+    geom_raster(data = main_layer_df, 
+              aes(x = x, y = y, fill = global_bio_1)) +
+    # set view to N America extent, plus 2 on each side to see if cropping worked
+    coord_cartesian() +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    coord_equal()
+  # the cropping worked
+  
+  # view list of filetypes for terra, use .ascii
+  View(terra::gdal(drivers = TRUE))
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    crs(rast.hold) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    #resample to fit the extent/resolution of the reference BIOCLIM layer
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # set NA value, a requirement of maxent .asc files
+    rast.hold <- terra::subst(rast.hold, NA, -9999)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0("easternUSA_", output.files[a], ".asc")), filetype = "AAIGrid", overwrite = TRUE)
+    
+  }
+  
+}
 
 ```
 

@@ -22,7 +22,7 @@ library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
 here()
-# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
 library(devtools)
 

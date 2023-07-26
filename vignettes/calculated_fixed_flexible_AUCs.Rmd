@@ -1,0 +1,94 @@
+---
+title: "Generate background points and calculate fixed / flexible AUCs"
+author: "Sam Owens"
+date: "2023-07-20"
+contact: 'sam.owens@temple.edu'
+output: html_document
+---
+
+This vignette will generate a gridded area from which to extract a fixed-area AUC. This metric was chosen for the method of best fit analysis for the initial models created in this vignette: `vignette name`. To review, three models were run at the scale of the invaded range. One model used the entire invaded area to calculate suitable area. The second and third used subsets of this area, calculated by a mechanistic degree-day model and by taking 200km buffers around SLF presences, respectively. The issue is now that we must perform some sort of best-fit analysis to discern which model best characterizes the SLF invasion.
+
+AUC is a best-fit metric that is built into MaxEnt, but many papers have pointed out that it is sensitive to the size of the background. The size of the background happens to be the exact variable being changed between these models, creating an issue for assessing the fit of the models. [VanDerWal et.al](https://www.sciencedirect.com/science/article/pii/S0304380008005486) suggested a method for calculation of the AUC that can compensate for this sensitivity to background area. Basically, one set of background points is generated at random from the area in question (the maxent default) and another is calculated from a 1km grid (1 point per cell) across the entire area of interest. These two sets of points are then used for all models, regardless of the distribution of presences. From this, two AUCs are calculated. The "flexible area AUC" is calculated from the randomized points and the "fixed area AUC" is calculated from the gridded points.
+
+For the purposes of this analysis, I will be taking the both the flexible and fixed area background point sets from the eastern half of the USA (`xmin: -96.503906, xmax: -59.589844, ymin: 28.304381, ymax: 47.457809`). This area was chosen because a) it includes all known SLF records in  N America, according to the [NYSIPM SLF Map](https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC), b) it includes most of the projected suitable areas from previous models, and c) it is a smaller overall area from which to draw points for the fixed area AUC, so AUC values are less likely to suffer from over-inflation. The "fixed area AUC" will be taken from a 1km grid that is laid out across this area, while the "flexible area AUC" will be taken at random from the entire background area.
+
+(find paper saying how many points to take)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(devtools)
+library(terra)
+library(sp)
+library(usmap)
+
+
+```
+
+First, I will extract one point per grid cell across the entire area of the bounding box I extracted of the eastern USA. These data points will be used to calculate the "fixed area AUC". I will load in a raster of the eastern USA that was created in `vignette-name`. This will be used as a reference area for the creation of the fixed area AUC points dataset. We will convert this raster to a data frame and obtain the coordinates for each grid cell. Each set of coordinates will represent the centroid of each grid cell, which are roughly 1km apart at the equator. The fixed area AUC requires a grid of regularly spaced points across the area of interest, so these coordinates should satisfy meet those criteria.
+
+```{r create fixed area AUC dataset}
+
+if(FALSE) {
+
+  # file path to local directory
+  mypath <- file.path(here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters/wc2.1_30arcsec")
+  
+  # read in raster of N America, modified from worldclim data
+  easternUSA_bio_1 <- terra::rast(x = file.path(mypath, "v1_maxent", "easternUSA_bio_1.asc"))
+  
+  # extract the coordinates for each grid cell
+  easternUSA_bio_1_df <- terra::as.data.frame(x = easternUSA_bio_1, xy = TRUE, cells = TRUE) %>%
+    na.omit() %>%
+    # filter out NAs
+    filter(global_bio_1 != "-9999") %>%
+    select(x, y, cell, global_bio_1)
+  
+  # This basically obtains the coordinates for the centroid of each grid cell. This will be saved as the fixed area AUC coordinates.  
+  
+  # write to .csv
+  write_csv(x = easternUSA_bio_1_df, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points.csv"))
+   
+}
+
+```
+
+Now that we have extracted a point per grid cell, we will plot it to ensure the process was correct. We will convert the raster of the eastern USA to a data frame and then plot it with the fixed area points. The fixed area AUC points should be equally spaced to about 1 every 1km grid cell, so we will also zoom in to check if the process was successful. 
+
+```{r plot points}
+
+# load in fixed area AUC dataset again
+fixed_area_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points.csv"))
+
+# this plot takes awhile to run, only run it if you are concerned that some points might be where there are supposed to be NAs (such as over the ocean)
+if(FALSE) {
+
+  # plot data
+  fixed_points_plot <- ggplot() +
+    geom_raster(data = easternUSA_bio_1_df, 
+                aes(x = x, y = y, fill = global_bio_1)) +
+    geom_point(data = fixed_area_points, 
+               aes(x = x, y = y), color = "darkorange") +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    labs(title = "Fixed area AUC points") +
+    coord_equal()
+
+}
+
+# the points are so dense that we cannot resolve them at this scale. However, we can at least confirm that the function only created points on land masses
+
+```
+
+

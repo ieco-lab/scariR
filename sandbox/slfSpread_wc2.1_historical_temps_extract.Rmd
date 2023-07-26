@@ -23,7 +23,7 @@ library(tidyverse)
 #install.packages("here")
 library(here)
 here()
-# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
 # install.packages("terra")
 library(terra)
