@@ -1,5 +1,5 @@
 ---
-title: "Generate background points and calculate fixed / flexible AUCs"
+title: "Generate gridded background points and calculate fixed / flexible AUCs"
 author: "Sam Owens"
 date: "2023-07-20"
 contact: 'sam.owens@temple.edu'
@@ -8,9 +8,9 @@ output: html_document
 
 This vignette will generate a gridded area from which to extract a fixed-area AUC. This metric was chosen for the method of best fit analysis for the initial models created in this vignette: `vignette name`. To review, three models were run at the scale of the invaded range. One model used the entire invaded area to calculate suitable area. The second and third used subsets of this area, calculated by a mechanistic degree-day model and by taking 200km buffers around SLF presences, respectively. The issue is now that we must perform some sort of best-fit analysis to discern which model best characterizes the SLF invasion.
 
-AUC is a best-fit metric that is built into MaxEnt, but many papers have pointed out that it is sensitive to the size of the background. The size of the background happens to be the exact variable being changed between these models, creating an issue for assessing the fit of the models. [VanDerWal et.al](https://www.sciencedirect.com/science/article/pii/S0304380008005486) suggested a method for calculation of the AUC that can compensate for this sensitivity to background area. Basically, one set of background points is generated at random from the area in question (the maxent default) and another is calculated from a 1km grid (1 point per cell) across the entire area of interest. These two sets of points are then used for all models, regardless of the distribution of presences. From this, two AUCs are calculated. The "flexible area AUC" is calculated from the randomized points and the "fixed area AUC" is calculated from the gridded points.
+AUC is a best-fit metric that is built into MaxEnt, but many papers have pointed out that it is sensitive to the size of the background. The size of the background happens to be the exact variable being changed between these models, creating an issue for assessing the fit of the models. [VanDerWal et.al](https://www.sciencedirect.com/science/article/pii/S0304380008005486) suggested a method for calculation of the AUC that can compensate for this sensitivity to background area. Essentially, one set of background points is generated at random from the area in question (the maxent default) and another is calculated from a 1km grid (1 point per cell) across the entire area of interest. The fixed set of points is used for all models, regardless of the distribution of presences, while the "flexible area AUC" is calculated from the background area chosen for that model. From these two metrics, two AUCs are calculated per model.
 
-For the purposes of this analysis, I will be taking the both the flexible and fixed area background point sets from the eastern half of the USA (`xmin: -96.503906, xmax: -59.589844, ymin: 28.304381, ymax: 47.457809`). This area was chosen because a) it includes all known SLF records in  N America, according to the [NYSIPM SLF Map](https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC), b) it includes most of the projected suitable areas from previous models, and c) it is a smaller overall area from which to draw points for the fixed area AUC, so AUC values are less likely to suffer from over-inflation. The "fixed area AUC" will be taken from a 1km grid that is laid out across this area, while the "flexible area AUC" will be taken at random from the entire background area.
+For the purposes of this analysis, I will be taking the fixed area background point sets from the eastern half of the USA `(xmin: -96.503906, xmax: -59.589844, ymin: 28.304381, ymax: 47.457809)`. This area was chosen because a) it includes all known SLF records in  N America, according to the [NYSIPM SLF Map](https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC), b) it includes most of the projected suitable areas from previous models, and c) it is a smaller overall area from which to draw points for the fixed area AUC, so AUC values are less likely to suffer from over-inflation. The "fixed area AUC" will be taken from a 1km grid that is laid out across this area. 
 
 (find paper saying how many points to take)
 
@@ -25,9 +25,8 @@ here()
 # here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
 library(devtools)
-library(terra)
+library(terra)# spatial data handling
 library(sp)
-library(usmap)
 
 
 ```
@@ -91,4 +90,4 @@ if(FALSE) {
 
 ```
 
-
+# References

@@ -1,0 +1,90 @@
+---
+title: "Setup for initial MaxEnt models used choose background area"
+author: "Sam Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-07-27"
+output: html_document
+---
+
+This vignette will outline the methodology for selecting the best fit background area selection method. 
+
+(THEORY)
+
+First, I will select the suitable background area using three different methods, creating a reference layer for each size of background area
+
+Second, I will randomly select the background points required by MaxEnt. These will also be used later to calculate fixed and flexible AUCs
+
+Third, I will trim the selected covariates to each background area type. 
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(devtools)
+library(dismo) # run maxent models, generate random background points
+
+
+
+```
+
+
+# 1. Create reference layers for different background area selections
+
+
+
+
+
+# 2. Generate points for background area
+
+Background points datasets will be stored in `vignette-outputs`.
+
+```{r background points for entire Eastern USA bbox}
+
+if(TRUE) {
+
+  # file path to local directory
+  mypath <- file.path(here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters")
+  
+  # load in reference layer
+  easternUSA_bio_1 <- terra::rast(x = file.path(mypath, "wc2.1_30arcsec", "easternUSA_bio_1.asc"))
+  
+  
+  # generate random points 
+  easternUSA_entire_points <- dismo::randomPoints(mask = easternUSA_bio_1, 
+                                                  n = 10000, # default number used by maxent
+                                                  lonlatCorrection = TRUE # weight samples by latitude because cell size is larger closer to equator
+                                                  )
+
+  # save
+  write_csv(x = easternUSA_entire_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_flexible_entire_area_points.csv"))
+  
+}
+  
+```
+
+
+
+
+
+
+
+
+# 3. Trim covariates to each background type.
+
+
+
+# References
+
+
+
+
+
+
