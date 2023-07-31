@@ -28,7 +28,7 @@ here()
 
 library(devtools)
 library(terra)
-library(vapour) # convert proj4 to wkt2
+library(ENMtools) # env covariates colinearity
 
 ```
 
@@ -42,6 +42,8 @@ The URLs to the bioclim data that were downloaded from CHELSA are stored in `dat
 2. Climate change predictions- time period 2041-2070, GFDL-ESM4 model, SSP3-70
 
 The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27-57 other climatologies. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will only download the actual files for the 19 bioclim variables.
+
+*Note*, if you would like to also download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
 
 ### 1.1 Historical
 
@@ -114,7 +116,9 @@ Next, I need to tidy these rasters for MaxEnt. I will need to mask any data that
 
 First, I will mask the CHELSA rasters using a dataset called ["global access to cities"](http://www.nature.com/articles/nature25181), which is a proxy for human impact and will be used in the final anaylsis. This dataset contains high-resolution mapping of the continents, so it is a good choice for cropping the other layers. Next, I will pick a bioclim layer and use it as a reference to resample the new layers after setting the CRS and extent.
 
-```{r load in global_atc and bio1}
+## 2.1 Load in files
+
+```{r load in reference layers}
 
 # set path
 mypath <- file.path(here() %>% 
@@ -157,13 +161,13 @@ output.files <- output.files %>%
 
 ```
 
-### 2.1 Create reference layer
+## 2.2 Prepare reference layers
 
 The first step is to crop `global_atc` and `global_bio1` to the desired extent. I need to check on the correct CRS to use because the Proj4string notation (which I had previously used) is expiring. The proj4string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. 
 
 In this chunk, I will create 2 reference layers. The `main_layer` will be used for resampling the data, while the `mask_layer` will be used for masking.
 
-```{r crop reference layers}
+```{r crop}
 
 # ext of the reference layer
 ext(global_atc)
@@ -191,15 +195,15 @@ terra::crs(x = main_layer, proj = TRUE)
   
 ```
 
-### 2.2 Tidying historical data
+## 2.3 Tidying historical data
 
 Finally, I will crop and mask the rasters. Layers will be cropped to the smallest rectangular extent between the bioclim layers and `global_atc`. I will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326` and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`. 
 
-This chunk will take a very long time to run, so maybe find a good book to read.
+This chunk will take a very long time to run... so maybe find a good book to read.
 
 ```{r loop to tidy rasters}
   
-if(TRUE) {
+if(FALSE) {
 
   # file path to directory
   mypath <- file.path(here() %>% 
@@ -233,17 +237,175 @@ if(TRUE) {
       
       #write out the new resampled rasters!
       terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), filetype = "GTiff", overwrite = FALSE)
+      
+      # remove object once its done
+      rm(rast.hold)
 
   }
   
 }
 
+```
+
+Finally, I will convert the rasters to the `.ascii` format required by MaxEnt. I will also convert all `NAs` to `-9999`, as required by MaxEnt.
+
+```{r conversion of .tif to .asc files}
+
+if(FALSE){
+  
+  mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  for(a in seq_along(env.files)){
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # convert NAs to -9999
+    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+    }
+    
+}
+
+```
+
+## 2.4 Tidying CMIP6 data
+
+Now, we will need to go through all of the above steps in section 2.3 for the CMIP6 versions of the rasters. 
+
+```{r get file names}
+ 
+# file path to directory
+mypath <- file.path(here() %>% 
+                      dirname(),
+                    "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# I will load in the files and then get the new names I would like to give them
+
+# load in bioclim layers to be cropped- the original .tif files
+env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = FALSE) %>%
+  # get rid of endings
+  gsub(pattern = "_V.2.1.tif", replacement = "") %>%
+  # crop out some detail
+  gsub(pattern = "-esm4_ssp", replacement = "_") %>%
+  tolower()
+
+# more edits to file names
+output.files <- output.files %>%
+  gsub(pattern = "chelsa_", replacement = "") 
+
+```
+
+```{r loop to tidy rasters}
+  
+if(TRUE) {
+
+  # file path to directory
+  mypath <- file.path(here() %>% 
+                      dirname(),
+                    "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+  
+  # view list of filetypes for terra, use .ascii
+    terra::gdal(drivers = TRUE)
+  
+    # loop to crop extent for all files
+    for(a in seq_along(env.files)) {
+      
+      # load each raster into temp object
+      rast.hold <- terra::rast(env.files[a])
+      
+      
+      
+      # begin edits
+      # crop new rasters to extent
+      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+      
+      # mask the bioclim layer by global_atc
+      rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+      
+      # set crs
+      crs(rast.hold) <- "EPSG:4326"
+      
+      #resample to fit the extent/resolution of the main layer global_bio1
+      #use bilinear interpolation, since values are continuous
+      rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+      
+      #write out the new resampled rasters!
+      terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), filetype = "GTiff", overwrite = FALSE)
+      
+      # remove object once its done
+      rm(rast.hold)
+
+  }
+  
+}
+
+```
+
+```{r conversion of .tif to .asc files}
+
+if(FALSE){
+  
+  mypath <- file.path(here() %>%
+                        dirname(),
+                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  for(a in seq_along(env.files)) {
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # convert NAs to -9999
+    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+    }
+    
+}
 
 ```
 
 
 
-### 2.3 Downsize raster resolution
+
+
+
+
+# 3. Visualize Rasters
+
+
+
+# 4. Assess Colinearity
+
+I will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables.
 
 ```{r downsize raster resolution}
 
@@ -251,24 +413,27 @@ if(FALSE) {
   
   mypath <- file.path(here() %>% 
                         dirname(),
-                      "maxent/historical_climate_rasters/wc2.1_30arcsec")
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
   #list env layers, load
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = T)
-  env.short <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = F)
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE)
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)
   # I had to modify "pattern" to not include any .tif.aux.xml files
   
   # loop to downsample rasters for colinearity analysis
   for(a in seq_along(env.files)){
     
-    rast.hold <- raster(env.files[a])
+    rast.hold <- terra::rast(env.files[a])
     
-    down_holder <- terra::aggregate(rast.hold, 
-                                     fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
-                                     fun = mean, # take mean of these cells
-                                     expand = TRUE, 
-                                     na.rm = TRUE, 
-                                     filename = file.path(mypath, "v1_downsampled", env.short[a]), overwrite = T)
+    rast.hold <- terra::aggregate(rast.hold, 
+                                  fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
+                                  fun = mean, # take mean of these cells
+                                  # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
+                                  na.rm = TRUE, 
+                                  filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
     
   }
   
@@ -276,13 +441,103 @@ if(FALSE) {
 
 ```
 
-### 2.4 Convert to .ascii format
 
 
 
-### 2.5 Tidying CMIP6 data
 
-Now, we will need to go through all of the above steps in section 2 for the CMIP6 versions of the rasters. 
+
+
+```{r Take pearson correlation of raster layers}
+
+if(FALSE){
+  
+  mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  # load downsampled layers and stack for raster.cor.matrix command
+
+  # list of layer paths
+  env.files <- list.files(path = file.path(mypath, "v1_downsampled"), pattern = "\\.tif$", full.names = TRUE)
+  # stack downsampled layers
+  env <- terra::c(env.files)
+  
+  env@layers
+  
+  # evaluate correlations for raster layers
+  # create a correlation matrix for picking model layers
+  env.cor <- ENMTools::raster.cor.matrix(env, method = "pearson")
+  
+  # write out correlations as .csv.
+  write.csv(x = env.cor, file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"), col.names = TRUE, row.names = TRUE)
+  
+}
+
+```
+
+```{r tidy env.cor}
+
+env.cor2 <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"))
+# in this file, numbers of climatic variables were manually changed to include leading 0's (01 instead of 1)
+
+env.cor2_tidy <- as.data.frame(env.cor2) 
+
+row.names(env.cor2_tidy) <- env.cor2_tidy$...1
+# read in data and make 1st column rownames
+
+env.cor2_tidy <- env.cor2_tidy[, which(names(env.cor2_tidy) != "...1")]
+
+env.cor2_tidy <- env.cor2_tidy %>%
+  select(order(colnames(env.cor2_tidy))) %>%
+  abs(.)
+
+write.csv(x = env.cor2_tidy, file = file.path(here(), "data", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
+# row names will be re-ordered in excel
+
+```
+
+
+# Appendix
+
+## Additional environmental covariates  
+
+Along with the 19 traditional bioclimatic variables, CHELSA has created about [29 additional variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) that may help to explain the SLF invasion in N. America. I will include 4 metrics of growing degree day. Several studies have attempted to characterize the lower threshold for egg development and have found numbers between 8-13C (Maino et.al, 2022). Maino et.al also found that egg mortality increased significantly under 10C (Maino et.al, 2022). We will include various measures of degree day with a 10C threshold. Here are the additional variables I will add to the models:
+
+* `GDD10`: Growing degree days heat sum above 10°C
+* `NGD10`: Number of growing degree days
+* `GDGFGD10`: First growing degree day above 10°C
+* `GDDLGD10`: Last growing degree day above 10°C
+
+### Download historical DD variables
+
+```{r download historical CHELSA data}
+
+if(FALSE) {
+
+  # historical data
+  chelsa_historic_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_1981-2010_bioclim_URLs.txt"),
+                                col_names = FALSE) %>%
+    as.data.frame() %>%
+    dplyr::select("X1") %>%
+    dplyr::rename("URL" = "X1")
+  
+  # select only DD URLs
+  chelsa_historic_URLs <- slice(.data = chelsa_historic_URLs, c(32, 35, 38, 55))
+  
+  # loop to download historical URLs
+  for(i in 1:nrow(chelsa_historic_URLs)) {
+    
+    file.tmp <- chelsa_historic_URLs[i, ]
+    
+    utils::browseURL(url = file.tmp)
+    
+  }
+
+}
+
+```
+
+Files were placed in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals"`.
 
 ```{r get file names}
  
@@ -294,10 +549,14 @@ mypath <- file.path(here() %>%
 # I will load in the files and then get the new names I would like to give them
 
 # load in bioclim layers to be cropped- the original .tif files
-env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = T)
+env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = T) %>%
+  # extract the DD variables
+    grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE)
 
 # output file names
 output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = F) %>%
+  # extract the DD variables
+  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE) %>%
   # get rid of filetype endings
   gsub(pattern = ".tif", replacement = "") %>%
   # crop off ending 
@@ -310,11 +569,75 @@ output.files <- output.files %>%
 
 ```
 
-# 3. Visualize Rasters
 
 
 
-# 4. Assess Colinearity
+
+### Download CMIP6 DD variables
+
+```{r download CMIP6 CHELSA data}
+
+if(FALSE) {
+
+  # ssp370 data
+  chelsa_370_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
+                                col_names = FALSE) %>%
+    as.data.frame() %>%
+    dplyr::select("X1") %>%
+    dplyr::rename("URL" = "X1")
+  
+  
+  # select only DD URLs 
+  chelsa_370_URLs <- slice(.data = chelsa_370_URLs, c(23, 26, 29, 42))
+  
+  # loop to download ssp370 URLs
+  for(i in 1:nrow(chelsa_370_URLs)) {
+    
+    file.tmp <- chelsa_370_URLs[i, ]
+    
+    utils::browseURL(url = file.tmp)
+    
+  }
+
+}
+
+```
+
+These files were stored manually in `"maxent/future_climate_rasters/chelsa2.1_30arcsec/originals"`.
+
+```{r get file names}
+ 
+# file path to directory
+mypath <- file.path(here() %>%
+                      dirname(),
+                    "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# I will load in the files and then get the new names I would like to give them
+
+# load in bioclim layers to be cropped- the original .tif files
+env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = T) %>%
+  # extract the DD variables
+  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = F) %>%
+  # extract the DD variables
+  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE) %>%
+  # get rid of endings
+  gsub(pattern = "_V.2.1.tif", replacement = "") %>%
+  # crop out some detail
+  gsub(pattern = "-esm4_ssp", replacement = "_") %>%
+  tolower()
+
+# more edits to file names
+output.files <- output.files %>%
+  gsub(pattern = "chelsa_", replacement = "") 
+
+```
+
+
+
+
 
 
 
@@ -328,4 +651,10 @@ Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Z
 
 Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. https://doi.org/10.16904/envidat.228.v2.1
 
+Krasting, John P.; John, Jasmin G; Blanton, Chris; McHugh, Colleen; Nikonov, Serguei; Radhakrishnan, Aparna; Rand, Kristopher; Zadeh, Niki T.; Balaji, V; Durachta, Jeff; Dupuis, Christopher; Menzel, Raymond; Robinson, Thomas; Underwood, Seth; Vahlenkamp, Hans; Dunne, Krista A.; Gauthier, Paul PG; Ginoux, Paul; Griffies, Stephen M.; Hallberg, Robert; Harrison, Matthew; Hurlin, William; Malyshev, Sergey; Naik, Vaishali; Paulot, Fabien; Paynter, David J; Ploshay, Jeffrey; Reichl, Brandon G; Schwarzkopf, Daniel M; Seman, Charles J; Silvers, Levi; Wyman, Bruce; Zeng, Yujin; Adcroft, Alistair; Dunne, John P.; Dussin, Raphael; Guo, Huan; He, Jian; Held, Isaac M; Horowitz, Larry W.; Lin, Pu; Milly, P.C.D; Shevliakova, Elena; Stock, Charles; Winton, Michael; Wittenberg, Andrew T.; Xie, Yuanyu; Zhao, Ming (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP. Version YYYYMMDD[1].Earth System Grid Federation. https://doi.org/10.22033/ESGF/CMIP6.1407
+
+Maino, J. L., R. Schouten, J. C. Lye, P. A. Umina, and O. L. Reynolds. 2022. Mapping the life-history, development, and survival of spotted lantern fly in occupied and uninvaded ranges. Biological Invasions 24:2155–2167. 10.1007/s10530-022-02764-z
+
 Weiss, D. J., A. Nelson, H. S. Gibson, W. Temperley, S. Peedell, A. Lieber, M. Hancher, et al. 2018. “A Global Map of Travel Time to Cities to Assess Inequalities in Accessibility in 2015.” Nature 553 (7688): 333–36. https://doi.org/10.1038/nature25181.
+
+
