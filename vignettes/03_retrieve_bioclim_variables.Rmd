@@ -12,9 +12,9 @@ First, I will download the data from CHELSA into a local library using ...
 
 Second, I will tidy the data and put them in the proper format for MaxEnt. 
 
-Third, I will visualize the rasters.
+Third, I will assess the level of co-linearity between the rasters
 
-Fourth, I will assess the level of co-linearity between the rasters
+Fourth, I will visualize the rasters.
 
 # Setup
 
@@ -27,25 +27,26 @@ here()
 # here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
 library(devtools)
+# devtools::install_github("danlwarren/ENMTools")
+library(ENMTools) # env covariates colinearity
+
 library(terra)
-library(ENMtools) # env covariates colinearity
+library(patchwork)
 
 ```
 
 # 1. Retrieve CHELSA bioclim rasters
 
-First, I will download the bioclim data into a local directory. I recommend downloading these data into a separate directory from this package. Since I am using a directory outside of the immediate package, I will create an object to define the file path at the beginning of each chunk. This pathing will still use `here::here()` to start at the package root folder. First, I will download the historical climate data from CHELSA. My first approach to downloading these data is to create a loop to open each URL in a web browser. Later, I will functionalize this so that the download can be more flexible. 
-
-The URLs to the bioclim data that were downloaded from CHELSA are stored in `data-raw/CHELSA` within the package directory. I will be using two different versions of the CHELSA bioclim variables for my analysis: 
+First, I will download the bioclim data into a local directory. I recommend downloading these data into a separate directory from this package. Since I am using a directory outside of the immediate package, I will create an object to define the file path at the beginning of each chunk. This pathing will still use `here::here()` to start at the package root folder. First, I will download the historical climate data from CHELSA. The URLs to the bioclim data that were downloaded from CHELSA are stored in `data-raw/CHELSA` within the package directory. I will be using two different versions of the CHELSA bioclim variables for my analysis: 
 
 1. Historical- time period 1981-2010
 2. Climate change predictions- time period 2041-2070, GFDL-ESM4 model, SSP3-70
 
-The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27-57 other climatologies. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will only download the actual files for the 19 bioclim variables.
-
-*Note*, if you would like to also download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
+The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27 other distinct climatologies, available for both historical datasets and climate change models. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will download the 19 bioclim variables. We will also download and include four metrics of the Degree Day with a 10C threshold. If you would like to download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
 
 ### 1.1 Historical
+
+My first approach to downloading these data is to create a loop to open each URL in a web browser (be ready, as it literally just opens whatever URLs are selected from the list in a browser). Later, I will functionalize this so that the download can be more flexible. 
 
 ```{r download historical CHELSA data}
 
@@ -74,11 +75,11 @@ if(FALSE) {
 
 ```
 
-With the current loop construction, these files can only be downloaded to the downloads folder, so they will need to be manually moved to the destination directory. These files are stored manually in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals"`.
+With the current loop construction, these files can only be downloaded to my PC's downloads folder, so they will need to be manually moved to the destination directory (outside of the package root folder because they are large). These files were stored manually in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals"`.
 
 ### 1.2 CMIP6
 
-Next, I will download data from the provided CMIP6 models. I will be downloading data the SSP3-70 [SSP scenarios](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change/) (see link for an explanation of these scenarios). I will use the [GFDL-ESM4](https://www.wdc-climate.de/ui/cmip6?input=CMIP6.CMIP.NOAA-GFDL.GFDL-ESM4) CMIP6 model. According to the CHELSA documentation, if all models are not used together, then CMIP6 model usage should follow the given priority (see documentation linked above).
+Next, I will download data from the provided CMIP6 models. I will be downloading data the SSP3-70 [SSP scenarios](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change/) (see link for an explanation of these scenarios). I will use the [GFDL-ESM4](https://www.wdc-climate.de/ui/cmip6?input=CMIP6.CMIP.NOAA-GFDL.GFDL-ESM4) CMIP6 model. According to the CHELSA documentation, if all five available models are not used together, then CMIP6 model usage should follow the given priority (see documentation linked above).
 
 ```{r download CMIP6 CHELSA data}
 
@@ -112,28 +113,28 @@ These files were stored manually in `"maxent/future_climate_rasters/chelsa2.1_30
 
 # 2. Tidy for MaxEnt
 
-Next, I need to tidy these rasters for MaxEnt. I will need to mask any data that is over the oceans or other bodies of water. I will also need to create downsized versions of these variables that can be used in step 4 to assess the amount of autocorrelation between the different rasters. Lastly, I will rename the files and convert them to the required `.ascii` format for MaxEnt.
+Next, I need to tidy these rasters for MaxEnt. I will need to mask any data that is over the oceans or other bodies of water. I will also need to create downsized versions of these variables that can be used in step 4 to assess the level of correlation between the different variables. Lastly, I will rename the files and convert them to the required `.ascii` format for MaxEnt.
 
-First, I will mask the CHELSA rasters using a dataset called ["global access to cities"](http://www.nature.com/articles/nature25181), which is a proxy for human impact and will be used in the final anaylsis. This dataset contains high-resolution mapping of the continents, so it is a good choice for cropping the other layers. Next, I will pick a bioclim layer and use it as a reference to resample the new layers after setting the CRS and extent.
+I will mask the CHELSA rasters using a dataset called ["global access to cities"](http://www.nature.com/articles/nature25181), which is a proxy for human impact and will be used in the final anaylsis. This dataset contains high-resolution mapping of the continents, so it is a good choice as a reference layer for the masking. I will use `bio1` (annual mean temperature) as a reference to resample the new layers after setting the CRS and extent.
 
 ## 2.1 Load in files
 
 ```{r load in reference layers}
 
-# set path
+# set path to external directory
 mypath <- file.path(here() %>% 
                           dirname(),
-                        "maxent")
+                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals")
 
 # global access to cities
-global_atc <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "wc2.1_30arcsec", "originals", "2015_accessibility_to_cities_v1.0.tif"))
+global_atc <- terra::rast(x = file.path(mypath, "2015_accessibility_to_cities_v1.0.tif"))
 
 # 1st bioclim layer as reference
-global_bio1 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "originals", "CHELSA_bio1_1981-2010_V.2.1.tif"))
+global_bio1 <- terra::rast(x = file.path(mypath, "CHELSA_bio1_1981-2010_V.2.1.tif"))
 
 ```
 
-I will get a list of the files that I need to modify. I will also create an object containing the new names I will assign to the files.
+We will get a list of the files that I need to modify. We will also create an object containing the new names assigned to the files to simplify the naming.
 
 ```{r get file names}
  
@@ -157,15 +158,19 @@ output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.
 
 # more edits to file names
 output.files <- output.files %>%
-  gsub(pattern = "chelsa_", replacement = "") 
+  gsub(pattern = "chelsa_", replacement = "") %>%
+  # specifically edit the access to cities naming
+  gsub(pattern = "2015_accessibility_to_cities_v1.0", replacement = "atc_2015")
 
 ```
 
+Now that we have our files and reference layers loaded in and names chosen, we can begin reformatting these layers.
+
 ## 2.2 Prepare reference layers
 
-The first step is to crop `global_atc` and `global_bio1` to the desired extent. I need to check on the correct CRS to use because the Proj4string notation (which I had previously used) is expiring. The proj4string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. 
+The first step is to crop the reference layers `global_atc` and `global_bio1` to the desired extent. We will use the smallest extent shared between both layers. We need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) is expiring. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. 
 
-In this chunk, I will create 2 reference layers. The `main_layer` will be used for resampling the data, while the `mask_layer` will be used for masking.
+In this chunk, we will create 2 reference layers. The `main_layer (global_bio1)` will be used for resampling the data, while the `mask_layer (global_atc)` will be used for masking.
 
 ```{r crop}
 
@@ -174,7 +179,7 @@ ext(global_atc)
 # ext of the bioclim layers
 ext(global_bio1)
 
-# set ext to the smallest whole numbers between the layers
+# set ext to the smallest whole number shared between the layers
 ext.obj <- terra::ext(-180, 179, -60, 83)
 
 # create main layer for future cropping, crop to new ext
@@ -197,7 +202,7 @@ terra::crs(x = main_layer, proj = TRUE)
 
 ## 2.3 Tidying historical data
 
-Finally, I will crop and mask the rasters. Layers will be cropped to the smallest rectangular extent between the bioclim layers and `global_atc`. I will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326` and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`. 
+Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326`, which is equivalent to the `proj4` string I had previously been using, and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`. 
 
 This chunk will take a very long time to run... so maybe find a good book to read.
 
@@ -247,7 +252,7 @@ if(FALSE) {
 
 ```
 
-Finally, I will convert the rasters to the `.ascii` format required by MaxEnt. I will also convert all `NAs` to `-9999`, as required by MaxEnt.
+Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. We will also convert all `NAs` to `-9999`, as required by MaxEnt.
 
 ```{r conversion of .tif to .asc files}
 
@@ -283,9 +288,11 @@ if(FALSE){
 
 ```
 
+These data can now be used in a MaxEnt model!
+
 ## 2.4 Tidying CMIP6 data
 
-Now, we will need to go through all of the above steps in section 2.3 for the CMIP6 versions of the rasters. 
+We will need to go through all of the above steps in section 2.3 for the CMIP6 versions of the rasters. 
 
 ```{r get file names}
  
@@ -315,7 +322,7 @@ output.files <- output.files %>%
 
 ```{r loop to tidy rasters}
   
-if(TRUE) {
+if(FALSE) {
 
   # file path to directory
   mypath <- file.path(here() %>% 
@@ -361,7 +368,7 @@ if(TRUE) {
 
 ```{r conversion of .tif to .asc files}
 
-if(FALSE){
+if(TRUE){
   
   mypath <- file.path(here() %>%
                         dirname(),
@@ -393,19 +400,11 @@ if(FALSE){
 
 ```
 
+# 3. Assess Colinearity
 
+Before using any of these layers in a MaxEnt model, we need to ensure that none of the layers are significantly correlated to each other (I expect that most of them will be, as they are all derived from either temperature or precipitation). I will be using a threshold of 0.7 pearson's correlation or lower to select which layers I use.
 
-
-
-
-
-# 3. Visualize Rasters
-
-
-
-# 4. Assess Colinearity
-
-I will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables.
+We will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables. We will be using `terra::aggregate()` to combine cells in a 2x2 grid fashion and take the mean of the 4 cells.
 
 ```{r downsize raster resolution}
 
@@ -423,6 +422,7 @@ if(FALSE) {
   # loop to downsample rasters for colinearity analysis
   for(a in seq_along(env.files)){
     
+    # holding object
     rast.hold <- terra::rast(env.files[a])
     
     rast.hold <- terra::aggregate(rast.hold, 
@@ -441,15 +441,11 @@ if(FALSE) {
 
 ```
 
-
-
-
-
-
+Now, we will perform the correlation using `ENMTools::raster.cor.matrix()`. This chunk will also take awhile, so its time to break out that book again.
 
 ```{r Take pearson correlation of raster layers}
 
-if(FALSE){
+if(TRUE){
   
   mypath <- file.path(here() %>% 
                         dirname(),
@@ -459,14 +455,15 @@ if(FALSE){
 
   # list of layer paths
   env.files <- list.files(path = file.path(mypath, "v1_downsampled"), pattern = "\\.tif$", full.names = TRUE)
+  
   # stack downsampled layers
-  env <- terra::c(env.files)
+  env <- c(x = terra::rast(env.files))
+  # use nlyr, a command of the function terra::dimensions() to see if stacking was successful
+  nlyr(env)
   
-  env@layers
   
-  # evaluate correlations for raster layers
   # create a correlation matrix for picking model layers
-  env.cor <- ENMTools::raster.cor.matrix(env, method = "pearson")
+  env.cor <- ENMTools::raster.cor.matrix(env = env, method = "pearson")
   
   # write out correlations as .csv.
   write.csv(x = env.cor, file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"), col.names = TRUE, row.names = TRUE)
@@ -475,26 +472,78 @@ if(FALSE){
 
 ```
 
+We will use `ENMTools::raster.cor.plot()` from the same package to plot the results of the correlation analysis.
+
+```{r plot correlation matrix}
+
+ENMTools::raster.cor.plot(env)
+
+```
+
+
+
 ```{r tidy env.cor}
 
-env.cor2 <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"))
-# in this file, numbers of climatic variables were manually changed to include leading 0's (01 instead of 1)
+env.cor2 <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv")) 
 
 env.cor2_tidy <- as.data.frame(env.cor2) 
-
+# convert rownames column to rownames
 row.names(env.cor2_tidy) <- env.cor2_tidy$...1
-# read in data and make 1st column rownames
-
+# get rid of ...1 column
 env.cor2_tidy <- env.cor2_tidy[, which(names(env.cor2_tidy) != "...1")]
 
+# reorder columns and take absolute values of correlations
 env.cor2_tidy <- env.cor2_tidy %>%
   select(order(colnames(env.cor2_tidy))) %>%
   abs(.)
 
 write.csv(x = env.cor2_tidy, file = file.path(here(), "data", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
+
 # row names will be re-ordered in excel
 
 ```
+
+
+
+# 4. Visualize rasters
+
+```{r }
+
+mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# load in bio 1
+bio1 <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_global.tif"))
+
+bio1_plot <- ggplot() +
+  geom_tile(data = as.data.frame(bio1), 
+              aes(x = x, y = y, fill = `bio1_1981-2010_global`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "CHELSA bio 1") +
+  coord_quickmap()
+
+# load in gdd 10
+gdd10 <- terra::rast(x = file.path(mypath, "v1_downsampled", "gdd10_1981-2010_global.tif"))
+
+gdd10_plot <- ggplot() +
+  geom_tile(data = as.data.frame(bio1), 
+              aes(x = x, y = y, fill = `bio1_1981-2010_global`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "CHELSA 10C Growing Degree Days") +
+  coord_quickmap()
+
+# patchwork
+bio1_plot / gdd10_plot
+
+```
+
 
 
 # Appendix
@@ -646,8 +695,6 @@ output.files <- output.files %>%
 Huron, N. A., Behm, J. E. & Helmus, M. R. 2022. Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5:1–11. https://doi.org/10.1038/s42003-022-03580-w
 
 Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. https://doi.org/10.1038/sdata.2017.122
-
-Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E,, Linder, H.P., Kessler, M.. Data from: Climatologies at high resolution for the earth’s land surface areas. Dryad Digital Repository.http://dx.doi.org/doi:10.5061/dryad.kd1d4
 
 Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. https://doi.org/10.16904/envidat.228.v2.1
 
