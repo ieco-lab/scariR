@@ -16,6 +16,8 @@ The second step will be to combine these records with data gathered from peer-re
 
 The final step of this analysis will be to organize the different datasets into a single `.csv` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined. 
 
+Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` and that use `spocc::occ()` require a high memory allocation.  
+
 # Setup
 
 First, I will load in the necessary packages.
@@ -28,15 +30,17 @@ library(here) #making directory pathways easier on different instances
 here()
 # here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
-library(devtools)
+library(devtools) # installing packages not from CRAN
 # devtools::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
 library(lydemapr) # field survey data for SLF
 library(taxize) # get taxonomic ids
 library(spocc) #query gbif and format as a dataframe
 
 library(spThin) # spatial thinning of points
+# install_github("jasonleebrown/humboldt")
 library(humboldt) # spatial thinning of points
 library(tcltk) #humboldt progress bar
+# remotes::install_github("ropensci/scrubr")
 library(scrubr) #clean records for gbif data
 
 library(patchwork) #nice plots
@@ -742,10 +746,12 @@ if(FALSE) {
 
 ```
 
-# Citations
+# References
 
-1. The code for this section was pulled directly from the [slfrsk research compendium](https://ieco-lab.github.io/slfrsk/articles/vignette-003-get-gbif-data.html), with modifications.
+1. The code for this section was loosely based on code from the [slfrsk research compendium](https://ieco-lab.github.io/slfrsk/articles/vignette-003-get-gbif-data.html), with modifications.
 
 2. Bona, S. D., L. Barringer, P. Kurtz, J. Losiewicz, G. R. Parra, and M. R. Helmus. 2023, January 30. lydemapr: an R package to track the spread of the invasive Spotted Lanternfly (Lycorma delicatula, White 1845) (Hemiptera, Fulgoridae) in the United States. bioRxiv. 
 
 3. Lycorma delicatula (White, 1845) in GBIF Secretariat (2022). GBIF Backbone Taxonomy. Checklist dataset https://doi.org/10.15468/39omei accessed via GBIF.org on 2023-07-13.
+
+
