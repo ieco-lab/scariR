@@ -1,0 +1,406 @@
+---
+title: "Analysis of SLF invasion stage and models based on Gallien et.al, 2012 methodology"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-08-09"
+output: html_document
+---
+
+# Overview
+
+In this vignette, I will compare known SLF presences with the predicted SLF suitability to infer an "invasion stage" for each point. This will be done by extracting the predicted suitability values at each known SLF point from both models. I will then binarize these rasters (suitable/unsuitable) and use these versions to infer the level of range filling and invasion stage of the points. I ran two trial models, v5_global and v5_regional that will be used to build this analysis. 
+
+For my analysis, I need to compare the predictions of both the regional and global models in the invaded region. I will begin by comparing the performance of each model at each point across the invaded range. Gallien et.al did this for both observed presences and pseudo-absences ("background points"), but in this vignette I will only use known SLF presences. The extracted values of the points were used to produce a boxplot of predicted suitability for the global vs the regional model. I will create a boxplot of the values and plot the points over the rasters
+
+Next, I will need to infer the amount of range filling and invasion stage of SLF according to each model. In Gallien et.al, this was done by binarizing each raster and overlaying them. The raster values are summed I will then overlay known SLF presences.  There are a few steps to this process:
+
+1. Create suitable vs unsuitable classes based on the range of values in each raster (likely the suitability threshold rule chosen in MaxEnt, MTP).
+2. Convert each output to binary (suitable/unsuitable) based on these suitability thresholds 
+2. Mosaic the rasters and sum their values.
+2. Re-classify summed raster as areas where both agree on presence, both agree on absence, or one classifies and the other classifies absent (4 total categories)
+
+Finally, we will calculate the sensitivity and specificity of each model manually.
+
+1. Calculate sensitivity (proportion of presences correctly guessed) for each model
+2. calculate specificity (proportion of absences correctly guessed) for each model
+
+THIS IS WHERE THE 0.5 THRESHOLD COMES IN
+METHODS PENDING
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)
+
+library(here) 
+# here() is set at the root folder of this package
+
+library(terra)
+
+```
+
+```{r load in SLF data, echo = FALSE}
+
+slf_points <- read_csv(file = file.path(here(), "data", "slf_all_final_coords_v0_2023-07.csv")) %>%
+  dplyr::select(!species) # species column not necessary in this analysis
+  
+```
+
+```{r load in rasters}
+
+# path to directory I will be working in
+   mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/models")
+
+# load in regional model
+v5_regional1 <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_regional", "Lycorma_delicatula_avg.asc"))
+
+# load in global model
+v5_global1 <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_global", "Lycorma_delicatula_avg.asc"))
+
+# rename values
+names(v5_regional1) <- "v5_regional"
+names(v5_global1) <- "v5_global"
+
+```
+
+I will crop the global model just to N America because this raster requires a lot of computing power to process at such a high resolution.
+
+```{r crop v5_global}
+
+ext.obj <- terra::ext(-133.593750, -52.294922, 25.085599, 55.304138)
+
+v5_global1 <- terra::crop(x = v5_global1, y = ext.obj)
+
+```
+
+# Extract SLF point-wise suitability
+
+I will stack the rasters and extract values from both layers that can be used to create a scatter plot.
+
+```{r extract point values}
+
+# create raster stack
+v5_stack <- c(v5_regional1, v5_global1)
+
+# extract values
+slf_suitability <- terra::extract(x = v5_stack, 
+                                  y = slf_points, 
+                                  cells = TRUE, # get cell #s
+                                  xy = TRUE, # get coordinates
+                                  ID = TRUE # give ID column
+                                  ) 
+
+```
+
+```{r tidy suitability df}
+
+slf_suitability <- slf_suitability %>%
+  filter(!is.na(v5_regional) | !is.na(v5_global), # I want to keep NAs that are only in 1 column
+         !is.nan(x) | !is.nan(y)) # these NaNs are data points outside the raster extent (native range)
+
+# convert NAs in these columsn to 0
+slf_suitability$v5_regional[is.na(slf_suitability$v5_regional)] <- 0
+slf_suitability$v5_global[is.na(slf_suitability$v5_global)] <- 0
+
+```
+
+Now that the values have been extracted, lets plot them.
+
+```{r plot SLF suitability values}
+
+slf_suitability_scatter <- ggplot() +
+  geom_vline(xintercept = 0.5) + 
+  geom_hline(yintercept = 0.5) + # quadrant lines
+  geom_point(data = slf_suitability, 
+             aes(x = v5_global, y = v5_regional), 
+             color = "darkblue", size = 1) +
+  ggtitle("suitability of known SLF points in global vs regional model") +
+  scale_x_continuous(name = "suitability in global model", limits = c(0, 1)) +
+  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1)) +
+  theme_minimal()
+
+```
+
+(interpretation)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# infer level of range filling
+
+First, I will create matrix objects that will be used to reclassify the output rasters to a binary predictor of suitability. 0.5 will be the threshold: anything above 0.5 will be considered suitable, while anything below will not be. This threshold is essential for my invasion stage anaylsis further downstream.
+
+To reclassify, package terra takes a 3-column matrix for its "classify" function, which re-classifies groups of values to other values. I will create one for the global model output and one for the regional model output. The reason for having two separate matrices is because I will need to differentiate between a "suitable" spot on the global and regional rasters. Because of this, I will be encoding the rasters into base-2 binary so that the end result is 4 categories of values (the idea for this was found in [this forum](https://gis.stackexchange.com/questions/127055/comparing-and-finding-inaccuracies-in-two-raster-layers)). For the regional raster, I will encode the logistical output of MaxEnt into these values:
+
+*Regional unsuitable = 0-0.5 -> 00000001 = 1
+*Regional suitable = 0.51-1 ->  00000010 = 2
+
+For the global rasters, I will encode the outputs into these values:
+
+*Global unsuitable = 0-0.5 -> 00000100 = 4
+*Global suitable = 0.51-1 ->  00001000 = 8
+
+By encoding the rasters into base-2, I have created only 4 possible values of the raster layers, which can be translated into 4 categories:
+
+*Unsuitable Agreement = 5 (00000101)
+*Suitable Agreement = 10 (00001010)
+*unsuitable regional/suitable global = 9 (00001001)
+*Suitable regional/unsuitable global = 6 (00000110)
+
+### 1. convert output rasters to binary predictors
+
+To convert the rasters to binary predictors of presence / absence, first I will create the classification matrices needed by the `terra` package.
+
+
+
+
+
+
+Before converting, lets check the range of values
+
+```{r minmax of rasters}
+
+# get the range of the values in the raster
+terra::minmax(v5_regional1) %>%
+  format(., scientific = FALSE) # convert scientific notation to decimals
+
+
+# get the range of the values in the raster
+terra::minmax(v5_global1) %>%
+  format(., scientific = FALSE)
+
+# the values go from negative to positive infinity, which is an issue. So we will change our global classes to reflect this
+
+```
+
+
+```{r terra required classification matrices}
+
+# create regional suitability value matrix for terra
+regional_classes <- data.frame(
+  from = c(0, 0.50),
+  to = c(0.5000000000001, 1),
+  becomes = c(strtoi(00000001, base = 2), strtoi(00000010, base = 2)) # the strtoi function converts to base-2
+)
+
+global_classes <- data.frame(
+  from = c(0, 0.50),
+  to = c(0.5000000000001, 1),
+  becomes = c(strtoi(00000100, base = 2), strtoi(00001000, base = 2))
+)
+
+```
+
+For some rasters, the lower end of the range may go down to -9999, because this is the value that we assigned to NAs.
+
+Now I can reclassify the MaxEnt outputs. I will load in the averaged predictions for the global and regional models and reclassify their values based on the two matrices above.
+
+```{r reclassify maxent outputs}
+
+if(FALSE) {
+
+  # path to directory I will be working in
+   mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/models")
+  
+   
+  
+  # reclassify and write regional raster
+  v5_regional2 <- terra::classify(x = v5_regional1, 
+                                  rcl = regional_classes,
+                                  right = NA, # close both ends of the range of classification values
+                                  others = NA,
+                                  filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_regional.asc"), # also write to file
+                                  overwrite = FALSE) 
+
+  # check minmax again
+  terra::minmax(v5_regional2) %>%
+    format(., scientific = FALSE)
+  
+  
+  
+  
+  
+  
+  # reclassify and write global raster
+  v5_global2 <- terra::classify(x = v5_global1, 
+                                rcl = global_classes, 
+                                right = NA, 
+                                others = NA,
+                                filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_global.asc"), 
+                                overwrite = FALSE) 
+
+  # check minmax again
+  terra::minmax(v5_global2) %>%
+    format(., scientific = FALSE)
+  
+}
+
+```
+
+Now that the rasters have been converted to binary, we will visualize them to ensure that the process worked. Since the same process was done to both the regional and global models, I will only plot the regional model because it is smaller and will take far less time to render.
+
+```{r visualize binarized rasters}
+
+# path to directory I will be working in
+mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/models")
+
+# load in binary raster just created and convert to df
+v5_regional2_df <- terra::rast(x = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_regional.asc")) %>%
+  terra::as.data.frame(., xy = TRUE) %>%
+  na.omit()
+
+# check for the number of unique values in the raster values column
+unique(v5_regional2_df$Lycorma_delicatula_avg)
+# it seems that the reclassification worked! Lets map it to be sure.
+
+# there are some extraneous values that need to be changed.
+# First, there are some leftover unsuitable areas (-9998 and -9997) that presumably got 
+
+# vector of map values to classify scale
+reclassify_values <- c(1, 2)
+
+# vector of colors to classify scale
+reclassify_colors <- c(
+  "azure4",
+  "darkblue"
+)
+
+# plot regional binary
+(v5_regional2_plot <- ggplot() +
+  geom_raster(data = v5_regional2_df, 
+              aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Predicted current regional niche for \n Lycorma delicatula (binary suitability)") +
+  coord_equal() +
+  scale_discrete_manual(name = "suitability for SLF",
+                        values = reclassify_colors, # new color bins
+                        labels = reclassify_values, # map values that match color bins
+                        aesthetics = "fill")
+)
+  
+# plot regional raw
+(v5_regional_raw_plot <- ggplot() +
+  geom_raster(data = terra::as.data.frame(v5_regional1, xy = TRUE), 
+              aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Predicted current regional niche for \n Lycorma delicatula") +
+  coord_equal()
+)
+
+```
+
+From the plots, we see that the binary conversion worked. Next, I will need to stack the reclassified global and regional rasters and add them into a single raster output. This should give me the a raster with 4 classes (Unsuitable Agreement = 5, Suitable Agreement = 10, unsuitable regional/suitable global = 9, Suitable regional/unsuitable global = 6. The mosaic function combines spatRasters that overlap in extent into a new raster, via the function specified (addition, in this case).
+
+```{r mosaic rasters}
+
+if(TRUE) {
+  
+  mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/models/working_dir")
+  
+  # load in reclassified global raster
+  v5_global3 <- terra::rast(x = file.path(mypath, "Lycorma_delicatula_avg_binary_v5_global.asc"))
+  
+  # load in reclassified regional raster
+  v5_regional3 <- terra::rast(x = file.path(mypath, "Lycorma_delicatula_avg_binary_v5_regional.asc"))
+  
+  
+  
+  # overlay and combine rasters by summing values
+  v5_avg_binary_summed <- terra::mosaic(v5_global3, v5_regional3, 
+                                      fun = "sum", 
+                                      filename = file.path(mypath, "v5_avg_binary_summed.asc"),
+                                      overwrite = FALSE,
+                                      wopt = c(progress = 4)) # progress bar
+
+}
+
+```
+
+Finally, I will need to overlay all SLF points and classify their stage of invasion. The summed df is so large that most PCs will struggle to convert it to a df for mapping, and thus this raster requires some extra steps. I will load in the summed binary raster, crop it to the extent of N America and convert it to a df.
+
+```{r prepare data for mapping}
+
+# path to directory I will be working in
+mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/models/working_dir")
+
+v5_avg_binary_summed <- terra::rast(x = file.path(mypath, "v5_avg_binary_summed.asc"))
+
+
+# crop the raster 
+v5_avg_binary_summed <- terra::crop(x = v5_avg_binary_summed, y = ext.obj) 
+
+# convert to df
+v5_avg_binary_summed_df <- terra::as.data.frame(v5_avg_binary_summed, xy = TRUE) %>%
+  na.omit()
+
+# check for the number of unique values in the raster values column
+unique(v5_avg_binary_summed_df$Lycorma_delicatula_avg)
+# it seems that the reclassification worked! Lets map it to be sure.
+
+# vector of map values to classify scale
+reclassify_values <- c(1, 2)
+
+# vector of colors to classify scale
+reclassify_colors <- c(
+  "azure4",
+  "darkblue"
+)
+
+```
+
+```{r plot summed raster}
+
+# load in SLF point data
+slf_all_points <- read_csv(file = file.path(here(), "data", "slf_all_final_coords_v0_2023-07.csv"))
+
+# plot regional
+v5_avg_binary_summed_plot <- ggplot() +
+  geom_raster(data = v5_avg_binary_summed_df, 
+              aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
+  geom_point(data = slf_all_points, 
+             aes(x = x, y = y), color = "darkorange") +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(title = "Predicted current regional niche for \n Lycorma delicatula (binary suitability)") +
+  coord_equal() +
+  scale_discrete_manual(name = "suitability for SLF",
+                        values = reclassify_colors, # new color bins
+                        labels = reclassify_values, # map values that match color bins
+                        aesthetics = "fill")
+  
+
+```
+
