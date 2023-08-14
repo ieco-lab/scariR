@@ -152,7 +152,10 @@ unique(toh_gbif_coords3$name)
 toh_gbif_coords3$name <- "Ailanthus altissima (Mill.) Swingle"
 
 # save
-write_csv(toh_gbif_coords3, file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.csv"))
+write_csv(toh_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "toh_gbif_cleaned_coords_v1.csv"))
+
+# also save as .rda file
+save(toh_gbif_coords3, file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.rda"))
 
 ```
 
@@ -162,7 +165,7 @@ We will perform a final round of spatial thinning using `spThin::thin()`, just t
 
 ```{r read in data}
 
-toh_gbif_coords4 <- read_csv(file = file.path(here(), "data", "toh_gbif_cleaned_coords_v1.csv"))
+toh_gbif_coords4 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "toh_gbif_cleaned_coords_v1.csv"))
 
 ```
 
@@ -221,7 +224,10 @@ toh_gbif_coords6 <- toh_gbif_coords5 %>%
   dplyr::rename(species = name, x = longitude, y = latitude) # change column names to MaxEnt convention
 
 # save
-write_csv(toh_gbif_coords6, file = file.path(here(), "data", "toh_gbif_final_coords_v1.csv"))
+write_csv(toh_gbif_coords6, file = file.path(here(), "vignette-outputs", "data-tables", "toh_gbif_final_coords_v1.csv"))
+
+# also save as .rda file
+save(toh_gbif_coords6, file = file.path(here(), "data", "toh_gbif_final_coords_v1.rda"))
 
 ```
 
@@ -237,7 +243,7 @@ First, we will visualize the results of the spatial thinning process.
 toh_raw <- read_csv(file = file.path(here(), "data-raw", "toh_gbif_raw_coords_2023-07-14.csv"))
 
 # thinned data
-toh_thinned <- read_csv(file = file.path(here(), "data", "toh_gbif_final_coords_v1.csv"))
+toh_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "toh_gbif_final_coords_v1.csv"))
 
 # plot world map
 map_toh_thinned <- ggplot() +
@@ -388,7 +394,10 @@ unique(vitis_gbif_coords2$name)
 vitis_gbif_coords2$name <- "Vitis spp"
 
 # save
-write_csv(vitis_gbif_coords2, file = file.path(here(), "data", "vitis_gbif_cleaned_coords_v1.csv"))
+write_csv(vitis_gbif_coords2, file = file.path(here(), "vignette-outputs", "data-tables", "vitis_gbif_cleaned_coords_v1.csv"))
+
+# also save as .rda file
+save(vitis_gbif_coords2, file = file.path(here(), "data", "vitis_gbif_cleaned_coords_v1.rda"))
 
 ```
 
@@ -398,7 +407,7 @@ We will perform a final round of spatial thinning using `spThin::thin()`, just t
 
 ```{r read in data}
 
-vitis_gbif_coords4 <- read_csv(file = file.path(here(), "data", "vitis_gbif_cleaned_coords_v1.csv"))
+vitis_gbif_coords4 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "vitis_gbif_cleaned_coords_v1.csv"))
 
 ```
 
@@ -460,7 +469,11 @@ vitis_gbif_coords6 <- vitis_gbif_coords5 %>%
 vitis_gbif_coords6 <- vitis_gbif_coords6 %>%
   dplyr::rename(species = name, x = longitude, y = latitude) # change column names to MaxEnt convention
 
-write_csv(vitis_gbif_coords6, file = file.path(here(), "data", "vitis_gbif_final_coords_v1.csv"))
+# save
+write_csv(vitis_gbif_coords6, file = file.path(here(), "vignette-outputs", "data-tables", "vitis_gbif_final_coords_v1.csv"))
+
+# also save as .rda file
+save(vitis_gbif_coords6, file = file.path(here(), "data", "vitis_gbif_final_coords_v1.rda"))
 
 ```
 
@@ -474,7 +487,7 @@ The occurrence data for Vitis spp. are now in a useable format for MaxEnt.
 vitis_raw <- read_csv(file = file.path(here(), "data-raw", "vitis_gbif_raw_coords_2023-08-07.csv"))
 
 # thinned data
-vitis_thinned <- read_csv(file = file.path(here(), "data", "vitis_gbif_final_coords_v1.csv"))
+vitis_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "vitis_gbif_final_coords_v1.csv"))
 
 # plot world map
 map_vitis_thinned <- ggplot() +
@@ -521,7 +534,7 @@ if(FALSE) {
   toh_2022 <- read_csv(file = file.path(here(), "data-raw", "data-old", "toh_gbif_cleaned_coords_2022.csv"))
   
   # new data
-  toh_new <- read_csv(file = file.path(here(), "data", "toh_gbif_final_coords_v1.csv"))
+  toh_new <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "toh_gbif_final_coords_v1.csv"))
   
   # plot toh
   map_toh_old <- ggplot() +

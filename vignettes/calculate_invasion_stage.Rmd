@@ -38,11 +38,13 @@ library(here)
 
 library(terra)
 
+library(viridis)
+
 ```
 
 ```{r load in SLF data, echo = FALSE}
 
-slf_points <- read_csv(file = file.path(here(), "data", "slf_all_final_coords_v0_2023-07.csv")) %>%
+slf_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v0_2023-07.csv")) %>%
   dplyr::select(!species) # species column not necessary in this analysis
   
 ```
@@ -78,7 +80,9 @@ v5_global1 <- terra::crop(x = v5_global1, y = ext.obj)
 
 # Extract SLF point-wise suitability
 
-I will stack the rasters and extract values from both layers that can be used to create a scatter plot.
+I will stack the rasters and extract values from both layers that can be used to create a scatter plot. First, I will perform this process for our list of known SLF points, then I will repeat it for a list of IVRs (important viticultural regions) obtained from Huron et.al, 2022. These lat/long data represent the most important regions globally for viticulture.
+
+## Known SLF presences
 
 ```{r extract point values}
 
@@ -101,9 +105,18 @@ slf_suitability <- slf_suitability %>%
   filter(!is.na(v5_regional) | !is.na(v5_global), # I want to keep NAs that are only in 1 column
          !is.nan(x) | !is.nan(y)) # these NaNs are data points outside the raster extent (native range)
 
-# convert NAs in these columsn to 0
+# convert NAs that are only in one model to 0
 slf_suitability$v5_regional[is.na(slf_suitability$v5_regional)] <- 0
 slf_suitability$v5_global[is.na(slf_suitability$v5_global)] <- 0
+
+```
+
+```{r save suitability values}
+
+write_csv(slf_suitability, file = file.path(here(), "vignette-outputs", "data-tables", "slf_suitability_maxent_v5.csv"))
+
+# also save as a .rda file
+save(slf_suitability, file = file.path(here(), "data", "slf_suitability_maxent_v5.rda"))
 
 ```
 
@@ -111,26 +124,151 @@ Now that the values have been extracted, lets plot them.
 
 ```{r plot SLF suitability values}
 
-slf_suitability_scatter <- ggplot() +
+slf_suitability <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_suitability_maxent_v5.csv"))
+
+# a vector to rescale the axes of the plots
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+(slf_suitability_scatter <- ggplot() +
   geom_vline(xintercept = 0.5) + 
   geom_hline(yintercept = 0.5) + # quadrant lines
   geom_point(data = slf_suitability, 
              aes(x = v5_global, y = v5_regional), 
-             color = "darkblue", size = 1) +
+             color = "darkorange", size = 1) +
   ggtitle("suitability of known SLF points in global vs regional model") +
-  scale_x_continuous(name = "suitability in global model", limits = c(0, 1)) +
-  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1)) +
+  scale_x_continuous(name = "suitability in global model", limits = c(0, 1), breaks = breaks) +
+  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1), breaks = breaks) +
   theme_minimal()
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(slf_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "slf_suitability_maxent_v5_plot.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
 
 ```
 
 (interpretation)
 
+## IVRs
 
+Now, we will repeat the process for our list of IVRs (wineries) in the data folder, called `wineries.Rda`.
 
+```{r load IVR (winery) data}
 
+load(file = file.path(here(), "data", "wineries.rda"))
 
+```
 
+```{r extract point values}
+
+IVR_points <- wineries %>%
+  dplyr::select(x, y)
+
+# extract values
+IVR_suitability <- terra::extract(x = v5_stack, 
+                                  y = IVR_points, 
+                                  cells = TRUE, # get cell #s
+                                  xy = TRUE, # get coordinates
+                                  ID = TRUE # give ID column
+                                  ) 
+
+```
+
+```{r tidy suitability df}
+
+IVR_suitability <- IVR_suitability %>%
+  filter(!is.na(v5_regional) | !is.na(v5_global), # I want to keep NAs that are only in 1 column
+         !is.nan(x) | !is.nan(y)) # these NaNs are data points outside the raster extent (native range)
+
+# convert NAs that are only in one model to 0
+IVR_suitability$v5_regional[is.na(IVR_suitability$v5_regional)] <- 0
+IVR_suitability$v5_global[is.na(IVR_suitability$v5_global)] <- 0
+
+```
+
+```{r save suitability values}
+
+write_csv(IVR_suitability, file = file.path(here(), "vignette-outputs", "data-tables", "IVR_suitability_maxent_v5.csv"))
+
+# also save as a .rda file
+save(IVR_suitability, file = file.path(here(), "data", "IVR_suitability_maxent_v5.rda"))
+
+```
+
+Now that the values have been extracted, lets plot them.
+
+```{r plot SLF suitability values}
+
+IVR_suitability <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "IVR_suitability_maxent_v5.csv"))
+
+(IVR_suitability_scatter <- ggplot() +
+  geom_vline(xintercept = 0.5) + 
+  geom_hline(yintercept = 0.5) + # quadrant lines
+  geom_point(data = IVR_suitability, 
+             aes(x = v5_global, y = v5_regional), 
+             color = "darkviolet", size = 1) +
+  ggtitle("suitability of IVR regions for SLF establishment in global vs regional models") +
+  scale_x_continuous(name = "suitability in global model", limits = c(0, 1), breaks = breaks) + # same break scale as for the SLF data
+  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1), breaks = breaks) +
+  theme_minimal()
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(IVR_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
+(Interpretation)
+
+## Plot points over SLF model
+
+Now I will plot the IVRs (purple) and known SLF points (orange) over the v5 version of the global model I produced.
+
+```{r plot SLF suitability values}
+
+# plot with points
+v5_global_IVR_SF <- ggplot() +
+  geom_raster(data = terra::as.data.frame(v5_global1, xy = TRUE), 
+              aes(x = x, y = y, fill = v5_global)) +
+  geom_point(data = slf_points, 
+             aes(x = x, y = y), color = "darkorange", size = 0.1) +
+  geom_point(data = IVR_points, 
+             aes(x = x, y = y), color = "darkviolet", size = 0.1) +
+  xlab("longitude") +
+  ylab("latitude") +
+  xlim(-133.593750, -52.294922) +
+  ylim(25.085599, 55.304138) +
+  theme_minimal() +
+  scale_fill_continuous(type = "gradient") +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE)) + 
+  labs(title = "Contemporary slf suitability in global model") +
+  coord_equal() 
+
+```
+
+```{r save scatterplot}
+
+ggsave(v5_global_IVR_SLF, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
 
 
 
@@ -149,13 +287,13 @@ First, I will create matrix objects that will be used to reclassify the output r
 
 To reclassify, package terra takes a 3-column matrix for its "classify" function, which re-classifies groups of values to other values. I will create one for the global model output and one for the regional model output. The reason for having two separate matrices is because I will need to differentiate between a "suitable" spot on the global and regional rasters. Because of this, I will be encoding the rasters into base-2 binary so that the end result is 4 categories of values (the idea for this was found in [this forum](https://gis.stackexchange.com/questions/127055/comparing-and-finding-inaccuracies-in-two-raster-layers)). For the regional raster, I will encode the logistical output of MaxEnt into these values:
 
-*Regional unsuitable = 0-0.5 -> 00000001 = 1
-*Regional suitable = 0.51-1 ->  00000010 = 2
+*Regional unsuitable = 0-0.079 -> 00000001 = 1
+*Regional suitable = 0.0791-1 ->  00000010 = 2
 
 For the global rasters, I will encode the outputs into these values:
 
-*Global unsuitable = 0-0.5 -> 00000100 = 4
-*Global suitable = 0.51-1 ->  00001000 = 8
+*Global unsuitable = 0-0.163 -> 00000100 = 4
+*Global suitable = 0.1631-1 ->  00001000 = 8
 
 By encoding the rasters into base-2, I have created only 4 possible values of the raster layers, which can be translated into 4 categories:
 
@@ -190,19 +328,20 @@ terra::minmax(v5_global1) %>%
 
 ```
 
+Now I will create the classification rasters. The lower range of what is considered suitable will be determined by the "Maximum Test Sensitivity Plus Specificity" threshold given in the Maxent output. For the regional model, the mean threshold value was 0.079, while the mean value was 0.163 in the global model.
 
 ```{r terra required classification matrices}
 
 # create regional suitability value matrix for terra
 regional_classes <- data.frame(
-  from = c(0, 0.50),
-  to = c(0.5000000000001, 1),
+  from = c(0, 0.0791),
+  to = c(0.079, 1),
   becomes = c(strtoi(00000001, base = 2), strtoi(00000010, base = 2)) # the strtoi function converts to base-2
 )
 
 global_classes <- data.frame(
-  from = c(0, 0.50),
-  to = c(0.5000000000001, 1),
+  from = c(0, 0.1631),
+  to = c(0.163, 1),
   becomes = c(strtoi(00000100, base = 2), strtoi(00001000, base = 2))
 )
 
@@ -227,7 +366,7 @@ if(FALSE) {
   v5_regional2 <- terra::classify(x = v5_regional1, 
                                   rcl = regional_classes,
                                   right = NA, # close both ends of the range of classification values
-                                  others = NA,
+                                  others = -9999,
                                   filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_regional.asc"), # also write to file
                                   overwrite = FALSE) 
 
@@ -244,7 +383,7 @@ if(FALSE) {
   v5_global2 <- terra::classify(x = v5_global1, 
                                 rcl = global_classes, 
                                 right = NA, 
-                                others = NA,
+                                others = -9999,
                                 filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_global.asc"), 
                                 overwrite = FALSE) 
 
@@ -258,7 +397,7 @@ if(FALSE) {
 
 Now that the rasters have been converted to binary, we will visualize them to ensure that the process worked. Since the same process was done to both the regional and global models, I will only plot the regional model because it is smaller and will take far less time to render.
 
-```{r visualize binarized rasters}
+```{r prepare for plotting}
 
 # path to directory I will be working in
 mypath <- file.path(here::here() %>% 
@@ -271,25 +410,32 @@ v5_regional2_df <- terra::rast(x = file.path(mypath, "working_dir", "Lycorma_del
   na.omit()
 
 # check for the number of unique values in the raster values column
-unique(v5_regional2_df$Lycorma_delicatula_avg)
+unique(v5_regional2_df$v5_regional)
 # it seems that the reclassification worked! Lets map it to be sure.
 
-# there are some extraneous values that need to be changed.
-# First, there are some leftover unsuitable areas (-9998 and -9997) that presumably got 
 
-# vector of map values to classify scale
-reclassify_values <- c(1, 2)
+# first, convert -9999 values to 1 (unsuitable)
+v5_regional2_df$v5_regional[v5_regional2_df$v5_regional == -9999] <- 1
 
+# now, create vectors of values used to manually edit the scale of the plot
+# the possible values of the scale and their order
+breaks.obj <- unique(v5_regional2_df$v5_regional)
+# labels for the values
+labels.obj <- c("unsuitable agreement", "suitable")
 # vector of colors to classify scale
-reclassify_colors <- c(
+values.obj <- c(
   "azure4",
   "darkblue"
 )
 
+```
+
+```{r plot binarized raster}
+
 # plot regional binary
 (v5_regional2_plot <- ggplot() +
   geom_raster(data = v5_regional2_df, 
-              aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
+              aes(x = x, y = y, fill = as.character(v5_regional))) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
@@ -297,8 +443,9 @@ reclassify_colors <- c(
   labs(title = "Predicted current regional niche for \n Lycorma delicatula (binary suitability)") +
   coord_equal() +
   scale_discrete_manual(name = "suitability for SLF",
-                        values = reclassify_colors, # new color bins
-                        labels = reclassify_values, # map values that match color bins
+                        values = values.obj,
+                        breaks = breaks.obj,
+                        labels = labels.obj,
                         aesthetics = "fill")
 )
   
@@ -320,7 +467,7 @@ From the plots, we see that the binary conversion worked. Next, I will need to s
 
 ```{r mosaic rasters}
 
-if(TRUE) {
+if(FALSE) {
   
   mypath <- file.path(here::here() %>% 
                           dirname(),
@@ -339,13 +486,13 @@ if(TRUE) {
                                       fun = "sum", 
                                       filename = file.path(mypath, "v5_avg_binary_summed.asc"),
                                       overwrite = FALSE,
-                                      wopt = c(progress = 4)) # progress bar
+                                      wopt = c(progress = 1)) # progress bar
 
 }
 
 ```
 
-Finally, I will need to overlay all SLF points and classify their stage of invasion. The summed df is so large that most PCs will struggle to convert it to a df for mapping, and thus this raster requires some extra steps. I will load in the summed binary raster, crop it to the extent of N America and convert it to a df.
+Finally, I will need to overlay all SLF points and classify their stage of invasion.
 
 ```{r prepare data for mapping}
 
@@ -354,53 +501,115 @@ mypath <- file.path(here::here() %>%
                           dirname(),
                         "maxent/models/working_dir")
 
-v5_avg_binary_summed <- terra::rast(x = file.path(mypath, "v5_avg_binary_summed.asc"))
-
-
-# crop the raster 
-v5_avg_binary_summed <- terra::crop(x = v5_avg_binary_summed, y = ext.obj) 
-
+v5_avg_binary_summed <- terra::rast(x = file.path(mypath, "v5_avg_binary_summed.asc")) 
+# rename values
+names(v5_avg_binary_summed) <- "v5_summed"
 # convert to df
 v5_avg_binary_summed_df <- terra::as.data.frame(v5_avg_binary_summed, xy = TRUE) %>%
   na.omit()
 
 # check for the number of unique values in the raster values column
-unique(v5_avg_binary_summed_df$Lycorma_delicatula_avg)
+unique(v5_avg_binary_summed_df$v5_summed)
 # it seems that the reclassification worked! Lets map it to be sure.
 
-# vector of map values to classify scale
-reclassify_values <- c(1, 2)
+# some values did not convert correctly, so we will convert them manually
+# areas unsuitable in the regional but were NA in the global
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == -9998] <- 5
+# areas unsuitable in the global and NA in the regional (-9995)
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == -9995] <- 5
+#  areas unsuitable in the regional but did not overlap in the global
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == 1] <- 5
+# areas suitable in the regional but were NA in the global
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == -9997] <- 6
+# areas suitable in the regional but did not overlap in the global
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == 2] <- 6
+# areas suitable in the global but were NA in the regional
+v5_avg_binary_summed_df$v5_summed[v5_avg_binary_summed_df$v5_summed == -9991] <- 9
 
+# Now that the values are one of the four we were looking for, create objects for rescaling the map
+
+# now, create vectors of values used to manually edit the scale of the plot
+# the possible values of the scale and their order
+breaks.obj <- unique(v5_avg_binary_summed_df$v5_summed)
+# labels for the values
+labels.obj <- c("unsuitable", "unsuitable regional / suitable global", "suitable regional / unsuitable global", "suitable")
 # vector of colors to classify scale
-reclassify_colors <- c(
+values.obj <- c(
   "azure4",
-  "darkblue"
+  "darkblue",
+  "darkred",
+  "darkorange"
 )
 
 ```
 
-```{r plot summed raster}
+```{r plot summed raster with points}
 
 # load in SLF point data
-slf_all_points <- read_csv(file = file.path(here(), "data", "slf_all_final_coords_v0_2023-07.csv"))
+slf_all_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v0_2023-07.csv"))
 
-# plot regional
+# plot with points
+v5_summed_points_plot <- ggplot() +
+  geom_raster(data = v5_avg_binary_summed_df, 
+              aes(x = x, y = y, fill = as.character(v5_summed))) +
+  geom_point(data = slf_all_points, 
+             aes(x = x, y = y), color = "black", size = 0.1) +
+  xlab("longitude") +
+  ylab("latitude") +
+  xlim(-133.593750, -52.294922) +
+  ylim(25.085599, 55.304138) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) + # legend with 2 rows
+  labs(title = "Predicted suitability in current global vs regional niche for SLF") +
+  coord_equal() +
+  scale_discrete_manual(name = "suitability for SLF",
+                        values = values.obj,
+                        breaks = breaks.obj,
+                        labels = labels.obj,
+                        aesthetics = "fill")
+
+```
+
+```{r save summed raster with points}
+
+ggsave(v5_summed_points_plot, filename = file.path(here(), "vignette-outputs", "figures", "v5_maxent_overlay_slfPoints.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
+```{r plot raster without points}
+  
+# plot without points
 v5_avg_binary_summed_plot <- ggplot() +
   geom_raster(data = v5_avg_binary_summed_df, 
-              aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
-  geom_point(data = slf_all_points, 
-             aes(x = x, y = y), color = "darkorange") +
+              aes(x = x, y = y, fill = as.character(v5_summed))) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
   theme(legend.position = "bottom") +
-  labs(title = "Predicted current regional niche for \n Lycorma delicatula (binary suitability)") +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) + # legend with 2 rows
+  labs(title = "Predicted suitability in current global vs regional niche for SLF") +
   coord_equal() +
   scale_discrete_manual(name = "suitability for SLF",
-                        values = reclassify_colors, # new color bins
-                        labels = reclassify_values, # map values that match color bins
+                        values = values.obj,
+                        breaks = breaks.obj,
+                        labels = labels.obj,
                         aesthetics = "fill")
-  
+
+
+```
+
+```{r save summed raster without points}
+
+ggsave(v5_avg_binary_summed_plot, filename = file.path(here(), "vignette-outputs", "figures", "v5_maxent_overlay.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
 
 ```
 

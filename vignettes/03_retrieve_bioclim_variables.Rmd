@@ -522,7 +522,7 @@ env.cor4 <- env.cor3 %>%
   dplyr::select(!var) # take out temp column
 
 # write tidied data
-write.csv(x = env.cor4, file = file.path(here(), "data", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
+write.csv(x = env.cor4, file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
 
 ```
 
@@ -534,7 +534,7 @@ Now that they are in a more readable format and have been converted to an absolu
 
 ```{r prepare data to visualize}
 
-env.cor5 <- read.csv(file = file.path(here(), "data", "env_cor_chelsa_downsampled_abs.csv"))
+env.cor5 <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"))
 
 row.names(env.cor5) <- env.cor5$X
 

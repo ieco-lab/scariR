@@ -199,7 +199,10 @@ We will save the results of the cleaning we just performed so they can be refere
 
 ```{r save cleaned data}
 
-write_csv(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_v2.csv"))
+write_csv(slf_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v2.csv"))
+
+# also save as a .rda file
+save(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_v2.rda"))
 
 ```
 
@@ -281,7 +284,10 @@ slf_lyde3 <- slf_lyde2 %>%
 
 ```{r save cleaned data}
 
-write_csv(slf_lyde3, file = file.path(here(), "data", "slf_lyde_cleaned_coords_v1.csv"))
+write_csv(slf_lyde3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_v1.csv"))
+
+# also save as a .rda file
+save(slf_lyde3, file = file.path(here(), "data", "slf_lyde_cleaned_coords_v1.rda"))
 
 ```
 
@@ -295,7 +301,7 @@ We want to visualize the difference between the raw coordinates that were pulled
 gbif_raw <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2023-07-12.csv"))
 
 # thinned data
-gbif_thinned <- read_csv(file = file.path(here(), "data", "slf_gbif_cleaned_coords_v2.csv"))
+gbif_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v2.csv"))
 
 # plot world map
 map_gbif_thinned <- ggplot() +
@@ -337,7 +343,7 @@ From the mapping, it seems that the spatial thinning reduced the GBIF records, w
 lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-07-13.csv"))
 
 # thinned data
-lyde_thinned <- read_csv(file = file.path(here(), "data", "slf_lyde_cleaned_coords_v1.csv"))
+lyde_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_v1.csv"))
 
 # plot map of NAmerica
 map_lyde_thinned <- ggplot() +
@@ -392,7 +398,7 @@ In this step, I will combine the records obtained from GBIF and LydemapR with da
 ```{r kable table of published literature}
 
 # read in .csv of papers
-slf_published_papers <- read_csv(file.path(here(), "data", "slf_publishedOccurrenceRecords_papers.csv"))
+slf_published_papers <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
 
 # kable table
 kable(x = slf_published_papers, format = "pipe")
@@ -401,7 +407,7 @@ kable(x = slf_published_papers, format = "pipe")
 
 ```{r load in records from literature}
 
-slf_published <- read_csv(file.path(here(), "data", "slf_publishedOccurrenceRecords_v1.csv"))
+slf_published <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_v1.csv"))
 
 ```
 
@@ -446,9 +452,9 @@ Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produ
 
 ```{r load in GBIF and lyde data}
 
-slf_gbif_coords3 <- read_csv(file.path(here(), "data", "slf_gbif_cleaned_coords_v2.csv"))
+slf_gbif_coords3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v2.csv"))
 
-slf_lyde3 <- read_csv(file.path(here(), "data", "slf_lyde_cleaned_coords_v1.csv"))
+slf_lyde3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_v1.csv"))
 
 ```
 
@@ -589,7 +595,10 @@ slf_all_coords3 <- slf_all_coords3 %>%
          "y" = "latitude")
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_v0_", format(Sys.Date(), "%Y-%m"), ".csv")))
+write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_v0_", format(Sys.Date(), "%Y-%m"), ".csv")))
+
+# also save as a .rda file
+save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_v0_", format(Sys.Date(), "%Y-%m"), ".rda")))
 
 ```
 
@@ -643,7 +652,7 @@ If this next chunk is run, the compilation of the SLF data from section 2 will n
 
 if(FALSE) {
 
-  slf_coords4 <- read_csv(file = file.path(here(), "data", "slf_gbif_cleaned_v2.csv"))
+  slf_coords4 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_v2.csv"))
   
   # locate coords that maxent threw errors for
   slf_error_points <- slf_coords4 %>%
@@ -710,7 +719,10 @@ if(FALSE) {
                     121.73337
     ))
   
-  write_csv(slf_coords4, file = file.path(here(), "data", "slf_gbif_cleaned_v3.csv"))
+  write_csv(slf_coords4, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_v3.csv"))
+  
+  # also save as a .rda file
+  save(slf_coords4, file = file.path(here(), "data", "slf_gbif_cleaned_v3.rda"))
 
 }
 
@@ -726,7 +738,7 @@ if(FALSE) {
   slf_2020 <- read_csv(file = file.path(here(), "data-raw", "data-old", "slf_gbif_cleaned_coords_2022.csv"))
   
   # new data
-  slf_new <- read_csv(file = file.path(here(), "data", "slf_gbif_cleaned_v2.csv"))
+  slf_new <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_v2.csv"))
   
   # plot SLF
   map_slf <- ggplot() +
