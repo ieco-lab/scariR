@@ -1,20 +1,22 @@
 ---
-title: "Setup for initial MaxEnt models used choose background area"
+title: "Setup for initial MaxEnt models used to choose background area"
 author: "Sam Owens"
 contact: "sam.owens@temple.edu"
 date: "2023-07-27"
 output: html_document
 ---
 
-This vignette will outline the methodology for selecting the best fit background area selection method. 
+This vignette will outline the methodology for selecting the best fit background area selection method. This step will only be performed with the historical versions of the bioclim layers.
 
 (THEORY)
 
-First, I will select the suitable background area using three different methods, creating a reference layer for each size of background area
+First, I will trim the bioclim variables retrieved in vignette 03 to a bounding box of the eastern USA
 
-Second, I will randomly select the background points required by MaxEnt. These will also be used later to calculate fixed and flexible AUCs
+Second, I will create the fixed area AUC background points dataset, a set of points across a 1km grid of the USA.
 
-Third, I will trim the selected covariates to each background area type. 
+Third, I will create three reference layers, one for each type of background area (entire eastern USA, DD model eastern USA, 355km around points).
+
+Fourth, I  will select randomized points from each background area size as the dataset for calculating the flexible area AUC.
 
 # Setup
 
@@ -24,7 +26,7 @@ library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
 here()
-# here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+# here() starts at the root folder of this package.
 
 library(devtools)
 library(dismo) # run maxent models, generate random background points
@@ -34,13 +36,98 @@ library(dismo) # run maxent models, generate random background points
 ```
 
 
-# 1. Create reference layers for different background area selections
+# 1. Trim Bioclim layers to Eastern USA
+
+
+```{r extent object for eastern N America}
+
+ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+
+```
+
+```{r cropping bioclim layers to eastren N america}
+
+if(FALSE) {
+
+  # path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+  # load in bioclim layers to be cropped- the original .asc files
+  env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+  # extract the 6 bioclim layers (plus global_atc) that I expect to use in future regional models
+    grep("atc_2015_global.asc|bio1_1981-2010_global.asc|bio2_1981-2010_global.asc|bio7_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+   # output file names
+  output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = FALSE) %>%
+  # extract the 6 bioclim layers (plus global_atc) that I expect to use in future regional models
+    grep("atc.tif|bio_1.tif|bio_2.tif|bio_7.tif|bio_12.tif|bio_15.tif", ., value = TRUE) %>%
+    # get rid of filetype endings
+    gsub(pattern = ".tif", replacement = "") 
+  
+  
+  # define extent object
+  NAmerica_extent <- terra::ext(-133.593750, -52.294922, 25.085599, 55.304138)
+  
+  # create main layer to crop others to
+  main_layer <- terra::crop(terra::rast(x = env.files[2]),
+                            # crop global_bio_1 to extent
+                            y = NAmerica_extent, overwrite = FALSE)
+  
+  # ensure crs is correct
+  crs(main_layer, describe = TRUE)
+  
+  # crs isnt correct. will set in loop
+  
+  
+  
+  # convert to df for plotting 
+  main_layer_df <- terra::as.data.frame(main_layer, xy = TRUE)
+  
+  # plot main layer as example
+  main_plot <- ggplot() +
+    # change scale of plots to be standard across figures
+    geom_raster(data = main_layer_df, 
+              aes(x = x, y = y, fill = global_bio_1)) +
+    # set view to N America extent, plus 2 on each side to see if cropping worked
+    coord_cartesian() +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    coord_quickmap()
+  # the cropping worked
+  
+  # view list of filetypes for terra, use .ascii
+  View(terra::gdal(drivers = TRUE))
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    crs(rast.hold) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+    #resample to fit the extent/resolution of the reference BIOCLIM layer
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # set NA value, a requirement of maxent .asc files
+    rast.hold <- terra::subst(rast.hold, NA, -9999)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", paste0(output.files[a], "_NAmerica", ".asc")), filetype = "AAIGrid", overwrite = TRUE)
+    
+  }
+  
+}
+
+```
 
 
 
 
-
-# 2. Generate points for background area
+# 2. Select Fixed Area AUC points
 
 Background points datasets will be stored in `vignette-outputs`.
 
@@ -77,8 +164,11 @@ if(TRUE) {
 
 
 
-# 3. Trim covariates to each background type.
+# 3. Create reference layer for each background type.
 
+
+
+# 4. Select Fixed Area AUC points
 
 
 # References

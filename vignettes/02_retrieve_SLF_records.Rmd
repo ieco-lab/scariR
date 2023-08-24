@@ -39,7 +39,6 @@ library(spocc) #query gbif and format as a dataframe
 library(spThin) # spatial thinning of points
 # install_github("jasonleebrown/humboldt")
 library(humboldt) # spatial thinning of points
-library(tcltk) #humboldt progress bar
 # remotes::install_github("ropensci/scrubr")
 library(scrubr) #clean records for gbif data
 
@@ -93,27 +92,39 @@ if(FALSE) {
                            basisOfRecord = c("HUMAN_OBSERVATION", "MATERIAL_CITATION", "MATERIAL_SAMPLE", "LIVING_SPECIMEN", "MACHINE_OBSERVATION", "OBSERVATION", "PRESERVED_SPECIMEN", "OCCURRENCE"),
                            hasGeospatialIssue = FALSE,
                            year = "1981, 2023"
-                           ))
+                         ))
   
 }
 
 ``` 
 
-The returned file is an `occdat` file, which has an element for all seven databases that the `spocc` package has access to. We want to isolate the raw data request from only `GBIF` and then save that as a `.csv` file. We also want to convert this data object into a data frame and save that as a separate `.csv`.
+The returned file is an `occdat` file, which has an element for all seven databases that the `spocc` package has access to. We want to isolate the raw data request from only `GBIF` and then save that as a `.csv` file. We also want to convert this data object into a data frame and save that as a separate `.csv`. We will also be doing some tidying to select only the `GBIF` points in the native range (this is the easiest way to get rid of unreliable points in the USA, which will be replaced with much more reliable points from the `lydemapr` package).
 
 ```{r save raw query and data}
   
 if(FALSE) {
-
+  
   # tibble raw queries
-  slf_gbif_final <- as_tibble(slf_gbif$gbif$data$`5157899`) 
+  slf_gbif_final <- as_tibble(slf_gbif$gbif$data$`5157899`)
+  
+  # select only countries in southeast Asia
+  slf_gbif_final <- slf_gbif_final %>%
+    filter(countryCode != "US")
   
   # save raw queries with date stamp as current date
   write_csv(x = slf_gbif_final, 
             file = file.path(here(), "data-raw", paste0("slf_gbif_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
     
+  # object with key and country code to join to below object
+  slf_gbif_final_key <- slf_gbif_final %>%
+    select(key, countryCode)
+  
   # convert occ data to dataframe
-  slf_gbif_coords1 <- spocc::occ2df(slf_gbif)
+  slf_gbif_coords1 <- spocc::occ2df(slf_gbif) %>%
+    left_join(., slf_gbif_final_key, by = "key") %>%
+    filter(!is.na(countryCode),
+           countryCode != "US") %>%
+    dplyr::select(!countryCode)
     
   # save coords as-is
   write_csv(x = slf_gbif_coords1, 
@@ -130,7 +141,7 @@ The raw pull from GBIF brought in 17,339 total records of SLF. The raw query and
 
 ```{r read in raw data}
 
-slf_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2023-07-12.csv"))
+slf_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2023-08-24.csv"))
 
 ```
 
@@ -174,7 +185,7 @@ In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 1km over 10 pas
 
 ```{r spatial thinning}
 
-if(FALSE) {
+if(TRUE) {
 
   slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_gbif_coords1, 
                                                     colxy = 2:3, # coordinate columns
@@ -186,7 +197,7 @@ if(FALSE) {
 
 ```
 
-Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. Finally, we will de-duplicate the data.
+Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. On the run without records in N. America, it left 733 of 1200 observations. Finally, we will de-duplicate the data.
 
 ```{r de-duplicate}
 
@@ -199,10 +210,10 @@ We will save the results of the cleaning we just performed so they can be refere
 
 ```{r save cleaned data}
 
-write_csv(slf_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v2.csv"))
+write_csv(slf_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v3.csv"))
 
 # also save as a .rda file
-save(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_v2.rda"))
+save(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_v3.rda"))
 
 ```
 
@@ -452,7 +463,7 @@ Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produ
 
 ```{r load in GBIF and lyde data}
 
-slf_gbif_coords3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v2.csv"))
+slf_gbif_coords3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_v3.csv"))
 
 slf_lyde3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_v1.csv"))
 
@@ -464,19 +475,19 @@ First, I will tidy the data for joining. We will keep only the species names, co
 
 # tidy gbif data
 slf_gbif_coords3 %<>%
-  select(name:latitude, key, prov) %>%
+  dplyr::select(name:latitude, key, prov) %>%
   rename("data_source" = "prov",
          "species" = "name")
 
 # tidy lyde data
 slf_lyde3 %<>%
-  select(species, longitude, latitude, pointID) %>%
+  dplyr::select(species, longitude, latitude, pointID) %>%
   rename("key" = "pointID") %>%
   mutate(data_source = "lyde")
   
 # published data
 slf_published %<>%
-  select(name:key, publishingArticle) %>%
+  dplyr::select(name:key, publishingArticle) %>%
   rename("species" = "name",
          "data_source" = "publishingArticle")
 
@@ -512,7 +523,7 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-write_csv(x = slf_all_coords, file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords.csv"))
+write_csv(x = slf_all_coords, file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_v1.csv"))
 
 ```
 
@@ -526,14 +537,14 @@ Both files will be written to the `vignettes-outputs` folder, which holds interm
 
 ```{r load in data}
 
-slf_all_coords <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords.csv"))
+slf_all_coords <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_v1.csv"))
 
 ```
 
 
 ```{r spatial thinning}
 
-if(FALSE) {
+if(TRUE) {
 
   slf_all_coords2 <- spThin::thin(loc.data = slf_all_coords, 
                               lat.col = "latitude", long.col = "longitude",
@@ -572,7 +583,7 @@ Now, lets load in the final thinned dataset for a final round of cleaning.
 
 ```{r read in thinned data}
 
-slf_all_coords2 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2023-07-14_thin1.csv"))
+slf_all_coords2 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2023-08-24_thin1.csv"))
 
 ```
 
@@ -595,10 +606,10 @@ slf_all_coords3 <- slf_all_coords3 %>%
          "y" = "latitude")
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_v0_", format(Sys.Date(), "%Y-%m"), ".csv")))
+write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_v1_", format(Sys.Date(), "%Y-%m"), ".csv")))
 
 # also save as a .rda file
-save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_v0_", format(Sys.Date(), "%Y-%m"), ".rda")))
+save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_v1_", format(Sys.Date(), "%Y-%m"), ".rda")))
 
 ```
 

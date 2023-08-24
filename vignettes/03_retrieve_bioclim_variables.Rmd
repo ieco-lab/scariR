@@ -608,9 +608,9 @@ var.renames <- c(
 
 ```
 
-(analysis)
+I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose annual mean temp and precip (bio 1 and 12). None of the GDD variables were chosen because they were all highly correlated with annual mean temp or each other. Summed growing degree days was the exception to this rule, because it is not highly correlated with annual mean temp. However, it was not chosen because GDD is being utilized downstream. From this, I can also choose atc because it is not correlated with any other variables. 
 
-Now we will save the plot and binarize it.
+I will save this plot and produce a binarized version before I continue choosing variables. This way, the cutoff is clearer and the choice is more obvious.
 
 ```{r save correlation heatmap}
 
@@ -648,6 +648,8 @@ env.cor6$value <- cut(env.cor6$value, breaks = c(0, 0.709, 1), labels = c("0.7 o
 
 ```
 
+Indeed, the choice is much clearer on this plot. Annual mean temp (bio 1) is above 0.7 correlated with all other temp-based variables, except mean diurnal range (bio 2) and temperature annual range (bio 7). Meanwhile, annual precipitation is highly correlated with all precipitation based variables, except precipitation seasonality (bio 12). These three variables were also chosen. 
+
 ```{r save binary heatmap}
 
 ggsave(env.cor_binary_plot, filename = file.path(here(), "vignette-outputs", "figures", "env_cor_CHELSA_binary.jpg"),
@@ -657,17 +659,6 @@ ggsave(env.cor_binary_plot, filename = file.path(here(), "vignette-outputs", "fi
        dpi = "retina")
 
 ```
-
-From the binary heatmap, we see...
-
-Variables I am considering choosing:
-* GDD10
-* one of: either first or last GDD above 10C (cannot choose both because they are highly correlated)
-* bio 2
-* bio 7
-* bio 12
-* bio 15
-* atc
 
 # 4. Visualize rasters
 

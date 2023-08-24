@@ -37,10 +37,44 @@ library(here)
 # here() is set at the root folder of this package
 
 library(terra)
+library(RColorBrewer)
 
-library(viridis)
+# install.packages("tidygeocoder")
+library(tidygeocoder) # this package allows me to match lat/lon data to an address
 
 ```
+
+I will create lists of ggplot options that I will append to figures to save typing.
+
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue")
+        ),
+  coord_equal() 
+)
+
+```
+
+```{r ggplot object for plot style}
+
+# a vector to rescale the axes of the plots
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+scatter_style <- list(
+  scale_x_continuous(name = "suitability in global model", limits = c(0, 1), breaks = breaks),
+  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1), breaks = breaks),
+  theme_minimal()
+)
+
+```
+
+I will also load in the data needed.
 
 ```{r load in SLF data, echo = FALSE}
 
@@ -52,9 +86,9 @@ slf_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables
 ```{r load in rasters}
 
 # path to directory I will be working in
-   mypath <- file.path(here::here() %>% 
-                          dirname(),
-                        "maxent/models")
+mypath <- file.path(here::here() %>%  
+                      dirname(),
+                    "maxent/models")
 
 # load in regional model
 v5_regional1 <- terra::rast(x = file.path(mypath, "maxent_slf_gbif_v5_regional", "Lycorma_delicatula_avg.asc"))
@@ -86,16 +120,20 @@ I will stack the rasters and extract values from both layers that can be used to
 
 ```{r extract point values}
 
-# create raster stack
-v5_stack <- c(v5_regional1, v5_global1)
+if(FALSE) {
+  
+  # create raster stack
+  v5_stack <- c(v5_regional1, v5_global1)
+  
+  # extract values
+  slf_suitability <- terra::extract(x = v5_stack, 
+                                    y = slf_points, 
+                                    cells = TRUE, # get cell #s
+                                    xy = TRUE, # get coordinates
+                                    ID = TRUE # give ID column
+                                    ) 
 
-# extract values
-slf_suitability <- terra::extract(x = v5_stack, 
-                                  y = slf_points, 
-                                  cells = TRUE, # get cell #s
-                                  xy = TRUE, # get coordinates
-                                  ID = TRUE # give ID column
-                                  ) 
+}
 
 ```
 
@@ -126,26 +164,24 @@ Now that the values have been extracted, lets plot them.
 
 slf_suitability <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_suitability_maxent_v5.csv"))
 
-# a vector to rescale the axes of the plots
-breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
-
 (slf_suitability_scatter <- ggplot() +
-  geom_vline(xintercept = 0.5) + 
-  geom_hline(yintercept = 0.5) + # quadrant lines
-  geom_point(data = slf_suitability, 
-             aes(x = v5_global, y = v5_regional), 
-             color = "darkorange", size = 1) +
-  ggtitle("suitability of known SLF points in global vs regional model") +
-  scale_x_continuous(name = "suitability in global model", limits = c(0, 1), breaks = breaks) +
-  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1), breaks = breaks) +
-  theme_minimal()
+    geom_vline(xintercept = 0.5) + # midpoint line
+    geom_vline(xintercept = 0.163, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in global model
+    geom_hline(yintercept = 0.5) +  # midpoint line
+    geom_hline(yintercept = 0.079, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in regional model
+    geom_point(data = slf_suitability, 
+               aes(x = v5_global, y = v5_regional), 
+               color = "darkorange", size = 1) +
+    ggtitle("suitability of known SLF points in global vs regional model") +
+    labs(caption = "dashed lines represent the minimum suitablity threshold") +
+    scatter_style
 )
 
 ```
 
 ```{r save scatterplot}
 
-ggsave(slf_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "slf_suitability_maxent_v5_plot.jpg"),
+ggsave(slf_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "slf_suitability_maxent_v5_plot_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -167,16 +203,20 @@ load(file = file.path(here(), "data", "wineries.rda"))
 
 ```{r extract point values}
 
-IVR_points <- wineries %>%
-  dplyr::select(x, y)
+if(FALSE){
 
-# extract values
-IVR_suitability <- terra::extract(x = v5_stack, 
-                                  y = IVR_points, 
-                                  cells = TRUE, # get cell #s
-                                  xy = TRUE, # get coordinates
-                                  ID = TRUE # give ID column
-                                  ) 
+  IVR_points <- wineries %>%
+    dplyr::select(x, y)
+  
+  # extract values
+  IVR_suitability <- terra::extract(x = v5_stack, 
+                                    y = IVR_points, 
+                                    cells = TRUE, # get cell #s
+                                    xy = TRUE, # get coordinates
+                                    ID = TRUE # give ID column
+                                    ) 
+  
+}
 
 ```
 
@@ -208,22 +248,23 @@ Now that the values have been extracted, lets plot them.
 IVR_suitability <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "IVR_suitability_maxent_v5.csv"))
 
 (IVR_suitability_scatter <- ggplot() +
-  geom_vline(xintercept = 0.5) + 
-  geom_hline(yintercept = 0.5) + # quadrant lines
-  geom_point(data = IVR_suitability, 
-             aes(x = v5_global, y = v5_regional), 
-             color = "darkviolet", size = 1) +
-  ggtitle("suitability of IVR regions for SLF establishment in global vs regional models") +
-  scale_x_continuous(name = "suitability in global model", limits = c(0, 1), breaks = breaks) + # same break scale as for the SLF data
-  scale_y_continuous(name = "suitability in regional model", limits = c(0, 1), breaks = breaks) +
-  theme_minimal()
+    geom_vline(xintercept = 0.5) + # midpoint line
+    geom_vline(xintercept = 0.163, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in global model
+    geom_hline(yintercept = 0.5) +  # midpoint line
+    geom_hline(yintercept = 0.079, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in regional model
+    geom_point(data = IVR_suitability, 
+               aes(x = v5_global, y = v5_regional), 
+               color = "darkviolet", size = 1) +
+    ggtitle("suitability of IVR regions for SLF establishment in global vs regional models") +
+    labs(caption = "dashed lines represent the minimum suitablity threshold") +
+    scatter_style
 )
 
 ```
 
 ```{r save scatterplot}
 
-ggsave(IVR_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot.jpg"),
+ggsave(IVR_suitability_scatter, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -235,34 +276,31 @@ ggsave(IVR_suitability_scatter, filename = file.path(here(), "vignette-outputs",
 
 ## Plot points over SLF model
 
-Now I will plot the IVRs (purple) and known SLF points (orange) over the v5 version of the global model I produced.
+Here, I will plot the IVRs (purple) and known SLF points (orange) over the v5 version of the global model I produced.
 
 ```{r plot SLF suitability values}
 
-# plot with points
-v5_global_IVR_SF <- ggplot() +
+# plot with IVR and SLF points
+v5_global_IVR_SLF <- ggplot() +
   geom_raster(data = terra::as.data.frame(v5_global1, xy = TRUE), 
               aes(x = x, y = y, fill = v5_global)) +
   geom_point(data = slf_points, 
-             aes(x = x, y = y), color = "darkorange", size = 0.1) +
+             aes(x = x, y = y, color = "SLF populations"), size = 0.1, show.legend = TRUE) +
   geom_point(data = IVR_points, 
-             aes(x = x, y = y), color = "darkviolet", size = 0.1) +
-  xlab("longitude") +
-  ylab("latitude") +
+             aes(x = x, y = y, color = "IVR regions"), size = 0.1, show.legend = TRUE) +
   xlim(-133.593750, -52.294922) +
   ylim(25.085599, 55.304138) +
-  theme_minimal() +
-  scale_fill_continuous(type = "gradient") +
-  theme(legend.position = "bottom") +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE)) + 
-  labs(title = "Contemporary slf suitability in global model") +
-  coord_equal() 
+  scale_fill_distiller(name = "suitability for SLF", palette = "Greys", type = "seq", direction = 1) +
+  scale_color_manual(name = "Point Data", values = c("SLF populations" = "darkorange", "IVR regions" = "darkviolet")) +
+  guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
+  labs(title = "Contemporary SLF suitability in global model with IVR locations") +
+  map_style
 
 ```
 
-```{r save scatterplot}
+```{r save map}
 
-ggsave(v5_global_IVR_SLF, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot.jpg"),
+ggsave(v5_global_IVR_SLF, filename = file.path(here(), "vignette-outputs", "figures", "v5_global_IVR_SLF.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -436,29 +474,21 @@ values.obj <- c(
 (v5_regional2_plot <- ggplot() +
   geom_raster(data = v5_regional2_df, 
               aes(x = x, y = y, fill = as.character(v5_regional))) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
   labs(title = "Predicted current regional niche for \n Lycorma delicatula (binary suitability)") +
-  coord_equal() +
   scale_discrete_manual(name = "suitability for SLF",
                         values = values.obj,
                         breaks = breaks.obj,
                         labels = labels.obj,
-                        aesthetics = "fill")
+                        aesthetics = "fill") +
+  map_style
 )
   
 # plot regional raw
 (v5_regional_raw_plot <- ggplot() +
   geom_raster(data = terra::as.data.frame(v5_regional1, xy = TRUE), 
               aes(x = x, y = y, fill = as.character(Lycorma_delicatula_avg))) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
   labs(title = "Predicted current regional niche for \n Lycorma delicatula") +
-  coord_equal()
+  map_style
 )
 
 ```
@@ -554,26 +584,22 @@ v5_summed_points_plot <- ggplot() +
               aes(x = x, y = y, fill = as.character(v5_summed))) +
   geom_point(data = slf_all_points, 
              aes(x = x, y = y), color = "black", size = 0.1) +
-  xlab("longitude") +
-  ylab("latitude") +
   xlim(-133.593750, -52.294922) +
   ylim(25.085599, 55.304138) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
   guides(fill = guide_legend(nrow = 2, byrow = TRUE)) + # legend with 2 rows
   labs(title = "Predicted suitability in current global vs regional niche for SLF") +
-  coord_equal() +
   scale_discrete_manual(name = "suitability for SLF",
                         values = values.obj,
                         breaks = breaks.obj,
                         labels = labels.obj,
-                        aesthetics = "fill")
+                        aesthetics = "fill") +
+  map_style
 
 ```
 
 ```{r save summed raster with points}
 
-ggsave(v5_summed_points_plot, filename = file.path(here(), "vignette-outputs", "figures", "v5_maxent_overlay_slfPoints.jpg"),
+ggsave(v5_summed_points_plot, filename = file.path(here(), "vignette-outputs", "figures", "v5_maxent_overlay_slfPoints_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -587,18 +613,14 @@ ggsave(v5_summed_points_plot, filename = file.path(here(), "vignette-outputs", "
 v5_avg_binary_summed_plot <- ggplot() +
   geom_raster(data = v5_avg_binary_summed_df, 
               aes(x = x, y = y, fill = as.character(v5_summed))) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
   guides(fill = guide_legend(nrow = 2, byrow = TRUE)) + # legend with 2 rows
   labs(title = "Predicted suitability in current global vs regional niche for SLF") +
-  coord_equal() +
   scale_discrete_manual(name = "suitability for SLF",
                         values = values.obj,
                         breaks = breaks.obj,
                         labels = labels.obj,
-                        aesthetics = "fill")
+                        aesthetics = "fill") + 
+  map_style
 
 
 ```
@@ -613,3 +635,123 @@ ggsave(v5_avg_binary_summed_plot, filename = file.path(here(), "vignette-outputs
 
 ```
 
+
+
+
+# Appendix
+
+## SLF and IVR scatter plots
+
+I will color code these scatter plots by US state name. I will need to use `tidygeocoder::reverse_geocode()` to match the lat / lon data to a state name.
+
+```{r find state names for lat/lon data}
+
+# read in slf_suitability tibble to 
+slf_suitability2 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_suitability_maxent_v5.csv"))
+
+slf_point_states <- tidygeocoder::reverse_geocode(.tbl = slf_suitability2, 
+                                                  lat = y, long = x, 
+                                                  full_results = TRUE, # give each element of the address in a column
+                                                  method = "arcgis",
+                                                  progress_bar = TRUE
+                                                  )
+
+# select only columns we care about
+slf_point_states <- slf_point_states %>%
+  select(ID:y, Subregion:RegionAbbr, Postal, CntryName)
+
+# save output
+write_csv(x = slf_point_states, file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v0_2023-07_withSubregions.csv"))
+
+```
+
+```{r plot SLF suitability values}
+
+slf_point_states2 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v0_2023-07_withSubregions.csv"))
+
+# R color brewer palette object
+plot.pal <- brewer.pal(12, "OrRd") 
+plot.pal <- colorRampPalette(plot.pal)(24)
+
+# plot
+(slf_suitability_scatter_region <- ggplot() +
+   geom_vline(xintercept = 0.5) + # midpoint line
+   geom_vline(xintercept = 0.163, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in global model
+   geom_hline(yintercept = 0.5) +  # midpoint line
+   geom_hline(yintercept = 0.079, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in regional model
+   geom_point(data = slf_point_states2, 
+              aes(x = v5_global, y = v5_regional, color = Region),
+              size = 1) +
+   viridis::scale_color_viridis(discrete = TRUE, option = "D") +
+   guides(color = guide_legend(override.aes = list(size = 2))) +
+   ggtitle("suitability of known SLF points in global vs regional model") +
+   labs(caption = "dashed lines represent the minimum suitablity threshold") +
+   scatter_style
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(slf_suitability_scatter_region, filename = file.path(here(), "vignette-outputs", "figures", "slf_suitability_maxent_v5_plot_withStates_v1.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
+Now I will do the same thing for the IVR regions
+
+```{r find state names for lat/lon data}
+
+IVR_suitability2 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "IVR_suitability_maxent_v5.csv"))
+
+# reverse geocode to obtain lat/lon data
+IVR_point_states <- tidygeocoder::reverse_geocode(.tbl = IVR_suitability2, 
+                                                  lat = y, long = x, 
+                                                  full_results = TRUE, # give each element of the address in a column
+                                                  method = "arcgis",
+                                                  progress_bar = TRUE
+                                                  )
+
+# select only columns we care about
+IVR_point_states <- IVR_point_states %>%
+  select(ID:y, Subregion:RegionAbbr, Postal, CntryName)
+
+write_csv(x = IVR_point_states, file = file.path(here(), "vignette-outputs", "data-tables", "wineries_withSubregions.csv"))
+
+```
+
+
+```{r plot SLF suitability values}
+
+IVR_point_states2 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "wineries_withSubregions.csv"))
+
+(IVR_suitability_scatter_region <- ggplot() +
+   geom_vline(xintercept = 0.5) + # midpoint line
+   geom_vline(xintercept = 0.163, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in global model
+   geom_hline(yintercept = 0.5) +  # midpoint line
+   geom_hline(yintercept = 0.079, linetype = "dashed", alpha = 0.3) + # minimum threshold of suitability in regional model
+   geom_point(data = IVR_point_states2, 
+              aes(x = v5_global, y = v5_regional, color = Region), 
+              size = 1) +
+    viridis::scale_color_viridis(discrete = TRUE, option = "D") +
+   ggtitle("suitability of IVR regions for SLF establishment in global vs regional models") +
+   theme(legend.position = "bottom") +
+    guides(color = guide_legend(title = "State Name", ncol = 2, override.aes = list(size = 2))) +
+   labs(caption = "dashed lines represent the minimum suitablity threshold") +
+   scatter_style 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(IVR_suitability_scatter_region, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_maxent_v5_plot_withStates_v1.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```

@@ -1,0 +1,28 @@
+---
+title: "Extra analyses"
+author: "Sam Owens"
+date: "2023-08-21"
+output: html_document
+---
+
+This vignette contains extra analyses and figures to explore ideas that don't necessarily fit with the main flow of the `slfSpread` project (or have yet to find a spot). 
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)
+
+library(here) 
+# here() is set at the root folder of this package
+
+library(terra)
+
+```
+
+# Invasion stage preliminary predictions
+
+I will create a map where I vaguely outline areas that I think are suitable for SLF. I will also create a map with circles around areas where SLF populations might be at certain invasion stages (ex. sink populations vs established populations).
+
+```{r}
+
+```
+
