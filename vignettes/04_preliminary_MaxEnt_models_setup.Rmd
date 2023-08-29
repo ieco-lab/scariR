@@ -1,0 +1,239 @@
+---
+title: "Setup for initial MaxEnt models used to choose background area"
+author: "Sam Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-07-27"
+output: html_document
+---
+
+This vignette will outline the methodology for selecting the best fit background area selection method. This step will only be performed with the historical versions of the bioclim layers.
+
+(THEORY)
+
+First, I will trim the bioclim variables retrieved in vignette 03 to a bounding box of the eastern USA
+
+Second, I will create the fixed area AUC background points dataset, a set of points across a 1km grid of the USA.
+
+Third, I will create three reference layers, one for each type of background area (entire eastern USA, DD model eastern USA, 355km around points).
+
+Fourth, I  will select randomized points from each background area size as the dataset for calculating the flexible area AUC.
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+
+library(devtools)
+library(dismo) # run maxent models, generate random background points
+
+
+
+```
+
+
+# 1. Trim Bioclim layers to Eastern USA
+
+
+```{r setup for cropping bioclim layers}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 5 bioclim layers I will be using in my models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("atc|bio2|bio11|bio12|bio15", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object
+ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+
+```
+
+```{r loop to crop bioclim layers to eastern N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+# resample NA value so it will display correctly
+bio11 <- terra::subst(x = bio11, from = -9999, to = NA)
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+The layers have been cropped to the proper extent.
+
+
+# 2. Select Fixed Area AUC points
+
+
+We will now generate a gridded area from which to extract a fixed-area AUC. AUC is a best-fit metric that is built into MaxEnt, but many papers have pointed out that it is sensitive to the size of the background. The size of the background happens to be the exact variable being changed between these models, creating an issue for assessing the fit of the models. [VanDerWal et.al](https://www.sciencedirect.com/science/article/pii/S0304380008005486) suggested a method for calculation of the AUC that can compensate for this sensitivity to background area. Essentially, one set of background points is generated at random from the area in question (the maxent default) and another is calculated from a 1km grid (1 point per cell) across the entire area of interest. The fixed set of points is used for all models, regardless of the distribution of presences, while the "flexible area AUC" (generated in step 4) is calculated from the background area chosen for that model. Two AUCs will be calculated per model.
+
+For the purposes of this analysis, I will be taking the fixed area background point sets from the eastern half of the USA `(xmin: -96.503906, xmax: -59.589844, ymin: 28.304381, ymax: 47.457809)`. This area was chosen because a) it includes all known SLF records in  N America, according to the [NYSIPM SLF Map](https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC), b) it includes most of the projected suitable areas from previous models, and c) it is a smaller overall area from which to draw points for the fixed area AUC, so AUC values are less likely to suffer from over-inflation. The "fixed area AUC" will be taken from a 1km grid that is laid out across this area. 
+
+(find paper saying how many points to take)
+
+First, I will extract one point per grid cell across the entire area of the bounding box I extracted of the eastern USA. These data points will be used to calculate the "fixed area AUC". I will load in a raster of the eastern USA that was created in `vignette-name`. This will be used as a reference area for the creation of the fixed area AUC points dataset. We will convert this raster to a data frame and obtain the coordinates for each grid cell. Each set of coordinates will represent the centroid of each grid cell, which are roughly 1km apart at the equator. The fixed area AUC requires a grid of regularly spaced points across the area of interest, so these coordinates should satisfy meet those criteria.
+
+We will use `bio11`, created above.
+
+```{r create fixed area AUC dataset}
+
+if(FALSE) {
+
+  # file path to local directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  
+  bio11_AUC <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+  
+  # extract the coordinates for each grid cell
+  fixed_AUC <- terra::as.data.frame(x = bio11_AUC, xy = TRUE, cells = TRUE) %>%
+    na.omit() %>%
+    # filter out NAs
+    filter(`CHELSA_bio11_1981-2010_V.2.1` != "-9999") %>%
+    dplyr::select(x, y, cell, `CHELSA_bio11_1981-2010_V.2.1`)
+  
+  # This basically obtains the coordinates for the centroid of each grid cell. This will be saved as the fixed area AUC coordinates.  
+  
+  # write to .csv
+  write_csv(x = fixed_AUC, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"))
+   
+}
+
+```
+
+Now that we have extracted a point per grid cell, we will plot it to ensure the process was correct. We will convert the raster of the eastern USA to a data frame and then plot it with the fixed area points. The fixed area AUC points should be equally spaced to about 1 every 1km grid cell, so we will also zoom in to check if the process was successful. 
+
+```{r plot points}
+
+# load in fixed area AUC dataset again
+fixed_AUC <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"))
+
+# this plot takes awhile to run, only run it if you are concerned that some points might be where there are supposed to be NAs (such as over the ocean)
+if(FALSE) {
+
+  # plot data
+  fixed_AUC_plot <- ggplot() +
+    geom_raster(data = bio11_df, # the raster df from earlier
+                aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+   #geom_polygon(data = map_data("county"), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) + # county outlines
+    geom_point(data = fixed_AUC, 
+               aes(x = x, y = y), color = "darkorange") +
+   #xlim(-75.484057, -74.721519) + # bucks county, PA
+   #ylim(40.048595, 40.60858) +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    labs(title = "Fixed area AUC points") +
+    coord_equal()
+    # coord_quickmap(xlim = c(-75.280266, -74.955763), ylim = c(39.867004, 40.137992), expand = TRUE)
+
+}
+
+# the points are so dense that we cannot resolve them at this scale. However, we can at least confirm that the function only created points on land masses
+
+```
+
+
+
+# 3. Create reference layer for each background type.
+
+
+
+# 4. Select Flexible Area AUC points
+
+
+Background points datasets will be stored in `vignette-outputs`.
+
+```{r background points for entire Eastern USA bbox}
+
+if(FALSE) {
+
+  # file path to local directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  # load in reference layer
+  bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc"))
+  
+  
+  # generate random points 
+  easternUSA_entire_points <- dismo::randomPoints(mask = bio11, 
+                                                  n = 10000, # default number used by maxent
+                                                  lonlatCorrection = TRUE # weight samples by latitude because cell size is larger closer to equator
+                                                  )
+
+  # save
+  write_csv(x = easternUSA_entire_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_flexible_entire_area_points.csv"))
+  
+}
+  
+```
+
+
+# References
+
+
+
+
+
+

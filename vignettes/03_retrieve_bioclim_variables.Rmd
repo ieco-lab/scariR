@@ -4,6 +4,8 @@ author: "Sam Owens"
 date: "2023-07-17"
 contact: 'sam.owens@temple.edu'
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 This vignette will walk through the process of downloading and tidying CHELSA climate rasters. [CHELSA](https://chelsa-climate.org/) represents a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables. These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
@@ -608,7 +610,7 @@ var.renames <- c(
 
 ```
 
-I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose annual mean temp and precip (bio 1 and 12). None of the GDD variables were chosen because they were all highly correlated with annual mean temp or each other. Summed growing degree days was the exception to this rule, because it is not highly correlated with annual mean temp. However, it was not chosen because GDD is being utilized downstream. From this, I can also choose atc because it is not correlated with any other variables. 
+I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). From this, I also chose atc because it is not correlated with any other variables. None of the GDD variables were chosen because they were all highly correlated with bio 11 or each other.
 
 I will save this plot and produce a binarized version before I continue choosing variables. This way, the cutoff is clearer and the choice is more obvious.
 
@@ -648,7 +650,7 @@ env.cor6$value <- cut(env.cor6$value, breaks = c(0, 0.709, 1), labels = c("0.7 o
 
 ```
 
-Indeed, the choice is much clearer on this plot. Annual mean temp (bio 1) is above 0.7 correlated with all other temp-based variables, except mean diurnal range (bio 2) and temperature annual range (bio 7). Meanwhile, annual precipitation is highly correlated with all precipitation based variables, except precipitation seasonality (bio 12). These three variables were also chosen. 
+Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarter (bio 11) is above 0.7 correlated with all other temp-based variables, except mean diurnal range (bio 2). Meanwhile, annual precipitation is highly correlated with all precipitation based variables, except precipitation seasonality (bio 12). These two variables were also chosen. 
 
 ```{r save binary heatmap}
 
@@ -844,6 +846,8 @@ Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., 
 Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. https://doi.org/10.16904/envidat.228.v2.1
 
 Krasting, John P.; John, Jasmin G; Blanton, Chris; McHugh, Colleen; Nikonov, Serguei; Radhakrishnan, Aparna; Rand, Kristopher; Zadeh, Niki T.; Balaji, V; Durachta, Jeff; Dupuis, Christopher; Menzel, Raymond; Robinson, Thomas; Underwood, Seth; Vahlenkamp, Hans; Dunne, Krista A.; Gauthier, Paul PG; Ginoux, Paul; Griffies, Stephen M.; Hallberg, Robert; Harrison, Matthew; Hurlin, William; Malyshev, Sergey; Naik, Vaishali; Paulot, Fabien; Paynter, David J; Ploshay, Jeffrey; Reichl, Brandon G; Schwarzkopf, Daniel M; Seman, Charles J; Silvers, Levi; Wyman, Bruce; Zeng, Yujin; Adcroft, Alistair; Dunne, John P.; Dussin, Raphael; Guo, Huan; He, Jian; Held, Isaac M; Horowitz, Larry W.; Lin, Pu; Milly, P.C.D; Shevliakova, Elena; Stock, Charles; Winton, Michael; Wittenberg, Andrew T.; Xie, Yuanyu; Zhao, Ming (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP. Version YYYYMMDD[1].Earth System Grid Federation. https://doi.org/10.22033/ESGF/CMIP6.1407
+
+Lee, J.-S., I.-K. Kim, S.-H. Koh, S. J. Cho, S.-J. Jang, S.-H. Pyo, and W. I. Choi. 2011. Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology 14:123–125.
 
 Maino, J. L., R. Schouten, J. C. Lye, P. A. Umina, and O. L. Reynolds. 2022. Mapping the life-history, development, and survival of spotted lantern fly in occupied and uninvaded ranges. Biological Invasions 24:2155–2167. 10.1007/s10530-022-02764-z
 

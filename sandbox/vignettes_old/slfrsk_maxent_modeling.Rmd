@@ -507,8 +507,6 @@ if(TRUE) {
     # change scale of plots to be standard across figures
     geom_raster(data = main_layer_df, 
               aes(x = x, y = y, fill = global_bio_1)) +
-    # set view to N America extent, plus 2 on each side to see if cropping worked
-    coord_cartesian() +
     xlab("longitude") +
     ylab("latitude") +
     theme_minimal() +
