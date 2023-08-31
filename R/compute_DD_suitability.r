@@ -21,9 +21,11 @@
 #'Data frames / .csv files should contain 15 columns. The initial 3
 #'columns should contain descriptors, with the 1st column as the raster cell
 #'number (see examples) and the 2nd and 3rd columns as longitude and latitude,
-#'respectively. If 1st column is unavailable, see "troubleshooting section of
-#'`examples` for code to produce this. Columns 4-15 should contain temperature
-#'data for each month of the year (one month per column).
+#'respectively. If 1st column is unavailable, see "troubleshooting" section of
+#'`examples` for code to produce this. Columns 4-15 should contain mean
+#'temperature data for each month of the year (one month per column), with each
+#'row being a grid cell of the raster that was used to create it. The raster
+#'that was used in the original workflow was at the 5 arcminute scale.
 #'
 #'## thresh:
 #'We have pre-built a number of important DD thresholds, as outlined by Dennis

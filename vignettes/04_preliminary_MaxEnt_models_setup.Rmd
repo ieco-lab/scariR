@@ -29,7 +29,8 @@ here()
 # here() starts at the root folder of this package.
 
 library(devtools)
-library(dismo) # run maxent models, generate random background points
+library(dismo) # generate random background points
+library(terra)
 
 
 
@@ -88,6 +89,8 @@ if(FALSE) {
   
 }
 
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
 ```
 
 Lets plot one of the new layers to make sure the cropping worked.
@@ -120,7 +123,6 @@ The layers have been cropped to the proper extent.
 
 # 2. Select Fixed Area AUC points
 
-
 We will now generate a gridded area from which to extract a fixed-area AUC. AUC is a best-fit metric that is built into MaxEnt, but many papers have pointed out that it is sensitive to the size of the background. The size of the background happens to be the exact variable being changed between these models, creating an issue for assessing the fit of the models. [VanDerWal et.al](https://www.sciencedirect.com/science/article/pii/S0304380008005486) suggested a method for calculation of the AUC that can compensate for this sensitivity to background area. Essentially, one set of background points is generated at random from the area in question (the maxent default) and another is calculated from a 1km grid (1 point per cell) across the entire area of interest. The fixed set of points is used for all models, regardless of the distribution of presences, while the "flexible area AUC" (generated in step 4) is calculated from the background area chosen for that model. Two AUCs will be calculated per model.
 
 For the purposes of this analysis, I will be taking the fixed area background point sets from the eastern half of the USA `(xmin: -96.503906, xmax: -59.589844, ymin: 28.304381, ymax: 47.457809)`. This area was chosen because a) it includes all known SLF records in  N America, according to the [NYSIPM SLF Map](https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC), b) it includes most of the projected suitable areas from previous models, and c) it is a smaller overall area from which to draw points for the fixed area AUC, so AUC values are less likely to suffer from over-inflation. The "fixed area AUC" will be taken from a 1km grid that is laid out across this area. 
@@ -133,40 +135,40 @@ We will use `bio11`, created above.
 
 ```{r create fixed area AUC dataset}
 
-if(FALSE) {
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
-  # file path to local directory
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-  
-  
-  bio11_AUC <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
-  
-  # extract the coordinates for each grid cell
-  fixed_AUC <- terra::as.data.frame(x = bio11_AUC, xy = TRUE, cells = TRUE) %>%
-    na.omit() %>%
-    # filter out NAs
-    filter(`CHELSA_bio11_1981-2010_V.2.1` != "-9999") %>%
-    dplyr::select(x, y, cell, `CHELSA_bio11_1981-2010_V.2.1`)
-  
-  # This basically obtains the coordinates for the centroid of each grid cell. This will be saved as the fixed area AUC coordinates.  
-  
-  # write to .csv
-  write_csv(x = fixed_AUC, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"))
-   
-}
+
+bio11_AUC <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+
+# extract the coordinates for each grid cell
+fixed_AUC <- terra::as.data.frame(x = bio11_AUC, xy = TRUE, cells = TRUE) %>%
+  na.omit() %>%
+  # filter out NAs
+  filter(`CHELSA_bio11_1981-2010_V.2.1` != "-9999") %>%
+  dplyr::select(x, y, cell)
+
+# This basically obtains the coordinates for the centroid of each grid cell. This will be saved as the fixed area AUC coordinates.  
 
 ```
 
-Now that we have extracted a point per grid cell, we will plot it to ensure the process was correct. We will convert the raster of the eastern USA to a data frame and then plot it with the fixed area points. The fixed area AUC points should be equally spaced to about 1 every 1km grid cell, so we will also zoom in to check if the process was successful. 
+```{r write as csv}
+
+write_csv(x = fixed_AUC, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"))
+
+# again, I dont think the cell numbers in this file match those retrieved from the un-cropped rasters
+
+```
+
+Now that we have extracted a point per grid cell, we will plot it to ensure the process was correct. We will convert the raster of the eastern USA to a data frame and then plot it with the fixed area points. The fixed area AUC points should be equally spaced to about 1 every 1km grid cell, so we will also zoom in to check if the process was successful. This plot takes awhile to run, only run it if you are concerned that some points might be where there are supposed to be NAs (such as over the ocean).
 
 ```{r plot points}
 
 # load in fixed area AUC dataset again
 fixed_AUC <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"))
 
-# this plot takes awhile to run, only run it if you are concerned that some points might be where there are supposed to be NAs (such as over the ocean)
 if(FALSE) {
 
   # plot data
@@ -188,13 +190,189 @@ if(FALSE) {
 
 }
 
-# the points are so dense that we cannot resolve them at this scale. However, we can at least confirm that the function only created points on land masses
+```
+
+The points are so dense that we cannot resolve them at this scale. However, we can at least confirm that the function only created points on land masses. 
+
+# 3. Create reference layer for each background type.
+
+I will start with the bio 11 raster created above. I will mask this raster using two other methods to select the background area, from which to retrieve the random background points for the "flexible area AUC". By the end of this step, I will have three differently sized areas from which to draw these points: the entire eastern USA, a suitable subset of this region based on a Degree-Day accumulation model, and an suitable area of 355km around each known SLF presence.
+
+The first step will be to create a raster of the entire area of the eastern USA. This assumes that all of the eastern USA is suitable. This has already been done in the step above. The raster will be slightly modified so that the output is binarized (so the entire land area will be a 1, or suitable).
+
+The the second step will be to calculate the area of the eastern USA that is found to be suitable by an mechanistic Degree Day model. This model simply uses a threshold for the necessary number of degree days for SLF to reach a particular life stage (important thresholds have been pre-built into the function). This function then applies this equation to each grid cell across a raster. For this function to work, we will need to retrieve the monthly average temperature for 1981-2010, globally. This vignette will only display the steps of calling the function within this package that contains the model, `compute_DD_suitability()`, using the output of that function to create a binary raster of the eastern USA, and aggregating the binarized raster to a 30 arcsecond scale. All steps taken to download the CHELSA data necessary and format it for use can be found in the vignette "extract_monthly_temps_DD.Rmd". 
+
+This model was developed by Stephanie Lewkiewicz, PhD and is loosely based on Lewkiewicz et.al, 2022. 
+
+The final step will be to create a raster, with the suitable area being a 355km buffer area around all SLF presences in N America.
+
+## Entire suitable area
+
+I will modify the above raster so that all land areas are equal to 1 (suitable) and all water areas are NA.
+
+```{r modify bio11 raster}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters")
+
+entire_USA <- terra::rast(x = file.path(mypath, "chelsa2.1_30arcsec", "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+
+# setup to do edits
+
+# get minmax
+terra::minmax(entire_USA)
+# create matrix of suitability values for use in reclassify
+classes.obj <- data.frame(
+  from = -14,
+  to = 19,
+  becomes = 1
+)
+
+# begin edits
+
+# change name of variable
+names(entire_USA) <- "suitability"
+# recalssify raster according to values
+entire_USA <- terra::classify(x = entire_USA, 
+                              rcl = classes.obj,
+                              right = NA, # close both ends of the range of classification values
+                              others = NA, # anything else, including -9999, should be NA
+                              filename = file.path(mypath, "chelsa2.1_suitable_area", "easternUSA_entire.asc"), # also write to file
+                              filetype = "AAIGrid", 
+                              overwrite = TRUE) 
+
 
 ```
 
+The output says that both the min and max values are 1, which is a good sign. I will plot it to ensure the correct raster was created.
+
+```{r plot entire east USA}
+
+# convert to df
+entire_USA_df <- terra::rast(x = file.path(mypath, "chelsa2.1_suitable_area", "easternUSA_entire.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = entire_USA_df, 
+            aes(x = x, y = y, fill = suitability)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  coord_equal()
+)
+
+```
+
+This raster is ready for use.
+
+## Mechanistic DD model suitable area
 
 
-# 3. Create reference layer for each background type.
+# convert DD model output to raster (use version created in Matlab)
+
+```{r convert DD model output csv to raster and export}
+
+mypath <- file.path(here() %>%
+                   dirname(),
+                 "maxent", "historical_climate_rasters", "wc2.1_5arcmin")
+
+# load in an original tif as a sample
+sample_tif <- rast(x = file.path(mypath, "originals", "tmin", "wc2.1_5m_tmin_01.tif"))
+
+# load in DD calculation created in R
+DD_suitable_area <- read_csv(file = file.path(mypath, "dd_accumulation_work", "annual_dd_accumulation_adult_emergence-1_20230619.csv")) %>%
+  dplyr::select(-c(cell, total_annual_dds, `...1`))
+# convert to raster
+DD_suitable_area_raster <- rast(x = DD_suitable_area)
+
+# set extent
+
+# extent does not need to be cropped
+ext(sample_tif)
+ext(DD_suitable_area_raster)
+
+# set crs
+
+# crs object- uses same proj4 string used in other maxent models
+crs.obj <- "EPSG:4326"
+# check crs
+crs(DD_suitable_area_raster, describe = TRUE, proj = TRUE)
+# set crs
+crs(DD_suitable_area_raster) <- crs.obj
+# project
+# DD_suitable_area_raster <- project(x = DD_suitable_area_raster, from = DD_suitable_area_raster, to = crs.obj)
+# ensure crs is set
+crs(DD_suitable_area_raster, describe = TRUE, proj = TRUE)
+
+
+# write as raster
+writeRaster(x = DD_suitable_area_raster, filename = file.path(mypath, "DD_suitable_area_adult_emergence-1.tif"), filetype = "GTiff", overwrite = FALSE)
+
+```
+
+```{r masking .tif file}
+# create masked version for use in MaxEnt
+
+DD_suitable_area_masked <- subst(DD_suitable_area_raster, from = 0, to = NA)
+
+# write as raster
+writeRaster(x = DD_suitable_area_masked, filename = file.path(mypath, "DD_suitable_area_masked.tif"), filetype = "GTiff", overwrite = FALSE)
+
+```
+
+# visualize DD model
+
+```{r visualize and EDA DD suitable area}
+
+#convert sample to df to visualize
+sample_tif_df <- terra::as.data.frame(sample_tif, xy = TRUE)
+
+# visualize over sample tif
+test_map <- ggplot() +
+  geom_raster(data = sample_tif_df,
+              aes(x = x, y = y),
+              fill = "red") +
+  geom_raster(data = DD_suitable_area,
+              aes(x = x, y = y, fill = reaches_egg_laying)) +
+  coord_quickmap()
+
+# visualize over ggplot world map
+test_map <- ggplot() +
+  geom_polygon(data = map_data('world'), 
+               aes(x = long, y = lat, group = group), 
+               fill = "red", 
+               color = "red",
+               size = 0.75) +
+  geom_raster(data = DD_suitable_area,
+              aes(x = x, y = y, fill = reaches_egg_laying)) +
+  coord_quickmap()
+
+# save map to ask for help
+ggsave(test_map, filename = file.path("C:/Users/tun83449/Downloads/DD_suitable_area_map.png"), dpi = "retina")
+  
+# raster is not lining up with ggplot basemap. Troubleshooting to follow
+
+# check crs of raster
+crs(DD_suitable_area_raster, describe = TRUE)
+# compare with original
+crs(sample_tif, describe = TRUE)
+# crs is the same
+
+# check extent
+ext(DD_suitable_area_raster)
+# extent of sample tif
+ext(sample_tif)
+
+```
+
+## Buffer around SLF presences suitable area
+
+
+
 
 
 
@@ -232,6 +410,7 @@ if(FALSE) {
 
 # References
 
+Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
 
 
 

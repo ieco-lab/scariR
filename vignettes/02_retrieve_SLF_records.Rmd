@@ -6,6 +6,8 @@ contact: 'sam.owens@temple.edu'
 output: html_document
 ---
 
+# Overview
+
 This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.csv` file of SLF presence records that can be loaded into MaxEnt java or MaxEnt for R (see the [dismo package](https://cran.r-project.org/web/packages/dismo/index.html)).
 
 The first step will be to retrieve data from `GBIF` and `lydemapr`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The [lyde()] function within the `Lydemapr` package gives access to over 650,000 SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 

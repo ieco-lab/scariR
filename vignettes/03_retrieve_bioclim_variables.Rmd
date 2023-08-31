@@ -8,6 +8,8 @@ editor_options:
   chunk_output_type: inline
 ---
 
+# Overview
+
 This vignette will walk through the process of downloading and tidying CHELSA climate rasters. [CHELSA](https://chelsa-climate.org/) represents a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables. These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
 
 First, I will download the data from CHELSA into a local library using ...

@@ -1,0 +1,222 @@
+---
+title: "Extract monthly mean temperatures to create DD suitability maps"
+author: "Sam Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-08-31"
+output: html_document
+---
+
+# Overview
+
+This vignette will extract climate rasters from [CHELSA](https://chelsa-climate.org/timeseries/) to data frames. These data are historical temperature means from 1981-2010. They are further divided by month. Each file is a global-scale raster containing tmax for that month and year. These will be extracted to a final data frame with with one column per month and the averaged means over the 30 year period. 
+
+These data will be used to produce a binary suitability map via the Lewkiewicz et al PDE model for SLF. The final data produced from this model will also be manipulated and explored here.
+
+# Setup
+
+```{r library necessary packages}
+
+library(tidyverse)
+library(devtools)
+
+library(here)
+here() # here() starts at the root folder of this package
+
+library(terra)
+
+```
+
+# Download rasters to directory
+
+```{r download monthly mean CHELSA data}
+
+if(FALSE) {
+
+  # historical data
+  chelsa_monthly_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_1981-2010_monthly_mean_temp_URLs.txt"),
+                                col_names = FALSE) %>%
+    as.data.frame() %>%
+    dplyr::select("X1") %>%
+    dplyr::rename("URL" = "X1")
+
+  # loop to download historical URLs
+  for(i in 1:nrow(chelsa_monthly_URLs)) {
+    
+    file.tmp <- chelsa_monthly_URLs[i, ]
+    
+    utils::browseURL(url = file.tmp)
+    
+  }
+
+}
+
+```
+
+```{r ensure all files downloaded properly}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+# list files in directory
+as.matrix(list.files(file.path(mypath, "originals", "tavg")))
+
+# remove wrong files
+file.remove(file.path(mypath, "originals/tavg/CHELSA_tas_07_2007_V.2.1.tif.crdownload"))
+file.remove(file.path(mypath, "originals/tavg/CHELSA_tas_07_1993_V.2.1.tif.crdownload"))
+
+```
+
+```{r download files that failed as necessary}
+
+# select URLs that failed
+  chelsa_monthly_URLs2 <- slice(.data = chelsa_monthly_URLs, c(193, 207))
+  
+  # loop to download historical URLs
+  for(i in 1:nrow(chelsa_monthly_URLs2)) {
+    
+    file.tmp <- chelsa_monthly_URLs2[i, ]
+    
+    utils::browseURL(url = file.tmp)
+    
+  }
+
+```
+
+# Group, stack and average rasters per month
+
+Currently, the directory of files contains one file per month and year of averaged temperature data. I will need to subdivide the directory of files into groups by month, stack these rasters and average them. This will produce one averaged raster per month that I can then convert to a data frame.
+
+```{r}
+
+if(FALSE){
+
+# list of files for that
+URL.obj <- 
+
+  
+  for(i in ){
+
+    
+        
+  }
+
+}
+
+```
+
+
+
+
+# convert rasters to dfs
+
+```{r tavg to df loop}
+
+# ONLY EDIT THESE TWO OBJECTS
+
+# my path
+mypath <- file.path(here() %>%
+                   dirname(),
+                 "maxent", "historical_climate_rasters", "wc2.1_5arcmin")
+
+data_type <- "tavg"
+
+
+
+
+
+# First, I need to create a directory of file paths and of final file names
+
+# pathing objects
+
+# list of input file paths
+input_paths <- list.files(file.path(mypath, "originals", data_type), full.names = TRUE)
+
+input_paths[1]
+
+# file path for output
+output_path <- gsub(pattern = paste0("originals/", data_type, "/wc2.1_5m_", data_type, "_01.tif"), replacement = paste0("dfs/", data_type), x = input_paths[1])
+
+# naming objects
+
+# list of .tif file names for conversion
+input_names <- list.files(file.path(mypath, "originals", data_type), full.names = FALSE)
+# list of df names for output from the loop
+output_names <- gsub(pattern = ".tif", replacement = ".csv", x = input_names)
+
+
+# check
+
+# check input paths
+input_paths[5]
+# check output path
+paste0(output_path, output_names[5])
+
+
+
+# loop
+for (i in seq_along(1:length(input_paths))) {
+  
+  # read the data
+  data_import <- rast(input_paths[i])
+  
+  # convert to data.frame
+  data_import <- terra::as.data.frame(data_import, cells = TRUE, xy = TRUE)
+  
+  # write as csv
+  write_csv(x = data_import, file = file.path(output_path, output_names[i]))
+  
+}
+
+```
+
+# file consolidation
+
+```{r tavg csv joining}
+
+# ONLY EDIT THESE TWO OBJECTS
+
+# my path
+mypath <- file.path(here() %>%
+                   dirname(),
+                 "maxent", "historical_climate_rasters", "wc2.1_5arcmin")
+
+data_type <- "tavg"
+
+# First, I need to create a directory of file paths and of final file names
+
+# pathing objects
+
+# list of input file paths
+input_paths <- list.files(file.path(mypath, "dfs", data_type), full.names = TRUE)
+
+# file path for output
+output_path <- file.path(mypath, "dfs")
+
+
+# the initial object that others will be joined to (the january df)- RUN THIS LINE BEFORE THE FOR LOOP
+data_join <- read_csv(input_paths[1])
+
+# loop- RUN ABOVE CODE FIRST
+for (i in 2:length(input_paths)) {
+  
+  # read the other csvs into this object
+  data_join <- read_csv(input_paths[i]) %>%
+    # join each other csv to the january csv. I am like 99% sure the lat, long and cell number are the same between months
+    right_join(data_join, ., by = c("cell", "x", "y"))
+  
+}
+
+# write as csv
+write_csv(x = data_join, file = file.path(output_path, paste0("ANNUAL_wc2.1_5m_", data_type, ".csv")))
+  
+```
+
+The above datasets were used to create a binary suitability based on DD accumulation. This function used a threshold number of degree days that is necessary for 50% of an SLF population to reach egg-laying stage. From this count, a binary suitability metric was computed. I need to convert this output from the DD function, which was calculated using the datasets above, into a raster and visualize it.
+
+# References
+
+Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. https://doi.org/10.1038/sdata.2017.122
+
+Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. https://doi.org/10.16904/envidat.228.v2.1
