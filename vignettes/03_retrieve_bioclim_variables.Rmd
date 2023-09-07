@@ -20,6 +20,10 @@ Third, I will assess the level of co-linearity between the rasters
 
 Fourth, I will visualize the rasters.
 
+### Versioning
+
+The code for this vignette was originally taken from "slfrsk_maxent_modeling.Rmd", which is stored in `slfSpread/sandbox/vignettes-old`.
+
 # Setup
 
 ```{r load necesssary packages, echo = FALSE}
@@ -172,38 +176,52 @@ Now that we have our files and reference layers loaded in and names chosen, we c
 
 ## 2.2 Prepare reference layers
 
-The first step is to crop the reference layers `global_atc` and `global_bio1` to the desired extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) is expiring. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. 
+The first step is to tidy the reference layers `global_atc` and `global_bio1`. These need to be cropped to the same extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) is expiring. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. Lastly, I need to ensure the origins are the same.
 
 In this chunk, we will create 2 reference layers. The `main_layer (global_bio1)` will be used for resampling the data, while the `mask_layer (global_atc)` will be used for masking.
 
-```{r crop}
+```{r harmonize reference layers}
 
-# ext of the reference layer
+# ext of the reference layers
 ext(global_atc)
-# ext of the bioclim layers
 ext(global_bio1)
+# the extents will need to be corrected
 
+# crs of reference layers
+terra::crs(x = global_atc, proj = TRUE)
+terra::crs(x = global_bio1, proj = TRUE)
+# Here is the proj4 string I was previously using:
+# "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+# The reference layer proj4 strings dont match this one, so I will reset them
+# The Proj4 string notation is expiring, so I will try to use an EPSG code equivalent
+
+terra::origin(global_atc)
+terra::origin(global_bio1)
+# the origin of global_atc will need to be changed to match the others
+
+# edits to reference layers
+
+# set extent
 # set ext to the smallest whole number shared between the layers
 ext.obj <- terra::ext(-180, 179, -60, 83)
-
 # create main layer for future cropping, crop to new ext
 main_layer <- terra::crop(x = global_bio1, y = ext.obj, overwrite = FALSE)
 # create a mask layer specifically for the cropping and masking
 mask_layer <- terra::crop(x = global_atc, y = ext.obj, overwrite = FALSE)
 
+# unify origins
+# set origin of global_atc
+terra::origin(mask_layer) <- c(-0.0001396088, -0.0001392488)
+# resample atc to bio1 layer because origins are different- most rasters will already have the origin of the bio1 layer
+mask_layer <- terra::resample(x = mask_layer, y = main_layer, method = "bilinear")
 
-# The Proj4string notation is expiring, so I will try to use an EPSG code equivalent
-# Here is the proj4 string I was previously using:
-# "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
+# set CRS of reference layers to be sure
+main_layer <- terra::project(x = main_layer, y = "EPSG:4326", method = "bilinear")
+mask_layer <- terra::project(x = mask_layer, y = "EPSG:4326", method = "bilinear")
 
-# here is the current proj4 of global_atc
-terra::crs(x = main_layer, proj = TRUE)
-
-# they do not match. The terra documentation recommends using the EPSG code, so I will search for the correct one. .
-  
 ```
 
-The EPGS number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. 
+The EPSG number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. 
 
 ## 2.3 Tidying historical data
 
@@ -212,10 +230,10 @@ Here is where we get into tidying the data. We will crop the rasters using the e
 This chunk will take a very long time to run... so maybe find a good book to read.
 
 ```{r loop to tidy rasters}
-  
-if(FALSE) {
 
-  # file path to directory
+if(FALSE) {
+  
+    # file path to directory
   mypath <- file.path(here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
@@ -235,11 +253,14 @@ if(FALSE) {
       # crop new rasters to extent
       rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
       
-      # mask the bioclim layer by global_atc
+      # mask the bioclim layers by global_atc
       rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
       
       # set crs
-      crs(rast.hold) <- "EPSG:4326"
+      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+      
+      # set origin
+      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
       
       #resample to fit the extent/resolution of the main layer global_bio1
       #use bilinear interpolation, since values are continuous
@@ -257,7 +278,7 @@ if(FALSE) {
 
 ```
 
-Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. We will also convert all `NAs` to `-9999`, as required by MaxEnt.
+Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. We will also convert all `NAs` to `-9999`, is the MaxEnt default value for NAs.
 
 ```{r conversion of .tif to .asc files}
 
@@ -327,12 +348,12 @@ output.files <- output.files %>%
 
 ```{r loop to tidy rasters}
   
-if(FALSE) {
+# file path to directory
+mypath <- file.path(here() %>% 
+                    dirname(),
+                  "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
-  # file path to directory
-  mypath <- file.path(here() %>% 
-                      dirname(),
-                    "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+if(FALSE) {
   
   # view list of filetypes for terra, use .ascii
     terra::gdal(drivers = TRUE)
@@ -353,7 +374,10 @@ if(FALSE) {
       rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
       
       # set crs
-      crs(rast.hold) <- "EPSG:4326"
+      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+      
+      # set origin
+      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
       
       #resample to fit the extent/resolution of the main layer global_bio1
       #use bilinear interpolation, since values are continuous

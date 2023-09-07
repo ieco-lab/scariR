@@ -58,7 +58,7 @@ output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.
   grep("atc|bio2|bio11|bio12|bio15", ., value = TRUE) %>%
   gsub(pattern = "global", replacement = "easternUSA")
 
-# extent object
+# extent object for eastern USA
 ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
 
 ```
@@ -200,7 +200,7 @@ I will start with the bio 11 raster created above. I will mask this raster using
 
 The first step will be to create a raster of the entire area of the eastern USA. This assumes that all of the eastern USA is suitable. This has already been done in the step above. The raster will be slightly modified so that the output is binarized (so the entire land area will be a 1, or suitable).
 
-The the second step will be to calculate the area of the eastern USA that is found to be suitable by an mechanistic Degree Day model. This model simply uses a threshold for the necessary number of degree days for SLF to reach a particular life stage (important thresholds have been pre-built into the function). This function then applies this equation to each grid cell across a raster. For this function to work, we will need to retrieve the monthly average temperature for 1981-2010, globally. This vignette will only display the steps of calling the function within this package that contains the model, `compute_DD_suitability()`, using the output of that function to create a binary raster of the eastern USA, and aggregating the binarized raster to a 30 arcsecond scale. All steps taken to download the CHELSA data necessary and format it for use can be found in the vignette "extract_monthly_temps_DD.Rmd". 
+The the second step will be to calculate the area of the eastern USA that is found to be suitable by an mechanistic Degree Day model. This model simply uses a threshold for the necessary number of degree days for SLF to reach a particular life stage (important thresholds have been pre-built into the function). This function then applies this equation to each grid cell across a raster. For this function to work, we will need to retrieve the monthly average temperature for 1981-2010, globally. This vignette will only display the steps of calling the function within this package that contains the model, `compute_DD_suitability()`, using the output of that function to create a binary raster of the eastern USA. All steps taken to download the CHELSA data necessary and format it for use can be found in the vignette "04-1_avg_monthly_temps_DD.Rmd". 
 
 This model was developed by Stephanie Lewkiewicz, PhD and is loosely based on Lewkiewicz et.al, 2022. 
 
@@ -241,7 +241,7 @@ entire_USA <- terra::classify(x = entire_USA,
                               others = NA, # anything else, including -9999, should be NA
                               filename = file.path(mypath, "chelsa2.1_suitable_area", "easternUSA_entire.asc"), # also write to file
                               filetype = "AAIGrid", 
-                              overwrite = TRUE) 
+                              overwrite = FALSE) 
 
 
 ```
@@ -271,8 +271,12 @@ This raster is ready for use.
 
 ## Mechanistic DD model suitable area
 
+```{rcompute_DD_suitability function}
 
-# convert DD model output to raster (use version created in Matlab)
+slfSpread::compute_DD_suitability()
+
+```
+
 
 ```{r convert DD model output csv to raster and export}
 
@@ -323,8 +327,6 @@ DD_suitable_area_masked <- subst(DD_suitable_area_raster, from = 0, to = NA)
 writeRaster(x = DD_suitable_area_masked, filename = file.path(mypath, "DD_suitable_area_masked.tif"), filetype = "GTiff", overwrite = FALSE)
 
 ```
-
-# visualize DD model
 
 ```{r visualize and EDA DD suitable area}
 

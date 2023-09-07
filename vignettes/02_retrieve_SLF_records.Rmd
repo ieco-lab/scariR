@@ -617,6 +617,8 @@ save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coo
 
 ```{r map all points}
 
+slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv"))
+
  map_all <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
     geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
