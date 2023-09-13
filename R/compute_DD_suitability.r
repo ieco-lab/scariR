@@ -61,14 +61,14 @@
 #'`thresh` (if value is not a preset character string or a numeric object).
 #'
 #'@examples
-#'# x -------------------------------------------------------------------------
+#'# x---------------------------------------------------------------------------
 #'
 #'#' compute_DD_suitability(x = data.object)
 #'
 #'
 #'compute_DD_suitability(x = file.path("path", "file.csv"))
 #'
-#'# thresh --------------------------------------------------------------------
+#'# thresh----------------------------------------------------------------------
 #'
 #'# DD can be set using a preset value. "egg_laying_10" is a preset value
 #'# equal to 1564.1 DDs
@@ -80,7 +80,7 @@
 #'
 #'compute_DD_suitability(x = data.object, thresh = 1000)
 #'
-#'# troubleshooting -----------------------------------------------------------
+#'# troubleshooting-------------------------------------------------------------
 #'
 #'# If your input data does not contain a column of cell values (this
 #'# requirement is outlined in the details section), one can easily be created
@@ -117,9 +117,12 @@ compute_DD_suitability <- function(x, thresh = "adult_emergence_1") {
   # (assumes this represents a file path). Otherwise, it is loaded in from the
   # environment
   if(is.character(x)) {
-    data <- read.csv(x)
-  } else {
-    data <- x
+    data <- read.csv(x) # read as csv
+    } else if(is.data.frame(x)){
+      data <- x # just read in if its a df
+      } else {
+        data <- as.data.frame(x) # make data frame
+        # as.data.frame added 2023-09-11
   }
 
   # checks to ensure input data are in correct format. Correct input assumes

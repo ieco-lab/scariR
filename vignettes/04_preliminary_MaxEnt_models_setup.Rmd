@@ -271,9 +271,20 @@ This raster is ready for use.
 
 ## Mechanistic DD model suitable area
 
-```{rcompute_DD_suitability function}
+I will compute the DD suitability using the threshold of 1% adult emergence first. This Degree Day threshold (991 days) was considered the minimum needed for SLF to establish at a locality, according to Calvin et.al.
 
-slfSpread::compute_DD_suitability()
+```{r compute_DD_suitability function}
+
+adult_emergence_1 <- slfSpread::compute_DD_suitability(x = file.path(here(), "vignette-outputs", "data-tables", "ANNUAL_ch2.1_5m_tavg.csv"))
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+# write as csv
+write_csv(x = adult_emergence_1, file = file.path(mypath, "output", "dfs", "annual_DD_ch2.1_monthly_tavg_adult_emergence_1_v0.csv"))
+# write as rda
 
 ```
 
@@ -411,6 +422,8 @@ if(FALSE) {
 
 
 # References
+
+D.D Calvin, J. Rost, J. Keller, S. Crawford, Julie Urban, B. Walsh, and M. Bosold. Seasonal Activity of Spotted Lanternfly, Lycorma delicatula (White) (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Unpublished.
 
 Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
 

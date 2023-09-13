@@ -20,10 +20,6 @@
 #'
 #'@param point_label
 #'
-#'@param
-#'
-#'@param
-#'
 #'@return A logical value (\code{TRUE} or \code{FALSE}) that answers the question
 #'"is any element of the vector not an NA.
 #'

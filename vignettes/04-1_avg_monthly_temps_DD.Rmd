@@ -8,9 +8,11 @@ output: html_document
 
 # Overview
 
-This vignette will extract climate rasters from [CHELSA](https://chelsa-climate.org/timeseries/) to data frames. These data are historical temperature means from 1981-2010. They are further divided by month. Each file is a global-scale raster containing tmax for that month and year. These will be extracted to a final data frame with with one column per month and the averaged means over the 30 year period. 
+This vignette is a dependency of vignette 04, "04_preliminary_MaxEnt_models_setup.Rmd".
 
-These data will be used to produce a binary suitability map via the Lewkiewicz et al PDE model for SLF. The final data produced from this model will also be manipulated and explored here.
+This vignette will extract climate rasters from [CHELSA](https://chelsa-climate.org/timeseries/) to data frames. These data are historical temperature means from 1981-2010. They are further divided by month. Each file is a global-scale raster containing the average temperature for that month and year. These will be extracted to a final data frame with with one column per month and the averaged means over the 30 year period. 
+
+These data will be used to produce a binary suitability map via the Lewkiewicz et.al PDE model for SLF. This model can be called using a built-in function called `slfSpread::compute_DD_suitability()`, which will be used in vignette 04. The final data produced from this model will also be manipulated and explored in vignette 04. 
 
 ### Versioning
 
@@ -32,6 +34,8 @@ library(geodata) # worldclim data retrieval
 ```
 
 # Download rasters to directory
+
+First, I will download the CHELSA data using the direct links that were taken from the CHELSA data portal. These are stored in the `data-raw` folder within the root folder of this package.
 
 ```{r download monthly mean CHELSA data}
 
@@ -55,6 +59,8 @@ if(FALSE) {
 }
 
 ```
+
+A few of the initial files were missing or got stuck in their temporary download form. It is worth joining the list of file names with the list of files that were actually downloaded to a directory, which is what I did in this next chunk.
 
 ```{r ensure all files downloaded properly}
 
@@ -146,6 +152,7 @@ files_by_month <- data.frame(
 
 ```
 
+
 ```{r loop to average rasters by month}
   
 if (FALSE){
@@ -193,9 +200,43 @@ if (FALSE){
       
 ```
 
-I have found a number of issues with the data that have been averaged in the rasters. First, I realized after running this chunk that it is taking so long (so, so long) because CHELSA distributes its air temperature for the entire planet, including over the oceans. The layers will need to be cropped and masked using `global_atc`, as was done in vignette 03. Second, the technical specifications for this type of CHELSA data indicate that these temperature data are in degrees Kelvin/10, whereas I need the data to be in degrees Celsius. I will correct these issues before proceeding. 
+This next chunk is to check values of the original vs the averaged rasters, because the initial run of this script gave a strange output. 
 
-# Mask new rasters
+```{r check raster values}
+
+mypath <- file.path(here() %>% 
+                   dirname(),
+                 "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+jan_tavg_1981 <- terra::rast(file.path(mypath, "originals", "tavg", files_by_month[1, 1]))
+
+jan_tavg_averaged <- terra::rast(file.path(mypath, "v1_averaged", "ch2.1_tavg_01_1981-2010.tif"))
+
+# minmax
+terra::minmax(jan_tavg_1981)
+terra::minmax(jan_tavg_averaged)
+
+# gloabl mean
+terra::global(jan_tavg_1981, fun = "mean")
+terra::global(jan_tavg_averaged, fun = "mean")
+
+```
+
+I have found a number of issues with the data that have been averaged in the rasters. First, I realized after running this chunk that it is taking so long (so, so long) because CHELSA distributes its air temperature for the entire planet, including over the oceans. The layers will need to be cropped and masked using `global_atc`, as was done in vignette 03. Second, the raster resolution needs to be downscaled to the 5 arcminute scale. Third, the technical specifications for this type of CHELSA data indicate that these temperature data are in degrees Kelvin/10, whereas I need the data to be in degrees Celsius. I will correct these issues before proceeding.
+
+# Mask and resample rasters to lower res
+
+The `compute_DD_suitability()` in this package was designed to compute DD suitability for rasters at a 5 arcminute scale, because the 30 arcsecond would likely be too fine to compute data for and the fuction would take a very long time. CHELSA does not distribute its data at a coarser resolution, so I will need to aggregate these layers to 5 arcminutes using a worldclim raster. The 5 arcminute version of these data can be found [here](https://www.worldclim.org/data/worldclim21.html). I will provide code to download these data using the [geodata](https://rdrr.io/cran/geodata/) package in R, but I will be loading them in from file.
+
+```{r download 5 arcmin raster using geodata package}
+
+
+geodata::worldclim_global(var = "tavg",
+                          res = 5,
+                          path = "SET_PATH",
+                          )
+
+```
 
 ```{r load in reference layers}
 
@@ -210,6 +251,16 @@ global_atc <- terra::rast(x = file.path(mypath, "2015_accessibility_to_cities_v1
 # CHELSA bioclim layer as reference
 global_bio1 <- terra::rast(x = file.path(mypath, "CHELSA_bio1_1981-2010_V.2.1.tif"))
 
+
+
+# set path to external directory containing wc file
+mypath <- file.path(here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters/wc2.1_5arcmin/originals/tavg")
+
+# this layer is the 5 arcminute worldclim raster
+wc_tavg_5arcmin <- terra::rast(x = file.path(mypath, "wc2.1_5m_tavg_01.tif"))
+
 ```
 
 ```{r harmonize reference layers}
@@ -217,37 +268,44 @@ global_bio1 <- terra::rast(x = file.path(mypath, "CHELSA_bio1_1981-2010_V.2.1.ti
 # ext of the reference layers
 ext(global_atc)
 ext(global_bio1)
+ext(wc_tavg_5arcmin)
 # the extents will need to be corrected
 
 # crs of reference layers
 terra::crs(x = global_atc, proj = TRUE)
 terra::crs(x = global_bio1, proj = TRUE)
+terra::crs(x = wc_tavg_5arcmin, proj = TRUE)
 # the crs is fine on both (ID = EPSG 4326), but will set anyhow
 
 # origin
 terra::origin(global_atc)
 terra::origin(global_bio1)
-# the origin of global_atc will need to be changed to match the others
+terra::origin(wc_tavg_5arcmin)
+# the origin of global_atc and wc_tavg_5arcmin will need to be changed to match the others
 
 # edits to reference layers
 
 # set extent
 # set ext to the smallest whole number shared between the layers
 ext.obj <- terra::ext(-180, 179, -60, 83)
-# create main layer for future cropping, crop to new ext
-main_layer <- terra::crop(x = global_bio1, y = ext.obj, overwrite = FALSE)
 # create a mask layer specifically for the cropping and masking
-mask_layer <- terra::crop(x = global_atc, y = ext.obj, overwrite = FALSE)
+mask_layer <- terra::crop(x = global_atc, y = ext.obj)
+# create layer for resampling
+resample_layer <- terra::crop(x = wc_tavg_5arcmin, y = ext.obj)
 
 # unify origins
 # set origin of global_atc
 terra::origin(mask_layer) <- c(-0.0001396088, -0.0001392488)
+# set origin of worldclim 5 arcmin layer
+terra::origin(resample_layer) <- c(-0.0001396088, -0.0001392488)
+
+
 # resample
 mask_layer <- terra::resample(x = mask_layer, y = main_layer, method = "bilinear")
 
 # set CRS of reference layers to be sure
-main_layer <- terra::project(x = main_layer, y = "EPSG:4326", method = "bilinear")
 mask_layer <- terra::project(x = mask_layer, y = "EPSG:4326", method = "bilinear")
+resample_layer <- terra::project(x = resample_layer, y = "EPSG:4326", method = "bilinear")
 
 ```
 
@@ -268,7 +326,7 @@ output.files <- list.files(path = file.path(mypath, "v1_averaged"), pattern = "\
 
 ```
 
-```{r loop to tidy rasters}
+```{r check 1st raster specs}
   
 # load in 1st averaged raster to check crs, origin and extent
 test_layer <- terra::rast(x = env.files[1])
@@ -276,24 +334,23 @@ test_layer <- terra::rast(x = env.files[1])
 # extents
 ext(test_layer)
 ext(mask_layer)
-ext(main_layer)
 # the extents will need to be corrected
 
 # crs 
 terra::crs(test_layer)
 terra::crs(x = mask_layer)
-terra::crs(x = main_layer)
 # the crs is fine on all (ID = EPSG 4326)
 
 # origins
 terra::origin(test_layer)
 terra::origin(mask_layer)
-terra::origin(main_layer)
 # the origins are fine on all
 
-ext.obj <- terra::ext(-180, 179, -60, 83)
+```
 
-if (TRUE) {
+```{r loop to mask rasters and resample}
+
+if (FALSE) {
 
   # file path to local directory
   mypath <- file.path(here() %>% 
@@ -309,13 +366,16 @@ if (TRUE) {
       
       # begin edits
       # crop new rasters to extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+      rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
       
       # mask the tavg layer by global_atc
       rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
       
+      # resample to 5 arcmin spatial scale
+      rast.hold <- terra::resample(x = rast.hold, y = resample_layer, method = "bilinear")
+      
       #write out the new resampled rasters!
-      terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_masked", output.files[a]), filetype = "GTiff", overwrite = FALSE)
+      terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_masked_aggregated", output.files[a]), filetype = "GTiff", overwrite = FALSE)
       
       # remove object once its done
       rm(rast.hold)
@@ -326,164 +386,167 @@ if (TRUE) {
 
 ```
 
-# convert raster units to Celsius
+# convert units to Celsius
 
-```{r convert units of rasters}
+Finally, I will convert the units of these rasters from Kelvin/10 to Celsius. The `terra::app()` function will apply the function `convert_to_celsius()` within this package to each cell in the rasters. These new values are output as a data frame. This process will take quite a long time.
 
-
-
-```
-
-# Aggregate rasters at 5 arcminute scale
-
-The `compute_DD_suitability()` in this package was designed to compute DD suitability for rasters at a 5 arcminute scale, because the 30 arcsecond would likely be too fine to compute data for and the fuction would take a very long time. CHELSA does not distribute its data at a coarser resolution, so I will need to aggregate these layers to 5 arcminutes using a worldclim raster. The 5 arcminute version of these data can be found [here](https://www.worldclim.org/data/worldclim21.html). I will provide code to download these data using the [geodata](https://rdrr.io/cran/geodata/) package in R, but I will be loading them in from file.
-
-```{r download data using geodata package}
-
-
-geodata::worldclim_global(var = "tavg",
-                          res = 5,
-                          path = "SET_PATH",
-                          )
-
-```
-
-
-```{r load in reference layer}
-
-# set path to external directory
+```{r get file names}
+ 
+# file path to local directory
 mypath <- file.path(here() %>% 
-                          dirname(),
-                        "maxent/historical_climate_rasters/wc2.1_5arcmin/originals/tavg")
+                   dirname(),
+                 "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
 
-wc_tavg_5arcmin <- terra:rast(x = file.path(mypath, "wc2.1_5m_tavg_01.tif"))
+# I will load in the files and then get the new names I would like to give them
 
-```
+# load in tavg rasters to be cropped- the original .tif files
+env.files <- list.files(path = file.path(mypath, "v1_masked_aggregated"), pattern = "\\.tif$", full.names = T)
 
-```{r prepare reference layer}
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_masked_aggregated"), pattern = "\\.tif$", full.names = F) 
 
-# check that extents are same
-
-```
-
-
-```{r aggregate}
-
-rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+#file.names <- list.files(path = file.path(mypath, "v1_masked_aggregated"), pattern = "\\.tif$", full.names = F) %>%
+#  gsub(pattern = "ch2.1_tavg_", replacement = "") %>%
+#  gsub(pattern = "_1981-2010.tif", replacement = "") %>%
 
 ```
 
-
-
-
-
-
-
-# convert rasters to dfs
-
-```{r tavg to df loop}
+```{r apply unit conversion function}
 
 if (FALSE) {
 
-  # ONLY EDIT THESE TWO OBJECTS
-  
-  # file path to local directory
-  mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
-  
-  data_type <- "tavg"
-  
-  
-  
-  
-  
-  # First, I need to create a directory of file paths and of final file names
-  
-  # pathing objects
-  
-  # list of input file paths
-  input_paths <- list.files(file.path(mypath, "originals", data_type), full.names = TRUE)
-  
-  input_paths[1]
-  
-  # file path for output
-  output_path <- gsub(pattern = paste0("originals/", data_type, "/wc2.1_5m_", data_type, "_01.tif"), replacement = paste0("dfs/", data_type), x = input_paths[1])
-  
-  # naming objects
-  
-  # list of .tif file names for conversion
-  input_names <- list.files(file.path(mypath, "originals", data_type), full.names = FALSE)
-  # list of df names for output from the loop
-  output_names <- gsub(pattern = ".tif", replacement = ".csv", x = input_names)
-  
-  
-  # check
-  
-  # check input paths
-  input_paths[5]
-  # check output path
-  paste0(output_path, output_names[5])
-  
-  
-  
-  # loop
-  for (i in seq_along(1:length(input_paths))) {
+# loop to crop extent for all files
+  for(a in seq_along(env.files)) {
     
-    # read the data
-    data_import <- rast(input_paths[i])
+    # load each raster into temp object
+    rast.hold <- terra::rast(env.files[a])
     
-    # convert to data.frame
-    data_import <- terra::as.data.frame(data_import, cells = TRUE, xy = TRUE)
+    # apply Celsius conversion function to all cells
+    rast.hold <- terra::app(x = rast.hold, fun = slfSpread::convert_to_celsius)
     
-    # write as csv
-    write_csv(x = data_import, file = file.path(output_path, output_names[i]))
+    #write raster
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_final", output.files[a]), filetype = "GTiff", overwrite = FALSE)
+      
+    # remove object once its done
+    rm(rast.hold)
     
   }
+    
+}
+
+```
+
+```{r test to see if conversion worked}
+
+mypath <- file.path(here() %>% 
+                   dirname(),
+                 "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+# read in rasters to compare
+raster1 <- terra::rast(x = file.path(mypath, "v1_masked_aggregated", "ch2.1_tavg_01_1981-2010.tif"))
+raster1_units_converted <- terra::rast(x = file.path(mypath, "v1_final", "ch2.1_tavg_01_1981-2010.tif"))
+
+# get minmax values
+terra::minmax(raster1)
+terra::minmax(raster1_units_converted)
+
+# apply function manually
+
+# convert to df
+raster1_df <- terra::as.data.frame(raster1) %>%
+  head(10)
+raster1_units_converted_df <- terra::as.data.frame(raster1_units_converted) %>%
+  head(10)
+
+raster1_df <- as.data.frame(apply(X = raster1_df, MARGIN = 1, FUN = slfSpread::convert_to_celsius))
+
+
+```
+
+It seems that the unit conversion worked.
+
+# convert rasters to dfs
+
+```{r get file names}
+  
+# file path to local directory
+mypath <- file.path(here() %>% 
+                   dirname(),
+                 "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+
+# list of .tif file names for conversion
+env.files <- list.files(path = file.path(mypath, "v1_final"), pattern = "\\.tif$", full.names = T)
+# list of df names for output from the loop
+output.files <- list.files(path = file.path(mypath, "v1_final"), pattern = "\\.tif$", full.names = F) %>%
+  gsub(pattern = ".tif", replacement = ".csv")
+
+# list of names for column naming conversion
+file.names <- list.files(path = file.path(mypath, "v1_final"), pattern = "\\.tif$", full.names = F) %>%
+  gsub(pattern = "ch2.1_tavg_", replacement = "") %>%
+  gsub(pattern = "_1981-2010.tif", replacement = "") 
+
+```
+
+
+```{r loop to convert rasters to .csv}
+
+for (a in seq_along(env.files)) {
+  
+  # read the data
+  data_import <- rast(env.files[a])
+  
+  # change cell value naming 
+  names(data_import) <- paste0("ch2.1_tavg_", file.names[a], "_1981-2010")
+  
+  # convert to data.frame
+  data_import <- terra::as.data.frame(data_import, cells = TRUE, xy = TRUE)
+  
+  # write as csv
+  write_csv(x = data_import, file = file.path(mypath, "v1_final_dfs", output.files[a]))
   
 }
+
 
 ```
 
 # file consolidation
 
+```{r get file names}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                   dirname(),
+                 "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+
+# list of .tif file names for conversion
+env.files <- list.files(path = file.path(mypath, "v1_final_dfs"), full.names = T)
+
+
+```
+
 ```{r tavg csv joining}
 
-# ONLY EDIT THESE TWO OBJECTS
-
-# my path
-mypath <- file.path(here() %>%
-                   dirname(),
-                 "maxent", "historical_climate_rasters", "wc2.1_5arcmin")
-
-data_type <- "tavg"
-
-# First, I need to create a directory of file paths and of final file names
-
-# pathing objects
-
-# list of input file paths
-input_paths <- list.files(file.path(mypath, "dfs", data_type), full.names = TRUE)
-
-# file path for output
-output_path <- file.path(mypath, "dfs")
-
-
 # the initial object that others will be joined to (the january df)- RUN THIS LINE BEFORE THE FOR LOOP
-data_join <- read_csv(input_paths[1])
+data_join <- read_csv(env.files[1])
 
 # loop- RUN ABOVE CODE FIRST
-for (i in 2:length(input_paths)) {
+for (a in 2:length(env.files)) {
   
   # read the other csvs into this object
-  data_join <- read_csv(input_paths[i]) %>%
+  data_join <- read_csv(env.files[a]) %>%
     # join each other csv to the january csv. I am like 99% sure the lat, long and cell number are the same between months
     right_join(data_join, ., by = c("cell", "x", "y"))
   
 }
 
 # write as csv
-write_csv(x = data_join, file = file.path(output_path, paste0("ANNUAL_wc2.1_5m_", data_type, ".csv")))
+write_csv(x = data_join, file = file.path(mypath, "ANNUAL_ch2.1_5m_tavg.csv"))
+# I will also write it to my root folder
+write_csv(x = data_join, file = file.path(here(), "vignette-outputs", "data-tables", "ANNUAL_ch2.1_5m_tavg.csv"))
+# also save as an Rdata file
+save(data_join, file = file.path(here(), "data", "ANNUAL_ch2.1_5m_tavg.rda"))
   
 ```
 
