@@ -1,6 +1,6 @@
 ---
 title: "Setup for initial MaxEnt models used to choose background area"
-author: "Sam Owens"
+author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2023-07-27"
 output: html_document
@@ -34,6 +34,35 @@ library(raster)
 library(terra)
 
 library(viridis)
+
+
+```
+
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue")
+        ),
+  coord_equal() 
+)
+
+```
+
+```{r files for plotting}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "ArcGIS/import_layers/geopol_topo/GL230521_lam")
+
+# great lakes shapefile
+great_lakes <- terra::vect(x = file.path(mypath, "GL230521_lam.shp")) %>%
+  as.data.frame(.)
+
 
 
 ```
@@ -529,13 +558,15 @@ mypath <- file.path(here() %>%
 # load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
 easternUSA_entire <- raster::raster(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif"))
 
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(1)
 # generate random points 
 easternUSA_entire_flexible_points <- dismo::randomPoints(mask = easternUSA_entire, 
                                                 n = 10000, # default number used by maxent
                                                 p = slf_points,
-                                                excludep = TRUE,
+                                                excludep = TRUE, # exclude cells where slf has been found
                                                 lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-                                                warn = TRUE
+                                                warn = 2 # higher number gives most warnings, including if sample size not reached
                                                 ) %>%
   as.data.frame(.)
 
@@ -547,21 +578,38 @@ save(easternUSA_entire_flexible_points, file = file.path(here(), "data", "easter
   
 ```
 
-```{r plot points}
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
 
 entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-(ggplot() +
-    geom_raster(data = entire_USA_df, aes(x = x, y = y, fill = suitability)) +
-    geom_point(data = easternUSA_entire_flexible_points, aes(x = x, y = y), color = "darkorange", size = 1) +
-    ggtitle("eastern USA flexible background points- entire") +
-    xlab("longitude") +
-    ylab("latitude") +
-    theme_minimal() + 
-    theme(legend.position = "none") +
-    coord_equal()
-)
+easternUSA_entire_flexible_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+
+```
+
+```{r plot points}
+
+background_entire <- ggplot() +
+    geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = easternUSA_entire_flexible_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+    ggtitle("Eastern USA flexible background points- entire area") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+```{r save plot}
+
+ggsave(background_entire, 
+       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_entire_flexible_area_points.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
 
 ```
 
@@ -576,13 +624,15 @@ mypath <- file.path(here() %>%
 
 DD_model <- raster::raster(x = file.path(mypath, "output", "rasters", "easternUSA_DD_suitable_area_adult_emergence-1.tif"))
 
+# set seed 
+set.seed(2)
 # generate random points 
 easternUSA_DD_flexible_points <- dismo::randomPoints(mask = DD_model, 
                                                 n = 10000, # default number used by maxent
                                                 p = slf_points,
                                                 excludep = TRUE,
                                                 lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-                                                warn = TRUE
+                                                warn = 2
                                                 ) %>%
   as.data.frame(.)
 
@@ -594,7 +644,11 @@ save(easternUSA_DD_flexible_points, file = file.path(here(), "data", "easternUSA
   
 ```
 
-```{r plot points}
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
 
 entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif")) %>%
   terra::as.data.frame(., xy = TRUE)
@@ -602,19 +656,33 @@ entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "eastern
 adult_emergence_1_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_DD_suitable_area_adult_emergence-1.tif")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-(ggplot() +
-    geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "black") + # entire eastern USA raster
-    geom_raster(data = adult_emergence_1_df, aes(x = x, y = y), fill = "azure3") + # DD suitable area raster
-    geom_point(data = easternUSA_DD_flexible_points, aes(x = x, y = y), color = "darkorange", size = 1) +
-    ggtitle("eastern USA flexible background points- 1% adult emergence") +
-    xlab("longitude") +
-    ylab("latitude") +
-    theme_minimal() + 
-    theme(legend.position = "none") +
-    coord_equal()
-)
+easternUSA_DD_flexible_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv"))
 
 ```
+
+```{r plot points}
+
+background_DD <- ggplot() +
+  geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "azure4") + # entire eastern USA raster
+  geom_raster(data = adult_emergence_1_df, aes(x = x, y = y), fill = "azure1") + # DD suitable area raster
+  geom_point(data = easternUSA_DD_flexible_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+  ggtitle("Eastern USA flexible background points- DD model, 1% adult emergence") +
+  map_style +
+  theme(legend.position = "none") 
+
+```
+
+```{r save plot}
+
+ggsave(background_DD, 
+       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_adult_emergence-1_flexible_area_points.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
 
 The black areas represent the areas where we should not have any points. The points are all in the light grey area, so the function to create the points worked properly. 
 
@@ -629,13 +697,15 @@ mypath <- file.path(here() %>%
 
 easternUSA_buffer <- raster::raster(x = file.path(mypath, "output", "rasters", "easternUSA_slf_points_buffered_suitability.tif"))
 
+# set seed 
+set.seed(3)
 # generate random points 
 easternUSA_buffer_flexible_points <- dismo::randomPoints(mask = easternUSA_buffer, 
                                                 n = 10000, # default number used by maxent
                                                 p = slf_points,
                                                 excludep = TRUE,
                                                 lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-                                                warn = TRUE
+                                                warn = 2
                                                 ) %>%
   as.data.frame(.)
 
@@ -647,7 +717,11 @@ save(easternUSA_buffer_flexible_points, file = file.path(here(), "data", "easter
   
 ```
 
-```{r plot points}
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
 
 entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif")) %>%
   terra::as.data.frame(., xy = TRUE)
@@ -655,19 +729,33 @@ entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "eastern
 easternUSA_buffer_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_slf_points_buffered_suitability.tif")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-(ggplot() +
-    geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "black") + # entire eastern USA raster
-    geom_raster(data = easternUSA_buffer_df, aes(x = x, y = y), fill = "azure3") + # buffered suitable area raster
-    geom_point(data = easternUSA_buffer_flexible_points, aes(x = x, y = y), color = "darkorange", size = 1) +
-    ggtitle("eastern USA flexible background points- slf points buffered area") +
-    xlab("longitude") +
-    ylab("latitude") +
-    theme_minimal() + 
-    theme(legend.position = "none") +
-    coord_equal()
-)
+easternUSA_buffer_flexible_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv"))
 
 ```
+
+```{r plot points}
+
+background_buffered <- ggplot() +
+  geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "azure4") + # entire eastern USA raster
+  geom_raster(data = easternUSA_buffer_df, aes(x = x, y = y), fill = "azure1") + # buffered suitable area raster
+  geom_point(data = easternUSA_buffer_flexible_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+  ggtitle("Eastern USA flexible background points- 355km buffer around SLF points") +
+  map_style + # plot style object
+  theme(legend.position = "none") 
+
+```
+
+```{r save plot}
+
+ggsave(background_buffered, 
+       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_slf_points_buffered_flexible_points.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
 
 FIN
 

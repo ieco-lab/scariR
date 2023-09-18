@@ -70,7 +70,7 @@ if(FALSE) {
   # select only URLs I am interested in 
   chelsa_historic_URLs <- slice(.data = chelsa_historic_URLs, 2:20)
   
-  # loop to download historical URLs
+  # loop to download historical URLs- I tried utils::download.files, but it would not work with these data
   for(i in 1:nrow(chelsa_historic_URLs)) {
     
     file.tmp <- chelsa_historic_URLs[i, ]
