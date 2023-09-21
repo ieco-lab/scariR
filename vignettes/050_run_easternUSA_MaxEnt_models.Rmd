@@ -1,0 +1,185 @@
+---
+title: "Run initial MaxEnt models used to choose background area (project step 1)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-09-18"
+output: html_document
+---
+# Overview
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+library(rJava)
+
+library(dismo) # runs maxent
+library(ENMeval) # 
+
+library(sf) # spatial data 
+library(raster) # spatial data 
+library(terra) # spatial data 
+
+```
+
+`Dismo` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+
+This chunk sets the java memory allocation (`Xmx`). I will start with 2GB memory. 
+
+```{r control MaxEnt settings}
+
+# xss sets java stack size
+# xmx sets java memory allocation
+options(java.parameters = "-Xmx2048m")
+
+# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
+
+```
+
+# Setup for MaxEnt
+
+- I may need to convert my slf points to a spatial points object
+
+- IF I need to extract point-wise climatic data for MaxEnt, use these steps.
+
+1. stack env covariates 
+2. use slf pointwise data to extract a value from each layer at that each point
+
+THIS IS A GOOD VALIDATION STEP- can use is.na()
+
+First, I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function. 
+
+```{r load in files for all maxent models}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# environmental and human impact covariates
+# pull those of the proper ending
+x_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = '\\_easternUSA.asc$', full.names = TRUE)
+
+
+
+# slf presences
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv"))
+
+# background point sets
+# entire eastern USA
+a_entire_easternUSA_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+# DD model used with 1% adult emergence threshold
+a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv"))
+# 355km buffer around slf points
+a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv"))
+
+```
+
+I will load in the environmental covariates and stack them. For the slf presences, I will divide them into training and testing folds using `dismo::kfold()`. I will be running these models with 5 replicates, so I will divide the presence data into 5 groups (80% training, 20% testing). The 20% group that is used for testing is cycled per model replicate.
+
+```{r stack env covariates}
+
+x_env_covariates <- terra::rast(x = x_env_covariates_list)
+
+# attributes
+nlyr(x_env_covariates)
+names(x_env_covariates)
+# ext(x_env_covariates)
+# crs(x_env_covariates)
+
+```
+
+```{r divide presences via kfold groups}
+
+fold <- kfold(p_slf_points, k = 5) 
+
+occtest <- occ[fold == 1, ] 
+occtrain <- occ[fold != 1, ]
+
+```
+
+
+# Trial of Maxent
+
+Use `if(dismo::maxent()) { }` to test whether maxent will run on data given to it before actually running the models.
+
+*Note* I prefer to do spatial data manipulation in `terra`, but `dismo` is only compatible with the `raster` package.
+
+```{r trial of maxent (entire eastern USA)}
+
+if(dismo::maxent()) {
+  
+   maxent(x = x_env_covariates, 
+          p = slf_points, 
+          path = paste0(getwd(),"/output/maxent_outputs4_cross"), 
+          args=prepPara(userfeatures="LQ"
+                            )
+   )
+  
+  
+}
+
+```
+
+# Maxent Model- entire eastern USA
+
+```{r create output directory for model}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# create file directory
+dir.create(path = file.path(mypath, "slf_easternUSA_entire_step1"))
+
+```
+
+```{r MaxEnt model of entire eastern USA}
+
+   maxent(x = x_env_covariates, 
+          p = slf_points, 
+          a = a_entire_easternUSA_background_points,
+          path = file.path(mypath, "slf_easternUSA_entire_step1"), 
+          args = prepPara(userfeatures = "LQ",
+                          )
+   )
+
+```
+
+
+
+# MaxEnt Model- DD 1% adult emergence
+
+```{r create output directory for model}
+
+```
+
+
+
+# MaxEnt Model- 355km buffer around presences
+
+```{r create output directory for model}
+
+```
+
+
+
+
+
+# References
+
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
+
+
+
+
