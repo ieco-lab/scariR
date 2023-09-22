@@ -30,6 +30,21 @@ library(terra) # spatial data
 
 ```
 
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue")
+        ),
+  coord_equal() 
+)
+
+```
+
 `Dismo` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
 This chunk sets the java memory allocation (`Xmx`). I will start with 2GB memory. 
@@ -71,19 +86,24 @@ x_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), patte
 
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv"))
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  mutate(row.number = seq(nrow(.))) %>%
+  dplyr::select(row.number, x, y) 
 
 # background point sets
 # entire eastern USA
-a_entire_easternUSA_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+a_entire_easternUSA_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv")) %>%
+  mutate(row.number = seq(nrow(.))) 
 # DD model used with 1% adult emergence threshold
-a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv"))
+a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv")) %>%
+  mutate(row.number = seq(nrow(.))) 
 # 355km buffer around slf points
-a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv"))
+a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv")) %>%
+  mutate(row.number = seq(nrow(.))) 
 
 ```
 
-I will load in the environmental covariates and stack them. For the slf presences, I will divide them into training and testing folds using `dismo::kfold()`. I will be running these models with 5 replicates, so I will divide the presence data into 5 groups (80% training, 20% testing). The 20% group that is used for testing is cycled per model replicate.
+I will load in the environmental covariates and stack them.
 
 ```{r stack env covariates}
 
@@ -92,19 +112,102 @@ x_env_covariates <- terra::rast(x = x_env_covariates_list)
 # attributes
 nlyr(x_env_covariates)
 names(x_env_covariates)
+minmax(x_env_covariates)
 # ext(x_env_covariates)
 # crs(x_env_covariates)
 
 ```
 
-```{r divide presences via kfold groups}
+## Slf Points kfold
 
-fold <- kfold(p_slf_points, k = 5) 
+For the slf presences, I will divide them into training and testing folds using `dismo::kfold()`. I will be running these models with 5 replicates, so I will divide the presence data into 5 groups (80% training, 20% testing). The 20% group that is used for testing is cycled per model replicate. This is in preparation for MaxEnt to perform k-fold cross validation. 
 
-occtest <- occ[fold == 1, ] 
-occtrain <- occ[fold != 1, ]
+```{r divide presences into kfold groups}
+
+# set random seed so it is consistent every time
+set.seed(4)
+# get kfold of groups
+p_slf_points_kfold <- kfold(p_slf_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(p_slf_points)))
+# change names of variables
+names(p_slf_points_kfold) <- c("kfold_group", "row.number")
+
+
+p_slf_points_kfold <- full_join(p_slf_points, p_slf_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
 
 ```
+
+```{r plot}
+
+(ggplot() +
+   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = "white", color = "black", lwd = 0.15) +
+   geom_point(data = p_slf_points_kfold, aes(x = x, y = y, color = as.factor(kfold_group)), size = 1) +
+   map_style +
+   guides(color = guide_legend(override.aes = list(size = 2))) +
+   coord_equal(xlim = c(-87.747803, -66.840820), ylim = c(34.678394, 42.956423))
+)
+
+```
+
+## Background Points kfold
+
+Now, I will perform the same procedure for each of the 3 sets of background points.
+
+```{r divide entire easternUSA absence dataset into kfold groups}
+
+# set random seed so it is consistent every time
+set.seed(5)
+# get kfold of groups
+a_entire_easternUSA_background_points_kfold <- kfold(a_entire_easternUSA_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_entire_easternUSA_background_points)))
+# change names of variables
+names(a_entire_easternUSA_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_entire_easternUSA_background_points_kfold <- full_join(a_entire_easternUSA_background_points, a_entire_easternUSA_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+```{r divide DD absence dataset into kfold groups}
+
+# set random seed so it is consistent every time
+set.seed(6)
+# get kfold of groups
+a_adult_emergence_1_background_points_kfold <- kfold(a_adult_emergence_1_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_adult_emergence_1_background_points)))
+# change names of variables
+names(a_adult_emergence_1_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_adult_emergence_1_background_points_kfold <- full_join(a_adult_emergence_1_background_points, a_adult_emergence_1_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+```{r divide 355km buffer absence dataset into kfold groups}
+
+# set random seed so it is consistent every time
+set.seed(7)
+# get kfold of groups
+a_slf_buffered_background_points_kfold <- kfold(a_slf_buffered_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_slf_buffered_background_points)))
+# change names of variables
+names(a_slf_buffered_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_slf_buffered_background_points_kfold <- full_join(a_slf_buffered_background_points, a_slf_buffered_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+## 
+
 
 
 # Trial of Maxent
@@ -118,10 +221,10 @@ Use `if(dismo::maxent()) { }` to test whether maxent will run on data given to i
 if(dismo::maxent()) {
   
    maxent(x = x_env_covariates, 
-          p = slf_points, 
-          path = paste0(getwd(),"/output/maxent_outputs4_cross"), 
-          args=prepPara(userfeatures="LQ"
-                            )
+          p = p_slf_points_kfold, 
+          path = file.path(mypath, ), 
+          args = list(userfeatures = "LQ"
+                      )
    )
   
   
@@ -148,8 +251,8 @@ dir.create(path = file.path(mypath, "slf_easternUSA_entire_step1"))
           p = slf_points, 
           a = a_entire_easternUSA_background_points,
           path = file.path(mypath, "slf_easternUSA_entire_step1"), 
-          args = prepPara(userfeatures = "LQ",
-                          )
+          args = list(userfeatures = "LQ",
+                      )
    )
 
 ```
