@@ -7,3 +7,204 @@ output: html_document
 
 This file was written to hold deprecated code chunks. The original file will be listed for each code chunk.
 
+# vignette 050
+
+```{r set random seed}
+
+# set random seed so it is consistent every time
+set.seed(4)
+
+```
+
+## Slf Points kfold
+
+For the slf presences, I will divide them into training and testing folds using `dismo::kfold()`. I will be running these models with 5 replicates, so I will divide the presence data into 5 groups (80% training, 20% testing). The 20% group that is used for testing is cycled per model replicate. This is in preparation for MaxEnt to perform k-fold cross validation. 
+
+```{r}
+# convert to raster stack
+# x_env_covariates <- raster::stack(x = x_env_covariates_list)
+
+# nlayers(x_env_covariates)
+# names(x_env_covariates)
+# cellStats(x_env_covariates, stat = "min")
+# cellStats(x_env_covariates, stat = "max")
+```
+
+
+```{r endings used to load in files}
+
+ mutate(row.number = seq(nrow(.))) %>%
+  dplyr::select(row.number, x, y) 
+
+  dplyr::select(row.number, x, y) 
+
+```
+
+
+```{r divide presences into kfold groups}
+
+# get kfold of groups
+p_slf_points_kfold <- kfold(p_slf_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(p_slf_points)))
+# change names of variables
+names(p_slf_points_kfold) <- c("kfold_group", "row.number")
+
+
+p_slf_points_kfold <- full_join(p_slf_points, p_slf_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+```{r plot}
+
+(ggplot() +
+   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = "white", color = "black", lwd = 0.15) +
+   geom_point(data = p_slf_points_kfold, aes(x = x, y = y, color = as.factor(kfold_group)), size = 1) +
+   map_style +
+   guides(color = guide_legend(override.aes = list(size = 2))) +
+   coord_equal(xlim = c(-87.747803, -66.840820), ylim = c(34.678394, 42.956423))
+)
+
+```
+
+## Background Points kfold
+
+Now, I will perform the same procedure for each of the 3 sets of background points.
+
+```{r divide entire easternUSA absence dataset into kfold groups}
+
+# get kfold of groups
+a_entire_easternUSA_background_points_kfold <- kfold(a_entire_easternUSA_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_entire_easternUSA_background_points)))
+# change names of variables
+names(a_entire_easternUSA_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_entire_easternUSA_background_points_kfold <- full_join(a_entire_easternUSA_background_points, a_entire_easternUSA_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+```{r divide DD absence dataset into kfold groups}
+
+# get kfold of groups
+a_adult_emergence_1_background_points_kfold <- kfold(a_adult_emergence_1_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_adult_emergence_1_background_points)))
+# change names of variables
+names(a_adult_emergence_1_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_adult_emergence_1_background_points_kfold <- full_join(a_adult_emergence_1_background_points, a_adult_emergence_1_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+```{r divide 355km buffer absence dataset into kfold groups}
+
+# get kfold of groups
+a_slf_buffered_background_points_kfold <- kfold(a_slf_buffered_background_points, k = 5) %>%
+  as.data.frame() %>%
+  mutate(row.number = seq(nrow(a_slf_buffered_background_points)))
+# change names of variables
+names(a_slf_buffered_background_points_kfold) <- c("kfold_group", "row.number")
+
+
+a_slf_buffered_background_points_kfold <- full_join(a_slf_buffered_background_points, a_slf_buffered_background_points_kfold, by = "row.number") %>%
+  dplyr::select(kfold_group, x, y)
+
+```
+
+## Maxent Using dismo pkg
+
+Use `if(dismo::maxent()) { }` to test whether maxent will run on data given to it before actually running the models.
+
+*Note* I prefer to do spatial data manipulation in `terra`, but `dismo` is only compatible with the `raster` package.
+
+```{r object of maxent settings}
+
+maxent_settings <- c(
+  "linear=true", # all feature types allowed
+  "quadratic=true", 
+  "product=true",
+  "threshold=true",
+  "hinge=true",
+  "responsecurves=true", # create response curves
+  "jackknife=true", # do jackknife analysis
+  "replicates=5", # do 5 replicates for run (k-fold)
+  "replicatetype=crossvalidate", # k-fold cross validation
+  "randomtestpoints=20", # randomly set aside 20% of presences for testing
+  "maximumiterations=5000", # max number of iterations of optimization algorithm to perform before stopping training
+  "threads=6", # number of physical cores in my desktop
+  "nodata=-9999",# no data value
+  "writeplotdata=true" 
+) 
+
+```
+
+```{r}
+test1 <- dismo::prepareData(x = x_env_covariates, 
+            p = p_slf_points, 
+            b = a_entire_easternUSA_background_points,
+            xy = TRUE)
+```
+
+```{r create directory}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# create file directory
+dir.create(path = file.path(mypath, "maxent_R_trial", "results"))
+
+```
+
+```{r trial of maxent (entire eastern USA)}
+
+if(dismo::maxent()) {
+  
+   test_model <- maxent(
+     x = x_env_covariates, # raster stack
+     p = p_slf_points, # presences
+     a = a_entire_easternUSA_background_points,
+     path = file.path(mypath, "maxent_R_trial"), 
+     removeDuplicates = TRUE,
+     args = maxent_settings
+   )
+}
+
+```
+
+```{r prediction settings}
+
+prediction_settings <- c(
+  "linear=true", # all feature types allowed
+  "quadratic=true", 
+)
+
+```
+
+
+```{r explore model results}
+
+# bring up .html file
+test_model
+# test statistics
+test_model@results
+
+# make predictions to eastern USA
+test_model_easternUSA <- dismo::predict(object = test_model, 
+                                        x = x_env_covariates,
+                                        filename = file.path(mypath, "maxent_R_trial", "results"),
+                                        progress = "text")
+
+#
+dismo::predict(object = test_model, 
+               x = x_env_covariates,
+               filename = file.path(mypath, "maxent_R_trial", "results"),
+               progress = "text")
+
+```
