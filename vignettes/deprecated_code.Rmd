@@ -22,10 +22,10 @@ For the slf presences, I will divide them into training and testing folds using 
 
 ```{r}
 # convert to raster stack
-# x_env_covariates <- raster::stack(x = x_env_covariates_list)
+ x_env_covariates <- raster::stack(x = x_env_covariates_list)
 
-# nlayers(x_env_covariates)
-# names(x_env_covariates)
+ nlayers(x_env_covariates)
+ names(x_env_covariates)
 # cellStats(x_env_covariates, stat = "min")
 # cellStats(x_env_covariates, stat = "max")
 ```

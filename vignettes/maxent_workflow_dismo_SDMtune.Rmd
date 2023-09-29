@@ -1,15 +1,9 @@
 ---
-title: "Run initial MaxEnt models used to choose background area (project step 1)"
+title: "maxent_workflow"
 author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
-date: "2023-09-18"
+date: "2023-09-28"
 output: html_document
 ---
-# Overview
-
-(THEORY)
-
-# Setup
 
 ```{r load necesssary packages, echo = FALSE}
 
@@ -33,6 +27,7 @@ library(raster) # spatial data
 library(terra) # spatial data 
 
 ```
+
 
 ```{r ggplot object for map style}
 
@@ -204,17 +199,24 @@ entire_easternUSA_train@data # extracted data from
 
 ```
 
-```{r split data into k folds}
+```{r save training and test datasets as csv}
 
-# create random folds
-entire_easternUSA_trainFolds <- SDMtune::randomFolds(
-  data = entire_easternUSA_train,
-  k = 5, # 5 folds
-  only_presence = TRUE,
-  seed = 5 
-)
+# save training data
+SDMtune::swd2csv(entire_easternUSA_train, 
+                 file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_model_training.csv"))
+# save testing data
+SDMtune::swd2csv(entire_easternUSA_test, 
+                 file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_model_testing.csv"))
 
 ```
+
+```{r load data and split data into k folds}
+
+
+
+```
+
+
 
 ## Train Maxent model
 
@@ -226,7 +228,37 @@ First, I will train a model with 5 cross-validated replicates. The model will on
 
 Other changes to the default will be used, but are not relevant for training the model.
 
+## Maxent Using dismo pkg
+
+Use `if(dismo::maxent()) { }` to test whether maxent will run on data given to it before actually running the models.
+
+*Note* I prefer to do spatial data manipulation in `terra`, but `dismo` is only compatible with the `raster` package.
+
+```{r object of maxent settings}
+
+maxent_settings <- c(
+  "linear=true", # all feature types allowed
+  "quadratic=true", 
+  "product=true",
+  "threshold=true",
+  "hinge=true",
+  "responsecurves=true", # create response curves
+  "jackknife=true", # do jackknife analysis
+  "replicates=5", # do 5 replicates for run (k-fold)
+  "replicatetype=crossvalidate", # k-fold cross validation
+  "randomtestpoints=20", # randomly set aside 20% of presences for testing
+  "maximumiterations=5000", # max number of iterations of optimization algorithm to perform before stopping training
+  "threads=6", # number of physical cores in my desktop
+  "nodata=-9999",# no data value
+  "writeplotdata=true" 
+) 
+
+```
+
 ```{r train maxent model}
+
+# load training data
+entire_easternUSA_train <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_model_training.csv"))
 
 entire_easternUSA_model <- SDMtune::train(
   method = "Maxent",
@@ -255,95 +287,10 @@ I will generate a report, including:
 * test data points
 * RDS file of model
 
-```{r evaluate model metrics}
-
-entire_easternUSA_model@models
-# get AUC value
-SDMtune::auc(entire_easternUSA_model)
-
-SDMtune::plotROC(entire_easternUSA_model)
-
-tss(model)
-
-maxentTh(entire_easternUSA_model)
-
-plotPred(map, lt = "", colorramp = NULL, hr = FALSE)
-plotResponse()
-
-
-
-```
-
 ```{r}
 
-dojk()
-plotJk(entire_easternUSA_model)
+# load testing data
+entire_easternUSA_test <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_model_testing.csv"))
 
 ```
-
-
-Finally, I will write a report of the model output using `SDMtune::modelReport()`. This function creates a report that is similar to the default MaxEnt output. It will include a jackknife analysis of contribution, marginal response curves, testing and training data
-
-```{r}
-
-# re-trains the model on all data
-entire_easternUSA_model <- SDMtune::combineCV(entire_easternUSA_model)
-
-modelReport(
-  model = entire_easternUSA_model,
-  folder = "slf_easternUSA_entire_step1",
-  test = entire_easternUSA_test,
-  type = "cloglog", # default output type
-  response_curves = TRUE,
-  jk = TRUE,
-  verbose = TRUE
-  )
-
-```
-
-The `modelReport` function writes to the vignettes folder, so I will need to move it to its proper spot.
-
-````{r create output directory for model}
-
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models")
-
-# move file to its proper location
-file.rename(from = file.path(here(), "vignettes", "slf_easternUSA_entire_step1"),
-            to = file.path(mypath, "slf_easternUSA_entire_step1"))
-
-```
-
-
-
-
-# MaxEnt Model- DD 1% adult emergence
-
-```{r create output directory for model}
-
-```
-
-
-
-# MaxEnt Model- 355km buffer around presences
-
-```{r create output directory for model}
-
-```
-
-
-
-
-
-# References
-
-Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
-
-Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
-
-Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
-
-Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
-
 

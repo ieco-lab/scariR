@@ -1,0 +1,548 @@
+---
+title: "maxent_workflow"
+author: "Samuel M. Owens"
+date: "2023-09-28"
+output: html_document
+---
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+library(rJava)
+
+library(ENMeval) # other useful env functions
+library(dismo) # package underneath SDMtune
+library(SDMtune) # main package used to run SDMs
+
+# dependencies of SDMtune
+library(kableExtra) # required for producing model reports
+library(plotROC) # plots ROCs
+library(rasterVis) 
+
+library(sf) # spatial data 
+library(raster) # spatial data 
+library(terra) # spatial data 
+
+```
+
+
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue")
+        ),
+  coord_equal() 
+)
+
+```
+
+`Dismo` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+
+```{r}
+
+checkMaxentInstallation(verbose = TRUE)
+
+```
+
+This chunk sets the java memory allocation (`Xmx`). I will start with 2GB memory. 
+
+```{r control MaxEnt settings}
+
+# xss sets java stack size
+# xmx sets java memory allocation
+options(java.parameters = "-Xmx2048m")
+
+# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
+
+```
+
+# Setup for MaxEnt
+
+- I may need to convert my slf points to a spatial points object
+
+- IF I need to extract point-wise climatic data for MaxEnt, use these steps.
+
+1. stack env covariates 
+2. use slf pointwise data to extract a value from each layer at that each point
+
+THIS IS A GOOD VALIDATION STEP- can use is.na()
+
+First, I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function. 
+
+```{r load in files for all maxent models}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# environmental and human impact covariates
+# pull those of the proper ending
+x_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = '\\_easternUSA.asc$', full.names = TRUE)
+
+
+
+# slf presences
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  dplyr::select(-species)
+
+# background point sets
+# entire eastern USA
+a_entire_easternUSA_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+# DD model used with 1% adult emergence threshold
+a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv")) 
+# 355km buffer around slf points
+a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv"))
+
+```
+
+I will load in the environmental covariates and stack them.
+
+```{r raster layer names object}
+
+env_layer_names <- c("atc_2015", "bio11_1981_2010", "bio12_1981_2010", "bio15_1981_2010", "bio2_1981_2010")
+
+```
+
+
+```{r stack env covariates}
+ 
+# use in terra package first because stats are easier
+x_env_covariates <- terra::rast(x = x_env_covariates_list)
+
+# attributes
+nlyr(x_env_covariates)
+names(x_env_covariates)
+minmax(x_env_covariates)
+# ext(x_env_covariates)
+# crs(x_env_covariates)
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_env_covariates) <- env_layer_names
+
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+```
+
+I will also reduce slf presences to just those within the eastern USA.
+
+```{r}
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+
+# conert to vector
+p_slf_points_vect <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+p_slf_points <- terra::as.data.frame(p_slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole))
+
+```
+
+# Maxent Model- entire eastern USA
+
+## create input data object
+
+First, I will create an SWD (sample with data) object containing the presences and background points for this model
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  entire_easternUSA_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                               env = x_env_covariates,
+                                               p = p_slf_points,
+                                               a = a_entire_easternUSA_background_points,
+                                               verbose = TRUE # print helpful messages
+                                               )
+  
+  entire_easternUSA_SWD@coords # coordinates
+  entire_easternUSA_SWD@pa # presence / absence (background counted as absence)
+  entire_easternUSA_SWD@data # extracted data from 
+
+}
+
+```
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = entire_easternUSA_SWD, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_presences_with_data.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_absences_with_data.csv")
+  ))
+
+```
+
+## Create training / test split
+
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 5 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+
+```{r split data for training and testing}
+
+set.seed(4)
+
+entire_easternUSA_trainTest <-  SDMtune::trainValTest(
+  x = entire_easternUSA_SWD,
+  test = 0.2,
+  only_presence = TRUE
+)
+
+# separate off training data
+entire_easternUSA_train <- entire_easternUSA_trainTest[[1]]
+entire_easternUSA_test <- entire_easternUSA_trainTest[[2]]
+
+entire_easternUSA_train@coords # coordinates
+entire_easternUSA_train@pa # presence / absence (background counted as absence)
+entire_easternUSA_train@data # extracted data from
+
+```
+
+```{r split data into k folds}
+
+# create random folds
+entire_easternUSA_trainFolds <- SDMtune::randomFolds(
+  data = entire_easternUSA_train,
+  k = 5, # 5 folds
+  only_presence = TRUE,
+  seed = 5 
+)
+
+```
+
+## Train Maxent model
+
+First, I will train a model with 5 cross-validated replicates. The model will only be trained on 80% of the slf presence data, with the other 20% being used downstream for analysis. The default settings will be used for Maxent, apart from the following changes:
+
+* ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
+* replicates = 5
+* iterations = 5000. This is the max number of iterations of optimization algorithm to perform before stopping training. Increasing this number allows the algorithm to make more refined predictions.
+
+Other changes to the default will be used, but are not relevant for training the model.
+
+```{r train maxent model}
+
+entire_easternUSA_model <- SDMtune::train(
+  method = "Maxent",
+  data = entire_easternUSA_train,
+  folds = entire_easternUSA_trainFolds, # 5 folds for dataset
+  fc = "lqpht", # feature classes set to ALL
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+```{r save output}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# create directory for model
+dir.create(path = file.path(mypath, "slf_easternUSA_entire_step1"))
+
+# save model 
+saveRDS(object = entire_easternUSA_model, file = file.path(mypath, "slf_easternUSA_entire_step1", "entire_easternUSA_model.rds"))
+
+```
+
+## Evaluate maxent model
+
+First, I will make predictions based on the output of the model. I will use various metrics to evaluate the model, including 
+
+I will generate a report, including:
+* ROC plot
+* marginal response curves
+* univariate curves
+* jackknife plot
+* variable importance
+* thresholds
+* model settings
+* training data points
+* test data points
+* RDS file of model
+
+What output do I need?
+* presences and absences with predictions
+* raster file of predictions
+* threshold values for 
+
+Final goal: 
+- functionalize this workflow
+
+Other todo list:
+
+
+### Predict suitability for all SLF presences
+
+First, I will get projected suitability values for each of the SLF presence points, including those in the native range. I will extract 
+
+```{r load in global covariates and isolate values for SLF points}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# directory list of global covariates
+global_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+# load in global covariates
+global_env_covariates <- terra::rast(x = global_env_covariates_list)
+# rename raster layers to be the same as the input layers
+names(global_env_covariates)
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(global_env_covariates) <- env_layer_names
+
+
+
+
+
+# load in all slf points
+slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  dplyr::select(-species)
+
+# get SWD object containing point location data from rasters
+slf_presences <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                     env = global_env_covariates,
+                                     p = slf_presences,
+                                     # a = a_entire_easternUSA_background_points,
+                                     verbose = TRUE # print helpful messages
+                                     )
+# isolate only presences
+slf_presences <- slf_presences@data[slf_presences@pa == 1, ]
+
+```
+
+
+```{r prediction for SLF presences}
+
+# make predictions
+slf_presences_predict <- SDMtune::predict(
+  object = entire_easternUSA_model, # model
+  data = slf_presences, # data for prediction
+  fun = "mean", # function to be applied
+  type = "cloglog", # default for MaxEnt
+  clamp = FALSE, # dont do clamping to restrict predictions
+  progress = TRUE # progress bar
+) %>%
+  as.data.frame() %>%
+  rename("suitability" = ".")
+
+
+
+# read back in original df
+slf_presences2 <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv"))
+# bind rows
+slf_presences_predict <- cbind(slf_presences2, slf_presences_predict)
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+# save output
+write_csv(x = slf_presences_predict, file = file.path(mypath, "predicted_suitability_avg_slf_all_coords.csv"))
+
+```
+
+### Create distribution map for area of interest
+
+I will use the predict function again, but this time to predict the suitability for the range of interest. The output will be a raster of suitability.
+
+```{r}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+
+# write .asc file of avg predictions
+SDMtune::predict(
+  object = entire_easternUSA_model, 
+  data = x_env_covariates, # the covariate layers used to train the model
+  fun = "mean", 
+  type = "cloglog", 
+  clamp = FALSE, 
+  progress = TRUE, 
+  filename = file.path(mypath, "easternUSA_predicted_suitability.asc"),
+  filetype = "AAIGrid"
+) 
+
+# plot
+# load in raster
+# entire_easternUSA_model_plot <- terra::rast(x = file.path(mypath, "easternUSA_predicted_suitability_mean.asc"))
+# plot
+# SDMtune::plotPred(map = entire_easternUSA_model_output, lt = "Predicted suitability for SLF")
+
+```
+
+
+
+
+##
+
+```{r evaluate model metrics}
+
+for (i in seq(length(entire_easternUSA_model@models))) {
+  
+  # load in temp object 
+  data.obj <- entire_easternUSA_model@models[[1]]@model@results
+  
+  # begin edits
+  
+  # make data frame
+  data.obj <- as.data.frame(data.obj)
+  
+  data.obj <- rename
+  
+  # remove temp object
+  rm(data.obj)
+  
+}
+
+```
+
+
+
+```{r}
+
+# get training AUC value
+SDMtune::auc(entire_easternUSA_model)
+# get test AUC value
+SDMtune::auc(entire_easternUSA_model, test = entire_easternUSA_test)
+
+# get TSS value
+SDMtune::tss(entire_easternUSA_model)
+# variable importance
+SDMtune::maxentVarImp(entire_easternUSA_model)
+
+
+
+
+
+
+```
+
+```{r}
+# jackknife
+entire_easternUSA_JK <- SDMtune::doJk(
+  model = entire_easternUSA_model,
+  # test = entire_easternUSA_test, # not used for models with replicates
+  metric = "auc",
+  progress = TRUE
+  )
+# plot jackknife
+plotJk(entire_easternUSA_JK)
+# plot reponse curves
+
+
+```
+
+```{r}
+# plot response curves
+plotResponse()
+#  predicts values for a set of points
+SDMtune::predict()
+# plots a presence / absence map given a threshold
+plotPA()
+
+# can be used to drop variables less important in jackknife
+reduceVar()
+
+```
+
+
+```{r IF I do model tuning}
+
+# the arguments that can be tuned later
+getTunableArgs(entire_easternUSA_model)
+
+```
+
+
+Finally, I will write a report of the model output using `SDMtune::modelReport()`. This function creates a report that is similar to the default MaxEnt output. It will include a jackknife analysis of contribution, marginal response curves, testing and training data
+
+```{r sample code}
+
+h <- list(reg = seq(0.2, 5, 0.2), 
+          fc = c("l", "lq", "lh", "lp", "lqp", "lqph"))
+
+exp_8 <- randomSearch(cv_model, 
+                      hypers = h, 
+                      metric = "auc", 
+                      pop = 10, 
+                      seed = 65466)
+
+
+# OR
+
+# Define the hyperparameters to test
+h <- list(reg = 1:2, fc = c("lqp", "lqph")) 
+# Run the function using the AUC as metric 
+output <- gridSearch(model, hypers = h, metric = "auc") 
+output@results 
+output@models 
+# Order results by highest test AUC 
+output@results[order(-output@results$test_AUC), ] 
+# Combine cross validation models for output with highest test AUC 
+idx <- which.max(output@results$test_AUC) 
+combined_model <- combineCV(output@models[[idx]]) combined_model
+
+# re-trains the model on all data
+entire_easternUSA_model <- SDMtune::combineCV(entire_easternUSA_model)
+
+```
+
+```{r}
+
+entire_easternUSA_model@models@results
+
+```
+
+
+```{r}
+
+modelReport(
+  model = entire_easternUSA_model,
+  folder = "slf_easternUSA_entire_step1",
+  test = entire_easternUSA_test,
+  type = "cloglog", # default output type
+  response_curves = TRUE,
+  jk = TRUE,
+  verbose = TRUE
+  )
+
+# plot ROC
+SDMtune::plotROC(entire_easternUSA_model)
+# get thresholds
+maxentTh(entire_easternUSA_model)
+
+```
+
+The `modelReport` function writes to the vignettes folder, so I will need to move it to its proper spot.
+
+````{r create output directory for model}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# move file to its proper location
+file.rename(from = file.path(here(), "vignettes", "slf_easternUSA_entire_step1"),
+            to = file.path(mypath, "slf_easternUSA_entire_step1"))
+
+```
