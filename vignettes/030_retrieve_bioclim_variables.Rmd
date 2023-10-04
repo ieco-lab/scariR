@@ -278,11 +278,11 @@ if(FALSE) {
 
 ```
 
-Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. We will also convert all `NAs` to `-9999`, is the MaxEnt default value for NAs.
+Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. 
 
 ```{r conversion of .tif to .asc files}
 
-if(FALSE){
+if(TRUE){
   
   mypath <- file.path(here() %>% 
                         dirname(),
@@ -294,14 +294,12 @@ if(FALSE){
   output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
     gsub(pattern = ".tif", replacement = ".asc")
   
-  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  # loop to convert to .ascii
   for(a in seq_along(env.files)){
     
     # holding object  
     rast.hold <- terra::rast(env.files[a])
     
-    # convert NAs to -9999
-    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
     # write output
     terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
     
@@ -409,14 +407,12 @@ if(TRUE){
   output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
     gsub(pattern = ".tif", replacement = ".asc")
   
-  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  # loop to convert to .ascii
   for(a in seq_along(env.files)) {
     
     # holding object  
     rast.hold <- terra::rast(env.files[a])
     
-    # convert NAs to -9999
-    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
     # write output
     terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
     
@@ -730,6 +726,78 @@ bio1_plot / gdd10_plot
 
 
 # Appendix
+
+## Bioclim Layers for MaxEnt Java
+
+These chunks are identical to chunks 8 and 11, except these chunks convert NA values to -9999 in the rasters created. This is the default value for NA taken by the Java version of Maxent, but this can also be changed in the app.
+
+```{r conversion of .tif to .asc files}
+
+if(FALSE){
+  
+  mypath <- file.path(here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  for(a in seq_along(env.files)){
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # convert NAs to -9999
+    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_java", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+    }
+    
+}
+
+```
+
+```{r conversion of .tif to .asc files CMIP6}
+
+if(TRUE){
+  
+  mypath <- file.path(here() %>%
+                        dirname(),
+                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
+  for(a in seq_along(env.files)) {
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # convert NAs to -9999
+    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_java", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+    }
+    
+}
+
+```
 
 ## Additional environmental covariates  
 

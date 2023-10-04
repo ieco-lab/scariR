@@ -385,6 +385,8 @@ global_classes <- data.frame(
 
 ```
 
+For some rasters, the lower end of the range may go down to -9999, because this is the value that we assigned to NAs.
+
 Now I can reclassify the MaxEnt outputs. I will load in the averaged predictions for the global and regional models and reclassify their values based on the two matrices above.
 
 ```{r reclassify maxent outputs}
@@ -402,7 +404,7 @@ if(FALSE) {
   v5_regional2 <- terra::classify(x = v5_regional1, 
                                   rcl = regional_classes,
                                   right = NA, # close both ends of the range of classification values
-                                  others = NA,
+                                  others = -9999,
                                   filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_regional.asc"), # also write to file
                                   overwrite = FALSE) 
 
@@ -419,7 +421,7 @@ if(FALSE) {
   v5_global2 <- terra::classify(x = v5_global1, 
                                 rcl = global_classes, 
                                 right = NA, 
-                                others = NA,
+                                others = -9999,
                                 filename = file.path(mypath, "working_dir", "Lycorma_delicatula_avg_binary_v5_global.asc"), 
                                 overwrite = FALSE) 
 
@@ -450,8 +452,8 @@ unique(v5_regional2_df$v5_regional)
 # it seems that the reclassification worked! Lets map it to be sure.
 
 
-# first, convert NA values to 1 (unsuitable)
-v5_regional2_df$v5_regional[v5_regional2_df$v5_regional == NA] <- 1
+# first, convert -9999 values to 1 (unsuitable)
+v5_regional2_df$v5_regional[v5_regional2_df$v5_regional == -9999] <- 1
 
 # now, create vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order

@@ -99,7 +99,7 @@ ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
 # view list of filetypes for terra, use .ascii
 View(terra::gdal(drivers = TRUE))
 
-if(FALSE) {
+if(TRUE) {
   
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
@@ -129,8 +129,6 @@ Lets plot one of the new layers to make sure the cropping worked.
 ```{r plot main_layer to ensure cropping worked}
 
 bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
-# resample NA value so it will display correctly
-bio11 <- terra::subst(x = bio11, from = -9999, to = NA)
 # convert to df
 bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
@@ -178,7 +176,7 @@ bio11_AUC <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_eas
 fixed_AUC <- terra::as.data.frame(x = bio11_AUC, xy = TRUE, cells = TRUE) %>%
   na.omit() %>%
   # filter out NAs
-  filter(`CHELSA_bio11_1981-2010_V.2.1` != "-9999") %>%
+  filter(!is.na(`CHELSA_bio11_1981-2010_V.2.1`)) %>%
   dplyr::select(x, y, cell)
 
 # This basically obtains the coordinates for the centroid of each grid cell. This will be saved as the fixed area AUC coordinates.  
