@@ -44,7 +44,6 @@ here()
 library(devtools)
 library(rJava) # for running MaxEnt
 
-library(ENMeval) # other useful env functions
 library(dismo) # package underneath SDMtune
 library(SDMtune) # main package used to run SDMs
 
@@ -55,9 +54,9 @@ library(rasterVis)
 
 library(viridis)
 
-library(sf) # spatial data 
-library(raster) # spatial data 
-library(terra) # spatial data 
+# spatial data handling
+library(raster) 
+library(terra) 
 
 ```
 
@@ -284,6 +283,9 @@ entire_easternUSA_model <- SDMtune::train(
 )
 
 ```
+
+
+*NOTE* the output created from this point to the end of the vignette can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`. 
 
 ```{r save model as RDS file}
 
@@ -561,6 +563,145 @@ SDMtune::swd2csv(swd = entire_easternUSA_test, file_name = file.path(mypath, "ea
 
 ```
 
+## Jackknife test for variable importance
+
+The jackknife test is a leave-one-out test that iteratively leaves out each predictor variable and produces a model with all other variables. It also has the option to create a model for that predictor variable alone. It then records the gain or loss in AUC value. This is very informative test and is designed to test variable importance. I will perform a jackknife for the entire model's training data alone. I will also create one for each model iteration using both training and testing data.
+
+```{r jackknife for the entire model}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+
+# jackknife
+entire_easternUSA_JK <- SDMtune::doJk(
+  model = entire_easternUSA_model,
+  # test = entire_easternUSA_test, # not used for models with replicates
+  metric = "auc",
+  with_only = TRUE, # also run test for each variable alone
+  progress = TRUE
+  )
+
+# write raw data to csv
+write_csv(x = entire_easternUSA_JK, file = file.path(mypath, "entire_easternUSA_model_jackknife_all_iterations_training.csv"))
+
+# plot jackknife
+entire_easternUSA_JK_plot <- plotJk(jk = entire_easternUSA_JK, type = "train")
+
+entire_easternUSA_JK_plot <- entire_easternUSA_JK_plot +
+  ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
+  labs(subtitle = "all iterations, training data")
+
+ggsave(entire_easternUSA_JK_plot, 
+           filename = file.path(mypath, "plots", "entire_easternUSA_model_jackknife_all_iterations_training.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+
+```
+
+I will also perform a jackknife for each of the model iterations, based on training and test data.
+
+```{r object of plot types}
+
+plot.types <- c("train", "test")
+
+```
+
+```{r jackknife test for each model iteration}
+
+ # path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+
+# for loop to output csv file of jackknife test, one per model iteration
+for (a in seq(length(entire_easternUSA_model@models))) {
+  
+  # jackknife
+  jk.obj <- SDMtune::doJk(
+    model = entire_easternUSA_model@models[[a]],
+    test = entire_easternUSA_test, 
+    metric = "auc",
+    with_only = TRUE, # also run test for each variable alone
+    progress = TRUE
+    )
+  
+  # write raw data to csv
+  write_csv(x = jk.obj, file = file.path(mypath, paste0("entire_easternUSA_model_jackknife_iter", a, "_training_testing.csv")))
+    
+  # sub-loop to output 2 types of plots per test, training and testing
+    for(b in plot.types) {
+    
+      # plot training jackknife
+      jk.obj_plot <- plotJk(jk = jk.obj, type = b)
+      
+      # modify objects to add titles and subtitles
+      jk.obj_plot <- jk.obj_plot +
+        ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
+        labs(subtitle = paste0("iter ", a, ", ", b, "ing data"))
+      
+      ggsave(jk.obj_plot, 
+             filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_jackknife_iter", a, "_", b, "ing.jpg")),
+             height = 8, 
+             width = 10,
+             device = "jpeg",
+             dpi = "retina")
+      
+      # remove temp object 
+      rm(jk.obj_plot)
+  
+  }
+  
+  # remove temp object 
+  rm(jk.obj)
+  
+}
+
+```
+
+## Variable importance
+
+Lastly, the variable importance will be calculated as a percentage probability. 
+
+```{r variable importance}
+  
+ # path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+
+# calculate variable importance
+var_imp <- SDMtune::varImp(model = entire_easternUSA_model, progress = TRUE)
+# write to csv
+write_csv(x = var_imp, file = file.path(mypath, "entire_easternUSA_model_variable_importance.csv"))
+
+# plot
+var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
+
+var_imp_plot <- var_imp_plot +
+  ggtitle("Variable importance for entire_easternUSA_model")  
+
+ggsave(var_imp_plot, 
+       filename = file.path(mypath, "plots", "entire_easternUSA_model_variable_importance.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+
+```
+
+
+*NOTE* This is the end of the output that can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`
+
+
+
+
+
 ## Predict suitability for all SLF presences
 
 I will get projected suitability values for each of the SLF presence points, including those in the native range. A suitability value between 0 and 1 will be calculated for each presence. These suitability values will be added back to the original data frame and saved.
@@ -730,140 +871,6 @@ This map will
 plotPA()
 
 
-
-
-```
-
-
-
-## Jackknife test for variable importance
-
-The jackknife test is a leave-one-out test that iteratively leaves out each predictor variable and produces a model with all other variables. It also has the option to create a model for that predictor variable alone. It then records the gain or loss in AUC value. This is very informative test and is designed to test variable importance. I will perform a jackknife for the entire model's training data alone. I will also create one for each model iteration using both training and testing data.
-
-```{r jackknife for the entire model}
-
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
-# jackknife
-entire_easternUSA_JK <- SDMtune::doJk(
-  model = entire_easternUSA_model,
-  # test = entire_easternUSA_test, # not used for models with replicates
-  metric = "auc",
-  with_only = TRUE, # also run test for each variable alone
-  progress = TRUE
-  )
-
-# write raw data to csv
-write_csv(x = entire_easternUSA_JK, file = file.path(mypath, "entire_easternUSA_model_jackknife_all_iterations_training.csv"))
-
-# plot jackknife
-entire_easternUSA_JK_plot <- plotJk(jk = entire_easternUSA_JK, type = "train")
-
-entire_easternUSA_JK_plot <- entire_easternUSA_JK_plot +
-  ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
-  labs(subtitle = "all iterations, training data")
-
-ggsave(entire_easternUSA_JK_plot, 
-           filename = file.path(mypath, "plots", "entire_easternUSA_model_jackknife_all_iterations_training.jpg"),
-           height = 8, 
-           width = 10,
-           device = "jpeg",
-           dpi = "retina")
-
-
-```
-
-I will also perform a jackknife for each of the model iterations, based on training and test data.
-
-```{r object of plot types}
-
-plot.types <- c("train", "test")
-
-```
-
-```{r}
-
- # path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
-# for loop to output csv file of jackknife test, one per model iteration
-for (a in seq(length(entire_easternUSA_model@models))) {
-  
-  # jackknife
-  jk.obj <- SDMtune::doJk(
-    model = entire_easternUSA_model@models[[a]],
-    test = entire_easternUSA_test, 
-    metric = "auc",
-    with_only = TRUE, # also run test for each variable alone
-    progress = TRUE
-    )
-  
-  # write raw data to csv
-  write_csv(x = jk.obj, file = file.path(mypath, paste0("entire_easternUSA_model_jackknife_iter", a, "_training_testing.csv")))
-    
-  # sub-loop to output 2 types of plots per test, training and testing
-    for(b in plot.types) {
-    
-      # plot training jackknife
-      jk.obj_plot <- plotJk(jk = jk.obj, type = b)
-      
-      # modify objects to add titles and subtitles
-      jk.obj_plot <- jk.obj_plot +
-        ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
-        labs(subtitle = paste0("iter ", a, ", ", b, "ing data"))
-      
-      ggsave(jk.obj_plot, 
-             filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_jackknife_iter", a, "_", b, "ing.jpg")),
-             height = 8, 
-             width = 10,
-             device = "jpeg",
-             dpi = "retina")
-      
-      # remove temp object 
-      rm(jk.obj_plot)
-  
-  }
-  
-  # remove temp object 
-  rm(jk.obj)
-  
-}
-
-```
-
-## Variable importance
-
-Lastly, the variable importance will be calculated as a percentage probability. 
-
-```{r variable importance}
-  
- # path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
-# calculate variable importance
-var_imp <- SDMtune::varImp(model = entire_easternUSA_model, progress = TRUE)
-# write to csv
-write_csv(x = var_imp, file = file.path(mypath, "entire_easternUSA_model_variable_importance.csv"))
-
-# plot
-var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
-
-var_imp_plot <- var_imp_plot +
-  ggtitle("Variable importance for entire_easternUSA_model")  
-
-ggsave(var_imp_plot, 
-       filename = file.path(mypath, "plots", "entire_easternUSA_model_variable_importance.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
 
 
 ```

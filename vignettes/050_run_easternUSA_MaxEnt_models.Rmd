@@ -21,20 +21,17 @@ here()
 library(devtools)
 library(rJava) # for running MaxEnt
 
-library(ENMeval) # other useful env functions
 library(dismo) # package underneath SDMtune
 library(SDMtune) # main package used to run SDMs
 
 # dependencies of SDMtune
-library(kableExtra) # required for producing model reports
 library(plotROC) # plots ROCs
-library(rasterVis)
 
 library(viridis)
 
-library(sf) # spatial data 
-library(raster) # spatial data 
-library(terra) # spatial data 
+# spatial data handling
+library(raster) 
+library(terra) 
 
 ```
 
@@ -270,6 +267,23 @@ entire_easternUSA_model <- SDMtune::train(
 
 ## Evaluate maxent model
 
+This function should produce all summary statistics for this model
+
+```{r compute summary statistics using custom function}
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = entire_easternUSA_model, 
+  model.name = "entire_easternUSA_model", 
+  mypath = mypath, 
+  env.covar.obj = x_env_covariates, 
+  train.obj = entire_easternUSA_train, 
+  trainFolds.obj = entire_easternUSA_trainFolds, 
+  test.obj = entire_easternUSA_test, 
+  plot.types = c("train", "test"), 
+  threshold.types = c("cloglog", "logistic")
+  )
+
+```
 
 ### Fixed area AUC
 
@@ -279,8 +293,27 @@ THIS NEEDS an AUC plot with lines for the fixed vs flexible AUC lines on it
 
 # MaxEnt Model- entire eastern USA, without "access to cities" covariate
 
-Same setup as 1st model
 
+
+
+
+
+
+```{r compute summary statistics using custom function}
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = , 
+  model.name = , 
+  mypath = mypath, 
+  env.covar.obj = , 
+  train.obj = , 
+  trainFolds.obj = , 
+  test.obj = , 
+  plot.types = c("train", "test"), 
+  threshold.types = c("cloglog", "logistic")
+  )
+
+```
 
 
 
@@ -291,9 +324,28 @@ Same setup as 1st model
 # DD model used with 1% adult emergence threshold
 a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv")) 
 
-
 ```
 
+
+
+
+
+
+```{r compute summary statistics using custom function}
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = , 
+  model.name = , 
+  mypath = mypath, 
+  env.covar.obj = , 
+  train.obj = , 
+  trainFolds.obj = , 
+  test.obj = , 
+  plot.types = c("train", "test"), 
+  threshold.types = c("cloglog", "logistic")
+  )
+
+```
 
 
 
@@ -308,6 +360,25 @@ a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs
 ```
 
 
+
+
+
+
+```{r compute summary statistics using custom function}
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = , 
+  model.name = , 
+  mypath = mypath, 
+  env.covar.obj = , 
+  train.obj = , 
+  trainFolds.obj = , 
+  test.obj = , 
+  plot.types = c("train", "test"), 
+  threshold.types = c("cloglog", "logistic")
+  )
+
+```
 
 
 
