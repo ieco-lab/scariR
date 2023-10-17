@@ -6,9 +6,13 @@ date: "2023-09-28"
 output: html_document
 ---
 
+*Note* This vignette is an example of the workflow for the function within this package called `slfSpread::compute_MaxEnt_summary_statistics()`, which is used in vignette 050 to obtain the final results. This vignette does not need to be run to obtain the final results of the workflow. 
+
 # Overview
 
-This vignette gives an example of the workflow for producing a MaxEnt model in R and all of its associated outputs. The workflow depends heavily on the R package [SDMtune](https://consbiol-unibern.github.io/SDMtune/). The workflow is designed for the first model I ran in my analysis, the eastern USA model with the entire area used as the background (entire_easternUSA_model). However, this workflow can be used for any dataset to train a maxent model, extract the summary statistics and make predictions for pointwise species presence data or entire areas (both are exemplified in this workflow). Here is a list of the outputs and summary statistics that will be obtained from the models produced by this vignette:
+This vignette gives an example of the workflow for producing a MaxEnt model in R and all of its associated outputs. Chunks 1-10 are shared with vignette 050, which is the parent of this vignette. This vignette was created to isolate the entire workflow for creating a model. Some processes in this vignette are not used for all models produced, such as a rasterized predictions of suitability.
+
+The workflow depends heavily on the R package [SDMtune](https://consbiol-unibern.github.io/SDMtune/). The workflow is designed for the first model I ran in my analysis, the eastern USA model with the entire area used as the background (entire_easternUSA_model). However, this workflow can be used for any dataset to train a maxent model, extract the summary statistics and make predictions for pointwise species presence data or entire areas (both are exemplified in this workflow). Here is a list of the outputs and summary statistics that will be obtained from the models produced by this vignette:
 
 \strong{Model Outputs}
 * .RDS file of the MaxEnt model
@@ -28,7 +32,7 @@ This vignette gives an example of the workflow for producing a MaxEnt model in R
 * Jackknife leave-one-out test and plot
 * Other model settings
 
-Most of these can also be obtained using a function in this package called ``, which creates outputs of the summary statistics, writes the .RDS file and records the presence data used to train and test the model (so it does NOT create a suitability map, presence/absence map or point-wise predictions).
+Most of these can also be obtained using a function in this package called `compute_MaxEnt_summary_statistics`, which creates outputs of the summary statistics, writes the .RDS file and records the presence data used to train and test the model (so it does NOT create a suitability map, presence/absence map or point-wise predictions).
 
 Additionally, the appendices contain code that can be used to iteratively tune the model and get a model report output in a similar style to the original MaxEnt output.
 
@@ -57,6 +61,8 @@ library(viridis)
 # spatial data handling
 library(raster) 
 library(terra) 
+
+library(pROC)
 
 ```
 
@@ -160,7 +166,7 @@ names(x_global_env_covariates) <- env_layer_names
 
 I will make some quick edits to the SLF presence data as well. These need to be cropped to the extent of the the background area (in this case, the Eastern USA).
 
-```{r}
+```{r crop presences to rasters}
 
 # extent object for eastern USA
 ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
@@ -283,6 +289,8 @@ entire_easternUSA_model <- SDMtune::train(
 )
 
 ```
+
+
 
 
 *NOTE* the output created from this point to the end of the vignette can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`. 
@@ -695,12 +703,97 @@ ggsave(var_imp_plot,
 
 ```
 
+## Confusion Matrix for common threshold values
+
+Lastly, I will pick out the mean cloglog threshold values for each type of threshold used in the model and run a confusion matrix for each value. A confusion matrix will show the number of true positives, false positives, true negatives and false negatives per threshold value and will help to determine which threshold makes the most sense, given our data. I will need to create a vector of these values, which can be found in the model_summary_all_iterations file created by this workflow.
+
+```{r create data frame for confusion matrix}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1")
+
+# load in summary file and slice the threshold values
+conf.matr.data <- read.csv(file.path(mypath, "entire_easternUSA_model_summary_all_iterations.csv")) %>%
+  dplyr::slice(20, 24, 28, 32, 36, 40, 44, 48, 52)
+
+```
+
+```{r compute confusion matrix}
+
+# create empty table with threshold labels
+  conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
+    rename("hold_type" = "conf.matr.data[, 1]")
+
+for (a in seq(length(entire_easternUSA_model@models))) {
+
+  conf.matr.hold <- SDMtune::confMatrix(
+    model = entire_easternUSA_model@models[[a]],
+    test = entire_easternUSA_test,
+    type = "cloglog",
+    th = conf.matr.data[, 6] # the mean value for all cloglog thresholds
+    ) 
+  
+  # bind threshold names
+  conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
+    rename("hold_type" = "conf.matr.data[, 1]") %>%
+    dplyr::select(hold_type, everything())
+  
+  # write individual run results to file
+   write.table(
+    x = conf.matr.hold, 
+    sep = ",",
+    file = file.path(mypath, paste0("entire_easternUSA_model_thresh_confusion_matrix_iter", a, ".csv")), 
+    row.names = FALSE,
+    col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
+    )
+  
+   # before all model iterations have been summarized, append to empty table
+   while (a < length(entire_easternUSA_model@models)) {
+      # join conf.matr.hold temporary object to empty table
+      conf.matr.output <- right_join(conf.matr.output, conf.matr.hold, by = "hold_type")
+      
+      break
+      
+      }
+    
+     # when all model iterations have been appended, take the mean threshold value and write to csv
+    if (a == length(entire_easternUSA_model@models)) {
+      # compute the mean of the 5 columns     
+      conf.matr.output <- mutate(conf.matr.output, 
+                                 tp_mean = rowMeans(dplyr::across(contains("tp"))), # compute the average of all "tp" columns
+                                 fp_mean = rowMeans(dplyr::across(contains("fp"))),
+                                 fn_mean = rowMeans(dplyr::across(contains("fn"))),
+                                 tn_mean = rowMeans(dplyr::across(contains("tn"))),
+                                 th = rowMeans(dplyr::across(contains("th")))
+                                 ) %>%
+        dplyr::select(hold_type, th, tp_mean, fp_mean, fn_mean, tn_mean) %>%
+        rename("threshold_value" = "th",
+               "threshold_type" = "hold_type") %>%
+        dplyr::select(threshold_type, threshold_value, everything())
+     
+      # write to csv
+      write.csv(
+        x = conf.matr.output, 
+        file = file.path(mypath, paste0("entire_easternUSA_model_thresh_confusion_matrix_all_iterations.csv")),
+        row.names = FALSE
+        )
+  
+       }
+  
+  #remove temp object
+  rm(conf.matr.hold)
+
+}
+
+
+```
 
 *NOTE* This is the end of the output that can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`
 
 
 
-
+## Compute fixed area AUC
 
 ## Predict suitability for all SLF presences
 
@@ -736,7 +829,7 @@ slf_presences_predict <- SDMtune::predict(
   progress = TRUE # progress bar
 ) %>%
   as.data.frame() %>%
-  rename("suitability" = ".")
+  rename("cloglog_suitability" = ".")
 
 
 
@@ -788,7 +881,7 @@ IVR_regions_predict <- SDMtune::predict(
   progress = TRUE # progress bar
 ) %>%
   as.data.frame() %>%
-  rename("suitability" = ".")
+  rename("cloglog_suitability" = ".")
 
 
 # bind rows
@@ -877,7 +970,7 @@ plotPA()
 
 # Appendix
 
-## Create model report
+## Create model report- unfinished
 
 If you so desire, you can write a report of the model output using `SDMtune::modelReport()`. This function creates a report that is similar to the default MaxEnt output. It will include a jackknife analysis of contribution, marginal response curves, testing and training data.
 
@@ -920,7 +1013,7 @@ if (FALSE) {
 
 ```
 
-## tune model
+## tune model- unfinished
 
 ```{r sample code}
 
@@ -944,6 +1037,25 @@ if (FALSE) {
     seed = 65466
     )
   
+}
+
+```
+
+## Compute Sensitivity and Specificity- unfinished
+
+Lastly, I will use this confusion matrix to calculate the sensitivity and specificity for each threshold value. The sensitivity represents the percentage of presences that were correctly identified by the algorithm at that threshold, while the specificity represents the percentage of background points that were correctly identified by the algorithm at that threshold. I will only do this for the confusion matrix for mean threshold values from all iterations.
+
+```{r compute sensitivity and specificity}
+if(FALSE) {
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# read in confusion matrix
+conf.matr.output <- read.csv(file = file.path(mypath, "easternUSA_entire_thresh_confusion_matrix_all_iterations.csv"))
+
+conf.matr.output <- dplyr::mutate(conf.matr.output, 
+                                  Sensitivity = apply(conf.matr.output, MARGIN = 1, FUN = (tp_mean / (tp_mean + fn_mean))))
 }
 
 ```

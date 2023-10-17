@@ -8,6 +8,7 @@ compute_MaxEnt_summary_statistics(
   model.obj,
   model.name,
   mypath,
+  create.dir = FALSE,
   env.covar.obj,
   train.obj,
   trainFolds.obj,
@@ -19,9 +20,19 @@ compute_MaxEnt_summary_statistics(
 \arguments{
 \item{model.obj}{}
 
-\item{model.name}{}
+\item{model.name}{Character. A string matching the name of the object set for
+\code{model.obj}. Exclude unnecessary phrases, such as the "_model" ending.}
 
-\item{mypath}{}
+\item{mypath}{Character.A file path to the sub directory where the model
+output will be stored. Should be used with the \code{\link[=file.path]{file.path()}} function
+(i.e. with '/' instead of '\\'). If this sub directory does not already exist
+and should be created by the function, set \code{create.dir} = TRUE. This will
+create a folder from the last part of the filepath in mypath.}
+
+\item{create.dir}{Logical. Should the last element of \code{mypath} create a sub
+directory for the model output? If TRUE, the main folder will be created for
+the model output. If FALSE (ie, the sub directory already exists), only the
+"plots" folder within the model output sub directory will be created.}
 
 \item{env.covar.obj}{}
 
@@ -39,7 +50,7 @@ compute_MaxEnt_summary_statistics(
 All MaxEnt Summary Statistics
 }
 \description{
-The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis' and 'terra'.
+The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC' and 'terra'.
 }
 \details{
 model.obj <- entire_easternUSA_model

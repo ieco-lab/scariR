@@ -208,3 +208,14 @@ dismo::predict(object = test_model,
                progress = "text")
 
 ```
+
+
+```{r}
+
+weight <- sort(rnorm(n = 100, mean = 172, sd = 29))
+
+obese <- ifelse(test = runif(n = 100) < rank(weight)/100)
+
+```
+
+

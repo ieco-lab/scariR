@@ -5,9 +5,19 @@
 #'
 #'@param model.obj
 #'
-#'@param model.name
+#'@param model.name Character. A string matching the name of the object set for
+#'`model.obj`. Exclude unnecessary phrases, such as the "_model" ending.
 #'
-#'@param mypath
+#'@param mypath Character.A file path to the sub directory where the model
+#'output will be stored. Should be used with the [file.path()] function
+#'(i.e. with '/' instead of '\\'). If this sub directory does not already exist
+#'and should be created by the function, set `create.dir` = TRUE. This will
+#'create a folder from the last part of the filepath in mypath.
+#'
+#'@param create.dir Logical. Should the last element of `mypath` create a sub
+#'directory for the model output? If TRUE, the main folder will be created for
+#'the model output. If FALSE (ie, the sub directory already exists), only the
+#'"plots" folder within the model output sub directory will be created.
 #'
 #'@param env.covar.obj
 #'
@@ -21,7 +31,7 @@
 #'
 #'@param threshold.types
 #'
-#'
+
 #'
 #'
 #'@details
@@ -48,7 +58,7 @@
 #'TBD
 #'
 #'@export
-compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.types, threshold.types) {
+compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.types, threshold.types) {
 
     ## Error checks-------------------------------------------------------------
 
@@ -61,7 +71,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
 
     # ensure objects are character type
     if (is.character(model.name) == FALSE) {
-      stop("Parameter 'model.obj' must be of type character")
+      stop("Parameter 'model.name' must be of type character")
     }
     if (is.character(plot.types) == FALSE) {
       stop("Parameter 'plot.types' must be of type character")
@@ -71,6 +81,24 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
     }
     if (is.character(mypath) == FALSE) {
       stop("Parameter 'mypath' must be of type character")
+    }
+
+    ## Create sub directory for files-----------------------------------------------
+
+    if (create.dir == FALSE) {
+      # print message
+      print("proceeding without creating model subdirectory folder")
+      # create plots subfolder
+      dir.create(mypath, "plots")
+
+    } else if (create.dir == TRUE) {
+      # create sub directory from ending of mypath object
+      dir.create(mypath)
+      # print message
+      print(paste0("sub directory for files created at: ", mypath))
+      # create plots folder within
+      dir.create(mypath, "plots")
+
     }
 
     ## MaxEnt settings----------------------------------------------------------
@@ -299,7 +327,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
       )
 
     # write raw data to csv
-    write_csv(x = JK.obj_df, file = file.path(mypath, model.name, "_jackknife_all_iterations_training.csv"))
+    write_csv(x = JK.obj_df, file = file.path(mypath, paste0(model.name, "_jackknife_all_iterations_training.csv")))
 
     # plot jackknife
     JK.obj_df_plot <- plotJk(jk = JK.obj_df, type = "train")
@@ -309,7 +337,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
       labs(subtitle = "all iterations, training data")
 
     ggsave(JK.obj_df_plot,
-               filename = file.path(mypath, "plots", model.name, "_jackknife_all_iterations_training.jpg"),
+               filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_all_iterations_training.jpg")),
                height = 8,
                width = 10,
                device = "jpeg",
@@ -366,7 +394,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
     # calculate variable importance
     var_imp <- SDMtune::varImp(model = model.obj, progress = TRUE)
     # write to csv
-    write_csv(x = var_imp, file = file.path(mypath, model.name, "_variable_importance.csv"))
+    write_csv(x = var_imp, file = file.path(mypath, paste0(model.name, "_variable_importance.csv")))
 
     # plot
     var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
@@ -380,6 +408,80 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, env
            width = 10,
            device = "jpeg",
            dpi = "retina")
+
+    ## Confusion Matrix for common threshold values-----------------------------
+
+    # load in summary file and slice the threshold values
+    conf.matr.data <- read.csv(file.path(mypath, paste0(model.name, "_summary_all_iterations.csv"))) %>%
+      dplyr::slice(20, 24, 28, 32, 36, 40, 44, 48, 52) # the rows containing the threshold data
+
+
+
+    # create empty table with threshold labels
+    conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
+      rename("hold_type" = "conf.matr.data[, 1]")
+
+    for (a in seq(length(model.obj@models))) {
+
+      conf.matr.hold <- SDMtune::confMatrix(
+        model = model.obj@models[[a]],
+        test = test.obj,
+        type = "cloglog",
+        th = conf.matr.data[, 6] # the mean value for all cloglog thresholds
+      )
+
+      # bind threshold names
+      conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
+        rename("hold_type" = "conf.matr.data[, 1]") %>%
+        dplyr::select(hold_type, everything())
+
+      # write individual run results to file
+      write.table(
+        x = conf.matr.hold,
+        sep = ",",
+        file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_iter", a, ".csv")),
+        row.names = FALSE,
+        col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
+      )
+
+      # before all model iterations have been summarized, append to empty table
+      while (a < length(model.obj@models)) {
+        # join conf.matr.hold temporary object to empty table
+        conf.matr.output <- right_join(conf.matr.output, conf.matr.hold, by = "hold_type")
+
+        break
+
+      }
+
+      # when all model iterations have been appended, take the mean threshold value and write to csv
+      if (a == length(model.obj@models)) {
+        # compute the mean of the 5 columns
+        conf.matr.output <- mutate(conf.matr.output,
+                                   tp_mean = rowMeans(dplyr::across(contains("tp"))), # compute the average of all "tp" columns
+                                   fp_mean = rowMeans(dplyr::across(contains("fp"))),
+                                   fn_mean = rowMeans(dplyr::across(contains("fn"))),
+                                   tn_mean = rowMeans(dplyr::across(contains("tn"))),
+                                   th = rowMeans(dplyr::across(contains("th")))
+        ) %>%
+          dplyr::select(hold_type, th, tp_mean, fp_mean, fn_mean, tn_mean) %>%
+          rename("threshold_value" = "th",
+                 "threshold_type" = "hold_type") %>%
+          dplyr::select(threshold_type, threshold_value, everything())
+
+        # write to csv
+        write.csv(
+          x = conf.matr.output,
+          file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_all_iterations.csv")),
+          row.names = FALSE
+        )
+
+      }
+
+      #remove temp object
+      rm(conf.matr.hold)
+
+    }
+
 
 }
 
