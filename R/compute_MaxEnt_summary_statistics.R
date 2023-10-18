@@ -109,7 +109,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     ## Save MaxEnt model object-------------------------------------------------
 
     # save model
-    saveRDS(object = model.obj, file = file.path(mypath, paste0(model.name, ".rds")))
+    saveRDS(object = model.obj, file = file.path(mypath, paste0(model.name, "_model.rds")))
 
     ## Get AUC, TSS, and variable contributions---------------------------------
 

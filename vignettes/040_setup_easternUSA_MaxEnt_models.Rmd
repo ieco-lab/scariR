@@ -81,7 +81,7 @@ great_lakes <- terra::vect(x = file.path(mypath, "GL230521_lam.shp")) %>%
 # lists of target files in the directory
 # load in bioclim layers to be cropped- the original .asc files
 env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 5 bioclim layers I will be using in my models
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
   grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
 # output file names

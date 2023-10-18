@@ -72,6 +72,19 @@ map_style <- list(
 
 ```
 
+```{r ggplot object for plot style}
+
+# a vector to rescale the axes of the plots
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+scatter_style <- list(
+  xlab("Background size (increases left to right)"),
+  guides(x = guide_axis(angle = 15)),
+  theme_bw()
+)
+
+```
+
 # MaxEnt Model- entire eastern USA
 
 ## Tidy datasets for modeling
@@ -312,9 +325,187 @@ slfSpread::compute_MaxEnt_fixed_ROC(
 
 ```
 
-The next three models will follow roughly the same structure, so comments will be kept to a minimum because the workflow will be the same. 
+### Create distribution map for area of interest- easternUSA_entire_model
 
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. The output will be a raster of suitability that can be used in our background size comparison.
 
+*Note* For the entire model, this will be done with and without Access to cities (to compare which is a better fit). For the version without ATC, see the v0 version of this vignette in `vignette-outputs/data-tables`. 
+
+```{r predict function to create raster}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# write .asc file of avg predictions
+SDMtune::predict(
+  object = easternUSA_entire_model, 
+  data = x_env_covariates, # the covariate layers used to train the model
+  fun = "mean", 
+  type = "cloglog", 
+  clamp = FALSE, 
+  progress = TRUE, 
+  filename = file.path(mypath, "easternUSA_entire_predicted_suitability.asc"), 
+    # the function automatically adds the function name on the end
+  filetype = "AAIGrid"
+) 
+
+```
+
+I will convert the raster to a data frame and use this to plot it and save a jpg.
+
+```{r convert to df and plot}
+
+# load in mean predictions
+easternUSA_entire_suit <- terra::rast(x = file.path(mypath, "easternUSA_entire_predicted_suitability_mean.asc")) %>%
+  # terra::subst(., from = -9999, to = NA) %>% # change -9999 to NA for plotting
+  terra::as.data.frame(., xy = TRUE) 
+  
+# plot
+easternUSA_entire_suit_plot <- ggplot() +
+  geom_raster(data = easternUSA_entire_suit, 
+              aes(x = x, y = y, fill = mean)) +
+  labs(title = "Suitability for SLF") +
+  viridis::scale_fill_viridis(option = "D") +
+  map_style
+
+# save plot output
+ggsave(easternUSA_entire_suit_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_entire_predicted_suitability_mean.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+```
+
+### Reclassify mean suitability map
+
+I will take the above map and reclassify it so that areas that arent suitable are more obvious. I will use the maximum training sensitivity plus specificity threshold, as this threshold is one of the most rigorous available (ADD MORE). First, I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable".
+
+I will retrieve the threshold below. I will use the mean cloglog threshold for all iterations.
+
+```{r discern MTSS threshold}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+MTSS_value <- read.csv(file = file.path(mypath, "easternUSA_entire_summary_all_iterations.csv")) %>%
+  .[42, 6]
+
+```
+
+#### Create binary raster with MTSS threshold
+
+First, I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1.
+
+```{r terra required classification matrices}
+
+# create regional suitability value matrix for terra
+entire_rescale_class <- data.frame(
+  from = c(0, MTSS_value),
+  to = c(MTSS_value, 1),
+  becomes = c(0, 1)
+)
+
+```
+
+```{r reclassify maxent outputs}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# load in raster
+entire_mean_raster <- terra::rast(x = file.path(mypath, "easternUSA_entire_predicted_suitability_mean.asc"))
+
+if(FALSE) {
+  
+  terra::classify(x = entire_mean_raster, 
+                  rcl = entire_rescale_class,
+                  right = FALSE, # close left side of value
+                  filename = file.path(mypath, "easternUSA_entire_predicted_suitability_mean_thresholded.asc"), # also write to file
+                  overwrite = FALSE
+                  ) 
+  
+}
+  
+```
+
+#### Create mask raster and overlay on mean
+
+Now I can reclassify averaged raster of maxent predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will now create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+```{r reclassify maxent outputs}
+
+# create regional suitability value matrix for terra
+entire_rescale_class <- data.frame(
+  from = 0,
+  to = MTSS_value,
+  becomes = 1
+)
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# load in raster
+entire_mean_raster <- terra::rast(x = file.path(mypath, "easternUSA_entire_predicted_suitability_mean.asc"))
+
+if(FALSE) {
+  
+  # reclassify and write regional raster
+  entire_mean_reclassify <- terra::classify(x = entire_mean_raster, 
+                                  rcl = entire_rescale_class,
+                                  right = FALSE, # close left side of value
+                                  others = NA,
+                                  filename = file.path(mypath, "easternUSA_entire_MTSS_mask_layer.asc"), # also write to file
+                                  overwrite = FALSE) 
+  
+}
+  
+```
+
+Now, I will overlay the plots
+
+```{r overlay plots}
+  
+# load in mean predictions
+entire_mean_reclassify_df <- terra::rast(x = file.path(mypath, "easternUSA_entire_MTSS_mask_layer.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# plot mean raster first
+easternUSA_entire_threshold_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = easternUSA_entire_suit, 
+              aes(x = x, y = y, fill = mean)) +
+  labs(title = "Suitability for SLF, MTSS training threshold",
+       subtitle = "Model: easternUSA_entire") 
+  viridis::scale_fill_viridis(option = "D") +
+  map_style
+
+# add binary raster overtop
+easternUSA_entire_threshold_plot <- easternUSA_entire_threshold_plot +
+  # plot binary threshold on top
+  geom_raster(data = entire_mean_reclassify_df, 
+              aes(x = x, y = y), fill = "azure4")
+
+# save plot output
+ggsave(easternUSA_entire_threshold_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_entire_predicted_suitability_mean_thresholded.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+```
+
+The next three models will follow roughly the same structure, so comments will be kept to a minimum because the workflow will be the same.
 
 # MaxEnt Model- DD 1% adult emergence
 
@@ -465,13 +656,172 @@ slfSpread::compute_MaxEnt_fixed_ROC(
 
 ```
 
+### Create distribution map for area of interest
 
+```{r predict function to create raster}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+# write .asc file of avg predictions
+SDMtune::predict(
+  object = easternUSA_adult_emer_1_model, 
+  data = x_env_covariates, # the covariate layers used to train the model
+  fun = "mean", 
+  type = "cloglog", 
+  clamp = FALSE, 
+  progress = TRUE, 
+  filename = file.path(mypath, "easternUSA_adult_emer_1_predicted_suitability.asc"), 
+    # the function automatically adds the function name on the end
+  filetype = "AAIGrid"
+) 
+
+```
+
+```{r convert to df and plot}
+
+# load in mean predictions
+easternUSA_adult_emer_1_suit <- terra::rast(x = file.path(mypath, "easternUSA_adult_emer_1_predicted_suitability_mean.asc")) %>%
+  terra::as.data.frame(., xy = TRUE) 
+  
+# plot
+easternUSA_adult_emer_1_suit_plot <- ggplot() +
+  geom_raster(data = easternUSA_adult_emer_1_suit, 
+              aes(x = x, y = y, fill = mean)) +
+  labs(title = "Mean suitability for SLF",
+       subtitle = "Model: easternUSA_adult_emer_1") +
+  viridis::scale_fill_viridis(option = "D") +
+  map_style
+
+# save plot output
+ggsave(easternUSA_adult_emer_1_suit_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_adult_emer_1_predicted_suitability_mean.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+```
+
+### Reclassify mean suitability map
+
+```{r discern MTSS threshold}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+MTSS_value <- read.csv(file = file.path(mypath, "easternUSA_adult_emer_1_summary_all_iterations.csv")) %>%
+  .[42, 6]
+
+```
+
+#### Create binary raster with MTSS threshold
+
+```{r terra required classification matrices}
+
+# create regional suitability value matrix for terra
+adult_emer_1_rescale_class <- data.frame(
+  from = c(0, MTSS_value),
+  to = c(MTSS_value, 1),
+  becomes = c(0, 1)
+)
+
+```
+
+```{r reclassify maxent outputs}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+# load in raster
+adult_emer_1_mean_raster <- terra::rast(x = file.path(mypath, "easternUSA_adult_emer_1_predicted_suitability_mean.asc"))
+
+if(FALSE) {
+  
+  terra::classify(x = adult_emer_1_mean_raster, 
+                  rcl = adult_emer_1_rescale_class,
+                  right = FALSE, # close left side of value
+                  filename = file.path(mypath, "easternUSA_adult_emer_1_predicted_suitability_mean_thresholded.asc"), # also write to file
+                  overwrite = FALSE
+                  ) 
+  
+}
+  
+```
+
+#### Create mask raster and overlay on mean
+
+```{r reclassify maxent outputs}
+
+# create regional suitability value matrix for terra
+adult_emer_1_rescale_class <- data.frame(
+  from = 0,
+  to = MTSS_value,
+  becomes = 1
+)
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+if(FALSE) {
+  
+  # reclassify and write regional raster
+  adult_emer_1_mask_layer <- terra::classify(x = adult_emer_1_mean_raster, 
+                                  rcl = adult_emer_1_rescale_class,
+                                  right = FALSE, # close left side of value
+                                  others = NA,
+                                  filename = file.path(mypath, "easternUSA_adult_emer_1_MTSS_mask_layer.asc"), # also write to file
+                                  overwrite = FALSE) 
+  
+}
+  
+```
+
+```{r overlay plots}
+  
+# load in mean predictions
+adult_emer_1_mask_layer_df <- terra::rast(x = file.path(mypath, "easternUSA_adult_emer_1_MTSS_mask_layer.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# plot mean raster first
+easternUSA_adult_emer_1_threshold_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = easternUSA_adult_emer_1_suit, 
+              aes(x = x, y = y, fill = mean)) +
+  labs(title = "Suitability for SLF, MTSS training threshold",
+       subtitle = "Model: DD 1% adult emergence") +
+  viridis::scale_fill_viridis(option = "D") +
+  map_style
+
+# add binary raster overtop
+easternUSA_adult_emer_1_threshold_plot <- easternUSA_adult_emer_1_threshold_plot +
+  # plot binary threshold on top
+  geom_raster(data = adult_emer_1_mask_layer_df, 
+              aes(x = x, y = y), fill = "azure4")
+
+# save plot output
+ggsave(easternUSA_adult_emer_1_threshold_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_adult_emer_1_predicted_suitability_mean_thresholded.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+```
 
 # MaxEnt Model- 355km buffer around presences
 
 ## Tidy datasets for modeling
 
-This is the same as the setup for the first model, except I will not re-load `x_env_covariates`, because it will remain unchanged. I will also not re-load the SLF presences `p_slf_presences`.
+This is the same as the setup for the first model, except I will not re-load `x_env_covariates`, because it will remain unchanged. I will also not re-load the SLF presences `p_slf_presences`. I will only re-load the new background set.
 
 ```{r load in background points for maxent model}
 
@@ -486,16 +836,16 @@ a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs
 
 if (FALSE) {
 
-  easternUSA_adult_emer_1_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+  easternUSA_buffered_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                                env = x_env_covariates,
                                                p = p_slf_points,
                                                a = a_slf_buffered_background_points,
                                                verbose = TRUE # print helpful messages
                                                )
   
-  easternUSA_adult_emer_1_SWD@coords # coordinates
-  easternUSA_adult_emer_1_SWD@pa # presence / absence (background counted as absence)
-  easternUSA_adult_emer_1_SWD@data # extracted data from 
+  easternUSA_buffered_SWD@coords # coordinates
+  easternUSA_buffered_SWD@pa # presence / absence (background counted as absence)
+  easternUSA_buffered_SWD@data # extracted data from 
 
 }
 
@@ -505,9 +855,9 @@ I will save the output again, but this time I will delete the presences dataset 
 
 ```{r save SWD file}
 
-SDMtune::swd2csv(swd = easternUSA_adult_emer_1_SWD, file_name = c(
+SDMtune::swd2csv(swd = easternUSA_buffered_SWD, file_name = c(
   file.path(here(), "vignette-outputs", "data-tables", "temp.csv"), # this is a duplicate file
-  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emer_1_absences_with_data.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_buffered_absences_with_data.csv")
   ))
 
 # the presences file is a duplicate, so I will delete that
@@ -521,32 +871,32 @@ I will split the presences into training and testing, using 80% of the points fo
 
 ```{r split data for training and testing}
 
-set.seed(6)
+set.seed(8)
 
-easternUSA_adult_emer_1_trainTest <-  SDMtune::trainValTest(
-  x = easternUSA_adult_emer_1_SWD,
+easternUSA_buffered_trainTest <-  SDMtune::trainValTest(
+  x = easternUSA_buffered_SWD,
   test = 0.2,
   only_presence = TRUE
 )
 
 # separate off training data
-easternUSA_adult_emer_1_train <- easternUSA_adult_emer_1_trainTest[[1]]
-easternUSA_adult_emer_1_test <- easternUSA_adult_emer_1_trainTest[[2]]
+easternUSA_buffered_train <- easternUSA_buffered_trainTest[[1]]
+easternUSA_buffered_test <- easternUSA_buffered_trainTest[[2]]
 
-easternUSA_adult_emer_1_train@coords # coordinates
-easternUSA_adult_emer_1_train@pa # presence / absence (background counted as absence)
-easternUSA_adult_emer_1_train@data # extracted data from
+easternUSA_buffered_train@coords # coordinates
+easternUSA_buffered_train@pa # presence / absence (background counted as absence)
+easternUSA_buffered_train@data # extracted data 
 
 ```
 
 ```{r split data into k folds}
 
 # create random folds
-easternUSA_adult_emer_1_trainFolds <- SDMtune::randomFolds(
-  data = easternUSA_adult_emer_1_train,
+easternUSA_buffered_trainFolds <- SDMtune::randomFolds(
+  data = easternUSA_buffered_train,
   k = 5, # 5 folds
   only_presence = TRUE,
-  seed = 7
+  seed = 9
 )
 
 ```
@@ -555,10 +905,10 @@ easternUSA_adult_emer_1_trainFolds <- SDMtune::randomFolds(
 
 ```{r train maxent model}
 
-easternUSA_adult_emer_1_model <- SDMtune::train(
+easternUSA_buffered_model <- SDMtune::train(
   method = "Maxent",
-  data = easternUSA_adult_emer_1_train,
-  folds = easternUSA_adult_emer_1_trainFolds, # 5 folds for dataset
+  data = easternUSA_buffered_train,
+  folds = easternUSA_buffered_trainFolds, # 5 folds for dataset
   fc = "lqpht", # feature classes set to ALL
   iter = 5000, # number of iterations
   progress = TRUE
@@ -577,17 +927,17 @@ This function produces all summary statistics for this model. For the complete a
 # output directory, with folder to create at end
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+                     "maxent/models/slf_easternUSA_buffered_step1")
 
 slfSpread::compute_MaxEnt_summary_statistics(
-  model.obj = easternUSA_adult_emer_1_model, 
-  model.name = "easternUSA_adult_emer_1", 
+  model.obj = easternUSA_buffered_model, 
+  model.name = "easternUSA_buffered", 
   mypath = mypath, 
   create.dir = TRUE, # create subdirectory from end of mypath
   env.covar.obj = x_env_covariates, # env covariates raster stacked
-  train.obj = easternUSA_adult_emer_1_train, # training data used to create model
-  trainFolds.obj = easternUSA_adult_emer_1_trainFolds,  # k-folds of training data
-  test.obj = easternUSA_adult_emer_1_test, # data you wish to use to test the model
+  train.obj = easternUSA_buffered_train, # training data used to create model
+  trainFolds.obj = easternUSA_buffered_trainFolds,  # k-folds of training data
+  test.obj = easternUSA_buffered_test, # data you wish to use to test the model
   plot.types = c("train", "test"), # types of jackknife curves to be created
   threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
@@ -603,85 +953,312 @@ This function produces the fixed area ROC analysis for this model. For the compl
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+                     "maxent/models/slf_easternUSA_buffered_step1")
 
 slfSpread::compute_MaxEnt_fixed_ROC(
-  model.obj = easternUSA_adult_emer_1_model,
-  model.name = "easternUSA_adult_emer_1", 
+  model.obj = easternUSA_buffered_model,
+  model.name = "easternUSA_buffered", 
   mypath = mypath,
   fixed.area.points = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"),
   env.covar.obj = x_env_covariates,
-  test.obj = easternUSA_adult_emer_1_test
+  test.obj = easternUSA_buffered_test
 )
 
 ```
 
-# Results- Fixed and Flexible AUC comparison for all 3 models
-
-PLOT should be a boxplot, with the background size on the x-axis (3 categories) and the fixed-area AUC value on the y-axis.
-Another plot could be made using the same data, except the flexible-area AUC on the y-axis
-
-
-
-# Appendix
-
-### Create distribution map for area of interest- easternUSA_entire_model
-
-I will use the predict function again, but this time to predict the suitability for the range of interest. The output will be a raster of suitability. This will not be done for every model in this step, but will be done for the entire models with and without ATC (to compare which is a better fit).
+### Create distribution map for area of interest
 
 ```{r predict function to create raster}
 
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1_v1")
+                     "maxent/models/slf_easternUSA_buffered_step1")
 
 # write .asc file of avg predictions
 SDMtune::predict(
-  object = easternUSA_entire_model, 
+  object = easternUSA_buffered_model, 
   data = x_env_covariates, # the covariate layers used to train the model
   fun = "mean", 
   type = "cloglog", 
   clamp = FALSE, 
   progress = TRUE, 
-  filename = file.path(mypath, "easternUSA_entire_predicted_suitability.asc"), 
+  filename = file.path(mypath, "easternUSA_buffered_predicted_suitability.asc"), 
     # the function automatically adds the function name on the end
   filetype = "AAIGrid"
 ) 
 
 ```
 
-I will convert the raster to a data frame and use this to plot it and save a jpg.
-
 ```{r convert to df and plot}
 
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1_v1")
-
 # load in mean predictions
-easternUSA_entire_suit <- terra::rast(x = file.path(mypath, "easternUSA_entire_predicted_suitability_mean.asc")) %>%
-  # terra::subst(., from = -9999, to = NA) %>% # change -9999 to NA for plotting
+easternUSA_buffered_suit <- terra::rast(x = file.path(mypath, "easternUSA_buffered_predicted_suitability_mean.asc")) %>%
   terra::as.data.frame(., xy = TRUE) 
   
 # plot
-easternUSA_entire_suit_plot <- ggplot() +
-  geom_raster(data = easternUSA_entire_suit, 
+easternUSA_buffered_suit_plot <- ggplot() +
+  geom_raster(data = easternUSA_buffered_suit, 
               aes(x = x, y = y, fill = mean)) +
-  labs(title = "Suitability for SLF") +
+  labs(title = "Mean suitability for SLF",
+       subtitle = "Model: easternUSA_buffered") +
   viridis::scale_fill_viridis(option = "D") +
   map_style
 
 # save plot output
-ggsave(easternUSA_entire_suit_plot, 
-           filename = file.path(mypath, "plots", "easternUSA_entire_predicted_suitability_mean.jpg"),
+ggsave(easternUSA_buffered_suit_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_buffered_predicted_suitability_mean.jpg"),
            height = 8, 
            width = 10,
            device = "jpeg",
            dpi = "retina")
 
 ```
+
+### Reclassify mean suitability map
+
+```{r discern MTSS threshold}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_buffered_step1")
+
+MTSS_value <- read.csv(file = file.path(mypath, "easternUSA_buffered_summary_all_iterations.csv")) %>%
+  .[42, 6]
+
+```
+
+#### Create binary raster with MTSS threshold
+
+```{r terra required classification matrices}
+
+# create regional suitability value matrix for terra
+buffered_rescale_class <- data.frame(
+  from = c(0, MTSS_value),
+  to = c(MTSS_value, 1),
+  becomes = c(0, 1)
+)
+
+```
+
+```{r reclassify maxent outputs}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_buffered_step1")
+
+# load in raster
+buffered_mean_raster <- terra::rast(x = file.path(mypath, "easternUSA_buffered_predicted_suitability_mean.asc"))
+
+if(TRUE) {
+  
+  terra::classify(x = buffered_mean_raster, 
+                  rcl = buffered_rescale_class,
+                  right = FALSE, # close left side of value
+                  filename = file.path(mypath, "easternUSA_buffered_predicted_suitability_mean_thresholded.asc"), # also write to file
+                  overwrite = FALSE
+                  ) 
+  
+}
+  
+```
+
+#### Create mask raster and overlay on mean
+
+```{r reclassify maxent outputs}
+
+# create regional suitability value matrix for terra
+buffered_rescale_class <- data.frame(
+  from = 0,
+  to = MTSS_value,
+  becomes = 1
+)
+
+if(TRUE) {
+  
+  # reclassify and write regional raster
+  buffered_mask_layer <- terra::classify(x = buffered_mean_raster, 
+                                             rcl = buffered_rescale_class,
+                                             right = FALSE, # close left side of value
+                                             others = NA,
+                                             filename = file.path(mypath, "easternUSA_buffered_MTSS_mask_layer.asc"), # also write to file
+                                             overwrite = FALSE) 
+  
+}
+  
+```
+
+```{r overlay plots}
+  
+# load in mean predictions
+buffered_mask_layer_df <- terra::rast(x = file.path(mypath, "easternUSA_buffered_MTSS_mask_layer.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# plot mean raster first
+easternUSA_buffered_threshold_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = easternUSA_buffered_suit, 
+              aes(x = x, y = y, fill = mean)) +
+  labs(title = "Suitability for SLF, MTSS training threshold",
+       subtitle = "Model: 355km buffer") +
+  viridis::scale_fill_viridis(option = "D") +
+  map_style
+
+# add binary raster overtop
+easternUSA_buffered_threshold_plot <- easternUSA_buffered_threshold_plot +
+  # plot binary threshold on top
+  geom_raster(data = buffered_mask_layer_df, 
+              aes(x = x, y = y), fill = "azure4")
+
+# save plot output
+ggsave(easternUSA_buffered_threshold_plot, 
+           filename = file.path(mypath, "plots", "easternUSA_buffered_predicted_suitability_mean_thresholded.jpg"),
+           height = 8, 
+           width = 10,
+           device = "jpeg",
+           dpi = "retina")
+
+```
+
+# Results
+
+Now that I have produced the initial 3 models, I will use the methodology outlined in VanDerWal et.al 2009 to compare them and discern the best background size to use in future models. This method accounts for the change in fixed area AUC, flexible area AUC, total predicted area and variable contribution. However, the methodology mainly hinges on the change in the fixed area AUC across the models. First, I will load in the .csv files containing the computed fixed and flexible area AUCs for these analyses. I will need to load in files created by `compute_MaxEnt_fixed_ROC()` with the ending `_fixed_flexible_AUCs.csv`.
+
+## Fixed Area AUC change across models
+
+```{r load in datasets}
+
+# file directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# entire model
+entire_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "entire area")
+# adult emergence 1% model
+adult_emer_1_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_adult_emer_1_step1", "easternUSA_adult_emer_1_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "DD 1% adult emergence thresh")
+# buffered area
+buffered_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_buffered_step1", "easternUSA_buffered_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "355km buffer")
+
+```
+
+First, I will create a scatter plot, with the with the background size on the x-axis (3 categories) and the fixed-area AUC value on the y-axis. 
+
+```{r create scatter plot}
+
+fixed_AUC_scatter <- entire_fixed_AUC %>%
+  # bind rows together
+  rbind(., adult_emer_1_fixed_AUC) %>%
+  rbind(., buffered_fixed_AUC) 
+
+# round to 3 decimals
+fixed_AUC_scatter$Fixed_Area_AUC <- round(fixed_AUC_scatter$Fixed_Area_AUC, digits = 3)
+  
+  # plot
+fixed_AUC_scatter <- fixed_AUC_scatter %>%
+  ggplot() +
+  geom_point(aes(x = background_size, y = Fixed_Area_AUC)) +
+  geom_text(aes(x = background_size, y = Fixed_Area_AUC, label = Fixed_Area_AUC), nudge_y = -0.10) +
+  geom_smooth(aes(x = background_size, y = Fixed_Area_AUC)) +
+  ggtitle("Change in fixed area AUC with background size") +
+  # theme(legend.position = "none") +
+  scale_y_continuous(name = "Fixed area AUC", limits = c(0, 1), breaks = breaks) +
+  scatter_style # custom plot style
+  
+
+```
+
+```{r save output}
+
+ggsave(
+  filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_models_fixed_AUC_scatter.jpg"),
+  plot = fixed_AUC_scatter,
+  device = "jpeg",
+  height = 8,
+  width = 10,
+  dpi = "retina"
+  )
+
+```
+
+There is not much discernable change in the flexible area AUC across background sizes. The smallest background size, 355 km buffer, has the highest AUC by 0.02, but this is likely not significant. 
+
+## Flexible Area AUC change across models
+
+I will also check the test flexible area AUCs. 
+
+```{r load in datasets}
+
+# file directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# entire model
+entire_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "entire area")
+# adult emergence 1% model
+adult_emer_1_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_adult_emer_1_step1", "easternUSA_adult_emer_1_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "DD 1% adult emergence thresh")
+# buffered area
+buffered_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_buffered_step1", "easternUSA_buffered_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "355km buffer")
+
+```
+
+```{r create scatter plot}
+
+flexible_AUC_scatter <- entire_flexible_AUC %>%
+  # bind rows together
+  rbind(., adult_emer_1_flexible_AUC) %>%
+  rbind(., buffered_flexible_AUC) 
+
+# round to 3 decimals
+flexible_AUC_scatter$Flexible_Area_AUC <- round(flexible_AUC_scatter$Flexible_Area_AUC, digits = 3)
+  
+  # plot
+flexible_AUC_scatter <- flexible_AUC_scatter %>%
+  ggplot() +
+  geom_point(aes(x = background_size, y = Flexible_Area_AUC)) +
+  geom_text(aes(x = background_size, y = Flexible_Area_AUC, label = Flexible_Area_AUC), nudge_y = -0.10) +
+  geom_smooth(aes(x = background_size, y = Flexible_Area_AUC)) +
+  ggtitle("Change in flexible area AUC with background size") +
+  # theme(legend.position = "none") +
+  scale_y_continuous(name = "Flexible area AUC", limits = c(0, 1), breaks = breaks) +
+  scatter_style # custom plot style
+  
+
+```
+
+```{r save output}
+
+ggsave(
+  filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_models_flexible_AUC_scatter.jpg"),
+  plot = flexible_AUC_scatter,
+  device = "jpeg",
+  height = 8,
+  width = 10,
+  dpi = "retina"
+  )
+
+```
+
+
+
+# Appendix
+
+
 
 # References
 

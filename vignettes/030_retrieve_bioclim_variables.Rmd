@@ -632,7 +632,11 @@ var.renames <- c(
 
 ```
 
-I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). From this, I also chose atc because it is not correlated with any other variables. None of the GDD variables were chosen because they were all highly correlated with bio 11 or each other.
+I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). 
+
+According to this methodology, I might also have chosen access to cities (atc) because it is not correlated with any other variables. I will be using this variable in a later model of human impacts, but not in my historical and climate change models. This is because ATC is a static variable and I have no way to project it for climate change, while the bioclim variables come with climate change versions.
+
+None of the GDD variables were chosen because they were all highly correlated with bio 11 or each other.
 
 I will save this plot and produce a binarized version before I continue choosing variables. This way, the cutoff is clearer and the choice is more obvious.
 
