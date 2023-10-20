@@ -8,12 +8,19 @@ output: html_document
 
 This file will practice execution of the analyses outlined in the slfrsk research compendium, written by Nick Huron. The goal of this analysis is to help me to understand SDMs and their creation. I will be performing these analyses using a randomized and reduced subset of tinyslf (n = 500). 
 
-File paths edited 2023-01-24
+## Changelog
+
+2023-01-24- File paths edited 
+2023-10-18
+  * changed input dataset
+  * the previous version of this map gave the year 2020 to records without a year. I removed this because it is no longer valid now that it is 2023
+
 
 ```{r load necesssary packages, echo = FALSE}
 
+library(devtools)
 library(slfrsk) #this package, has extract_enm()
-library(SLFspread) #package to get tinyslf dataset from
+library(lydemapr) # package for tinyslf
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
 library(ggfortify) #fortify rasters
@@ -29,10 +36,19 @@ options(tigris_use_cache = TRUE)
 
 ```{r load necessary datasets, echo = FALSE}
 
+# NEW SLF data. This isnt the same tinyslf_500 dataset, but I will load it in as such to avoid re-writing the code needlessly
+# the new dataset is from the lydemapr package. 
+
+tinyslf_500 <- lydemapr::lyde
+
+# OLD SLF DATA
 # A randomly selected subset of tinyslf for analysis. 500 observations selected
-tinyslf_500 <- tinyslf %>%
-  sample_n(. , 500)
-here()
+#tinyslf_500 <- tinyslf %>%
+ # sample_n(. , 500)
+#here()
+
+
+
 # reading manually added data (for a later step)
 man_county_data <- read_csv(file.path(here() %>% 
                                         dirname() %>%
@@ -87,16 +103,16 @@ tinyslf_500 %<>%
 by_county <- tinyslf_500 %>% 
   group_by(GEOID) %>% 
   arrange(year) %>% 
-  filter(slf_established) %>% 
+  filter(lyde_established) %>% 
   summarize(YearOfEstablishment = min(year)) %>% 
-  ungroup() %>% 
+  ungroup() %>%
   left_join(counties, ., by = "GEOID")
 
 # and adding the first record
 by_county <- tinyslf_500 %>% 
   group_by(GEOID) %>% 
   arrange(year) %>% 
-  filter(slf_present) %>% 
+  filter(lyde_present) %>% 
   summarize(FirstRecord = min(year)) %>% 
   ungroup() %>% 
   left_join(by_county, ., by = "GEOID")
@@ -173,6 +189,7 @@ man_county_data %<>%
 # we here create two variables that echo those in the by_county
 man_county_data %<>% 
   filter(!is.na(Status)) %>% 
+  # THIS CODE WAS CHANGED 2023-10-18 SMO
   # first grabbing the date (if present) from the Date_Establish or Date_Alive/Morbound columns
   # Then attributing 2020 to all other established records without date
   # doing this with nested ifelse statements
@@ -241,8 +258,8 @@ map_plot <- ggplot() +
         panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = "aliceblue")) +
   scale_color_brewer(palette = "YlOrRd", direction = 1, name = "Regulatory Incident", guide = guide_legend(override.aes = list(fill = "#808080"))) +
-  scale_fill_brewer(palette = "YlOrRd", direction = 1, name = "Establishment", na.value = "#808080", breaks = c(2014,2015,2016,2017,2018,2019,2020)) +
-  ggtitle(label = "")
+  scale_fill_brewer(palette = "YlOrRd", direction = 1, name = "Establishment", na.value = "#808080", breaks = c(2014,2015,2016,2017,2018,2019,2020, 2021)) +
+  ggtitle("SLF Spread through time", subtitle = "includes all records in 2021")
 
 map_plot
 # cant get this to render in-line, says error in dev.off()
@@ -250,7 +267,7 @@ map_plot
 
 ``` {r PDF map output}
 
-pdf(file.path(here::here(),"vignettes", paste0("slfrsk_spread_figure_v3.pdf")), width = (18/2.54), height = (14/2.54))
+pdf(file.path(here::here(),"vignette-outputs", "figures", "slfrsk", paste0("slfrsk_spread_figure_until_2021_updated_", format(Sys.Date(), "%Y-%m-%d"), ".pdf")), width = (18/2.54), height = (14/2.54))
 
 map_plot
 
@@ -269,7 +286,7 @@ fillpal <- colorFactor(c(brewer.pal(7, "YlOrRd")),
                    by_county$FirstRecord,
                    na.color = "transparent")
 
-leaflet(data = by_county, 
+slf_spread_leaflet <- leaflet(data = by_county, 
         options = leafletOptions(minZoom = 4, maxZoom = 18)) %>% 
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addPolygons(label = ~NAME,
@@ -284,6 +301,16 @@ leaflet(data = by_county,
     title = "Invaded since",
     values = ~YearOfEstablishment,
     opacity = 1
-  )
+  ) #%>%
+  #addLegend("bottomleft", pal = colpal,
+   # title = "First Record",
+   # values = ~FirstRecord,
+   # opacity = 1
+   # )
+
+# save output as .html
+library(htmlwidgets)
+
+saveWidget(slf_spread_leaflet, file = file.path(here::here(),"vignette-outputs", "figures", "slfrsk", paste0("slfrsk_spread_figure_until_2021_updated_", format(Sys.Date(), "%Y-%m-%d"), ".html")))
 
 ```

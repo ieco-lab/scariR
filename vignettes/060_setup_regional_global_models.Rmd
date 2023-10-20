@@ -1,0 +1,131 @@
+---
+title: "Setup for regional and global models (project step 2)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-10-20"
+output: html_document
+---
+
+# Overview
+
+In the last vignette, I selected the background area type that would be the most suited to modeling SLF. I found that using the entire background area was the best choice. I will now set up for the next two sets of models, a historical global/regional pair and a climate change global/regional pair. 
+
+(EXPAND)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+# utilities
+library(devtools)
+library(rJava) # for running MaxEnt
+# spatial data handling
+library(raster) 
+library(terra) 
+library(dismo) 
+# other
+library(viridis)
+
+```
+
+
+# 1. Crop Bioclim Layers to N. America
+
+## Historical Data
+
+```{r setup for cropping bioclim layers}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("atc|bio2|bio11|bio12|bio15", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+
+```
+
+```{r loop to crop bioclim layers to eastern N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(TRUE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+The layers have been cropped to the proper extent.
+
+## SSP370 Future Climate data
+
+# 2. Select Flexible Area Background Points
+
+
+
+# Appendix
+
+
+
+# References
+
+

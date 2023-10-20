@@ -85,7 +85,7 @@ scatter_style <- list(
 
 ```
 
-# MaxEnt Model- entire eastern USA
+# 1. MaxEnt Model- entire eastern USA
 
 ## Tidy datasets for modeling
 
@@ -499,7 +499,7 @@ ggsave(easternUSA_entire_threshold_plot,
 
 The next three models will follow roughly the same structure, so comments will be kept to a minimum because the workflow will be the same.
 
-# MaxEnt Model- DD 1% adult emergence
+# 2. MaxEnt Model- DD 1% adult emergence
 
 ## Tidy datasets for modeling
 
@@ -801,7 +801,7 @@ ggsave(easternUSA_adult_emer_1_threshold_plot,
 
 ```
 
-# MaxEnt Model- 355km buffer around presences
+# 3. MaxEnt Model- 355km buffer around presences
 
 ## Tidy datasets for modeling
 
@@ -1103,7 +1103,7 @@ ggsave(easternUSA_buffered_threshold_plot,
 
 ```
 
-# Results
+# 4. Results
 
 Now that I have produced the initial 3 models, I will use the methodology outlined in VanDerWal et.al 2009 to compare them and discern the best background size to use in future models. This method accounts for the change in fixed area AUC, flexible area AUC, total predicted area and variable contribution. However, the methodology mainly hinges on the change in the fixed area AUC across the models. First, I will load in the .csv files containing the computed fixed and flexible area AUCs for these analyses. I will need to load in files created by `compute_MaxEnt_fixed_ROC()` with the ending `_fixed_flexible_AUCs.csv`.
 
@@ -1306,6 +1306,13 @@ ggsave(
   )
 
 ```
+
+WHY I SELECTED WHAT I SELECTED
+
+RESULTS
+
+
+
 
 
 # Appendix
