@@ -6,8 +6,15 @@
 #'
 #'
 #'
-#'@param
+#'@param predict.fun Character. The function to be applied to combine the
+#'iterations of the model when predicting a raster output. Can be one of:
+#'"mean", "sd" (standard deviation) or "max". If multiple are desired, must be
+#'in the form: `c("mean", "sd", "max")`
 #'
+#'@param thresh Numeric or Character. This may be imported manually (numeric),
+#'or may be selected from one of the thresholds for the model (character). If a
+#'preset, the specified mean threshold value for all iterations of the model is
+#'chosen. See details for preset options.
 #'
 #'
 #'@details
@@ -16,7 +23,8 @@
 #'
 #'@return
 #'
-#'
+#' 3 outputs
+#' * mean
 #'
 #'@examples
 #'# x---------------------------------------------------------------------------
@@ -27,38 +35,43 @@
 #'
 #'
 #'@export
-create_suitability_maps <- function() {
-
-  model.obj
-  map_style
-  create.dir
-  mypath
-  thresh
-
-  # output directory
-  mypath <- file.path(here() %>%
-                        dirname(),
-                      "maxent/models/slf_easternUSA_buffered_step1")
-
-  # Thresh preset values--------------------------------------------------------
-
-  # preset values for thresh parameter
-  thresh_presets <- c(
-    egg_laying_50 = 1616.4,
-    egg_laying_10 = 1564.1,
-    adult_emergence_50 = 1115.5,
-    adult_emergence_1 = 991
-  )
+create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, predict.fun = "mean", thresh, map_style) {
 
   # Error checks----------------------------------------------------------------
 
 
 
 
-  # Create object with thresh value---------------------------------------------
 
-  thresh_value <- read.csv(file = file.path(mypath, "easternUSA_buffered_summary_all_iterations.csv")) %>%
-    .[42, 6]
+  # Thresh preset values--------------------------------------------------------
+
+  thresh_preset_import <- read.csv(file = file.path(mypath, "easternUSA_buffered_summary_all_iterations.csv"))
+
+  # preset values for thresh parameter
+  thresh_presets <- c(
+    "MTP" = thresh_preset_import[30, 6], # Minimum.training.presence.Cloglog.threshold
+    "ten_percentile" = thresh_preset_import[34, 6], # 10.percentile.training.presence.Cloglog.threshold
+    "ETSS" = thresh_preset_import[38, 6], # Equal.training.sensitivity.and.specificity.Cloglog.threshold
+    "MTSS" = thresh_preset_import[42, 6], # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+    "BTO" = thresh_preset_import[46, 6], # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
+    "EE" = thresh_preset_import[50, 6] # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
+  )
+
+  # Criteria for selecting thresh value-----------------------------------------
+
+  # if numeric, import
+  if(is.numeric(thresh)) {
+    thresh_value <- thresh
+
+    # if a preset, import value of preset
+  } else if(is.element(thresh, names(thresh_presets))){
+    threshold <- thresh_presets[thresh]
+
+    # otherwise, stop and give warning
+  } else {
+    stop(paste0("thresh must be numeric or one of: \n    ", paste(names(thresh_presets), collapse = ' | ')))
+
+  }
 
   # object for map ggplot style-------------------------------------------------
 
@@ -79,7 +92,7 @@ create_suitability_maps <- function() {
   SDMtune::predict(
     object = easternUSA_buffered_model,
     data = x_env_covariates, # the covariate layers used to train the model
-    fun = "mean",
+    fun = predict.fun,
     type = "cloglog",
     clamp = FALSE,
     progress = TRUE,
