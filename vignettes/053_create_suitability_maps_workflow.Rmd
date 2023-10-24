@@ -40,6 +40,7 @@ map_style <- list(
         panel.background = element_rect(fill = "lightblue",
                                 colour = "lightblue")
         ),
+  labs(fill = "Suitability for SLF"),
   coord_equal() 
 )
 
@@ -190,7 +191,7 @@ easternUSA_buffered_threshold_plot <- ggplot() +
               aes(x = x, y = y, fill = mean)) +
     # plot binary threshold on top
   geom_raster(data = buffered_mask_layer_df, 
-              aes(x = x, y = y), fill = "azure4")
+              aes(x = x, y = y), fill = "azure4") +
   labs(title = "Suitability for SLF, MTSS training threshold",
        subtitle = "Model: 355km buffer") +
   viridis::scale_fill_viridis(option = "D") +

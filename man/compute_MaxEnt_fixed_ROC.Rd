@@ -14,7 +14,8 @@ compute_MaxEnt_fixed_ROC(
 )
 }
 \arguments{
-\item{model.obj}{}
+\item{model.obj}{A model object created by the package 'SDMtune', should be of
+class \code{SDMmodelCV}.}
 
 \item{model.name}{Character. A string matching the name of the object set for
 \code{model.obj}. Exclude unnecessary phrases, such as the "_model" ending.}
@@ -28,9 +29,14 @@ that contains the fixed area points. If a .csv file, file path should be in the 
 produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').
 See details for additional import formatting.}
 
-\item{env.covar.obj}{}
+\item{env.covar.obj}{A stack of rasters of environmental covariates. These
+covariates are used to train and test the MaxEnt model, as well as to make
+predictions. These should be the same covariates that you used to train the
+model. This must a \code{SpatRaster} object created using \code{\link[terra:rast]{terra::rast()}}.}
 
-\item{test.obj}{}
+\item{test.obj}{A withheld group of presence and background points used to
+test the model after training. Should be a SWD object, created using the
+\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}} function.}
 }
 \value{
 blarg

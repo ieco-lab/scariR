@@ -13,12 +13,13 @@ compute_MaxEnt_summary_statistics(
   train.obj,
   trainFolds.obj,
   test.obj,
-  plot.types,
+  jk.test.type,
   threshold.types
 )
 }
 \arguments{
-\item{model.obj}{}
+\item{model.obj}{A model object created by the package 'SDMtune', should be of
+class 'SDMmodelCV'.}
 
 \item{model.name}{Character. A string matching the name of the object set for
 \code{model.obj}. Exclude unnecessary phrases, such as the "_model" ending.}
@@ -27,24 +28,39 @@ compute_MaxEnt_summary_statistics(
 output will be stored. Should be used with the \code{\link[=file.path]{file.path()}} function
 (i.e. with '/' instead of '\\'). If this sub directory does not already exist
 and should be created by the function, set \code{create.dir} = TRUE. This will
-create a folder from the last part of the filepath in mypath.}
+create a folder from the last part of the filepath in \code{mypath}.}
 
 \item{create.dir}{Logical. Should the last element of \code{mypath} create a sub
 directory for the model output? If TRUE, the main folder will be created for
 the model output. If FALSE (ie, the sub directory already exists), only the
 "plots" folder within the model output sub directory will be created.}
 
-\item{env.covar.obj}{}
+\item{env.covar.obj}{A stack of rasters of environmental covariates. These
+covariates are used to train and test the MaxEnt model, as well as to make
+predictions. These should be the same covariates that you used to train the
+model. This must a \code{SpatRaster} object created using \code{\link[terra:rast]{terra::rast()}}.}
 
-\item{train.obj}{}
+\item{train.obj}{The main group of presence and background points used to
+train the model. Should be a SWD object, created using the
+\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}} function.}
 
-\item{trainFolds.obj}{}
+\item{trainFolds.obj}{A list of two matrices that specify the fold of the
+training and testing points. This object is used to create k-fold partitions
+from presence and background datasets to train a \code{SWDmodelCV} object. This is
+created using the \code{\link[SDMtune:randomFolds]{SDMtune::randomFolds()}} function.}
 
-\item{test.obj}{}
+\item{test.obj}{A withheld group of presence and background points used to
+test the model after training. Should be a SWD object, created using the
+\code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}} function.}
 
-\item{plot.types}{}
+\item{jk.test.type}{Character. When a jackknife test is conducted, this
+specifies whether to conduct the test on the trained model or using the test
+dataset. Choices are one of both of "train" and "test". If both are used,
+must be concatenated in the form: \code{c("train", "test")}.}
 
-\item{threshold.types}{}
+\item{threshold.types}{Character. The type of output desired for the marginal and
+univariate response curves. Choices are one of both of "logical" and "cloglog".
+If both are used, must be concatenated in the form: \code{c("logical", "cloglog")}.}
 }
 \value{
 All MaxEnt Summary Statistics
@@ -62,7 +78,7 @@ env.covar.obj <- x_env_covariates
 train.obj <- entire_easternUSA_train
 trainFolds.obj <- entire_easternUSA_trainFolds
 test.obj <- entire_easternUSA_test
-plot.types <- c("train", "test") # used to produce jackknife plots
+jk.test.type <- c("train", "test") # used to produce jackknife plots
 threshold.types <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 }
 \examples{

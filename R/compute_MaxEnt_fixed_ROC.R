@@ -3,7 +3,8 @@
 #'
 #'The function requires the packages 'tidyverse', 'here', 'devtools', 'viridis', 'pROC', 'SDMtune', and 'patchwork'
 #'
-#'@param model.obj
+#'@param model.obj A model object created by the package 'SDMtune', should be of
+#'class `SDMmodelCV`.
 #'
 #'@param model.name Character. A string matching the name of the object set for
 #'`model.obj`. Exclude unnecessary phrases, such as the "_model" ending.
@@ -17,9 +18,14 @@
 #'produced by the [file.path()] function (i.e. with '/' instead of '\\').
 #'See details for additional import formatting.
 #'
-#'@param env.covar.obj
+#'@param env.covar.obj A stack of rasters of environmental covariates. These
+#'covariates are used to train and test the MaxEnt model, as well as to make
+#'predictions. These should be the same covariates that you used to train the
+#'model. This must a `SpatRaster` object created using [terra::rast()].
 #'
-#'@param test.obj
+#'@param test.obj A withheld group of presence and background points used to
+#'test the model after training. Should be a SWD object, created using the
+#'[SDMtune::prepareSWD()] function.
 #'
 #'
 #'@details

@@ -792,9 +792,6 @@ for (a in seq(length(entire_easternUSA_model@models))) {
 *NOTE* This is the end of the output that can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`
 
 
-
-## Compute fixed area AUC
-
 ## Predict suitability for all SLF presences
 
 I will get projected suitability values for each of the SLF presence points, including those in the native range. A suitability value between 0 and 1 will be calculated for each presence. These suitability values will be added back to the original data frame and saved.
@@ -895,78 +892,7 @@ write_csv(x = IVR_regions_predict, file = file.path(mypath, "predicted_suitabili
 
 ```
 
-## Create distribution map for area of interest
 
-I will use the predict function again, but this time to predict the suitability for the range of interest. The output will be a raster of suitability.
-
-```{r}
-
-# output directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
-# write .asc file of avg predictions
-SDMtune::predict(
-  object = entire_easternUSA_model, 
-  data = x_env_covariates, # the covariate layers used to train the model
-  fun = "mean", 
-  type = "cloglog", 
-  clamp = FALSE, 
-  progress = TRUE, 
-  filename = file.path(mypath, "entire_easternUSA_predicted_suitability.asc"),
-  filetype = "AAIGrid"
-) 
-
-```
-
-I will convert the raster to a data frame and use this to plot it and save a jpg.
-
-```{r}
-
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
-# load in mean predictions
-entire_easternUSA_suit <- terra::rast(x = file.path(mypath, "entire_easternUSA_predicted_suitability_mean.asc")) %>%
-  # terra::subst(., from = -9999, to = NA) %>% # change -9999 to NA for plotting
-  terra::as.data.frame(., xy = TRUE) 
-  
-# plot
-entire_easternUSA_suit_plot <- ggplot() +
-  geom_raster(data = entire_easternUSA_suit, 
-              aes(x = x, y = y, fill = mean)) +
-  labs(title = "Suitability for SLF") +
-  viridis::scale_fill_viridis(option = "D") +
-  map_style
-
-# save plot output
-ggsave(entire_easternUSA_suit_plot, 
-           filename = file.path(mypath, "plots", "entire_easternUSA_predicted_suitability_mean.jpg"),
-           height = 8, 
-           width = 10,
-           device = "jpeg",
-           dpi = "retina")
-
-```
-
-## Presence/absence map
-
-This map will 
-
-```{r}
-
-
-
-# plots a presence / absence map given a threshold
-plotPA()
-
-
-
-
-```
 
 # Appendix
 

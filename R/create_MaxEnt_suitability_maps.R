@@ -1,28 +1,62 @@
-#'
+#' DESCRIPTION
 #'
 #'The function requires the packages 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
 #'
-#'@param
+#'@param model.obj A model object created by the package 'SDMtune', should be of
+#'class 'SDMmodelCV'.
 #'
+#'@param model.name Character. A string matching the name of the object set for
+#'`model.obj`. Exclude unnecessary phrases, such as the "_model" ending.
 #'
+#'@param mypath Character.A file path to the sub directory where the model
+#'output will be stored. Should be used with the [file.path()] function
+#'(i.e. with '/' instead of '\\'). If this sub directory does not already exist
+#'and should be created by the function, set `create.dir` = TRUE. This will
+#'create a folder from the last part of the filepath in `mypath`.
+#'
+#'@param create.dir Logical. Should the last element of `mypath` create a sub
+#'directory for the model output? If TRUE, the main folder will be created for
+#'the model output. If FALSE (ie, the sub directory already exists), only the
+#'"plots" folder within the model output sub directory will be created.
+#'
+#'@param env.covar.obj A stack of rasters of environmental covariates. These
+#'covariates are used to train and test the MaxEnt model, as well as to make
+#'predictions. These should be the same covariates that you used to train the
+#'model. This must a `SpatRaster` object created using [terra::rast()].
 #'
 #'@param predict.fun Character. The function to be applied to combine the
 #'iterations of the model when predicting a raster output. Can be one of:
 #'"mean", "sd" (standard deviation) or "max". If multiple are desired, must be
 #'in the form: `c("mean", "sd", "max")`
 #'
-#'@param map.thresh Logical. This function determines if a thresholded
-#'suitability map will be created.
+#'@param map.thresh Logical, TRUE by default. This function determines if a
+#'thresholded suitability map will be created. If not, output will only consist
+#'of suitability maps of the type specified in `predict.fun`.
 #'
-#'@param thresh Numeric or Character. This may be imported manually (numeric),
-#'or may be selected from one of the thresholds for the model (character). If a
-#'preset, the specified mean threshold value for all iterations of the model is
-#'chosen. See details for preset options and other usages.
+#'@param thresh Numeric or Character. Does not need to be defined if
+#'`map.thresh = FALSE` This may be imported manually (numeric), or may be
+#'selected from one of the thresholds for the model (character). If a preset,
+#'the specified mean threshold value for all iterations of the model is chosen.
+#'See details for preset options and other usages.
 #'
-#'@param
+#'@param summary.file Data import. Does not need to be defined if
+#'`map.thresh = FALSE`. Should be a .csv file or data frame that contains the
+#'summary statistics output created by
+#'[slfSpread::compute_MaxEnt_summary_statistics()] (filename ending in
+#'"summary_all_iterations.csv"). If an import, file path should be in the format
+#'produced by the [file.path()] function (i.e. with '/' instead of '\\').
+#'
+#'@param map.style List, default is NA. This is used to apply
+#'ggplot aesthetics to the plot outputs. If specified, the given value should be
+#'a list of ggplot aesthetic options. See examples.
 #'
 #'
 #'@details
+#'
+#'*NOTE* This function will create a thresholded suitability map for a raster
+#'output using the SD function, but these maps are not very meaningful because
+#'they do not illustrate cloglog suitability (while thresholds are created
+#'using the cloglog suitability metrics).
 #'
 #'## thresh:
 #'
@@ -46,7 +80,7 @@
 #'
 #'
 #'@export
-create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, predict.fun = "mean", map.thresh = TRUE, thresh, map.style = NA) {
+create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -61,7 +95,7 @@ create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = 
     stop("Parameter 'mypath' must be of type 'character'")
   }
 
-  # Create sub directory for files-----------------------------------------------
+  # Create sub directory for files----------------------------------------------
 
   if (create.dir == FALSE) {
     # print message
@@ -79,7 +113,6 @@ create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = 
 
   }
 
-
   # object for map ggplot style and criteria------------------------------------
 
   # if it is not changed from NA, import default style
@@ -93,6 +126,8 @@ create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = 
             panel.background = element_rect(fill = "lightblue",
                                             colour = "lightblue")
       ),
+      labs(fill = "Suitability for SLF"),
+      viridis::scale_fill_viridis(option = "D"),
       coord_equal()
     )
 
@@ -106,179 +141,194 @@ create_suitability_maps <- function(model.obj, model.name, mypath, create.dir = 
 
   }
 
+  # create a suitability map for every function listed
   for (a in predict.fun) {
 
-    # Create mean distribution map------------------------------------------------
+    # Create distribution map---------------------------------------------------
 
     # use predict function
     SDMtune::predict(
-      object = easternUSA_buffered_model,
-      data = x_env_covariates, # the covariate layers used to train the model
-      fun = predict.fun,
+      object = model.obj,
+      data = env.covar.obj, # the covariate layers used to train the model
+      fun = a,
       type = "cloglog",
       clamp = FALSE,
       progress = TRUE,
-      filename = file.path(mypath, "easternUSA_buffered_predicted_suitability.asc"),
+      filename = file.path(mypath, paste0(model.name, "_predicted_suitability.asc")),
       # the function automatically adds the function name on the end
       filetype = "AAIGrid"
     )
 
-    # load in mean predictions
-    easternUSA_buffered_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", a, ".asc"))) %>%
+    # load in predictions
+    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", a, ".asc"))) %>%
       terra::as.data.frame(., xy = TRUE)
 
     # plot
-    easternUSA_buffered_suit_plot <- ggplot() +
-      geom_raster(data = easternUSA_buffered_suit,
-                  aes(x = x, y = y, fill = mean)) +
-      labs(title = "Mean suitability for SLF",
-           subtitle = "Model: easternUSA_buffered") +
-      viridis::scale_fill_viridis(option = "D") +
+    model_suit_plot <- ggplot() +
+      geom_raster(data = model_suit,
+                  aes(x = x, y = y, fill = model_suit[, 3])) +
+      labs(title = paste0(toupper(a), " suitability for SLF"),
+           subtitle = paste0("Model: ", model.name)) +
       map_style
 
     # save plot output
-    ggsave(easternUSA_buffered_suit_plot,
+    ggsave(model_suit_plot,
            filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", a, ".jpg")),
            height = 8,
            width = 10,
            device = "jpeg",
            dpi = "retina")
 
-
-
-    if (a == length(predict.fun)) {
-
-      # conditional statement if thresholded maps will be created
-      if (map.thresh == TRUE) {
-
-        # Thresh preset values--------------------------------------------------------
-
-        thresh_preset_import <- read.csv(file = file.path(mypath, "easternUSA_buffered_summary_all_iterations.csv"))
-
-        # preset values for thresh parameter
-        thresh_presets <- c(
-          "MTP" = thresh_preset_import[30, 6], # Minimum.training.presence.Cloglog.threshold
-          "ten_percentile" = thresh_preset_import[34, 6], # 10.percentile.training.presence.Cloglog.threshold
-          "ETSS" = thresh_preset_import[38, 6], # Equal.training.sensitivity.and.specificity.Cloglog.threshold
-          "MTSS" = thresh_preset_import[42, 6], # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-          "BTO" = thresh_preset_import[46, 6], # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
-          "EE" = thresh_preset_import[50, 6] # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
-        )
-
-
-
-        # allow multiple entries for thresh
-        for (b in thresh) {
-
-          # conditional statement to create tailored name for output
-          # if a is a numeric, import this value to naming object used to name outputs
-          if(is.numeric(b)) {
-            thresh_name <- b
-
-            # otherwise (if it is a preset value), change value to as.character to name outputs
-          } else {
-            thresh_name <- as.character(b)
-          }
-
-          # Criteria for selecting thresh value-----------------------------------------
-
-          # if numeric, import
-          if(is.numeric(b)) {
-            thresh_value <- b
-
-            # if a preset, import value of preset
-          } else if(is.element(b, names(thresh_presets))){
-            thresh_value <- thresh_presets[b]
-
-            # otherwise, stop and give warning
-          } else {
-            stop(paste0("thresh must be numeric or one of: \n    ", paste(names(thresh_presets), collapse = ' | ')))
-
-          }
-
-          # Create binary raster with threshold-----------------------------------------
-
-          # terra required classification matrices
-          rescale_class <- data.frame(
-            from = c(0, thresh_value),
-            to = c(thresh_value, 1),
-            becomes = c(0, 1)
-          )
-
-          # load in raster
-          buffered_mean_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", a, ".asc")))
-
-          # re-classify raster according to threshold
-          terra::classify(x = buffered_mean_raster,
-                          rcl = buffered_rescale_class,
-                          right = FALSE, # close left side of value
-                          filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", a, "_thresholded_", thresh_name, ".asc")), # also write to file
-                          overwrite = FALSE
-          )
-
-          # Create mask raster for thresholded raster figure----------------------------
-
-          # create regional suitability value matrix for terra
-          buffered_rescale_class <- data.frame(
-            from = 0,
-            to = thresh_value,
-            becomes = 1
-          )
-
-            # reclassify and write regional raster
-            mask_layer <- terra::classify(x = buffered_mean_raster,
-                                          rcl = buffered_rescale_class,
-                                          right = FALSE, # close left side of value
-                                          others = NA,
-                                          filename = file.path(mypath, "easternUSA_buffered_MTSS_mask_layer.asc"), # also write to file
-                                          overwrite = FALSE)
-
-
-          # Create thresholded suitability map------------------------------------------
-
-          # load in mean predictions
-          buffered_mask_layer_df <- terra::rast(x = file.path(mypath, "easternUSA_buffered_MTSS_mask_layer.asc")) %>%
-            terra::as.data.frame(., xy = TRUE)
-
-          # plot mean raster first
-          easternUSA_buffered_threshold_plot <- ggplot() +
-            # plot regular raster of values first
-            geom_raster(data = easternUSA_buffered_suit,
-                        aes(x = x, y = y, fill = mean)) +
-            # plot binary threshold on top
-            geom_raster(data = buffered_mask_layer_df,
-                        aes(x = x, y = y), fill = "azure4")
-          labs(title = "Suitability for SLF, MTSS training threshold",
-               subtitle = "Model: 355km buffer") +
-            viridis::scale_fill_viridis(option = "D") +
-            map_style
-
-          # save plot output
-          ggsave(easternUSA_buffered_threshold_plot,
-                 filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_," a, "_thresholded.jpg"))),
-                 height = 8,
-                 width = 10,
-                 device = "jpeg",
-                 dpi = "retina")
-
-        }
-
-        # end of if(a == length(predict.fun)) statement
-
-      }
-
-    # end of for(a in predict.fun) statement
-
-    }
-
-  # end of for(a in thresh) statement
+    # remove raster objects
+    rm(model_suit)
+    rm(model_suit_plot)
 
   }
 
-  # end of if(create.thresh == TRUE) statement
+  # conditional statement if thresholded maps will be created
+  if (map.thresh == TRUE) {
 
-}
+    # Thresh preset values--------------------------------------------------
+
+    # import settings for summary.file
+    if (is.character(summary.file)) {
+      thresh_preset_import <- read.csv(summary.file) # read as csv
+
+    } else if(is.data.frame(summary.file)){
+      thresh_preset_import <- summary.file # just read in if its a df
+
+    } else {
+      thresh_preset_import <- as.data.frame(summary.file) # make data frame
+
+      }
+
+    # preset values for thresh parameter
+    thresh_presets <- c(
+      "MTP" = thresh_preset_import[30, 6], # Minimum.training.presence.Cloglog.threshold
+      "ten_percentile" = thresh_preset_import[34, 6], # 10.percentile.training.presence.Cloglog.threshold
+      "ETSS" = thresh_preset_import[38, 6], # Equal.training.sensitivity.and.specificity.Cloglog.threshold
+      "MTSS" = thresh_preset_import[42, 6], # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+      "BTO" = thresh_preset_import[46, 6], # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
+      "EE" = thresh_preset_import[50, 6] # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
+    )
+
+    # create a suitability map for every function listed
+    # note, i was used because this loop was copied
+    for (i in predict.fun) {
+
+      # load in raster created in last loop
+      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, ".asc")))
+
+      # allow multiple entries for thresh
+      for (b in thresh) {
 
 
+        # conditional statement to create tailored name for outputs
+        # if a is a numeric, import this value to naming object used to name outputs
+        if(is.numeric(b)) {
+          thresh_name <- b
+
+          # otherwise (if it is a preset value), change value to as.character to name outputs
+        } else {
+          thresh_name <- as.character(b)
+        }
+
+
+        # Criteria for selecting thresh value---------------------------------
+
+        # if numeric, import
+        if(is.numeric(b)) {
+          thresh_value <- b
+
+          # if a preset, import value of preset
+        } else if(is.element(b, names(thresh_presets))){
+          thresh_value <- thresh_presets[b]
+
+          # otherwise, stop and give warning
+        } else {
+          stop(paste0("'thresh' must be numeric or one of: \n    ", paste(names(thresh_presets), collapse = ' | ')))
+
+        }
+
+
+        # Create binary raster with threshold---------------------------------
+
+        # terra required classification matrices
+        binary_rescale_class <- data.frame(
+          from = c(0, thresh_value),
+          to = c(thresh_value, 1),
+          becomes = c(0, 1)
+        )
+
+        # re-classify raster according to threshold
+        terra::classify(x = model_suit_raster,
+                        rcl = binary_rescale_class,
+                        right = FALSE, # close left side of value
+                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ".asc")), # also write to file
+                        overwrite = FALSE
+        )
+
+        # Also Create mask raster for thresholded raster figure---------------
+
+        # create regional suitability value matrix for terra
+        mask_rescale_class <- data.frame(
+          from = 0,
+          to = thresh_value,
+          becomes = 1
+        )
+
+          # reclassify and write regional raster
+          mask_layer <- terra::classify(x = model_suit_raster,
+                                        rcl = mask_rescale_class,
+                                        right = FALSE, # close left side of value
+                                        others = NA,
+                                        filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ".asc")), # also write to file
+                                        overwrite = FALSE)
+
+
+        # Create thresholded suitability map----------------------------------
+
+        # convert imported raster to df
+        model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
+
+        # load in mask layer and convert to df for plotting
+        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ".asc"))) %>%
+          terra::as.data.frame(., xy = TRUE)
+
+        # plot suitability raster first
+        model_threshold_plot <- ggplot() +
+          # plot regular raster of values first
+          geom_raster(data = model_suit_raster_df,
+                      aes(x = x, y = y, fill = model_suit_raster_df[, 3])) +
+          # plot binary threshold on top
+          geom_raster(data = model_mask_layer_df,
+                      aes(x = x, y = y), fill = "azure4") +
+          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold"),
+               subtitle = paste0("Model: ", model.name)) +
+          map_style
+
+        # save plot output
+        ggsave(model_threshold_plot,
+               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ".jpg")),
+               height = 8,
+               width = 10,
+               device = "jpeg",
+               dpi = "retina")
+
+        # remove temp objects
+        rm(thresh_name)
+        rm(thresh_value)
+
+      } # end of for(b in thresh) statement
+
+      # remove temp raster
+      rm(model_suit_raster)
+
+    } # end of for(a in predict.fun) statement
+
+  } # end of if (map.thresh == TRUE) statement
+
+
+} # end of function
 
 
