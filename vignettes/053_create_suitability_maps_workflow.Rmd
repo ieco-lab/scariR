@@ -10,6 +10,12 @@ output: html_document
 
 This vignette will outline the workflow used to create the mean and thresholded suitability maps. These maps are created for the easternUSA models and main models. 
 
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. The output will be a raster of suitability that can be used in our background size comparison. I will also threshold the map by the MTSS threshold. The workflow for this function can be found in vignette `053_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
+
+I will take the above map and reclassify it so that areas that arent suitable are more obvious. I will use the maximum training sensitivity plus specificity threshold, as this threshold is one of the most rigorous available (ADD MORE). First, I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of maxent predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+(SPREAD OUT)
+
 # Setup
 
 ```{r load necesssary packages, echo = FALSE}
@@ -184,10 +190,12 @@ if(TRUE) {
 buffered_mask_layer_df <- terra::rast(x = file.path(mypath, "easternUSA_buffered_MTSS_mask_layer.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
+buffered_mean_raster_df <- terra::as.data.frame(buffered_mean_raster, xy = TRUE)
+
 # plot mean raster first
 easternUSA_buffered_threshold_plot <- ggplot() +
   # plot regular raster of values first
-  geom_raster(data = easternUSA_buffered_suit, 
+  geom_raster(data = buffered_mean_raster_df, 
               aes(x = x, y = y, fill = mean)) +
     # plot binary threshold on top
   geom_raster(data = buffered_mask_layer_df, 
@@ -195,7 +203,7 @@ easternUSA_buffered_threshold_plot <- ggplot() +
   labs(title = "Suitability for SLF, MTSS training threshold",
        subtitle = "Model: 355km buffer") +
   viridis::scale_fill_viridis(option = "D") +
-  map_style
+  map_style 
 
 # save plot output
 ggsave(easternUSA_buffered_threshold_plot, 

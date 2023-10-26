@@ -36,7 +36,7 @@ library(viridis)
 
 # 1. Crop Bioclim Layers to N. America
 
-## Historical Data
+## Historical rasters
 
 ```{r setup for cropping bioclim layers}
 
@@ -53,20 +53,35 @@ env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc
 
 # output file names
 output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc|bio2|bio11|bio12|bio15", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "easternUSA")
+  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
 
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+# extent object for N America
+# see here(), data-raw, bounding_boxes.txt
+ext.obj <- terra::ext(-136.968747, -51.363278, 15.182421, 58.022064)
 
 ```
 
-```{r loop to crop bioclim layers to eastern N america}
+I will ensure that the raster attributes are correct.
+
+```{r check raster attributes}
+
+env.files.stack <- terra::rast(x = env.files)
+
+nlyr(env.files.stack)
+names(env.files.stack)
+minmax(env.files.stack)
+
+```
+
+Now, I will loop through the rasters on the list, crop them to the proper extent and save them with the new file naming. This is the same process that was done for cropping the rasters in vignette 050.
+
+```{r loop to crop bioclim layers to N america}
 
 # view list of filetypes for terra, use .ascii
 View(terra::gdal(drivers = TRUE))
 
-if(TRUE) {
+if(FALSE) {
   
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
@@ -95,11 +110,11 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot main_layer to ensure cropping worked}
 
-bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_easternUSA.asc")) 
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_1981-2010_NAmerica.asc")) 
 # convert to df
 bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
-# plot main layer as example
+# plot layer as example
 (ggplot() +
   # change scale of plots to be standard across figures
   geom_raster(data = bio11_df, 
@@ -116,10 +131,175 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 The layers have been cropped to the proper extent.
 
-## SSP370 Future Climate data
+## SSP370 Future Climate rasters
+
+This process will be the same as above and for the 2041-2070 versions of the rasters, except for atc_2015 (this raster is not projected for climate change).
+
+```{r setup for cropping bioclim layers}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_370_global|bio11_2041-2070_gfdl_370_global|bio12_2041-2070_gfdl_370_global|bio15_2041-2070_gfdl_370_global", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
+
+# extent object for N America
+# see here(), data-raw, bounding_boxes.txt
+ext.obj <- terra::ext(-136.968747, -51.363278, 15.182421, 58.022064)
+
+```
+
+```{r check raster attributes}
+
+env.files.stack <- terra::rast(x = env.files)
+
+nlyr(env.files.stack)
+names(env.files.stack)
+minmax(env.files.stack)
+
+```
+
+```{r loop to crop bioclim layers to N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent", "bio11_2041-2070_gfdl_370_NAmerica.asc")) 
+names(bio11)
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_2041-2070_gfdl-esm4_ssp370_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
 
 # 2. Select Flexible Area Background Points
 
+
+First, I will load in known SLF presences so that background sampling does not occur at those points.
+
+```{r load in SLF presences}
+
+# dismo requires the base function (not tidyverse)
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+   dplyr::select(-species) 
+
+```
+
+Next, I will select 10000 random background points using `dismo::randomPoints()`. Background points datasets will be stored in `vignette-outputs/data-tables`.
+
+```{r background points for entire Eastern USA raster}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent")
+
+# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
+easternUSA_entire <- raster::raster(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif"))
+
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(10)
+# generate random points 
+easternUSA_entire_flexible_points <- dismo::randomPoints(mask = easternUSA_entire, 
+                                                n = 10000, # default number used by maxent
+                                                p = slf_points,
+                                                excludep = TRUE, # exclude cells where slf has been found
+                                                lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+                                                warn = 2 # higher number gives most warnings, including if sample size not reached
+                                                ) %>%
+  as.data.frame(.)
+
+# save as csv
+write_csv(x = easternUSA_entire_flexible_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+# save as rda file
+save(easternUSA_entire_flexible_points, file = file.path(here(), "data", "easternUSA_entire_flexible_area_points.rda"))
+  
+  
+```
+
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
+
+entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+easternUSA_entire_flexible_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+
+```
+
+```{r plot points}
+
+background_entire <- ggplot() +
+    geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = easternUSA_entire_flexible_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+    ggtitle("Eastern USA flexible background points- entire area") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+```{r save plot}
+
+ggsave(background_entire, 
+       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_entire_flexible_area_points.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
 
 
 # Appendix
