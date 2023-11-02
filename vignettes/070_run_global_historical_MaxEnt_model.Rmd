@@ -1,0 +1,357 @@
+---
+title: "Run global historical maxent model (project step 2)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-10-28"
+output: html_document
+---
+# Overview
+
+This vignette will build off of `050_run_easternUSA_MaxEnt_models.Rmd`, which comprised step 1 of my analysis. In step 1, I tested the best fit background data using SLF occurrences and climate data only from the SLF invaded range (the eastern half of the United States). There was no significant difference between the models, so we selected the model that made the fewest assumptions about factors that limit SLF establishment, which used the entire eastern USA to select pseudoabsences (easternUSA_entire_model). I will create a global version of this model, which will be trained on all known SLF presences and the global area climate rasters. 
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+library(rJava) # for running MaxEnt
+
+library(dismo) # package underneath SDMtune
+library(SDMtune) # main package used to run SDMs
+
+# dependencies of SDMtune
+library(plotROC) # plots ROCs
+
+library(viridis)
+
+# spatial data handling
+library(raster) 
+library(terra) 
+
+```
+
+`SDMtune` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+
+```{r check maxent installation}
+
+checkMaxentInstallation(verbose = TRUE)
+
+```
+
+This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory. 
+
+```{r control MaxEnt settings}
+
+# xss sets java stack size
+# xmx sets java memory allocation
+options(java.parameters = "-Xmx2048m")
+
+# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
+
+```
+
+# 1. MaxEnt Model- entire eastern USA
+
+## Tidy datasets for modeling
+
+First, I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function. 
+
+```{r load in files for entire easternUSA}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+
+# the env covariates used to train the model global
+x_global_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+    grep("bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# the env covariates used to project to N America
+x_NAmerica_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+# slf presences
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  dplyr::select(-species)
+
+# entire eastern USA background point set
+a_global_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "global_background_points.csv"))
+
+```
+
+I will load in the environmental covariates and stack them. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune's ability to make predictions for tables downstream).
+
+```{r stack env covariates and make naming consistent}
+
+# layer name object. Check order of layers first
+env_layer_names <- c("bio11_1981_2010", "bio12_1981_2010", "bio15_1981_2010", "bio2_1981_2010")
+
+# stack env covariates
+x_global_env_covariates <- terra::rast(x = x_global_env_covariates_list)
+
+# attributes
+nlyr(x_global_env_covariates)
+names(x_global_env_covariates)
+minmax(x_global_env_covariates)
+# ext(x_global_env_covariates)
+# crs(x_global_env_covariates)
+
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_global_env_covariates) <- env_layer_names
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+# NAmerica rasters
+# stack env covariates
+x_NAmerica_env_covariates <- terra::rast(x = x_NAmerica_env_covariates_list)
+
+# attributes
+nlyr(x_NAmerica_env_covariates)
+names(x_NAmerica_env_covariates)
+minmax(x_NAmerica_env_covariates)
+# ext(x_NAmerica_env_covariates)
+# crs(x_NAmerica_env_covariates)
+
+names(x_NAmerica_env_covariates) <- env_layer_names
+
+```
+
+### create input data object
+
+I need to create a dataset of presences and background points. This dataset will need to contain point-wise values for each of the predictor covariates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model.
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  global_historical_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                    env = x_global_env_covariates,
+                                    p = p_slf_points,
+                                    a = a_global_background_points,
+                                    verbose = TRUE # print helpful messages
+                                    )
+  
+  global_historical_SWD@coords # coordinates
+  global_historical_SWD@pa # presence / absence (background counted as absence)
+  global_historical_SWD@data # extracted data from 
+
+}
+
+```
+
+I will also save the output to be used later.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = global_historical_SWD, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "global_historical_slf_presences_with_data.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "global_historical_absences_with_data.csv")
+  ))
+
+```
+
+### Create training / test split
+
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 10 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+
+```{r load presence and background data from file}
+
+# use this chunk as needed to re-load SWD object (this takes far less time than re-creating it)
+# re-create SWD object
+if (FALSE) {
+  
+  # read in data
+  # presence points
+  global_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_historical_slf_presences_with_data.csv"))
+  # background points
+  global_background_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_historical_absences_with_data.csv"))
+  
+  # join datasets
+  global_slf_background_points <- full_join(global_slf_points, global_background_points, by = c(""))
+  
+  # SWD
+   global_historical_SWD <- SWD(
+     species = ,
+     coords = ,
+     data = ,
+     pa = )
+
+  
+}
+
+```
+
+
+```{r split data for training and testing}
+
+set.seed(11)
+
+global_historical_trainTest <-  SDMtune::trainValTest(
+  x = global_historical_SWD,
+  test = 0.2,
+  only_presence = TRUE
+)
+
+# separate off training data
+global_historical_train <- global_historical_trainTest[[1]]
+global_historical_test <- global_historical_trainTest[[2]]
+
+global_historical_train@coords # coordinates
+global_historical_train@pa # presence / absence (background counted as absence)
+global_historical_train@data # extracted data from
+
+```
+
+```{r split data into k folds}
+
+# create random folds
+global_historical_trainFolds <- SDMtune::randomFolds(
+  data = global_historical_train,
+  k = 10, # 10 folds
+  only_presence = TRUE,
+  seed = 12
+)
+
+```
+
+## Train Maxent model
+
+First, I will train a model with 5 cross-validated replicates. The model will only be trained on 80% of the slf presence data, with the other 20% being used downstream for analysis. The default settings will be used for Maxent, apart from the following changes:
+
+* ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
+* replicates = 10- all final models will have 10 replicates
+* iterations = 5000. This is the max number of iterations of optimization algorithm to perform before stopping training. Increasing this number allows the algorithm to make more refined predictions.
+
+Other changes to the default will be used, but are not relevant for training the model.
+
+```{r train maxent model}
+
+global_historical_model <- SDMtune::train(
+  method = "Maxent",
+  data = global_historical_train,
+  folds = global_historical_trainFolds, # 5 folds for dataset
+  fc = "lqpht", # feature classes set to ALL
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+## Evaluate maxent model
+
+### Summary Statistics
+
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see "051_maxent_workflow.Rmd". 
+
+```{r compute summary statistics using custom function}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_historical_step2")
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = global_historical_model, 
+  model.name = "global_historical", 
+  mypath = mypath, 
+  create.dir = TRUE, # create subdirectory
+  env.covar.obj = x_global_env_covariates, # env covariates raster stacked
+  train.obj = global_historical_train, # training data used to create model
+  trainFolds.obj = global_historical_trainFolds,  # k-folds of training data
+  test.obj = global_historical_test, # data you wish to use to test the model
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
+  threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  )
+
+```
+
+### Create distribution map for area of interest
+
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the MTP, MTSS and 10_percentile thresholds. The workflow for this function can be found in vignette `053_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
+
+I will take the above map and reclassify it so that areas that arent suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum trhaining presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
+
+First, I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of maxent predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+```{r predict normal and thresholded suitability maps}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_historical_step2")
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = global_historical_model,
+  model.name = "global_historical", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_NAmerica_env_covariates, 
+  predict.fun = "mean", 
+  map.thresh = TRUE, 
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  summary.file = file.path(mypath, "global_historical_summary_all_iterations.csv")
+)
+
+```
+
+# Predict for easernUSA model
+
+I will predict to the same area using the invaded range model (the eastern half of the USA, easternUSA_entire) as well.
+
+```{r predict normal and thresholded suitability maps}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# read in model object
+easternUSA_entire_model <- readr::read_rds(file = file.path(mypath, "easternUSA_entire_model.rds"))
+
+# make predictions for N America
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = easternUSA_entire_model,
+  model.name = "easternUSA_entire", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_NAmerica_env_covariates, 
+  predict.fun = "mean", 
+  map.thresh = TRUE, 
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  summary.file = file.path(mypath, "easternUSA_entire_summary_all_iterations.csv")
+)
+
+```
+
+
+# Appendix
+
+
+
+# References
+
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+Maryam Bordkhani. (n.d.). threshold rule.
+
+Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
+
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
+
+Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+
+VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
+
+

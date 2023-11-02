@@ -282,7 +282,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
   train.obj = easternUSA_entire_train, # training data used to create model
   trainFolds.obj = easternUSA_entire_trainFolds,  # k-folds of training data
   test.obj = easternUSA_entire_test, # data you wish to use to test the model
-  plot.types = c("train", "test"), # types of jackknife curves to be created
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
   threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
 
@@ -335,47 +335,6 @@ slfSpread::create_MaxEnt_suitability_maps(
   thresh = "MTSS",
   summary.file = file.path(mypath, "easternUSA_entire_summary_all_iterations.csv")
 )
-
-```
-
-The next three models will follow roughly the same structure, so comments will be kept to a minimum because the workflow will be the same
-
-TEST PREDICTION USING ENTIRE EASTERN USA for 
-
-```{r project to N America using entire eastern USA model}
-
-# input path
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-# list of rasters to load in
-NAmerica_rasters_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
-  grep("bio2_1981-2010_NAmerica.asc|bio11_1981-2010_NAmerica.asc|bio12_1981-2010_NAmerica.asc|bio15_1981-2010_NAmerica.asc", ., value = TRUE)
-
-# load in rasters to project to
-NAmerica_rasters <- terra::rast(x = NAmerica_rasters_list)
-# change layer names
-names(NAmerica_rasters) <- env_layer_names
-
-# new output path
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1_v1")
-
-
-entire_easternUSA_NAmerica_predict <- SDMtune::predict(
-  object = easternUSA_entire_model,
-  data = NAmerica_rasters,
-  fun = "mean",
-  type = "cloglog",
-  clamp = FALSE, 
-  progress = TRUE, 
-  filename = file.path(mypath, "easternUSA_entire_predicted_suitability_NAmerica.asc"), 
-    # the function automatically adds the function name on the end
-  filetype = "AAIGrid"
-)
-
 
 ```
 
@@ -500,7 +459,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
   train.obj = easternUSA_adult_emer_1_train, # training data used to create model
   trainFolds.obj = easternUSA_adult_emer_1_trainFolds,  # k-folds of training data
   test.obj = easternUSA_adult_emer_1_test, # data you wish to use to test the model
-  plot.types = c("train", "test"), # types of jackknife curves to be created
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
   threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
 
@@ -567,7 +526,7 @@ a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs
 
 ```{r prepare SWD data object}
 
-if (TRUE) {
+if (FALSE) {
 
   easternUSA_buffered_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                                env = x_env_covariates,
@@ -671,7 +630,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
   train.obj = easternUSA_buffered_train, # training data used to create model
   trainFolds.obj = easternUSA_buffered_trainFolds,  # k-folds of training data
   test.obj = easternUSA_buffered_test, # data you wish to use to test the model
-  plot.types = c("train", "test"), # types of jackknife curves to be created
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
   threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
 

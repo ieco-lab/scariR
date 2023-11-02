@@ -8,7 +8,7 @@ output: html_document
 
 # Overview
 
-In the last vignette, I selected the background area type that would be the most suited to modeling SLF. I found that using the entire background area was the best choice. I will now set up for the next two sets of models, a historical global/regional pair and a climate change global/regional pair. 
+In the previous vignette (`050_run_easternUSA_MaxEnt_models_v1`), I selected the background area type that would be the most suited to modeling SLF. I found that using the entire background area was the best choice. I will now set up for the next two sets of models, a historical global/regional pair and a climate change global/regional pair. The global model will be trained on global climate data, while the regional model will be trained climate data from the SLF invaded range. The regional model has already been trained; this was the easternUSA_entire model trained in the previous vignette. In the next few vignettes, I will train the global model and create the same outputs as for the regional model. I will also create models for a climate change scenario. This vignette will select the background points and crop rasters needed for the next models
 
 (EXPAND)
 
@@ -33,8 +33,74 @@ library(viridis)
 
 ```
 
+```{r ggplot object for map style}
 
-# 1. Crop Bioclim Layers to N. America
+map_style <- list(
+      xlab("longitude"),
+      ylab("latitude"),
+      theme_classic(),
+      theme(legend.position = "bottom",
+            panel.background = element_rect(fill = "lightblue",
+                                            colour = "lightblue")
+      ),
+      labs(fill = "Suitability for SLF"),
+      viridis::scale_fill_viridis(option = "D"),
+      coord_equal()
+    )
+
+```
+
+
+# 1. Select background points for global model
+
+Just for review, these points are used to characterize the variables that affect SLF distribution. Temperature / precipitation values will be extracted from the rasters for each point in this set. MaxEnt will then use these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability. 
+
+First, I will load in known SLF presences so that background sampling does not occur at those points.
+
+```{r load in SLF presences}
+
+# dismo requires the base function (not tidyverse)
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+   dplyr::select(-species) 
+
+```
+
+I will select 50000 random background points using `dismo::randomPoints()`. This amount was recommended when modeling at a global scale (Santana Jr et.al, 2019). Background points datasets will be stored in `vignette-outputs/data-tables`.
+
+```{r background points for global models}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent")
+
+# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
+bio11_global <- raster::raster(x = file.path(mypath, "bio11_1981-2010_global.asc"))
+
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(10)
+# generate random points 
+global_background_points <- dismo::randomPoints(mask = bio11_global, 
+                                                n = 50000, # number recommended for global studies
+                                                p = slf_points,
+                                                excludep = TRUE, # exclude cells where slf has been found
+                                                lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+                                                warn = 2 # higher number gives most warnings, including if sample size not reached
+                                                ) %>%
+  as.data.frame(.)
+
+# save as csv
+write_csv(x = global_background_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points.csv"))
+# save as rda file
+save(global_background_points, file = file.path(here(), "data", "global_background_points.rda"))
+  
+```
+
+The initial run threw a warning that only 0.85046 times 50,000 points could be selected. This came to 42,523 points in total. I will not try to plot this, because it crashed my PC when I tried.
+
+# 2. Crop Bioclim Layers to N. America
+
+These rasters will be used to project the models I will create to a new area. We are specifically interested in the suitable area for the entire North American continent. When projecting a model to create a raster of suitability, SDMtune requires a raster stack containing a layer for each covariate that was used to create the model, with the same naming convention. 
 
 ## Historical rasters
 
@@ -221,85 +287,7 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
-# 2. Select Flexible Area Background Points
 
-
-First, I will load in known SLF presences so that background sampling does not occur at those points.
-
-```{r load in SLF presences}
-
-# dismo requires the base function (not tidyverse)
-slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
-   dplyr::select(-species) 
-
-```
-
-Next, I will select 10000 random background points using `dismo::randomPoints()`. Background points datasets will be stored in `vignette-outputs/data-tables`.
-
-```{r background points for entire Eastern USA raster}
-
-# file path to local directory
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent")
-
-# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
-easternUSA_entire <- raster::raster(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif"))
-
-# set seed so that the random points for this dataset are the same the next time this code is run
-set.seed(10)
-# generate random points 
-easternUSA_entire_flexible_points <- dismo::randomPoints(mask = easternUSA_entire, 
-                                                n = 10000, # default number used by maxent
-                                                p = slf_points,
-                                                excludep = TRUE, # exclude cells where slf has been found
-                                                lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-                                                warn = 2 # higher number gives most warnings, including if sample size not reached
-                                                ) %>%
-  as.data.frame(.)
-
-# save as csv
-write_csv(x = easternUSA_entire_flexible_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
-# save as rda file
-save(easternUSA_entire_flexible_points, file = file.path(here(), "data", "easternUSA_entire_flexible_area_points.rda"))
-  
-  
-```
-
-```{r load in files for plotting}
-
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_suitable_area")
-
-entire_USA_df <- terra::rast(x = file.path(mypath, "output", "rasters", "easternUSA_entire.tif")) %>%
-  terra::as.data.frame(., xy = TRUE)
-
-easternUSA_entire_flexible_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
-
-```
-
-```{r plot points}
-
-background_entire <- ggplot() +
-    geom_raster(data = entire_USA_df, aes(x = x, y = y), fill = "azure1") +
-    geom_point(data = easternUSA_entire_flexible_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
-    ggtitle("Eastern USA flexible background points- entire area") +
-    map_style +
-    theme(legend.position = "none") 
-
-```
-
-```{r save plot}
-
-ggsave(background_entire, 
-       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_entire_flexible_area_points.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
-
-```
 
 
 # Appendix
@@ -308,4 +296,5 @@ ggsave(background_entire,
 
 # References
 
+Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
 

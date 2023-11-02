@@ -21,13 +21,12 @@
 #'
 #'@param env.covar.obj A stack of rasters of environmental covariates. These
 #'covariates are used to train and test the MaxEnt model, as well as to make
-#'predictions. These should be the same covariates that you used to train the
-#'model. This must a `SpatRaster` object created using [terra::rast()].
+#'predictions. See details for additional formatting information.
 #'
 #'@param predict.fun Character. The function to be applied to combine the
 #'iterations of the model when predicting a raster output. Can be one of:
-#'"mean", "sd" (standard deviation) or "max". If multiple are desired, must be
-#'in the form: `c("mean", "sd", "max")`
+#'"mean", "median", "min", "max", or "sd" (standard deviation). If multiple are
+#'desired, must be in the concatenated form: `c("mean", "sd")`
 #'
 #'@param map.thresh Logical, TRUE by default. This function determines if a
 #'thresholded suitability map will be created. If not, output will only consist
@@ -64,12 +63,21 @@
 #'concatenated set of numerics or presets, as in  c(0.2, 0.3) or
 #'c("MTSS", "BTO").
 #'
+#'## env.covar.obj:
+#'This must a `SpatRaster` raster stack created using [terra::rast()]. The stack
+#'should include the same covariates (as raster layers) that you used to train
+#'the model and the names of the variables in these layers must be the same.
+#'You can check for naming consistency using [names()].
 #'
 #'
 #'@return
-#'
-#' 3 outputs
-#' * mean
+#'A raster of suitability values projected to the same spatial extent as the
+#'input `env.covar.obj` and a corresponding .jpg figure are created. If multiple
+#'If multiple values are given for `predict.fun`, then one raster and jpg image
+#'will be created for each value. If `map.thresh = TRUE`, then the output will
+#'also include a binary raster of suitability and a .jpg image of unsuitable
+#'areas layered on top of suitability raster. This threshold of suitability is
+#'determined by the value of `thresh`.
 #'
 #'@examples
 #'# x---------------------------------------------------------------------------

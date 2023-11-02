@@ -1,0 +1,42 @@
+---
+title: "Results- Compare historical global and regional (Eastern USA) models (project step 2)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-11-01"
+output: html_document
+---
+# Overview
+
+This vignette will compare the invaded region model for SLF, which was created in `050_run_easternUSA_MaxEnt_models.Rmd`, with the global version of this model, which was created in `070_run_global_historical_MaxEnt_model.Rmd`. First, I will compare these models using flexible AUC. Second, I will also project these models to N. America and compare the proportion of suitable area. Third, I will calculate suitabilitiy values for all SLF points and IVR regions. Finally, I will perform an invasion stage analysis following the methods of Gallien et.al, 2012. 
+
+In step 1, I tested the best fit background data using SLF occurrences and climate data only from the SLF invaded range (the eastern half of the United States). 
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+library(rJava) # for running MaxEnt
+
+library(dismo) # package underneath SDMtune
+library(SDMtune) # main package used to run SDMs
+
+# dependencies of SDMtune
+library(plotROC) # plots ROCs
+
+library(viridis)
+
+# spatial data handling
+library(raster) 
+library(terra) 
+
+```
+
+
