@@ -303,6 +303,155 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
+## Predict suitability for all SLF presences
+
+I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
+
+During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
+
+```{r isolate values for SLF points using global covariates}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_historical_step2")
+
+# load in all slf points
+slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  dplyr::select(-species)
+
+# get SWD object containing point location data from rasters
+slf_presences_withdata <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                     env = x_global_env_covariates,
+                                     p = slf_presences,
+                                     verbose = TRUE # print helpful messages
+                                     )
+
+# save to file
+SDMtune::swd2csv(slf_presences_withdata, file_name = file.path(mypath, "global_historical_slf_all_coords_v1_with_data.csv"))
+
+```
+
+Sometimes, the `SDMtune::prepareSWD()` function will leave out presence points when collecting raster data. I need to figure out which presences were left out and tidy the data to be fed into the predict function.
+
+```{r format data for prediction and reconcile missing points}
+
+# read data in again
+slf_presences_tidy <- read_csv(file = file.path(mypath, "global_historical_slf_all_coords_v1_with_data.csv")) %>%
+  rename("x" = "X",
+         "y" = "Y")
+
+# join with original SLF presences dataset to find presences with no data
+slf_presences_nodata <- anti_join(x = slf_presences, y = slf_presences_tidy, by = c("x", "y"))
+# write to csv 
+write_csv(x = slf_presences_nodata, file = file.path(file.path(mypath, "global_historical_slf_all_coords_v1_no_data.csv")))
+
+# tidy dataset for sdmtune::predict
+slf_presences_withdata_tidy <- semi_join(x = slf_presences_tidy, y = slf_presences, by = c("x", "y")) %>%
+  # select only necessary columns
+  dplyr::select(5:length(.))
+
+```
+
+Now that the data have been formatted correctly, I will apply the predict function. This function returns only a suitability value per presence, so I need to join it with the original dataset and save that output.
+
+```{r prediction for SLF presences}
+
+# make predictions
+slf_presences_predict <- SDMtune::predict(
+  object = global_historical_model, # model
+  data = slf_presences_withdata_tidy, # data for prediction
+  fun = "mean", # function to be applied
+  type = "cloglog", # default for MaxEnt
+  clamp = FALSE, # dont do clamping to restrict predictions
+  progress = TRUE # progress bar
+) %>%
+  as.data.frame() %>%
+  rename("cloglog_suitability" = ".")
+
+
+# bind predictions with tidy dataset
+slf_presences_predict <- cbind(slf_presences_predict, slf_presences_tidy) %>%
+  # select only necessary data
+  dplyr::select(Species, x, y, cloglog_suitability)
+
+# save output
+write_csv(x = slf_presences_predict, file = file.path(mypath, "global_historical_slf_all_coords_v1_predicted_suitability_mean.csv"))
+
+```
+
+## Predict suibability for IVR regions
+
+I will perform the same action as above, but for the locations of important wineries around the world. 
+
+```{r isolate values for IVR regions using global covariate}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_historical_step2")
+
+# load in all IVR points
+load(file = file.path(here(), "data", "wineries.rda")) 
+
+IVR_regions <- wineries %>%
+  dplyr::select(x, y)
+
+# get SWD object containing point location data from rasters
+IVR_regions_withdata <- SDMtune::prepareSWD(species = "IVR regions",
+                                            env = x_global_env_covariates,
+                                            p = IVR_regions,
+                                            verbose = TRUE # print helpful messages
+                                            )
+
+SDMtune::swd2csv(IVR_regions_withdata, file_name = file.path(mypath, "global_historical_wineries_with_data.csv"))
+
+```
+
+```{r format data for prediction and reconcile missing points}
+
+# read data in again
+IVR_regions_tidy <- read_csv(file = file.path(mypath, "global_historical_wineries_with_data.csv")) %>%
+  rename("x" = "X",
+         "y" = "Y")
+
+# join with original wineries dataset to find presences with no data
+IVR_regions_nodata <- anti_join(x = IVR_regions, y = IVR_regions_tidy, by = c("x", "y"))
+# write to csv 
+write_csv(x = IVR_regions_nodata, file = file.path(file.path(mypath, "global_historical_wineries_no_data.csv")))
+
+# tidy dataset for sdmtune::predict
+IVR_regions_withdata_tidy <- semi_join(x = IVR_regions_tidy, y = IVR_regions, by = c("x", "y")) %>%
+  # select only necessary columns
+  dplyr::select(5:length(.))
+
+```
+
+```{r prediction for IVR regions}
+
+# make predictions
+IVR_regions_predict <- SDMtune::predict(
+  object = global_historical_model, # model
+  data = IVR_regions_withdata_tidy, # data for prediction
+  fun = "mean", # function to be applied
+  type = "cloglog", # default for MaxEnt
+  clamp = FALSE, # dont do clamping to restrict predictions
+  progress = TRUE # progress bar
+) %>%
+  as.data.frame() %>%
+  rename("cloglog_suitability" = ".")
+
+
+# bind predictions with tidy dataset
+IVR_regions_predict <- cbind(IVR_regions_predict, IVR_regions_tidy) %>%
+  # select only necessary data
+  dplyr::select(x, y, cloglog_suitability)
+
+# save output
+write_csv(x = IVR_regions_predict, file = file.path(mypath, "global_historical_wineries_predicted_suitability_mean.csv"))
+
+```
+
+
 # Predict for easernUSA model
 
 I will predict to the same area using the invaded range model (the eastern half of the USA, easternUSA_entire) as well.
@@ -331,6 +480,92 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
+## Predict suitability for all SLF presences
+
+I will use the same dataset of slf presences with data as above with the global model (`slf_presences_withdata_tidy`) to make predictions for this model as well. I will also save the point-wise raster datasets to this new directory. 
+
+```{r prediction for SLF presences}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# save outputs to new folder
+# save presences with data SWD to this folder
+SDMtune::swd2csv(slf_presences_withdata, file_name = file.path(mypath, "easternUSA_entire_slf_all_coords_v1_with_data.csv"))
+# save excluded presences from slf dataset
+write_csv(x = slf_presences_nodata, file = file.path(file.path(mypath, "easternUSA_entire_slf_all_coords_v1_no_data.csv")))
+
+# make predictions
+slf_presences_predict <- SDMtune::predict(
+  object = easternUSA_entire_model, # model
+  data = slf_presences_withdata_tidy, # data for prediction
+  fun = "mean", # function to be applied
+  type = "cloglog", # default for MaxEnt
+  clamp = FALSE, # dont do clamping to restrict predictions
+  progress = TRUE # progress bar
+) %>%
+  as.data.frame() %>%
+  rename("cloglog_suitability" = ".")
+
+# re-load tidy data
+slf_presences_tidy <- read_csv(file = file.path(mypath, "easternUSA_entire_slf_all_coords_v1_with_data.csv")) %>%
+  rename("x" = "X",
+         "y" = "Y")
+
+# bind predictions with tidy dataset
+slf_presences_predict <- cbind(slf_presences_predict, slf_presences_tidy) %>%
+  # select only necessary data
+  dplyr::select(Species, x, y, cloglog_suitability)
+
+# save output
+write_csv(x = slf_presences_predict, file = file.path(mypath, "easternUSA_entire_slf_all_coords_v1_predicted_suitability_mean.csv"))
+
+```
+
+## Predict suibability for IVR regions
+
+I will perform the same action as above, but for the locations of important wineries around the world. 
+
+```{r prediction for IVR regions}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+# save outputs to new folder
+# save presences with data SWD to this folder
+SDMtune::swd2csv(IVR_regions_withdata, file_name = file.path(mypath, "easternUSA_entire_wineries_with_data.csv"))
+# save excluded presences from slf dataset
+write_csv(x = IVR_regions_nodata, file = file.path(file.path(mypath, "easternUSA_entire_wineries_no_data.csv")))
+
+# make predictions
+IVR_regions_predict <- SDMtune::predict(
+  object = easternUSA_entire_model, # model
+  data = IVR_regions_withdata_tidy, # data for prediction
+  fun = "mean", # function to be applied
+  type = "cloglog", # default for MaxEnt
+  clamp = FALSE, # dont do clamping to restrict predictions
+  progress = TRUE # progress bar
+) %>%
+  as.data.frame() %>%
+  rename("cloglog_suitability" = ".")
+
+# re-load tidy data
+IVR_regions_tidy <- read_csv(file = file.path(mypath, "easternUSA_entire_wineries_with_data.csv")) %>%
+  rename("x" = "X",
+         "y" = "Y")
+
+# bind predictions with tidy dataset
+IVR_regions_predict <- cbind(IVR_regions_predict, IVR_regions_tidy) %>%
+  # select only necessary data
+  dplyr::select(x, y, cloglog_suitability)
+
+# save output
+write_csv(x = IVR_regions_predict, file = file.path(mypath, "easternUSA_entire_wineries_predicted_suitability_mean.csv"))
+
+```
 
 # Appendix
 

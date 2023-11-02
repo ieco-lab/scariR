@@ -451,7 +451,7 @@ unique(v5_regional2_df$v5_regional)
 
 
 # first, convert NA values to 1 (unsuitable)
-v5_regional2_df$v5_regional[v5_regional2_df$v5_regional == NA] <- 1
+v5_regional2_df$v5_regional[is.na(v5_regional2_df$v5_regional)] <- 1
 
 # now, create vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order

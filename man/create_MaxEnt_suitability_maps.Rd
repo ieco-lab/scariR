@@ -37,13 +37,12 @@ the model output. If FALSE (ie, the sub directory already exists), only the
 
 \item{env.covar.obj}{A stack of rasters of environmental covariates. These
 covariates are used to train and test the MaxEnt model, as well as to make
-predictions. These should be the same covariates that you used to train the
-model. This must a \code{SpatRaster} object created using \code{\link[terra:rast]{terra::rast()}}.}
+predictions. See details for additional formatting information.}
 
 \item{predict.fun}{Character. The function to be applied to combine the
 iterations of the model when predicting a raster output. Can be one of:
-"mean", "sd" (standard deviation) or "max". If multiple are desired, must be
-in the form: \code{c("mean", "sd", "max")}}
+"mean", "median", "min", "max", or "sd" (standard deviation). If multiple are
+desired, must be in the concatenated form: \code{c("mean", "sd")}}
 
 \item{map.thresh}{Logical, TRUE by default. This function determines if a
 thresholded suitability map will be created. If not, output will only consist
@@ -53,7 +52,7 @@ of suitability maps of the type specified in \code{predict.fun}.}
 \code{map.thresh = FALSE} This may be imported manually (numeric), or may be
 selected from one of the thresholds for the model (character). If a preset,
 the specified mean threshold value for all iterations of the model is chosen.
-See details for preset options and other usages.}
+See details for a list of preset options and other usages.}
 
 \item{summary.file}{Data import. Does not need to be defined if
 \code{map.thresh = FALSE}. Should be a .csv file or data frame that contains the
@@ -67,20 +66,35 @@ ggplot aesthetics to the plot outputs. If specified, the given value should be
 a list of ggplot aesthetic options. See examples.}
 }
 \value{
-3 outputs
-\itemize{
-\item mean
-}
+A raster of suitability values projected to the same spatial extent as the
+input \code{env.covar.obj} and a corresponding .jpg figure are created. If multiple
+If multiple values are given for \code{predict.fun}, then one raster and jpg image
+will be created for each value. If \code{map.thresh = TRUE}, then the output will
+also include a binary raster of suitability and a .jpg image of unsuitable
+areas layered on top of suitability raster. This threshold of suitability is
+determined by the value of \code{thresh}.
 }
 \description{
 The function requires the packages 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
 }
 \details{
+\emph{NOTE} This function will create a thresholded suitability map for a raster
+output using the SD function, but these maps are not very meaningful because
+they do not illustrate cloglog suitability (while thresholds are created
+using the cloglog suitability metrics).
 \subsection{thresh:}{
 
 This can be a single numeric or preset character value. It may also be a
 concatenated set of numerics or presets, as in  c(0.2, 0.3) or
 c("MTSS", "BTO").
+}
+
+\subsection{env.covar.obj:}{
+
+This must a \code{SpatRaster} raster stack created using \code{\link[terra:rast]{terra::rast()}}. The stack
+should include the same covariates (as raster layers) that you used to train
+the model and the names of the variables in these layers must be the same.
+You can check for naming consistency using \code{\link[=names]{names()}}.
 }
 }
 \examples{

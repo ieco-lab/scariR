@@ -36,7 +36,7 @@
 #'`map.thresh = FALSE` This may be imported manually (numeric), or may be
 #'selected from one of the thresholds for the model (character). If a preset,
 #'the specified mean threshold value for all iterations of the model is chosen.
-#'See details for preset options and other usages.
+#'See details for a list of preset options and other usages.
 #'
 #'@param summary.file Data import. Does not need to be defined if
 #'`map.thresh = FALSE`. Should be a .csv file or data frame that contains the
@@ -212,12 +212,13 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
     # preset values for thresh parameter
     thresh_presets <- c(
-      "MTP" = thresh_preset_import[30, 6], # Minimum.training.presence.Cloglog.threshold
-      "ten_percentile" = thresh_preset_import[34, 6], # 10.percentile.training.presence.Cloglog.threshold
-      "ETSS" = thresh_preset_import[38, 6], # Equal.training.sensitivity.and.specificity.Cloglog.threshold
-      "MTSS" = thresh_preset_import[42, 6], # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-      "BTO" = thresh_preset_import[46, 6], # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
-      "EE" = thresh_preset_import[50, 6] # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
+      "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
+      "ten_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
+      "10_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
+      "ETSS" = as.numeric(thresh_preset_import[38, ncol(thresh_preset_import)]), # Equal.training.sensitivity.and.specificity.Cloglog.threshold
+      "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+      "BTO" = as.numeric(thresh_preset_import[46, ncol(thresh_preset_import)]), # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
+      "EE" = as.numeric(thresh_preset_import[50, ncol(thresh_preset_import)]) # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
     )
 
     # create a suitability map for every function listed
