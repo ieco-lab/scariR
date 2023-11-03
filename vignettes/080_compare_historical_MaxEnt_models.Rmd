@@ -54,7 +54,19 @@ scatter_style <- list(
 
 ```{r load in global and regional rasters}
 
-global_historical_mean <- terra::rast(x = )
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# global raster
+global_historical_mean <- terra::rast(x = file.path(mypath, "slf_global_historical_step2", ""))
+# convert to df for plotting
+global_historical_mean_df <- terra::as.data.frame(x = global_historical_mean, xy = TRUE)
+
+# regional raster
+regional_historical_mean <- terra::rast(x = file.path(mypath, "slf_easternUSA_entire_step1_v1", ""))
+# convert to df for plotting
+regional_historical_mean_df <- terra::as.data.frame(x = regional_historical_mean, xy = TRUE)
 
 ```
 

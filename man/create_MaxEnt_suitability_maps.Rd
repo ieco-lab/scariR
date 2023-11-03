@@ -10,6 +10,7 @@ create_MaxEnt_suitability_maps(
   mypath,
   create.dir = FALSE,
   env.covar.obj,
+  projected = NA,
   predict.fun = "mean",
   map.thresh = FALSE,
   thresh = NA,
@@ -39,10 +40,17 @@ the model output. If FALSE (ie, the sub directory already exists), only the
 covariates are used to train and test the MaxEnt model, as well as to make
 predictions. See details for additional formatting information.}
 
+\item{projected}{Character. Is the environmental covariate raster stack in
+\code{env.covar.obj} projected to a different geographical space, time period, etc
+than the model was trained on? If so, enter the name of the projected period
+or region. This ensures that plot titles and file names reflect the projected
+region or time period. If using multiple words, separate with an underscore.}
+
 \item{predict.fun}{Character. The function to be applied to combine the
 iterations of the model when predicting a raster output. Can be one of:
-"mean", "median", "min", "max", or "sd" (standard deviation). If multiple are
-desired, must be in the concatenated form: \code{c("mean", "sd")}}
+"min", "mean", "median", "max", or "sd" (standard deviation). If multiple are
+desired, must be in the concatenated form: \code{c("mean", "sd")}. Should be all
+lowercase.}
 
 \item{map.thresh}{Logical, TRUE by default. This function determines if a
 thresholded suitability map will be created. If not, output will only consist

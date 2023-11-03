@@ -23,10 +23,17 @@
 #'covariates are used to train and test the MaxEnt model, as well as to make
 #'predictions. See details for additional formatting information.
 #'
+#'@param projected Character. Is the environmental covariate raster stack in
+#'`env.covar.obj` projected to a different geographical space, time period, etc
+#'than the model was trained on? If so, enter the name of the projected period
+#'or region. This ensures that plot titles and file names reflect the projected
+#'region or time period. If using multiple words, separate with an underscore.
+#'
 #'@param predict.fun Character. The function to be applied to combine the
 #'iterations of the model when predicting a raster output. Can be one of:
-#'"mean", "median", "min", "max", or "sd" (standard deviation). If multiple are
-#'desired, must be in the concatenated form: `c("mean", "sd")`
+#'"min", "mean", "median", "max", or "sd" (standard deviation). If multiple are
+#'desired, must be in the concatenated form: `c("mean", "sd")`. Should be all
+#'lowercase.
 #'
 #'@param map.thresh Logical, TRUE by default. This function determines if a
 #'thresholded suitability map will be created. If not, output will only consist
@@ -79,6 +86,7 @@
 #'areas layered on top of suitability raster. This threshold of suitability is
 #'determined by the value of `thresh`.
 #'
+#'
 #'@examples
 #'# x---------------------------------------------------------------------------
 #'
@@ -88,7 +96,7 @@
 #'
 #'
 #'@export
-create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
+create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, projected = NA, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -101,6 +109,9 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
   }
   if (is.character(mypath) == FALSE) {
     stop("Parameter 'mypath' must be of type 'character'")
+  }
+  if (is.character(projected) == FALSE) {
+    stop("Parameter 'projected' must be of type 'character'")
   }
 
   # Create sub directory for files----------------------------------------------
@@ -154,6 +165,9 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
     # Create distribution map---------------------------------------------------
 
+    # initialization message
+    print(paste0("predicting raster: ", a))
+
     # use predict function
     SDMtune::predict(
       object = model.obj,
@@ -162,30 +176,40 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       type = "cloglog",
       clamp = FALSE,
       progress = TRUE,
-      filename = file.path(mypath, paste0(model.name, "_predicted_suitability.asc")),
+      filename = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")),
       # the function automatically adds the function name on the end
       filetype = "AAIGrid"
     )
 
+
+    # message of completion
+    print(paste0(a, "raster created and saved at: ", mypath))
+
+
     # load in predictions
-    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", a, ".asc"))) %>%
+    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", a, ".asc"))) %>%
       terra::as.data.frame(., xy = TRUE)
 
     # plot
     model_suit_plot <- ggplot() +
       geom_raster(data = model_suit,
                   aes(x = x, y = y, fill = model_suit[, 3])) +
-      labs(title = paste0(toupper(a), " suitability for SLF"),
+      labs(title = paste0(toupper(a), " suitability for SLF", ifelse(is.na(projected), "", paste0(", projected to ", projected))),
            subtitle = paste0("Model: ", model.name)) +
       map_style
 
     # save plot output
     ggsave(model_suit_plot,
-           filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", a, ".jpg")),
+           filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", a, ".jpg")),
            height = 8,
            width = 10,
            device = "jpeg",
            dpi = "retina")
+
+    # end of loop---------------------------------------------------------------
+
+    # message of completion
+    print(paste0("figure created for raster: ", a))
 
     # remove raster objects
     rm(model_suit)
@@ -193,10 +217,12 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
   }
 
+  # thresholded mapping---------------------------------------------------------
+
   # conditional statement if thresholded maps will be created
   if (map.thresh == TRUE) {
 
-    # Thresh preset values--------------------------------------------------
+    # Thresh preset values------------------------------------------------------
 
     # import settings for summary.file
     if (is.character(summary.file)) {
@@ -226,7 +252,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     for (i in predict.fun) {
 
       # load in raster created in last loop
-      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, ".asc")))
+      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", i, ".asc")))
 
       # allow multiple entries for thresh
       for (b in thresh) {
@@ -243,7 +269,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         }
 
 
-        # Criteria for selecting thresh value---------------------------------
+        # Criteria for selecting thresh value-----------------------------------
 
         # if numeric, import
         if(is.numeric(b)) {
@@ -259,12 +285,18 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
         }
 
+        # print messages--------------------------------------------------------
 
-        # Create binary raster with threshold---------------------------------
+        # loop start
+        print(paste0("begin threshold raster and map: ", i, ", ", thresh_name))
+        # thresh value
+        print(paste0("threshold value for ", thresh_name, ": ", thresh_value))
+
+        # Create binary raster with threshold-----------------------------------
 
         # terra required classification matrices
         binary_rescale_class <- data.frame(
-          from = c(0, thresh_value),
+          from = c(0, thresh_value + 0.0000001), # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           to = c(thresh_value, 1),
           becomes = c(0, 1)
         )
@@ -272,36 +304,42 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         # re-classify raster according to threshold
         terra::classify(x = model_suit_raster,
                         rcl = binary_rescale_class,
-                        right = FALSE, # close left side of value
-                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ".asc")), # also write to file
+                        right = NA, # doesnt include extreme at either end
+                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
                         overwrite = FALSE
         )
 
-        # Also Create mask raster for thresholded raster figure---------------
+        # message of completion
+        print(paste0(i, ", ", thresh_name, " binary raster created and saved at: ", mypath))
+
+        # Create mask raster for thresholded raster figure----------------------
 
         # create regional suitability value matrix for terra
         mask_rescale_class <- data.frame(
           from = 0,
-          to = thresh_value,
+          to = thresh_value + 0.0000001, # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           becomes = 1
         )
 
           # reclassify and write regional raster
           mask_layer <- terra::classify(x = model_suit_raster,
                                         rcl = mask_rescale_class,
-                                        right = FALSE, # close left side of value
+                                        right = NA, # doesnt include extreme at either end
                                         others = NA,
-                                        filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ".asc")), # also write to file
+                                        filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
                                         overwrite = FALSE)
 
+          # message of completion
+          print(paste0(i, ", ", thresh_name, " mask layer raster created and saved at: ", mypath))
 
-        # Create thresholded suitability map----------------------------------
+
+        # Create thresholded suitability map------------------------------------
 
         # convert imported raster to df
         model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
 
         # load in mask layer and convert to df for plotting
-        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ".asc"))) %>%
+        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc"))) %>%
           terra::as.data.frame(., xy = TRUE)
 
         # plot suitability raster first
@@ -312,17 +350,22 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           # plot binary threshold on top
           geom_raster(data = model_mask_layer_df,
                       aes(x = x, y = y), fill = "azure4") +
-          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold"),
+          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold", ifelse(is.na(projected), "", paste0(", projected to ", projected))),
                subtitle = paste0("Model: ", model.name)) +
           map_style
 
         # save plot output
         ggsave(model_threshold_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ".jpg")),
+               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".jpg")),
                height = 8,
                width = 10,
                device = "jpeg",
                dpi = "retina")
+
+        # end of loop operations------------------------------------------------
+
+        # message of completion
+        print(paste0("figure created for raster: ", i, ", ", thresh_name))
 
         # remove temp objects
         rm(thresh_name)
