@@ -836,34 +836,6 @@ if (FALSE) {
 
 ```
 
-## tune model- unfinished
-
-```{r sample code}
-
-if (FALSE) {
-
-  # these code were adapted from the SDMtune tutorials
-  
-  # the arguments that can be tuned later
-  getTunableArgs(entire_easternUSA_model)
-  
-  # list of hyperparameters
-  h <- list(reg = seq(0.2, 5, 0.2), 
-            fc = c("l", "lq", "lh", "lp", "lqp", "lqph"))
-  
-  # Train a model with all possible combinations of hyperparameters
-  entire_easternUSA_model_tuned <- gridSearch(
-    entire_easternUSA_model, 
-    hypers = h, # hyperparameter list
-    metric = "auc", 
-    pop = 10, 
-    seed = 65466
-    )
-  
-}
-
-```
-
 ## Compute Sensitivity and Specificity- unfinished
 
 Lastly, I will use this confusion matrix to calculate the sensitivity and specificity for each threshold value. The sensitivity represents the percentage of presences that were correctly identified by the algorithm at that threshold, while the specificity represents the percentage of background points that were correctly identified by the algorithm at that threshold. I will only do this for the confusion matrix for mean threshold values from all iterations.

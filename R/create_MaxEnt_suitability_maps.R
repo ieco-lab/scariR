@@ -304,7 +304,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         # re-classify raster according to threshold
         terra::classify(x = model_suit_raster,
                         rcl = binary_rescale_class,
-                        right = NA, # doesnt include extreme at either end
+                        right = TRUE,
+                        include.lowest = TRUE,
                         filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
                         overwrite = FALSE
         )
@@ -324,7 +325,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           # reclassify and write regional raster
           mask_layer <- terra::classify(x = model_suit_raster,
                                         rcl = mask_rescale_class,
-                                        right = NA, # doesnt include extreme at either end
+                                        right = TRUE, # includes both sides
+                                        include.lowest = TRUE,
                                         others = NA,
                                         filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
                                         overwrite = FALSE)

@@ -57,7 +57,7 @@ options(java.parameters = "-Xmx2048m")
 
 ```
 
-# 1. MaxEnt Model- entire eastern USA
+# 1. MaxEnt Model- global historical
 
 ## Tidy datasets for modeling
 
@@ -85,7 +85,7 @@ p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tabl
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_global_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "global_background_points.csv"))
+a_global_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v1.csv"))
 
 ```
 
@@ -132,7 +132,7 @@ I need to create a dataset of presences and background points. This dataset will
 
 ```{r prepare SWD data object}
 
-if (FALSE) {
+if (TRUE) {
 
   global_historical_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_global_env_covariates,
@@ -154,8 +154,8 @@ I will also save the output to be used later.
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = global_historical_SWD, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "global_historical_slf_presences_with_data.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "global_historical_absences_with_data.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "global_historical_slf_presences_with_data_v1.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "global_historical_absences_with_data_v1.csv")
   ))
 
 ```
@@ -226,10 +226,12 @@ global_historical_trainFolds <- SDMtune::randomFolds(
 
 ## Train Maxent model
 
+### Intitial Training
+
 First, I will train a model with 5 cross-validated replicates. The model will only be trained on 80% of the slf presence data, with the other 20% being used downstream for analysis. The default settings will be used for Maxent, apart from the following changes:
 
 * ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
-* replicates = 10- all final models will have 10 replicates
+* replicates = all final models will have 10 replicates
 * iterations = 5000. This is the max number of iterations of optimization algorithm to perform before stopping training. Increasing this number allows the algorithm to make more refined predictions.
 
 Other changes to the default will be used, but are not relevant for training the model.
@@ -247,6 +249,61 @@ global_historical_model <- SDMtune::train(
 
 ```
 
+### Tuning MaxEnt Model
+
+(EXPLANATION including regularization and feature selection)
+
+Elith et.al, 2011 used only hinge features or all features. 
+
+Radosavljevic and Anderson used a range of regularization multipliers, from 0.25 to 2
+
+```{r grid search tunable args}
+
+if (TRUE) {
+  
+  # the arguments that can be tuned later
+  getTunableArgs(global_historical_model)
+  
+  # list of hyperparameters
+  hypers <- list(
+    reg = c(0.25, 0.5, 1, 1.5, 2), # regularization multiplier
+    fc = c("h", "lqpht") # feature classes
+    )
+  
+  # Train a model with all possible combinations of hyperparameters
+  global_historical_model_tuned <- SDMtune::gridSearch(
+    model = global_historical_model, 
+    hypers = hypers, # hyperparameter list
+    metric = "auc", 
+    save_models = TRUE,
+    interactive = TRUE, 
+    progress = TRUE
+    )
+  
+}
+
+```
+
+Based on the model tuning, we see that the highest AUC value was attributed to the model with a regularization multiplier of 2 and only hinge features. 
+
+The figure output was saved manually from the Viewer pane to `vignette-outputs/data-tables`
+
+### Re-training based on tuning
+
+```{r train maxent model}
+
+global_historical_model <- SDMtune::train(
+  method = "Maxent",
+  data = global_historical_train,
+  folds = global_historical_trainFolds, # 5 folds for dataset
+  iter = 5000, # number of iterations
+  fc = "h", # feature classes set to hinge
+  reg = 2, 
+  progress = TRUE
+)
+
+```
+
 ## Evaluate maxent model
 
 ### Summary Statistics
@@ -258,7 +315,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_historical_step2")
+                     "maxent/models/slf_global_historical_step2_v1")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = global_historical_model, 
@@ -287,7 +344,7 @@ First, I will retrieve the specific value for the MTSS threshold for this model 
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_historical_step2")
+                     "maxent/models/slf_global_historical_step2_v1")
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = global_historical_model,
@@ -314,7 +371,7 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_historical_step2")
+                     "maxent/models/slf_global_historical_step2_v1")
 
 # load in all slf points
 slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
@@ -389,7 +446,7 @@ I will perform the same action as above, but for the locations of important wine
 # path to directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_historical_step2")
+                     "maxent/models/slf_global_historical_step2_v1")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
@@ -451,6 +508,9 @@ IVR_regions_predict <- cbind(IVR_regions_predict, IVR_regions_tidy) %>%
 write_csv(x = IVR_regions_predict, file = file.path(mypath, "global_historical_wineries_predicted_suitability_mean.csv"))
 
 ```
+
+
+
 
 
 # Predict for easernUSA model
@@ -575,11 +635,15 @@ write_csv(x = IVR_regions_predict, file = file.path(mypath, "easternUSA_entire_w
 
 # References
 
+Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
+
 Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
 
 Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
 
 Maryam Bordkhani. (n.d.). threshold rule.
+
+Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
 
 Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
 

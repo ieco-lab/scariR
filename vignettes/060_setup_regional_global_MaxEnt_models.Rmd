@@ -65,7 +65,7 @@ slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables
 
 ```
 
-I will select 50000 random background points using `dismo::randomPoints()`. This amount was recommended when modeling at a global scale (Santana Jr et.al, 2019). Background points datasets will be stored in `vignette-outputs/data-tables`.
+Gallien et.al recommended 20,000 points for background with a global scale model. Gallien also found that a higher number of background points artificially deflates maxent predicitons. Background points datasets will be stored in `vignette-outputs/data-tables`.
 
 ```{r background points for global models}
 
@@ -78,10 +78,11 @@ mypath <- file.path(here() %>%
 bio11_global <- raster::raster(x = file.path(mypath, "bio11_1981-2010_global.asc"))
 
 # set seed so that the random points for this dataset are the same the next time this code is run
-set.seed(10)
+set.seed(100)
 # generate random points 
 global_background_points <- dismo::randomPoints(mask = bio11_global, 
-                                                n = 50000, # number recommended for global studies
+                                                n = 23000, # set higher than 20,000 because the function was under-producing
+                                                # n = 50000, # deprecated
                                                 p = slf_points,
                                                 excludep = TRUE, # exclude cells where slf has been found
                                                 lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
@@ -90,13 +91,15 @@ global_background_points <- dismo::randomPoints(mask = bio11_global,
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_background_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points.csv"))
+write_csv(x = global_background_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v1.csv"))
 # save as rda file
-save(global_background_points, file = file.path(here(), "data", "global_background_points.rda"))
+save(global_background_points, file = file.path(here(), "data", "global_background_points_v1.rda"))
   
 ```
 
-The initial run threw a warning that only 0.85046 times 50,000 points could be selected. This came to 42,523 points in total. I will not try to plot this, because it crashed my PC when I tried.
+I set the number of points generated higher than my actual goal because the function was consistently under-producing. The final number of points selected was 0.8481 times the requested number (23,000), or 19,506 points.
+
+*DEPRECATED* Initially, I selected 50000 random background points using `dismo::randomPoints()`. This amount was recommended when modeling at a global scale (Santana Jr et.al, 2019). The initial run threw a warning that only 0.85046 times 50,000 points could be selected. This came to 42,523 points in total. The v1 dataset with 20000I will not try to plot this, because it crashed my PC when I tried.
 
 # 2. Crop Bioclim Layers to N. America
 
