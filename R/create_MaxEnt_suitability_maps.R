@@ -183,7 +183,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
 
     # message of completion
-    print(paste0(a, "raster created and saved at: ", mypath))
+    print(paste0(a, " raster created and saved at: ", mypath))
 
 
     # load in predictions
@@ -194,8 +194,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     model_suit_plot <- ggplot() +
       geom_raster(data = model_suit,
                   aes(x = x, y = y, fill = model_suit[, 3])) +
-      labs(title = paste0(toupper(a), " suitability for SLF", ifelse(is.na(projected), "", paste0(", projected to ", projected))),
-           subtitle = paste0("Model: ", model.name)) +
+      labs(title = paste0(toupper(a), " suitability for SLF"),
+           subtitle = paste0("Model: ", model.name, ifelse(is.na(projected), "", paste0(", projected to ", projected)))) +
       map_style
 
     # save plot output
@@ -352,8 +352,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           # plot binary threshold on top
           geom_raster(data = model_mask_layer_df,
                       aes(x = x, y = y), fill = "azure4") +
-          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold", ifelse(is.na(projected), "", paste0(", projected to ", projected))),
-               subtitle = paste0("Model: ", model.name)) +
+          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold"),
+               subtitle = paste0("Model: ", model.name, ifelse(is.na(projected), "", paste0(", projected to ", projected)))) +
           map_style
 
         # save plot output

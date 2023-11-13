@@ -255,9 +255,14 @@ global_historical_model <- SDMtune::train(
 
 Elith et.al, 2011 used only hinge features or all features. 
 
-Radosavljevic and Anderson used a range of regularization multipliers, from 0.25 to 2
+Radosavljevic and Anderson 2014 used a range of regularization multipliers, from 0.25 to 2.
 
 ```{r grid search tunable args}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_historical_step2_v1")
 
 if (TRUE) {
   
@@ -279,6 +284,9 @@ if (TRUE) {
     interactive = TRUE, 
     progress = TRUE
     )
+  
+  # save df results of model tuning
+  write.csv(global_historical_model_tuned@results, file = file.path(mypath, "global_historical_model_tuning_results.csv"))
   
 }
 
