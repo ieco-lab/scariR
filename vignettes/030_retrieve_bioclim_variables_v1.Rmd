@@ -231,7 +231,7 @@ This chunk will take a very long time to run... so maybe find a good book to rea
 
 ```{r loop to tidy rasters}
 
-if(FALSE) {
+if(TRUE) {
   
     # file path to directory
   mypath <- file.path(here() %>% 
@@ -266,6 +266,14 @@ if(FALSE) {
       #use bilinear interpolation, since values are continuous
       rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
       
+      # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+      rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+      
+      # crop again to ensure aggregation doesnt increase extent
+      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+      
+      
+      
       #write out the new resampled rasters!
       terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), filetype = "GTiff", overwrite = FALSE)
       
@@ -292,7 +300,7 @@ if(TRUE){
   env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
   # output file names
   output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
+    gsub(pattern = ".tif", replacement = "_10km.asc")
   
   # loop to convert to .ascii
   for(a in seq_along(env.files)){
@@ -311,6 +319,53 @@ if(TRUE){
 }
 
 ```
+
+This additional step can be run on-demand. I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. This step is also performed in the "loop to tidy rasters" chunck, but I will perform it for selected rasters here.
+
+```{r on-demand aggregation of rasters}
+
+if (FALSE) {
+  
+  # pathing
+  mypath <- file.path(here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE)
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  
+  
+  # loop to aggregate and convert to .ascii
+  for(a in seq_along(env.files)){
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_10km", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+  }
+  
+}
+
+```
+
 
 These data can now be used in a MaxEnt model!
 
@@ -351,7 +406,7 @@ mypath <- file.path(here() %>%
                     dirname(),
                   "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
-if(FALSE) {
+if(TRUE) {
   
   # view list of filetypes for terra, use .ascii
     terra::gdal(drivers = TRUE)
@@ -380,6 +435,15 @@ if(FALSE) {
       #resample to fit the extent/resolution of the main layer global_bio1
       #use bilinear interpolation, since values are continuous
       rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+      
+      # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+      rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+      
+      # crop again to ensure aggregation doesnt increase extent
+      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+      
+      
+      
       
       #write out the new resampled rasters!
       terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), filetype = "GTiff", overwrite = FALSE)
@@ -425,6 +489,50 @@ if(TRUE){
 
 ```
 
+```{r on-demand aggregation of rasters}
+
+if (FALSE) {
+  
+  # pathing
+  mypath <- file.path(here() %>%
+                        dirname(),
+                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+  
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+    grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE)
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
+    grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  
+  
+  # loop to aggregate and convert to .ascii
+  for(a in seq_along(env.files)){
+    
+    # holding object  
+    rast.hold <- terra::rast(env.files[a])
+    
+    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # write output
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_10km", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+      
+  }
+  
+}
+
+```
+
 # 3. Assess Colinearity
 
 Now that these different climatologies have been tidied for use, we need to decide which variables are the most logical to use in a model for *Lycorma delicatula*. This can be done by assessing the level of co-linearity between the variables and assessing their biological relevance to SLF.
@@ -459,7 +567,7 @@ if(FALSE) {
     
     rast.hold <- terra::aggregate(rast.hold, 
                                   fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
-                                  fun = mean, # take mean of these cells
+                                  fun = "mean", # take mean of these cells
                                   # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
                                   na.rm = TRUE, 
                                   filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE)
