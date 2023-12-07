@@ -1,7 +1,7 @@
 ---
 title: "Retrieve SLF records from GBIF and lydemapR and tidy them for MaxEnt modeling"
 author: "Sam Owens"
-date: "2023-06-28"
+date: "2023-11-15"
 contact: 'sam.owens@temple.edu'
 output: html_document
 ---
@@ -104,51 +104,55 @@ The returned file is an `occdat` file, which has an element for all seven databa
 
 ```{r save raw query and data}
   
-if(TRUE) {
   
-  # tibble raw queries
-  slf_gbif_final <- as_tibble(slf_gbif$gbif$data$`5157899`)
-  
-  # select only countries in southeast Asia
-  #slf_gbif_final <- slf_gbif_final %>%
-  #  filter(!is.na(countryCode), # dont select records where country of record is unknown
-  #         countryCode != "US") # dont select USA records
-  
-  # save raw queries with date stamp as current date
-  write_csv(x = slf_gbif_final, 
-            file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_gbif_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
-  
-  # convert occ data to dataframe
-  slf_gbif_coords1 <- spocc::occ2df(slf_gbif)
-    
-  # save coords as-is
-  write_csv(x = slf_gbif_coords1, 
-            file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
-            )
+# tibble raw queries
+slf_gbif_final <- as_tibble(slf_gbif$gbif$data$`5157899`)
 
-}
+# save raw queries with date stamp as current date
+write_csv(x = slf_gbif_final, 
+          file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_gbif_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
+
+# convert occ data to dataframe
+slf_gbif_coords1 <- spocc::occ2df(slf_gbif)
+  
+# save coords as-is
+write_csv(x = slf_gbif_coords1, 
+          file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+          )
 
 ```
 
-The raw pull from GBIF brought in 1,307 total records of SLF, not including records in the USA. The raw query and the raw coordinates were saved to the `data-raw` folder. I will read in the coordinate data that was just saved in preparation for data tidying. 
+The raw query and the raw coordinates were saved to the `data-raw` folder. I will read in the coordinate data that was just saved in preparation for data tidying. 
+
+I will exclude SLF records from North America and only keep records from Asia. North American records are already represented by "lydemapr", but the Asia records are not and need to be kept. I will exclude any records in Canada, Mexico or the USA. Official ISO 3166 country abbreviations were found at: https://www.iban.com/country-codes.
 
 ```{r read in raw data}
+
+# re-read in slf datasets
+# raw query
+slf_gbif_final <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_2023-11-12.csv"))
+# occ2df version
+slf_gbif_coords1 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_raw_coords_2023-11-12.csv"))
+
 
 # object with key and country code to join to below object
   slf_gbif_final_key <- slf_gbif_final %>%
     select(key, countryCode)
 
-# read in slf data
-slf_gbif_coords1 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_raw_coords_2023-11-12.csv"))
-
 # convert coltype
-slf_gbif_coords1$key <- as.character(slf_gbif_coords1$key)
+# slf_gbif_coords1$key <- as.character(slf_gbif_coords1$key)
 
-# select only US records
+# find unique countries listed
+unique(slf_gbif_final_key$countryCode)
+
+# select only Asia records
 slf_gbif_coords1 <- slf_gbif_coords1 %>%
   left_join(., slf_gbif_final_key, by = "key") %>%
   filter(!is.na(countryCode), # dont select records where country of record is unknown
-         countryCode != "US") %>% # dont select USA records
+         countryCode != "US", 
+         countryCode != "MX", 
+         countryCode != "CA" # don't select N America records
+         ) %>%
   dplyr::select(!countryCode)
 
 ```
@@ -193,7 +197,9 @@ In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 10km over 10 pa
 
 ```{r spatial thinning}
 
-if(TRUE) {
+set.seed(997)
+
+if(FALSE) {
 
   slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_gbif_coords1, 
                                                     colxy = 2:3, # coordinate columns
@@ -205,7 +211,7 @@ if(TRUE) {
 
 ```
 
-Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. On the run without records in N. America, it left 733 of 1200 observations. Finally, we will de-duplicate the data.
+Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. On the run without records in N. America, it left 433 of 1,301 observations. Finally, we will de-duplicate the data.
 
 ```{r de-duplicate}
 
@@ -233,14 +239,10 @@ Next, we will retrieve data from the lydemapR package and save it as a `.csv`. I
 
 ```{r retrieve lydemapR data and save raw pull}
 
-if(TRUE) {
+slf_lyde <- lydemapr::lyde
 
-  slf_lyde <- lydemapr::lyde
-  
-  write_csv(x = slf_lyde, 
-            file = file.path(here(), "data-raw", paste0("slf_lyde_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
-
-}
+write_csv(x = slf_lyde, 
+          file = file.path(here(), "data-raw", paste0("slf_lyde_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
 
 ```
 
@@ -280,7 +282,9 @@ slf_lyde1 <- slf_lyde1 %>%
 
 ```{r spatial thinning}
 
-if(TRUE) {
+set.seed(998)
+
+if(FALSE) {
 
   slf_lyde2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_lyde1, 
                                              colxy = 4:5, # coordinate columns
@@ -564,10 +568,10 @@ if(TRUE) {
                               write.files = TRUE, # returns list of thinned data as a separate .csv file
                               # next, create a file that logs the thinning run, write the path to and name of the log file
                               write.log.file = TRUE, 
-                              log.file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_", format(Sys.Date(), "%Y-%m-%d"), ".txt")),
+                              log.file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2023-11-12.txt")),
                               # finally, tell it where to write the new files and what to call the thinned dataset
                               out.dir = file.path(here(), "vignette-outputs", "data-tables"),
-                              out.base = paste0("slf_all_coords_cleaned_", format(Sys.Date(), "%Y-%m-%d")),
+                              out.base = paste0("slf_all_coords_cleaned_2023-11-12"),
                               verbose = TRUE # give details of run in the console
                               )
 
@@ -614,16 +618,16 @@ slf_all_coords3 <- slf_all_coords3 %>%
          "y" = "latitude")
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_", format(Sys.Date(), "%Y-%m"), ".csv")))
+write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2023-11-12.csv")))
 
 # also save as a .rda file
-save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_", format(Sys.Date(), "%Y-%m"), ".rda")))
+save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_2023-11-12.rda")))
 
 ```
 
 ```{r map all points}
 
-slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2023-11.csv"))
+slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2023-11-12.csv"))
 
  map_all <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +

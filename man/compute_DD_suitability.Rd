@@ -4,7 +4,13 @@
 \alias{compute_DD_suitability}
 \title{Compute annual degree day accumulation at listed x,y coordinate locations}
 \usage{
-compute_DD_suitability(x, thresh = "adult_emergence_1")
+compute_DD_suitability(
+  x,
+  thresh = "adult_emergence_1",
+  create.output = FALSE,
+  mypath = NA,
+  create.dir = FALSE
+)
 }
 \arguments{
 \item{x}{Data import. Should be a .csv file or data frame that contains
@@ -16,6 +22,25 @@ See details for additional import formatting.}
 a commonly used threshold (see details for list of pre-build values).
 This sets the threshold for the number of Degree Days necessary for a
 population of \emph{Lycorma delicatula} to reach the desired life stage.}
+
+\item{create.output}{Logical. If TRUE, will create additional outputs from the
+returned dataframe (see "return"). Additional outputs include:
+\itemize{
+\item a .csv file of the returned dataframe
+\item a global-scale .tif raster of the output at the 5 arcminute (~10km) resolution
+}}
+
+\item{mypath}{Character. Only used if create.output = TRUE. A file path to the
+sub directory where the additional outputs will be stored. Should be
+used with the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').
+If this sub directory does not already exist and should be created by the
+function, set \code{create.dir} = TRUE. This will create a folder from the last
+part of the file path in \code{mypath}.}
+
+\item{create.dir}{Logical. Should the last element of \code{mypath} create a sub
+directory for the output? If TRUE, the folder name specified will be created
+for the output. If FALSE (ie, the sub directory already exists), no directory
+will be created.}
 }
 \value{
 A data frame containing the total annual degree days and a binary
@@ -32,6 +57,14 @@ coordinate pair
 \item suitability = binary, 1 if total_annual_dds >= thresh,
 0 if total_annual_dds < thresh
 }
+
+IF \code{create.output = TRUE}
+
+The following additional outputs will be created:
+#'* a .csv file of the output dataframe
+\itemize{
+\item a global-scale .tif raster of the output at the 5 arcminute (~10km) resolution
+}
 \subsection{Error Messages}{
 
 An error message will be given if the input data \code{x} are in the incorrect
@@ -40,13 +73,14 @@ format (see details) or if an incompatible value is given for parameter
 }
 }
 \description{
+The function requires the packages 'tidyverse', 'here', and 'terra'
+}
+\details{
 A function that computes the total annual degree day accumulation for
 \emph{Lycorma delicatula} development, based on monthly mean temperature data.
 This function was developed from the work of Dennis Calvin on the development
 of populations of \emph{Lycorma delicatula} living on \emph{Ailanthus altissima} at
 different DD accumulations.
-}
-\details{
 \subsection{x:}{
 
 Data frames / .csv files should contain 15 columns. The initial 3
@@ -74,6 +108,12 @@ adult stage.
 \item "egg_laying_50" = 1616.4 DD, when 50\% of a population
 reaches egg-laying
 }
+
+If only using for a data frame output, create as an object, such as:
+\code{object <- compute_DD_suitability()}
+
+If multiple thresh outputs are desired, must be in the concatenated form:
+\code{c("adult_emergence_1", "egg_laying_10")}. Should be all lowercase.
 }
 }
 \examples{

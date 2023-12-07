@@ -1,7 +1,7 @@
 ---
 title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling"
 author: "Sam Owens"
-date: "2023-07-17"
+date: "2023-11-15"
 contact: 'sam.owens@temple.edu'
 output: html_document
 editor_options: 
