@@ -1,0 +1,845 @@
+---
+title: "Retrieve SLF records from GBIF and lydemapR and tidy them for MaxEnt modeling"
+author: "Sam Owens"
+date: "2024-01-05"
+contact: 'sam.owens@temple.edu'
+output: html_document
+---
+
+# Overview
+
+This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.csv` file of SLF presence records that can be loaded into MaxEnt java or MaxEnt for R (see the [dismo package](https://cran.r-project.org/web/packages/dismo/index.html)).
+
+The first step will be to retrieve data from `GBIF` and `lydemapr`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The [lyde()] function within the `Lydemapr` package gives access to over 650,000 SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 
+
+These data will need to be cleaned and tidied during this step. To get to this tidy dataset, the data will be checked for inconsistent and false records. The data will also be spatially thinned so that points are no less than 1km (the resolution of the climate data, 30 arcseconds) to eliminate the effects of sampling bias.
+
+The second step will be to combine these records with data gathered from peer-reviewed literature and from natural history notes. A majority of these records are from established populations of SLF within China, South Korea and southeast Asia. These records are especially important because China and southeast Asia represent the native range for SLF, and there is very little data on the extent of its native range. These records are also important because MaxEnt correlates presence records with the local climate; thus, if there is very little characterization of the native range for this species, it is unlikely that models for SLF will make realistic predictions for its potential niche elsewhere.
+
+The final step of this analysis will be to organize the different datasets into a single `.csv` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined. 
+
+Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.  
+
+### Versioning
+
+* 2024-01-05- adapted to use `rgbif` instead of `spocc` for gbif download
+
+# Setup
+
+First, I will load in the necessary packages.
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is set at the root folder of this package
+
+library(devtools) # installing packages not from CRAN
+# devtools::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
+library(lydemapr) # field survey data for SLF
+library(taxize) # get taxonomic ids
+library(rgbif) #query gbif and format as a dataframe
+
+library(spThin) # spatial thinning of points
+# install_github("jasonleebrown/humboldt")
+library(humboldt) # spatial thinning of points
+# remotes::install_github("ropensci/scrubr")
+library(scrubr) #clean records for gbif data
+
+library(patchwork) #nice plots
+library(knitr) # nice rmd tables
+
+```
+
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). Package `taxize` will allow the retrieval of taxonomic IDs within `GBIF`. Lastly, `scrubr` allows for easier cleaning of presence records.
+
+# 1. Retrieve data from GBIF and lydemapR and tidy
+
+## 1.1- GBIF
+
+I will begin by retrieving the GBIF taxonimic ID for Lycorma delicatula.
+
+```{r get SLF gbif taxa ID}
+
+# get species ID from gbif database
+ids <- taxize::get_ids(sci_com = "Lycorma delicatula", db = "gbif")
+
+```
+
+I will also perform a few operations specific to rgbif. I will need to enter my user credentials for gbif; to keep these private, I will edit the .Renviron and call them from there. I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada).
+
+```{r other rgbif operations}
+
+# edit R environment for user credentials
+# enter user credentials using the following: GBIF_USER; GBIF_PWD; GBIF_EMAIL
+usethis::edit_r_environ()
+
+# get list of countries
+rgbif::enumeration_country(curlopts = list())
+
+```
+
+
+### Retrieve and save records
+
+The retrieved ID is 5157899. This matches the ID for the [SLF repository](https://www.gbif.org/species/5157899) on GBIF.
+
+Next, retrieve `GBIF` records using `occ_download()`. I will be editing the following GBIF constraints:
+
+* hasCoordinate: limit records to only those with coordinate data
+* year: we will retrieve records between 1981 and 2023. 1981 was chosen as the earliest date because it corresponds with the earliest climate data available. 
+* occurrenceStatus: set to only presences, because absence data is not needed
+* basisOfRecord: here we include everything except fossil records, to ensure that records are within the target time period.
+* hasGeospatialIssue: exclude any records with an issue in the coordinate data
+* country: the country of the record
+
+```{r retrieve SLF records from GBIF}
+  
+# initiate download
+slf_gbif <- rgbif::occ_download(
+  # general formatting
+  type = "and",
+  format = "SIMPLE_CSV",
+  # inclusion rules
+  pred("taxonKey", ids[[1]]), # search by ID, not species name
+  pred("hasCoordinate", TRUE),
+  pred("hasGeospatialIssue", FALSE),
+  pred("occurrenceStatus", "PRESENT"),
+  pred_gte("year", 1981), # records from 1981 onwards
+  # exclusion rules
+  pred_not(pred_in("basisOfRecord", "FOSSIL_SPECIMEN")), # exclude fossil records
+  pred_not(pred_in("country", c("US", "MX", "CA"))) # exclude USA, Canada and mexico
+)
+
+# be sure to open slf_gbif and retrieve the download key
+
+# check on download status using key
+occ_download_wait('0046146-231120084113126')
+
+```
+
+The data have been pulled to the gbif server, but now we must download the data and edit it in a number of ways.
+
+First, I will import the dataset to my working directory. I will also retrieve the data citation for this download. I will rename the raw download file. Finally, I will subset the desired columns and save them as a separate .csv for use in tidying. The raw query and the raw coordinates will be saved to the `data-raw` folder. I will read in the coordinate data saved there afterwards to prepare for data tidying.
+
+```{r download to PC; import to session; create simplified .csv file}
+
+# download the data as a zip to PC
+slf_gbif_download <- occ_download_get(
+  key = '0046146-231120084113126',
+  path = file.path(here(), "data-raw"),
+  # overwrite = TRUE
+  ) %>% 
+  occ_download_import()
+
+# retrieve data citation
+gbif_citation('0046146-231120084113126')
+ 
+# rename .zip file
+file.rename(
+  from = file.path(here(), "data-raw", "0046146-231120084113126.zip"),
+  to = file.path(here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".zip"))
+  )
+
+# simplify download into more useable .csv
+slf_gbif_download_simple <- slf_gbif_download %>%
+  mutate(prov = "gbif") %>%
+  dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "prov", "eventDate", "gbifID")) %>% # select desired columns
+  # rename for consistency with rest of vignette
+  rename("name" = "species",
+         "longitude" = "decimalLongitude", 
+         "latitude" = "decimalLatitude",
+         "date" = "eventDate",
+         "key" = "gbifID"
+  )
+
+# remove times from date column
+slf_gbif_download_simple$date <- as_date(slf_gbif_download_simple$date)
+
+# save .csv output for use
+write_csv(x = slf_gbif_download_simple, 
+          file = file.path(here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+)
+
+``` 
+
+### Coordinate veracity
+
+First, we want to check the coordinate veracity using the `scrubr` package. This will check for unlikely, impossible or incomplete coordinate data. 
+
+```{r coordinate veracity}
+
+# read in data
+slf_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
+
+slf_gbif_coords1 <- slf_gbif_coords1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+```
+
+Next, I will remove known erroneous points manually. We will also check for any alternative species names (MaxEnt will read each name as a different species, so the naming needs to be consistent). 
+
+```{r remove known errors and tidy}
+
+# remove incorrect points manually
+slf_gbif_coords1 <- slf_gbif_coords1 %>%
+  filter(key != "2860187641") %>% #rm OR---lat, lon:(43.63691, -121.85569)
+  filter(key != "2862292948") %>% #rm NE---lat, lon:(42.50641,-101.01562)
+  filter(key != "2864687343") %>% #rm DE---lat, lon:(37.91855, -75.14999)
+  filter(!key %in% c("2856537682", "2851117559")) #rm MA---lat, lon:(42.20994, -71.18331)
+
+# check species name
+unique(slf_gbif_coords1$name)
+
+# there is only one naming convention
+
+# rename species name
+#slf_gbif_coords1$name <- "Lycorma delicatula"
+
+```
+
+Next, we will use `humboldt::humboldt.occ.rarefy` and `scrubr::dedup` to spatially thin the occurrence data. The `Humboldt` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
+
+In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. THe resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
+
+Note: Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk.
+
+```{r spatial thinning}
+
+set.seed(997)
+
+if(FALSE) {
+
+  slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_gbif_coords1, 
+                                                    colxy = 2:3, # coordinate columns
+                                                    rarefy.dist = 10, 
+                                                    rarefy.units = "km", 
+                                                    run.silent.rar = F) # display progress bars
+
+}
+
+```
+
+Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. On the run without records in N. America, it left 433 of 1,301 observations. Finally, we will de-duplicate the data.
+
+```{r de-duplicate}
+
+slf_gbif_coords3 <- slf_gbif_coords2 %>%
+  scrubr::dedup(how = "one", tolerance = 0.99) # how = one means that one record of 2 will be kept if a duplicate is detected
+
+```
+
+We will save the results of the cleaning we just performed so they can be referenced or called later in our analysis. Later in this vignette, we will be combining these records with those from other data sources into a final dataset that is prepared for MaxEnt.
+
+```{r save cleaned data}
+
+write_csv(slf_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+
+# also save as a .rda file
+save(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_2024-01-05.rda"))
+
+```
+
+## 1.2- LydemapR
+
+### Retrieve and save lydemapR records
+
+Next, we will retrieve data from the lydemapR package and save it as a `.csv`. I will repeat the spatial thinning and cleaning process outlined above.  
+
+```{r retrieve lydemapR data and save raw pull}
+
+slf_lyde <- lydemapr::lyde
+
+write_csv(x = slf_lyde, 
+          file = file.path(here(), "data-raw", paste0("slf_lyde_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
+
+```
+
+The next chunk is an import from an unpublished version of the lydemapr dataset called "tinyslf". This version will be published at on the package soon. This file was named "slf_lyde_raw_coords_2023-12-12.csv" for consistency with previous file naming. It contains about 900,000 published SLF records and includes the years 2022 and 2023.
+
+```{r load in and tidy unpublished version of lydemapr dataset}
+
+if (FALSE) {
+  
+  slf_lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+
+  # tidy
+  slf_lyde_raw %<>%
+    dplyr::select(-survey) %>%
+    rename(
+      "lyde_present" = "slf_present",
+      "lyde_established" = "slf_established",
+      "lyde_density" = "slf_density"
+    )
+  
+  # overwrite save original version
+  write_csv(x = slf_lyde_raw, file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+  
+}
+
+```
+
+The raw dataset is composed of over 658,000 records of SLF in the USA alone. Most of these records are concentrated in the mid-atlantic region where the invasion front is progressing. This dataset will also need a run of spatial thinning. First, we will need to narrow these records to fit our needs. At the time of writing this, I am only interested in records that were collected during field surveys, but this can be tuned to the needs of the analysis. So, I will set the collection method equal to the value of "field_survey/management". Obviously, I am also interested in presence records only. Lastly, I will pull records only from areas where SLF have established a population. LydemapR defines an established population as either 2+ adults or the presence of 1 egg mass. 
+
+```{r select only desired records}
+
+# read in data
+slf_lyde <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+
+# unique values for collection method
+unique(slf_lyde$collection_method)
+
+slf_lyde1 <- slf_lyde %>%
+  filter(lyde_present == "TRUE", # only select presences
+         collection_method == "field_survey/management", # collection method = "field_survey/management"
+         lyde_established == "TRUE") %>% # only select areas records that are from established populations
+  # add species column
+  mutate(species = "Lycorma delicatula")
+
+```
+
+The data that fit our needs are about 26,000 records total.
+
+### Coordinate veracity
+
+Here we will run through the same data cleaning process that we performed for the `GBIF` data.
+
+```{r coordinate veracity}
+
+slf_lyde1 <- slf_lyde1 %>%
+  coord_incomplete() %>%
+  coord_impossible() %>%
+  coord_unlikely()
+
+```
+
+```{r spatial thinning}
+
+set.seed(998)
+
+if(FALSE) {
+
+  slf_lyde2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_lyde1, 
+                                             colxy = 4:5, # coordinate columns
+                                             rarefy.dist = 10, 
+                                             rarefy.units = "km", 
+                                             run.silent.rar = F) # display progress bars
+
+}
+
+```
+
+Spatial thinning for the `lyde` dataset left 3578 points out of the 26,000 points that fit our needs.
+
+```{r de-duplicate and remove known errors}
+
+slf_lyde3 <- slf_lyde2 %>%
+  scrubr::dedup(how = "one", tolerance = 0.99)
+
+```
+
+```{r save cleaned data}
+
+write_csv(slf_lyde3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+
+# also save as a .rda file
+save(slf_lyde3, file = file.path(here(), "data", "slf_lyde_cleaned_coords_2023-12-12.rda"))
+
+```
+
+## 1.3- Visualize SLF distributions
+
+We want to visualize the difference between the raw coordinates that were pulled from GBIF and the cleaned, spatially thinned version. This is to ensure proper geospatial coverage and the success of the spatial thinning runs. 
+
+```{r visualize raw and thinned GBIF records}
+
+# raw data
+gbif_raw <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
+
+# thinned data
+gbif_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+
+# plot world map
+map_gbif_thinned <- ggplot() +
+  # the second line is a basemap from ggplot2
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# plot map of NAmerica
+map_gbif_thinned_NAmerica <- ggplot() +
+  # the second line is a basemap from ggplot2
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+  
+# patchwork display of plots
+map_gbif_thinned + map_gbif_thinned_NAmerica +
+  plot_layout(ncol = 2)
+
+```
+
+From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the invaded range, and indeed every blue point is paired with at least 1 red point. So, our goal was met! We will do the same for the LydemapR data to ensure spatial thinning success.
+
+```{r visualize raw and thinned lydemapr records}
+
+# raw data
+lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+
+# thinned data
+lyde_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+
+# plot map of NAmerica
+map_lyde_thinned <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+  
+# include citizen science platforms
+lyde_raw1 <- lyde_raw %>%
+  filter(lyde_present == "TRUE", 
+         lyde_established == "TRUE") %>% 
+  mutate(species = "Lycorma delicatula")
+
+
+
+# plot map including these records
+map_lyde_allRecords <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# patchwork display of plots
+map_lyde_thinned + map_lyde_allRecords +
+  plot_layout(ncol = 2)
+
+```
+
+The results of the spatial thinning aren't incredibly clear from the first plot. It seems that most of the spatial extent of the records was eliminated by either the data tidying or the spatial thinning (in the second case, this would be an issue). I believe this is likely due to our preference for records that represent established populations and presences and those obtained from biological surveys. If I am sacrificing spatial extent of the records by excluding records from citizen science platforms, I would rather have these included. So, I will produce a second plot including those records as the blue points.
+
+The second plot reveals that by including those points from citizen science platforms, I am not gaining much spatial extent of the records. The only other choice would be to accept records that do not represent established populations, which would not make for rigorous data. So, I will keep the records as-is (only including biological survey data, which are more reliable data).
+
+# 2. Combine records
+
+## 2.1- SLF data from published sources
+
+In this step, I will combine the records obtained from GBIF and LydemapR with data taken from the literature. I will begin by loading in records taken from the published literature. There are a total of 165 records from China, southeast Asia, Japan, SK and the USA. Most of these records were obtained from genetic studies and represent samples taken from established populations of SLF. Data is scarce for established populations of SLF within its native range (China and southeast Asia), so these records are especially important. These records were taken from both peer-reviewed literature and natural history notes:
+
+```{r kable table of published literature}
+
+# read in .csv of papers
+slf_published_papers <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
+
+# kable table
+kable(x = slf_published_papers, format = "pipe")
+
+```
+
+```{r load in records from literature}
+
+slf_published <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_v1.csv"))
+
+```
+
+```{r map of data from published sources}
+
+map_published_Asia <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "red") +
+  coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
+  ggtitle("SLF data from published sources \n in China") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+map_published_NAmerica <- ggplot() +
+  # this plots a basemap of the USA because data here are exclusively from the USA
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "red") +
+  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  ggtitle("SLF data from published sources \n in N America") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# bounding box coords found at: 
+# http://bboxfinder.com/#0.000000,0.000000,0.000000,0.000000
+
+# patchwork
+map_published_Asia + map_published_NAmerica +
+  plot_layout(ncol = 2)
+
+```
+
+The map above shows that the occurrence data from the literature provide good coverage of the native range that we might not otherwise get.
+
+## 2.2- Tidy and join datasets
+
+Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produced earlier. The object names are the same as where we left off.
+
+```{r load in GBIF and lyde data}
+
+slf_gbif_coords3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+
+slf_lyde3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+
+```
+
+First, I will tidy the data for joining. We will keep only the species names, coordinates and unique key ID. We will also add a column that states which data source each point is from.
+
+```{r tidy data sources}
+
+# tidy gbif data
+slf_gbif_coords3 %<>%
+  dplyr::select(name:latitude, key, prov) %>%
+  rename("data_source" = "prov",
+         "species" = "name")
+
+# tidy lyde data
+slf_lyde3 %<>%
+  dplyr::select(species, longitude, latitude, pointID) %>%
+  rename("key" = "pointID") %>%
+  mutate(data_source = "lyde")
+  
+# published data
+slf_published %<>%
+  dplyr::select(name:key, publishingArticle) %>%
+  rename("species" = "name",
+         "data_source" = "publishingArticle")
+
+# the publishing data source column needs to be tidied further. I will take out commas and substitute spaces for underscores
+slf_published$data_source <- gsub(pattern = " ", replacement = "_", x = slf_published$data_source) 
+slf_published$data_source <- gsub(pattern = ",", replacement = "", x = slf_published$data_source)
+
+# Finally, use head() to check coltypes are the same
+head(slf_lyde3)
+head(slf_gbif_coords3)
+head(slf_published)
+
+# we see that the key column in the GBIF dataset is a double, while the key columns in the other 2 are characters. We will change this:
+slf_gbif_coords3$key <-  as.character(slf_gbif_coords3$key)
+
+head(slf_gbif_coords3)
+
+# the conversion worked
+
+```
+
+# 3. Join datasets and final tidying
+
+Now the data are in a format that is easier to join. We will join the data and save the cleaned coordinates. 
+
+```{r join datasets}
+
+slf_all_coords <- slf_gbif_coords3 %>%
+  full_join(., slf_lyde3) %>%
+  full_join(., slf_published)
+
+```
+
+```{r save joined dataset}
+
+write_csv(x = slf_all_coords, file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-01-05.csv"))
+
+```
+
+## 3.1- Final spatial thinning
+
+The last step of tidying these data is to perform a second round of spatial thinning. We need to do this again because after joining 3 different datasets together, some of the points may be within 1km of each other. We will still use `scrubr::dedup`, but this time we will ditch `Humboldt` and use `spThin::thin` to spatially thin the occurrence data. `spThin::thin` has a more refined process for spatial thinning and tools for analyzing the output. 
+
+The data will be rarefied to 1km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. Again, we will thin to a minimum of 1km distance between points. The results of the run should return the thinned dataset and a text log file of the thinning run.
+
+Both files will be written to the `vignettes-outputs` folder, which holds intermediate data objects that are not the final versions of the data. 
+
+```{r load in data}
+
+slf_all_coords <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-01-05.csv"))
+
+```
+
+
+```{r spatial thinning}
+
+if(FALSE) {
+
+  slf_all_coords2 <- spThin::thin(loc.data = slf_all_coords, 
+                              lat.col = "latitude", long.col = "longitude",
+                              spec.col = "species",
+                              thin.par = 10,
+                              reps = 10, # number of passes
+                              # line below returns a list of data frames with the locations were preserved
+                              locs.thinned.list.return = TRUE, 
+                              write.files = TRUE, # returns list of thinned data as a separate .csv file
+                              # next, create a file that logs the thinning run, write the path to and name of the log file
+                              write.log.file = TRUE, 
+                              log.file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-01-05.txt")),
+                              # finally, tell it where to write the new files and what to call the thinned dataset
+                              out.dir = file.path(here(), "vignette-outputs", "data-tables"),
+                              out.base = paste0("slf_all_coords_cleaned_2024-01-05"),
+                              verbose = TRUE # give details of run in the console
+                              )
+
+}
+
+```
+
+Basically, this function thins the data 10 different times and writes the rep that was able to retain the most data points to a .csv file. The resulting object is a list of the retained coordinates per run. These data could be examined closer if there was a large difference in the records kept per run or some other disparity. 
+
+Now that the data have been thinned, we will use `spThin::plotThin` to plot the results of the run and check its quality. Note, we will be plotting the actual data points in step 1.3; this function shows whether 10 is the optimal number of reps to thin this dataset. It will plot the number of records retained vs the number of reps. 
+
+```{r QC thinned data}
+
+spThin::plotThin(thinned = slf_all_coords2)
+
+```
+
+It seems from plot 3 that 7824-7826 records were retained during almost half of the reps. However, this is not very different from the maximum, so we will keep the maximum. 
+
+Now, lets load in the final thinned dataset for a final round of cleaning.
+
+```{r read in thinned data}
+
+slf_all_coords2 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2024-01-05_thin1.csv"))
+
+```
+
+```{r de-duplicate}
+
+slf_all_coords3 <- slf_all_coords2 %>%
+  scrubr::dedup(how = "one", tolerance = 0.99) 
+
+```
+
+# 3.2- Save output for MaxEnt
+
+We will finally convert the slf coordinates to the format that will be used by MaxEnt and save it. That is, the first column "species" must be the species name, the second column "x" must be the longitude, and the third column "y" must be the latitude.
+
+```{r maxent conversion and save}
+
+# rename columns
+slf_all_coords3 <- slf_all_coords3 %>%
+  rename("x" = "longitude",
+         "y" = "latitude")
+
+# save
+write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2024-01-05.csv")))
+
+# also save as a .rda file
+save(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_2024-01-05.rda")))
+
+```
+
+```{r map all points}
+
+slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv"))
+
+ map_all <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("All SLF presences") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+
+ map_all_NAmerica <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+    ggtitle("SLF presences N AMerica") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+ 
+  map_all_Asia <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
+    ggtitle("SLF presences Asia") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+
+  # patchwork
+  map_all_NAmerica + map_all_Asia +
+  plot_layout(ncol = 2)
+  
+```
+
+From the map, we can see the final points that were selected. We have a good spread across the native range and better spread than before in the invaded range. This version of the total dataset included newer data from lydemapr, so we now have better coverage in the invaded range. I will also check the number of points in the native vs the invaded range.
+
+```{r number points invaded vs native range}
+
+(ggplot(data = slf_all_coords3) +
+   geom_histogram(aes(x = x)) +
+   ggtitle("count of SLF presence records invaded vs native range") +
+   xlab("longitude") +
+   ylab("count of SLF presences") +
+   theme_minimal() 
+   )
+
+```
+
+The native range includes longitudes between 35 and 105. We can see that most of the SLF presence data are from the invaded ranges of Japan, South Korea or the United States. This is a weakness in the data available and we have given our best effort to account for it by including presence data for China from the literature.
+
+# Appendix
+
+## Manually remove points that MaxEnt threw errors for
+
+If this next chunk is run, the compilation of the SLF data from section 2 will need to be re-run. This chunk was added to remove points from the tidied GBIF pull that Maxent was throwing errors for. IF points do not overlap the climate surface, Maxent will throw errors for them.
+
+```{r remove maxent errors}
+
+if(FALSE) {
+
+  slf_coords4 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+  
+  # locate coords that maxent threw errors for
+  slf_error_points <- slf_coords4 %>%
+    filter(x %in% c(-73.817129,
+                    -74.166321, 
+                    -74.008017, 
+                    -73.972261, 
+                    -73.999422,
+                    -74.024064, 
+                    -73.720957,
+                    -74.189445,
+                    -76.041131,
+                    -76.340849,
+                    -71.718748,
+                    -74.574037, 
+                    -74.662098,
+                    120.230003,
+                    -74.914262, 
+                    -75.054844,
+                    126.160004, 
+                    122.154455,
+                    126.559998,
+                    126.589996,
+                    126.459999, 
+                    121.73337
+    ))
+  
+  # plot error points
+  map_errors <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_error_points, aes(x = x, y = y), color = "red", size = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("SLF errors") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+  
+  # all points are real (I was concerned that a - sign may have been missed), so these points will need to be removed
+  
+  # remove error points, write to new csv
+  slf_coords4 <- slf_coords4 %>% 
+     filter(!x %in% c(-73.817129,
+                    -74.166321, 
+                    -74.008017, 
+                    -73.972261, 
+                    -73.999422,
+                    -74.024064, 
+                    -73.720957,
+                    -74.189445,
+                    -76.041131,
+                    -76.340849,
+                    -71.718748,
+                    -74.574037, 
+                    -74.662098,
+                    120.230003,
+                    -74.914262, 
+                    -75.054844,
+                    126.160004, 
+                    122.154455,
+                    126.559998,
+                    126.589996,
+                    126.459999, 
+                    121.73337
+    ))
+  
+  write_csv(slf_coords4, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05_v1.csv"))
+  
+  # also save as a .rda file
+  save(slf_coords4, file = file.path(here(), "data", "slf_gbif_cleaned_2024-01-05_v1.rda"))
+
+}
+
+```
+
+## Visualize changes in GBIF records between initial 2020 data pull and newest pull
+
+```{r visualize 2023 pulled gbif records vs 2020 pull}
+
+if(FALSE) {
+
+  # old data
+  slf_2020 <- read_csv(file = file.path(here(), "data-raw", "data-old", "slf_gbif_cleaned_coords_2022.csv"))
+  
+  # new data
+  slf_new <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+  
+  # plot SLF
+  map_slf <- ggplot() +
+    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    geom_point(data = slf_2020, aes(x = longitude, y = latitude), color = "red", size = 2) +
+    geom_point(data = slf_new, aes(x = x, y = y), color = "blue", shape = 2) +
+    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    ggtitle("SLF new points (red) vs old (blue)") +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.background = element_blank()) +
+    theme_bw()
+  
+  # The old points are in blue and the new points are in red
+  
+}
+
+```
+
+# References
+
+1. The code for this section was loosely based on code from the [slfrsk research compendium](https://ieco-lab.github.io/slfrsk/articles/vignette-003-get-gbif-data.html), with modifications.
+
+2. Bona, S. D., L. Barringer, P. Kurtz, J. Losiewicz, G. R. Parra, and M. R. Helmus. 2023, January 30. lydemapr: an R package to track the spread of the invasive Spotted Lanternfly (Lycorma delicatula, White 1845) (Hemiptera, Fulgoridae) in the United States. bioRxiv. 
+
+3. GBIF Occurrence Download https://doi.org/10.15468/dl.8mz3km Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2024-01-05
+
+

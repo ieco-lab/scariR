@@ -20,8 +20,10 @@
 #'"plots" folder within the model output sub directory will be created.
 #'
 #'@param env.covar.obj A stack of rasters of environmental covariates. These
-#'covariates are used to train and test the MaxEnt model, as well as to make
-#'predictions. See details for additional formatting information.
+#'covariates may be the same covariates used to train the model, or they may be
+#'temporally or spatially projected (ex, for climate change). Suitability
+#'predictions will be made based on these rasters. See details for additional
+#'formatting information.
 #'
 #'@param projected Character. Is the environmental covariate raster stack in
 #'`env.covar.obj` projected to a different geographical space, time period, etc
