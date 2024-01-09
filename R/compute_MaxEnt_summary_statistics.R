@@ -63,7 +63,7 @@
 #'
 #'@return
 #'
-#'All MaxEnt Summary Statistics
+#'Retuens MaxEnt Summary Statistics
 #'
 #'
 #'@examples

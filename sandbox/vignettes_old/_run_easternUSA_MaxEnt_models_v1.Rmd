@@ -1,0 +1,915 @@
+---
+title: "Run initial MaxEnt models used to choose background area (project step 1)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2023-09-18"
+output: html_document
+---
+# Overview
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+library(rJava) # for running MaxEnt
+
+library(dismo) # package underneath SDMtune
+library(SDMtune) # main package used to run SDMs
+
+# dependencies of SDMtune
+library(plotROC) # plots ROCs
+
+library(viridis)
+
+# spatial data handling
+library(raster) 
+library(terra) 
+
+library(pROC)
+
+```
+
+`SDMtune` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+
+```{r check maxent installation}
+
+checkMaxentInstallation(verbose = TRUE)
+
+```
+
+This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory. 
+
+```{r control MaxEnt settings}
+
+# xss sets java stack size
+# xmx sets java memory allocation
+options(java.parameters = "-Xmx2048m")
+
+# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
+
+```
+
+```{r ggplot object for plot style}
+
+# a vector to rescale the axes of the plots
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+scatter_style <- list(
+  xlab("Background size (decreases left to right)"),
+  guides(x = guide_axis(angle = 15)),
+  theme_bw()
+)
+
+```
+
+# 1. MaxEnt Model- entire eastern USA
+
+## Tidy datasets for modeling
+
+First, I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function. 
+
+```{r load in files for entire easternUSA}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+
+# environmental and human impact covariates.
+# the env covariates used to train the model
+x_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = '\\_easternUSA.asc$', full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+# these layers will take a long time to load so only do it if you need the global versions
+if (FALSE) {
+  
+  # the same covariates, but on a global scale (used to make predictions)
+  x_global_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
+    grep("bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+}
+
+# slf presences
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
+  dplyr::select(-species)
+
+# entire eastern USA background point set
+a_easternUSA_entire_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
+
+```
+
+I will load in the environmental covariates and stack them. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune's ability to make predictions for tables downstream).
+
+```{r stack env covariates and make naming consistent}
+
+# stack env covariates
+x_env_covariates <- terra::rast(x = x_env_covariates_list)
+
+# attributes
+nlyr(x_env_covariates)
+names(x_env_covariates)
+minmax(x_env_covariates)
+# ext(x_env_covariates)
+# crs(x_env_covariates)
+
+
+# layer name object. Check order of layers first
+env_layer_names <- c("bio11_1981_2010", "bio12_1981_2010", "bio15_1981_2010", "bio2_1981_2010")
+
+
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_env_covariates) <- env_layer_names
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+
+# these are the global versions of the layers and will take a long time to run. Only do so if necessary for model evaluation
+if (FALSE) {
+
+  # stack global versions
+  x_global_env_covariates <- terra::rast(x = x_global_env_covariates_list)
+  # rename raster layers to be the same as the input layers
+  names(x_global_env_covariates)
+  # I will change the name of the variables because they are throwing errors in SDMtune
+  names(x_global_env_covariates) <- env_layer_names
+
+}
+
+```
+
+I will make some quick edits to the SLF presence data as well. These need to be cropped to the extent of the the background area (in this case, the Eastern USA).
+
+```{r crop presences to rasters}
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
+
+# conert to vector
+p_slf_points_vect <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+p_slf_points <- terra::as.data.frame(p_slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole))
+
+```
+
+### create input data object
+
+I need to create a dataset of presences and background points. This dataset will need to contain point-wise values for each of the predictor covariates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model.
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  easternUSA_entire_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                               env = x_env_covariates,
+                                               p = p_slf_points,
+                                               a = a_easternUSA_entire_background_points,
+                                               verbose = TRUE # print helpful messages
+                                               )
+  
+  easternUSA_entire_SWD@coords # coordinates
+  easternUSA_entire_SWD@pa # presence / absence (background counted as absence)
+  easternUSA_entire_SWD@data # extracted data from 
+
+}
+
+```
+
+I will also save the output to be used later.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = easternUSA_entire_SWD, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_presences_with_data.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_absences_with_data.csv")
+  ))
+
+```
+
+### Create training / test split
+
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 5 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+
+```{r split data for training and testing}
+
+set.seed(4)
+
+easternUSA_entire_trainTest <-  SDMtune::trainValTest(
+  x = easternUSA_entire_SWD,
+  test = 0.2,
+  only_presence = TRUE
+)
+
+# separate off training data
+easternUSA_entire_train <- easternUSA_entire_trainTest[[1]]
+easternUSA_entire_test <- easternUSA_entire_trainTest[[2]]
+
+easternUSA_entire_train@coords # coordinates
+easternUSA_entire_train@pa # presence / absence (background counted as absence)
+easternUSA_entire_train@data # extracted data from
+
+```
+
+```{r split data into k folds}
+
+# create random folds
+easternUSA_entire_trainFolds <- SDMtune::randomFolds(
+  data = easternUSA_entire_train,
+  k = 5, # 5 folds
+  only_presence = TRUE,
+  seed = 5 
+)
+
+```
+
+## Train Maxent model
+
+First, I will train a model with 5 cross-validated replicates. The model will only be trained on 80% of the slf presence data, with the other 20% being used downstream for analysis. The default settings will be used for Maxent, apart from the following changes:
+
+* ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
+* replicates = 5
+* iterations = 5000. This is the max number of iterations of optimization algorithm to perform before stopping training. Increasing this number allows the algorithm to make more refined predictions.
+
+Other changes to the default will be used, but are not relevant for training the model.
+
+```{r train maxent model}
+
+easternUSA_entire_model <- SDMtune::train(
+  method = "Maxent",
+  data = easternUSA_entire_train,
+  folds = easternUSA_entire_trainFolds, # 5 folds for dataset
+  fc = "lqpht", # feature classes set to ALL
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+## Evaluate maxent model
+
+### Summary Statistics
+
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see "051_maxent_workflow.Rmd". 
+
+```{r compute summary statistics using custom function}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = easternUSA_entire_model, 
+  model.name = "easternUSA_entire", 
+  mypath = mypath, 
+  create.dir = TRUE, # create subdirectory
+  env.covar.obj = x_env_covariates, # env covariates raster stacked
+  train.obj = easternUSA_entire_train, # training data used to create model
+  trainFolds.obj = easternUSA_entire_trainFolds,  # k-folds of training data
+  test.obj = easternUSA_entire_test, # data you wish to use to test the model
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
+  threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  )
+
+```
+
+### Fixed area AUC
+
+This function produces the fixed area ROC analysis for this model. For the complete and annotated workflow used to create this function, see "052_fixed_ROC_workflow.Rmd". 
+
+```{r compute fixed ROC and produce curve plots}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+slfSpread::compute_MaxEnt_fixed_ROC(
+  model.obj = easternUSA_entire_model,
+  model.name = "easternUSA_entire", 
+  mypath = mypath,
+  fixed.area.points = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"),
+  env.covar.obj = x_env_covariates,
+  test.obj = easternUSA_entire_test
+)
+
+```
+
+### Create distribution map for area of interest- easternUSA_entire_model
+
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. The output will be a raster of suitability that can be used in our background size comparison. I will also threshold the map by the MTSS threshold. The workflow for this function can be found in vignette `053_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
+
+I will take the above map and reclassify it so that areas that arent suitable are more obvious. I will use the maximum training sensitivity plus specificity threshold, as this threshold is one of the most rigorous available (ADD MORE). First, I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of maxent predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+*Note* For the entire model, this will be done with and without Access to cities (to compare which is a better fit). For the version without ATC, see the v0 version of this vignette in `vignette-outputs/data-tables`. 
+
+```{r predict normal and thresholded suitability maps}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_entire_step1_v1")
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = easternUSA_entire_model,
+  model.name = "easternUSA_entire", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_env_covariates, 
+  predict.fun = "mean", 
+  map.thresh = TRUE, 
+  thresh = "MTSS",
+  summary.file = file.path(mypath, "easternUSA_entire_summary_all_iterations.csv")
+)
+
+```
+
+# 2. MaxEnt Model- DD 1% adult emergence
+
+## Tidy datasets for modeling
+
+This is the same as the setup for the first model, except I will not re-load `x_env_covariates`, because it will remain unchanged. I will also not re-load the SLF presences `p_slf_presences`.
+
+```{r load in background points for maxent model}
+
+# DD model used with 1% adult emergence threshold
+a_adult_emergence_1_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emergence-1_flexible_area_points.csv")) 
+
+```
+
+### create input data object
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  easternUSA_adult_emer_1_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                               env = x_env_covariates,
+                                               p = p_slf_points,
+                                               a = a_adult_emergence_1_background_points,
+                                               verbose = TRUE # print helpful messages
+                                               )
+  
+  easternUSA_adult_emer_1_SWD@coords # coordinates
+  easternUSA_adult_emer_1_SWD@pa # presence / absence (background counted as absence)
+  easternUSA_adult_emer_1_SWD@data # extracted data from 
+
+}
+
+```
+
+I will save the output again, but this time I will delete the presences dataset because it is a duplicate.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = easternUSA_adult_emer_1_SWD, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "temp.csv"), # this is a duplicate file
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_adult_emer_1_absences_with_data.csv")
+  ))
+
+# the presences file is a duplicate, so I will delete that
+file.remove(file.path(here(), "vignette-outputs", "data-tables", "temp.csv"))
+
+```
+
+### Create training / test split
+
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 5 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+
+```{r split data for training and testing}
+
+set.seed(6)
+
+easternUSA_adult_emer_1_trainTest <-  SDMtune::trainValTest(
+  x = easternUSA_adult_emer_1_SWD,
+  test = 0.2,
+  only_presence = TRUE
+)
+
+# separate off training data
+easternUSA_adult_emer_1_train <- easternUSA_adult_emer_1_trainTest[[1]]
+easternUSA_adult_emer_1_test <- easternUSA_adult_emer_1_trainTest[[2]]
+
+easternUSA_adult_emer_1_train@coords # coordinates
+easternUSA_adult_emer_1_train@pa # presence / absence (background counted as absence)
+easternUSA_adult_emer_1_train@data # extracted data from
+
+```
+
+```{r split data into k folds}
+
+# create random folds
+easternUSA_adult_emer_1_trainFolds <- SDMtune::randomFolds(
+  data = easternUSA_adult_emer_1_train,
+  k = 5, # 5 folds
+  only_presence = TRUE,
+  seed = 7
+)
+
+```
+
+## Train Maxent model
+
+```{r train maxent model}
+
+easternUSA_adult_emer_1_model <- SDMtune::train(
+  method = "Maxent",
+  data = easternUSA_adult_emer_1_train,
+  folds = easternUSA_adult_emer_1_trainFolds, # 5 folds for dataset
+  fc = "lqpht", # feature classes set to ALL
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+## Evaluate maxent model
+
+### Summary Statistics
+
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see "051_maxent_workflow.Rmd". 
+
+```{r compute summary statistics using custom function}
+
+# output directory, with folder to create at end
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = easternUSA_adult_emer_1_model, 
+  model.name = "easternUSA_adult_emer_1", 
+  mypath = mypath, 
+  create.dir = TRUE, # create subdirectory from end of mypath
+  env.covar.obj = x_env_covariates, # env covariates raster stacked
+  train.obj = easternUSA_adult_emer_1_train, # training data used to create model
+  trainFolds.obj = easternUSA_adult_emer_1_trainFolds,  # k-folds of training data
+  test.obj = easternUSA_adult_emer_1_test, # data you wish to use to test the model
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
+  threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  )
+
+```
+
+### Fixed area AUC
+
+This function produces the fixed area ROC analysis for this model. For the complete and annotated workflow used to create this function, see "052_fixed_ROC_workflow.Rmd". 
+
+```{r compute fixed ROC and produce curve plots}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+slfSpread::compute_MaxEnt_fixed_ROC(
+  model.obj = easternUSA_adult_emer_1_model,
+  model.name = "easternUSA_adult_emer_1", 
+  mypath = mypath,
+  fixed.area.points = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"),
+  env.covar.obj = x_env_covariates,
+  test.obj = easternUSA_adult_emer_1_test
+)
+
+```
+
+### Create distribution map for area of interest
+
+```{r predict normal and thresholded suitability maps}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_adult_emer_1_step1")
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = easternUSA_adult_emer_1_model,
+  model.name = "easternUSA_adult_emer_1", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_env_covariates, 
+  predict.fun = "mean", 
+  map.thresh = TRUE, 
+  thresh = "MTSS",
+  summary.file = file.path(mypath, "easternUSA_adult_emer_1_summary_all_iterations.csv")
+)
+
+```
+
+# 3. MaxEnt Model- 355km buffer around presences
+
+## Tidy datasets for modeling
+
+This is the same as the setup for the first model, except I will not re-load `x_env_covariates`, because it will remain unchanged. I will also not re-load the SLF presences `p_slf_presences`. I will only re-load the new background set.
+
+```{r load in background points for maxent model}
+
+# 355km buffer around slf points
+a_slf_buffered_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_points_buffered_flexible_area_points.csv"))
+
+```
+
+### create input data object
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  easternUSA_buffered_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                               env = x_env_covariates,
+                                               p = p_slf_points,
+                                               a = a_slf_buffered_background_points,
+                                               verbose = TRUE # print helpful messages
+                                               )
+  
+  easternUSA_buffered_SWD@coords # coordinates
+  easternUSA_buffered_SWD@pa # presence / absence (background counted as absence)
+  easternUSA_buffered_SWD@data # extracted data from 
+
+}
+
+```
+
+I will save the output again, but this time I will delete the presences dataset because it is a duplicate.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = easternUSA_buffered_SWD, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "temp.csv"), # this is a duplicate file
+  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_buffered_absences_with_data.csv")
+  ))
+
+# the presences file is a duplicate, so I will delete that
+file.remove(file.path(here(), "vignette-outputs", "data-tables", "temp.csv"))
+
+```
+
+### Create training / test split
+
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 5 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+
+```{r split data for training and testing}
+
+set.seed(8)
+
+easternUSA_buffered_trainTest <-  SDMtune::trainValTest(
+  x = easternUSA_buffered_SWD,
+  test = 0.2,
+  only_presence = TRUE
+)
+
+# separate off training data
+easternUSA_buffered_train <- easternUSA_buffered_trainTest[[1]]
+easternUSA_buffered_test <- easternUSA_buffered_trainTest[[2]]
+
+easternUSA_buffered_train@coords # coordinates
+easternUSA_buffered_train@pa # presence / absence (background counted as absence)
+easternUSA_buffered_train@data # extracted data 
+
+```
+
+```{r split data into k folds}
+
+# create random folds
+easternUSA_buffered_trainFolds <- SDMtune::randomFolds(
+  data = easternUSA_buffered_train,
+  k = 5, # 5 folds
+  only_presence = TRUE,
+  seed = 9
+)
+
+```
+
+## Train Maxent model
+
+```{r train maxent model}
+
+easternUSA_buffered_model <- SDMtune::train(
+  method = "Maxent",
+  data = easternUSA_buffered_train,
+  folds = easternUSA_buffered_trainFolds, # 5 folds for dataset
+  fc = "lqpht", # feature classes set to ALL
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+## Evaluate maxent model
+
+### Summary Statistics
+
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see "051_maxent_workflow.Rmd". 
+
+```{r compute summary statistics using custom function}
+
+# output directory, with folder to create at end
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_buffered_step1")
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = easternUSA_buffered_model, 
+  model.name = "easternUSA_buffered", 
+  mypath = mypath, 
+  create.dir = TRUE, # create subdirectory from end of mypath
+  env.covar.obj = x_env_covariates, # env covariates raster stacked
+  train.obj = easternUSA_buffered_train, # training data used to create model
+  trainFolds.obj = easternUSA_buffered_trainFolds,  # k-folds of training data
+  test.obj = easternUSA_buffered_test, # data you wish to use to test the model
+  jk.test.type = c("train", "test"), # types of jackknife curves to be created
+  threshold.types = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  )
+
+```
+
+### Fixed area AUC
+
+This function produces the fixed area ROC analysis for this model. For the complete and annotated workflow used to create this function, see "052_fixed_ROC_workflow.Rmd". 
+
+```{r compute fixed ROC and produce curve plots}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_buffered_step1")
+
+slfSpread::compute_MaxEnt_fixed_ROC(
+  model.obj = easternUSA_buffered_model,
+  model.name = "easternUSA_buffered", 
+  mypath = mypath,
+  fixed.area.points = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_fixed_area_points_v1.csv"),
+  env.covar.obj = x_env_covariates,
+  test.obj = easternUSA_buffered_test
+)
+
+```
+
+### Create distribution map for area of interest
+
+```{r predict normal and thresholded suitability maps}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_easternUSA_buffered_step1")
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = easternUSA_buffered_model,
+  model.name = "easternUSA_buffered", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_env_covariates, 
+  predict.fun = "mean", 
+  map.thresh = TRUE, 
+  thresh = "MTSS",
+  summary.file = file.path(mypath, "easternUSA_buffered_summary_all_iterations.csv")
+)
+
+```
+
+# 4. Results
+
+Now that I have produced the initial 3 models, I will use the methodology outlined in VanDerWal et.al 2009 to compare them and discern the best background size to use in future models. This method accounts for the change in fixed area AUC, flexible area AUC, total predicted area and variable contribution. However, the methodology mainly hinges on the change in the fixed area AUC across the models. First, I will load in the .csv files containing the computed fixed and flexible area AUCs for these analyses. I will need to load in files created by `compute_MaxEnt_fixed_ROC()` with the ending `_fixed_flexible_AUCs.csv`.
+
+## Fixed Area AUC change across models
+
+```{r load in datasets}
+
+# file directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# entire model
+entire_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "entire area")
+# adult emergence 1% model
+adult_emer_1_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_adult_emer_1_step1", "easternUSA_adult_emer_1_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "DD 1% adult emergence")
+# buffered area
+buffered_fixed_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_buffered_step1", "easternUSA_buffered_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Fixed_Area_AUC) %>%
+  dplyr::mutate(background_size = "355km buffer")
+
+```
+
+First, I will create a scatter plot, with the with the background size on the x-axis (3 categories) and the fixed-area AUC value on the y-axis. 
+
+```{r create scatter plot}
+
+fixed_AUC_scatter <- entire_fixed_AUC %>%
+  # bind rows together
+  rbind(., adult_emer_1_fixed_AUC) %>%
+  rbind(., buffered_fixed_AUC) 
+
+# round to 3 decimals
+fixed_AUC_scatter$Fixed_Area_AUC <- round(fixed_AUC_scatter$Fixed_Area_AUC, digits = 3)
+  
+  # plot
+fixed_AUC_scatter <- fixed_AUC_scatter %>%
+  ggplot() +
+  geom_point(aes(x = factor(background_size, levels = c("entire area", "DD 1% adult emergence", "355km buffer")), y = Fixed_Area_AUC)) +
+  geom_text(aes(x = background_size, y = Fixed_Area_AUC, label = Fixed_Area_AUC), nudge_y = -0.10) +
+  geom_smooth(aes(x = background_size, y = Fixed_Area_AUC)) +
+  ggtitle("Change in fixed area AUC with background size") +
+  # theme(legend.position = "none") +
+  scale_y_continuous(name = "Fixed area AUC", limits = c(0, 1), breaks = breaks) +
+  scatter_style # custom plot style
+  
+
+```
+
+```{r save output}
+
+ggsave(
+  filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_models_fixed_AUC_analysis.jpg"),
+  plot = fixed_AUC_scatter,
+  device = "jpeg",
+  height = 8,
+  width = 10,
+  dpi = "retina"
+  )
+
+```
+
+There is not much discernable change in the flexible area AUC across background sizes. The smallest background size, 355 km buffer, has the highest AUC by 0.02, but this is likely not significant. 
+
+## Flexible Area AUC change across models
+
+I will also check the test flexible area AUCs. 
+
+```{r load in datasets}
+
+# file directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# entire model
+entire_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "entire area")
+# adult emergence 1% model
+adult_emer_1_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_adult_emer_1_step1", "easternUSA_adult_emer_1_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "DD 1% adult emergence")
+# buffered area
+buffered_flexible_AUC <- read.csv(file = file.path(mypath, "slf_easternUSA_buffered_step1", "easternUSA_buffered_fixed_flexible_AUCs.csv")) %>%
+  dplyr::select(Flexible_Area_AUC) %>%
+  dplyr::mutate(background_size = "355km buffer")
+
+```
+
+```{r create scatter plot}
+
+flexible_AUC_scatter <- entire_flexible_AUC %>%
+  # bind rows together
+  rbind(., adult_emer_1_flexible_AUC) %>%
+  rbind(., buffered_flexible_AUC) 
+
+# round to 3 decimals
+flexible_AUC_scatter$Flexible_Area_AUC <- round(flexible_AUC_scatter$Flexible_Area_AUC, digits = 3)
+  
+  # plot
+flexible_AUC_scatter <- flexible_AUC_scatter %>%
+  ggplot() +
+  geom_point(aes(factor(background_size, levels = c("entire area", "DD 1% adult emergence", "355km buffer")), y = Flexible_Area_AUC)) +
+  geom_text(aes(x = background_size, y = Flexible_Area_AUC, label = Flexible_Area_AUC), nudge_y = -0.10) +
+  # geom_smooth(aes(x = background_size, y = Flexible_Area_AUC)) +
+  ggtitle("Change in flexible area AUC with background size") +
+  # theme(legend.position = "none") +
+  scale_y_continuous(name = "Flexible area AUC", limits = c(0, 1), breaks = breaks) +
+  scatter_style # custom plot style
+  
+
+```
+
+```{r save output}
+
+ggsave(
+  filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_models_flexible_AUC_analysis.jpg"),
+  plot = flexible_AUC_scatter,
+  device = "jpeg",
+  height = 8,
+  width = 10,
+  dpi = "retina"
+  )
+
+```
+
+## Proportionate Predicted Area
+
+```{r get total area}
+
+# output path
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+# load in one of the averaged rasters
+total_area <- terra::rast(x = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_predicted_suitability_mean.asc"))
+
+# compute total area in raster that isnt NA
+total_area <- terra::expanse(total_area, unit = "km") %>%
+  dplyr::select(area) %>%
+  dplyr::mutate(layer = "total area")
+
+```
+
+```{r compute proportion suitable in each model}
+
+entire_area <- terra::rast(x = file.path(mypath, "slf_easternUSA_entire_step1_v1", "easternUSA_entire_predicted_suitability_mean_thresholded.asc"))
+  
+adult_emer_1_area <- terra::rast(x = file.path(mypath, "slf_easternUSA_adult_emer_1_step1", "easternUSA_adult_emer_1_predicted_suitability_mean_thresholded.asc"))
+  
+buffered_area <- terra::rast(x = file.path(mypath, "slf_easternUSA_buffered_step1", "easternUSA_buffered_predicted_suitability_mean_thresholded.asc"))
+  
+model_area <- c(entire_area, adult_emer_1_area, buffered_area)
+
+model_area <- terra::expanse(model_area, unit = "km", byValue = TRUE) %>%
+  filter(value == 1) %>%
+  dplyr::select(-value) 
+
+model_area[1, 1] <- "entire area"
+model_area[2, 1] <- "DD 1% adult emergence"
+model_area[3, 1] <- "355km buffer"
+
+```
+
+```{r create scatter plot}
+
+total_model_area <- model_area %>%
+  full_join(total_area, by = c("layer", "area")) %>%
+  dplyr::mutate(prop_suitable = area / total_model_area[4, 2])
+
+total_model_area$prop_suitable <- round(total_model_area$prop_suitable, digits = 4)
+
+
+total_model_area_plot <- ggplot(data = total_model_area) +
+  geom_col(aes(x = factor(layer, levels = c("total area", "entire area", "DD 1% adult emergence", "355km buffer")), y = prop_suitable)) +
+  geom_text(aes(x = factor(layer, levels = c("total area", "entire area", "DD 1% adult emergence", "355km buffer")), y = prop_suitable, label = prop_suitable), nudge_y = 0.10) +
+  ggtitle("Change in proportionate suitable area with background size") +
+  scale_y_continuous(name = "Proportion of total area suitable for establishment", limits = c(0, 1), breaks = breaks) +
+  xlab("Background size (decreases left to right)") +
+  guides(x = guide_axis(angle = 15)) +
+  theme_bw()
+
+```
+
+```{r save output}
+
+ggsave(
+  filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_models_proportionate_suitable_area_analysis.jpg"),
+  plot = total_model_area_plot,
+  device = "jpeg",
+  height = 8,
+  width = 10,
+  dpi = "retina"
+  )
+
+```
+
+WHY I SELECTED WHAT I SELECTED
+
+RESULTS
+
+
+
+
+
+
+
+# Appendix
+
+
+
+# References
+
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+
+Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
+
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
+
+Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+
+VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
+
+

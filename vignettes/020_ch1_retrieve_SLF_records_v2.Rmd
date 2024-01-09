@@ -1,5 +1,5 @@
 ---
-title: "Retrieve SLF records from GBIF and lydemapR and tidy them for MaxEnt modeling"
+title: "Retrieve SLF records from various sources and tidy them for MaxEnt modeling (chapter 1)"
 author: "Sam Owens"
 date: "2024-01-05"
 contact: 'sam.owens@temple.edu'
@@ -717,6 +717,11 @@ From the map, we can see the final points that were selected. We have a good spr
 ```
 
 The native range includes longitudes between 35 and 105. We can see that most of the SLF presence data are from the invaded ranges of Japan, South Korea or the United States. This is a weakness in the data available and we have given our best effort to account for it by including presence data for China from the literature.
+
+We now have half of the data we need to perform SDM! In the next vignette, we will download historical and projected climate and human impact data, which are the basis of our methods for predicting suitability for Lycorma delicatula. 
+
+
+
 
 # Appendix
 

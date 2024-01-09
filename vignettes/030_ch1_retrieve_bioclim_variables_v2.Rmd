@@ -1,5 +1,5 @@
 ---
-title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling"
+title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling (chapter 1)"
 author: "Sam Owens"
 date: "2024-01-05"
 contact: 'sam.owens@temple.edu'
@@ -10,15 +10,13 @@ editor_options:
 
 # Overview
 
-This vignette will walk through the process of downloading and tidying CHELSA climate rasters. [CHELSA](https://chelsa-climate.org/) represents a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables and 4 variables based on Degree-Day These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
+In the last vignette, [name](URL), we downloaded and tided Lycorma delicatula occurrence data from multiple sources. We tidied, harmonized and took measures to reduce spatial autocorrelation without sacrificing spread in our dataset. We also combined these data into a single presence dataset will be used to perform SDM. We now need to retrieve the other type of data that is necessary for SDM, environmental covariates. We are specifically interested in the effects of climate change, so we will be focusing heavily on derivatives of temperature and precipitation to explain Lycorma delicatula distributions.
 
-First, I will download the data from CHELSA into a local library using ...
+This vignette will walk through the process of downloading and tidying these climate data. We will be downloading the data from [CHELSA](https://chelsa-climate.org/), which is a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables and 4 variables based on Degree-Day These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
 
-Second, I will tidy the data and put them in the proper format for MaxEnt. 
+We have separately downloaded ["global access to cities"](http://www.nature.com/articles/nature25181) or ATC, which we will use as a proxy for human impacts. This dataset is a raster of travel time to populated areas that accounts for geographic barriers to travel, making it useful for species distributional studies and especially for Lycorma delicatula, which is dispersed by human movement.
 
-Third, I will assess the level of co-linearity between the rasters
-
-Fourth, I will visualize the rasters.
+First, I will download the data from CHELSA into a local library. I will then tidy, harmonize and put the datasets in the proper format for MaxEnt. We will then choose the covariates for our models via an assessment of the level of co-linearity between the rasters. I will also consider biological relevance in selecting the final set of covariates.
 
 # Setup
 
@@ -313,7 +311,7 @@ if(FALSE){
 
 ```
 
-This additional step can be run on-demand. I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling tthe resolution of our analysis to account for survey bias.
+This additional step can be run on-demand. I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
 
 ```{r on-demand aggregation of rasters}
 
@@ -342,7 +340,8 @@ if (FALSE) {
     rast.hold <- terra::rast(env.files[a])
     
     # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+    # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will  be an NA value.
+    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
     
     # crop again to ensure aggregation doesnt increase extent
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
@@ -398,7 +397,7 @@ mypath <- file.path(here() %>%
                     dirname(),
                   "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
-if(TRUE) {
+if(FALSE) {
   
   # view list of filetypes for terra, use .ascii
     terra::gdal(drivers = TRUE)
@@ -448,7 +447,7 @@ if(TRUE) {
 
 ```{r conversion of .tif to .asc files}
 
-if(TRUE){
+if(FALSE){
   
   mypath <- file.path(here() %>%
                         dirname(),
@@ -505,7 +504,7 @@ if (FALSE) {
     rast.hold <- terra::rast(env.files[a])
     
     # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean")
+    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
     
     # crop again to ensure aggregation doesnt increase extent
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
@@ -824,6 +823,8 @@ bio1_plot / gdd10_plot
 
 ```
 
+The final 4 variables have been selected for SDM of Lycorma delicatula, which include "mean diurnal range", "mean temperature of the coldest quarter", "annual precipitation", and "precipitation seasonality". These covariates can be projected for climate change and are biologically relevant to our target species. In the next vignette, we will crop these covariates to the appropriate spatial scale to run regional models. We will also use these rasters to create background point sets, which MaxEnt uses to sample the environmental covariates. 
+
 
 
 # Appendix
@@ -1031,6 +1032,8 @@ output.files <- output.files %>%
   gsub(pattern = "chelsa_", replacement = "") 
 
 ```
+
+
 
 # References
 

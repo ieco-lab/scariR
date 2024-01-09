@@ -1,0 +1,600 @@
+---
+title: "Setup for global and invaded regional MaxEnt Models (chapter 1)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-01-05"
+output: html_document
+---
+# Overview
+
+In the previous vignette, I retrieved and formatted rasters of 24 global-scale climate and human impact variables from [CHELSA](https://chelsa-climate.org/). These represent some of the most relevant variables for the accomplishment of my goal, which is to explain the distribution for Lycorma delicatula according to climate. I also retrieved climate change versions of these variables, created by the [CMIP6](https://pcmdi.llnl.gov/CMIP6/) climate modeling project. These variables were standardized and formatted for my needs. Additionally, the most relevant variables were chosen for all future models. The goal is to produce two models for chapter 1, a global model and an invaded regional model, both based on historical climate data. The global model will consider and be trained on all available climate data, while the regional model will be trained the subset of climate data from the SLF invaded range in the Eastern half of the United States (easternUSA). Both of these models will then be projected for climate change.
+
+In this vignette, I will crop the rasters that were retrieved and tidied in the previous vignette to the relevant spatial scale. I will crop the historical versions of these rasters to both the Eastern USA and North America. The easternUSA rasters will be used to train the regional version of the global model. The North America rasters will only be used to produce map outputs of the model's predictions (projection). The CMIP6 rasters will only be cropped to North America; I only need to project the historical global and regional models for climate change, so there is no need to train separate climate change models (nor would this make sense). Lastly, I will select the background point datasets for both the global and regional models. MaxEnt uses these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability (the model output).
+
+```{r extents table}
+
+extents <- data.frame(
+  "spatial_extent" = c("global model training", "regional model training", "projection"),
+  "long_min" = c(-180, -96.504, -140.977),
+  "long_max" = c(179, -59.590, -51.064),
+  "lat_min" = c(-60, 23.5, 15.182),
+  "lat_max" = c(83, 47.458, 60.589)
+)
+
+extents_kable <- knitr::kable(x = extents)
+  
+```
+
+# Setup
+
+I will prepare for this vignette by loading the necessary packages to run this script. I will also be creating maps during this analysis, so I will create a list object containing a standardized map style that I will continue to use.
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+
+library(devtools)
+library(dismo) # generate random background points
+
+# spatial data handling
+library(raster) 
+library(terra)
+
+# aesthetics
+library(viridis)
+
+```
+
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue")
+        ),
+  coord_equal() 
+)
+
+```
+
+# 1. Trim Bioclim layers 
+
+First, I will need to create a few copies of the bioclim layers that I tidied in the last vignette. I will create a set that have been cropped only to the eastern USA, which will be used to train the invaded regional models I produce. Second, I will create a set of rasters cropped to most of North America, which will be used to project all model outputs from both the regional and global models. 
+
+## Historical Rasters
+
+### Eastern USA
+
+These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+```
+
+```{r setup for cropping bioclim layers}
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the 10km .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
+
+```
+
+These rasters need to be cropped and converted to the .ascii format for MaxEnt.
+
+```{r loop to crop bioclim layers to eastern N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+The rasters look good!
+
+### North America
+
+These raster copies will be used to project all models. We are specifically interested in the suitable area for the entire North American continent, but model training should not take place at this scale because it is too large. When projecting a model to create a raster of suitability, SDMtune requires a raster stack containing a layer for each covariate that was used to create the model, with the same naming convention. 
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+```
+
+```{r setup for cropping bioclim layers}
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
+
+# extent object for N America (retrieved 11-30-2023)
+ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
+
+```
+
+Here I will actually crop the layers.
+
+```{r loop to crop bioclim layers to N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_NAmerica.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+## CMIP6 Rasters
+
+We will repeat the same process for the CMIP6 rasters. However, we will not trim the CMIP6 versions to the training range (the eastern USA) because models will not be trained on future climate data. Instead, models will be trained on historical data and projected to the CMIP6 versions of these data. We only need versions cropped to North America for projection purposes.
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL/v1_maxent_10km")
+
+```
+
+```{r setup for cropping bioclim layers}
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\_global.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
+
+# extent object for N America (retrieved 11-30-2023)
+ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
+
+```
+
+```{r loop to crop bioclim layers to N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11_CMIP6 <- terra::rast(x = file.path(mypath, "bio11_2041-2070_gfdl_370_NAmerica.asc")) 
+# convert to df
+bio11_CMIP6_df <- terra::as.data.frame(bio11_CMIP6, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_CMIP6_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_2041-2070_gfdl-esm4_ssp370_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+
+# 2. Select Background Points for models
+
+MaxEnt also requires a set of "background" points that it will use to sample these rasters. MaxEnt can randomly pick these internally, but it is more intuitive to manually select them. I can also account for latitudinal stretching of cell size and other factors if these are selected manually. Just for review, these points are used to characterize the variables that affect SLF distribution. Temperature / precipitation values will be extracted from the rasters for each point in this set. MaxEnt will then use these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability. Note that only one set of background points need to be created for each of the global and regional extent models
+
+First, I will load in known SLF presences so that background sampling does not occur in those grid cells.
+
+```{r load in SLF presence}
+
+# dismo requires the base function (not tidyverse)
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
+   dplyr::select(-species) 
+
+```
+
+```{r set wd}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+```
+
+
+## Global Model
+
+Gallien et.al recommended 20,000 points for background with a global scale model. Gallien also found that a higher number of background points artificially deflates MaxEnt predicitons, so it is important not to choose too many. However, it is appropriate to scale the datasets according to the spatial scale of the rasters. Initially, I selected 42,523 random background points using `dismo::randomPoints()`, because Santana Jr et.al recommended this amount when modeling at a global scale (Santana Jr et.al, 2019). These models were incredibly specific and overfit, and the models were incredible complex, so I downgraded the point count to 20,000. 
+
+Note that I will be running this analysis at the 10km scale, so I need to use the 10km rasters to ensure that points are chosen with appropriate spacing. These datasets will be stored in `vignette-outputs/data-tables`.
+
+```{r background points for global models}
+
+# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
+global_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_global.asc"))
+# check number of cells
+terra::ncell(global_bio2)
+# plenty of cells to work with if we remove those with SLF points
+
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(1)
+# generate random points 
+global_points <- dismo::randomPoints(
+  mask = global_bio2, 
+  n = 20000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
+
+# save as csv
+write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_ch1_v2.csv"))
+# save as rda file
+save(global_points, file = file.path(here(), "data", "global_background_points_ch1_v2.csv"))
+  
+  
+```
+
+Now, I will plot these points for visualization purposes.
+
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_ch1_v2.csv"))
+
+```
+
+```{r plot points}
+
+global_points_plot <- ggplot() +
+    geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = global_points, aes(x = x, y = y), color = "darkorange", size = 0.25) +
+    ggtitle("Global Background Points") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+The points seem to sufficiently cover the global extent. I can also see the latitude weighting, as the areas nearest the poles are less densely covered with points than areas near the equator.
+
+```{r save plot}
+
+ggsave(global_points_plot, 
+       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_ch1_v2.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
+## Invaded Regional Model (eastern USA)
+
+I will also select a set of background points for the invaded regional model. I will select only half as many points (10,000) to account for the decrease in the overall training area.
+
+```{r background points for invaded regional models}
+
+# file path to local directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
+easternUSA_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_easternUSA.asc"))
+# check number of cells
+terra::ncell(easternUSA_bio2)
+# plenty of cells to work with if we remove those with SLF points
+
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(2)
+# generate random points 
+easternUSA_points <- dismo::randomPoints(
+  mask = easternUSA_bio2, 
+  n = 10000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
+
+# save as csv
+write_csv(x = easternUSA_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_background_points_ch1.csv"))
+# save as rda file
+save(easternUSA_points, file = file.path(here(), "data", "easternUSA_background_points_ch1.csv"))
+  
+  
+```
+
+Now, I will plot these points for visualization purposes.
+
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+easternUSA_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_easternUSA.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+easternUSA_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_background_points_ch1.csv"))
+
+```
+
+```{r plot points}
+
+easternUSA_points_plot <- ggplot() +
+    geom_raster(data = easternUSA_bio2_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = easternUSA_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+    ggtitle("Eastern USA background points") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+The points cover the extent of the regional study area, so this will be sufficient for our analysis.
+
+```{r save plot}
+
+ggsave(easternUSA_points_plot, 
+       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_background_points_ch1.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
+
+Now that we have selected the background point datasets and created rasters for training and projection purposes, we are ready to run our models. The next vignette will train and project the global model, while tht following vignette will train and run the invaded regional model. 
+
+# Appendix
+
+### Trim CMIP6 rasters to Eastern USA
+
+```{r setup for cropping bioclim layers}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the 10km .asc files
+env.files <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
+
+```
+
+```{r loop to crop bioclim layers to eastern N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_10km", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_2041-2070_gfdl_370_easternUSA.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_2041-2070_gfdl-esm4_ssp370_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+# References
+
+D.D Calvin, J. Rost, J. Keller, S. Crawford, Julie Urban, B. Walsh, and M. Bosold. Seasonal Activity of Spotted Lanternfly, Lycorma delicatula (White) (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Unpublished.
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
+
+Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
+
+
+
