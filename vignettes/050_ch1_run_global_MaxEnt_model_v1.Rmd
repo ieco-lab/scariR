@@ -485,10 +485,6 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-
-
-
-
 ## Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world. 
