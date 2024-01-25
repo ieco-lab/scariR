@@ -73,14 +73,14 @@ format (see details) or if an incompatible value is given for parameter
 }
 }
 \description{
-The function requires the packages 'tidyverse', 'here', and 'terra'
-}
-\details{
 A function that computes the total annual degree day accumulation for
 \emph{Lycorma delicatula} development, based on monthly mean temperature data.
 This function was developed from the work of Dennis Calvin on the development
 of populations of \emph{Lycorma delicatula} living on \emph{Ailanthus altissima} at
 different DD accumulations.
+}
+\details{
+The function requires the packages 'tidyverse', 'here', and 'terra'
 \subsection{x:}{
 
 Data frames / .csv files should contain 15 columns. The initial 3

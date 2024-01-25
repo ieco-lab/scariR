@@ -1,7 +1,5 @@
 #'Compute annual degree day accumulation at listed x,y coordinate locations
 #'
-#'The function requires the packages 'tidyverse', 'here', and 'terra'
-#'
 #'A function that computes the total annual degree day accumulation for
 #'*Lycorma delicatula* development, based on monthly mean temperature data.
 #'This function was developed from the work of Dennis Calvin on the development
@@ -36,6 +34,9 @@
 #'will be created.
 #'
 #'@details
+#'
+#'The function requires the packages 'tidyverse', 'here', and 'terra'
+#'
 #'## x:
 #'Data frames / .csv files should contain 15 columns. The initial 3
 #'columns should contain descriptors, with the 1st column as the raster cell
@@ -160,7 +161,7 @@ compute_DD_suitability <- function(x, thresh = "adult_emergence_1", create.outpu
       data <- read.csv(x) # read as csv
 
       } else if(is.data.frame(x)){
-        data <- x # just read in if its a df
+        data <- as.data.frame(x) # just read in if its a df
 
         } else {
           data <- as.data.frame(x) # make data frame

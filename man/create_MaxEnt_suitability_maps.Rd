@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_MaxEnt_suitability_maps.R
 \name{create_MaxEnt_suitability_maps}
 \alias{create_MaxEnt_suitability_maps}
-\title{DESCRIPTION}
+\title{Predicts maps of establishment suitability based on MaxEnt model (SDMmodelCV object)}
 \usage{
 create_MaxEnt_suitability_maps(
   model.obj,
@@ -48,11 +48,11 @@ than the model was trained on? If so, enter the name of the projected period
 or region. This ensures that plot titles and file names reflect the projected
 region or time period. If using multiple words, separate with an underscore.}
 
-\item{predict.fun}{Character. The function to be applied to combine the
-iterations of the model when predicting a raster output. Can be one of:
-"min", "mean", "median", "max", or "sd" (standard deviation). If multiple are
-desired, must be in the concatenated form: \code{c("mean", "sd")}. Should be all
-lowercase.}
+\item{predict.fun}{Character. The default is "mean". This is the function to
+be applied to combine the iterations of the model when predicting a raster
+output. Can be one of: "min", "mean", "median", "max", or "sd"
+(standard deviation). If multiple are desired, must be in the concatenated
+form: \code{c("mean", "sd")}. Should be all lowercase.}
 
 \item{map.thresh}{Logical, TRUE by default. This function determines if a
 thresholded suitability map will be created. If not, output will only consist
@@ -78,25 +78,47 @@ a list of ggplot aesthetic options. See examples.}
 \value{
 A raster of suitability values projected to the same spatial extent as the
 input \code{env.covar.obj} and a corresponding .jpg figure are created. If multiple
-If multiple values are given for \code{predict.fun}, then one raster and jpg image
+values are given for \code{predict.fun}, then one raster and jpg image
 will be created for each value. If \code{map.thresh = TRUE}, then the output will
 also include a binary raster of suitability and a .jpg image of unsuitable
 areas layered on top of suitability raster. This threshold of suitability is
 determined by the value of \code{thresh}.
 }
 \description{
-The function requires the packages 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
+This function will create a map of establishment suitability based on a MaxEnt
+model trained using the \code{SDMtune} R package. It will optionally create
+thresholded versions of these maps using thresholds given by the MaxEnt
+algorithm.
 }
 \details{
+The function requires the packages 'cli', 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
+
+The thresholding feature of this function will limit what is considered
+suitable using one of a list of commonly applied thresholds. These threshold
+values are determined by the MaxEnt algorithm. (ie, a non-thresholded map on
+the cloglog scale has a lower color scale limit of 0, while a thresholded map
+has a lower limit determined by the algorithm.)
+
 \emph{NOTE} This function will create a thresholded suitability map for a raster
-output using the SD function, but these maps are not very meaningful because
-they do not illustrate cloglog suitability (while thresholds are created
+output using the SD function, but this map would not be meaningful because
+it does not illustrate cloglog suitability (while thresholds are created
 using the cloglog suitability metrics).
 \subsection{thresh:}{
 
 This can be a single numeric or preset character value. It may also be a
-concatenated set of numerics or presets, as in  c(0.2, 0.3) or
-c("MTSS", "BTO").
+concatenated set of numerics or presets, as in  \code{c(0.2, 0.3)} or
+\code{c("MTSS", "BTO")}. Note that this function only uses the cloglog version of
+these thresholds.
+
+Thresh presets list:
+\itemize{
+\item \code{BTO} = Balance training omission predicted area and threshold value
+\item \code{EE} = Equate entropy of thresholded and original distributions
+\item \code{ETSS} = Equal training sensitivity and specificity
+\item \code{MTP} = Minimum Training Presence
+\item \code{MTSS} = Maximum training sensitivity plus specificity
+\item \code{ten_percentile} or \verb{10_percentile} = Ten percentile training presence
+}
 }
 
 \subsection{env.covar.obj:}{

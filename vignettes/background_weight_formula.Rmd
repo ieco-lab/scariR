@@ -25,7 +25,7 @@ library(here)
 This was taken from Gallien et al, 2012. This is used for visualization.
 
 $$
-weight(R2) = \frac{1}{1 + (\frac{suitG(R2)}{suitG(R2)-1})^2}
+weight = \frac{1}{1 + (\frac{suitG(R2)}{suitG(R2)-1})^2}
 $$
 
 

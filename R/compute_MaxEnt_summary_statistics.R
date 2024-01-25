@@ -1,7 +1,9 @@
-#'Create a model output
+#'Output summary statistics for a MaxEnt model ('SDMmodelCV' object)
 #'
-#'
-#'The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC' and 'terra'.
+#'This function will create a directory for and save a MaxEnt model that was run
+#'using the `SDMtune` R package. It will use the model to calculate a list of
+#'summary statistics based on the test data and covariates given. See 'return'
+#'for a list of summary statistics outputs.
 #'
 #'@param model.obj A model object created by the package 'SDMtune', should be of
 #'class 'SDMmodelCV'.
@@ -43,11 +45,13 @@
 #'dataset. Choices are one of both of "train" and "test". If both are used,
 #'must be concatenated in the form: `c("train", "test")`.
 #'
-#'@param threshold.types Character. The type of output desired for the marginal and
+#'@param threshold.type Character. The type of output desired for the marginal and
 #'univariate response curves. Choices are one of both of "logical" and "cloglog".
 #'If both are used, must be concatenated in the form: `c("logical", "cloglog")`.
 #'
 #'@details
+#'
+#'The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC', 'cli', and 'terra'.
 #'
 #'model.obj <- entire_easternUSA_model
 #'model.name <- "entire_easternUSA_model"
@@ -59,19 +63,27 @@
 #'trainFolds.obj <- entire_easternUSA_trainFolds
 #'test.obj <- entire_easternUSA_test
 #'jk.test.type <- c("train", "test") # used to produce jackknife plots
-#'threshold.types <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+#'threshold.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 #'
 #'@return
-#'
-#'Retuens MaxEnt Summary Statistics
-#'
+#'The output of this function includes the following:
+#'* training and test datasets used for the model
+#'* listed model parameters and suitability thresholds
+#'* K-folds and which samples were included per fold
+#'* variable contributions, permutation importance and SD
+#'* confusion matrices per iteration
+#'* jackknife tests for both training and testing data, per iteration
+#'* jackknife plots
+#'* AUC / TSS
+#'* ROC plots
+#'* marginal and univariate response curves
 #'
 #'@examples
 #'
 #'TBD
 #'
 #'@export
-compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, jk.test.type, threshold.types) {
+compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, jk.test.type, threshold.type) {
 
     ## Error checks-------------------------------------------------------------
 
@@ -79,28 +91,34 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     checkMaxentInstallation(verbose = TRUE)
     # stop if it isnt installed
     if (checkMaxentInstallation() == FALSE) {
-      stop("The latest version of Java and MaxEnt for Java must be installed")
+      cli::cli_alert_danger("The latest version of Java and MaxEnt for Java must be installed")
+      stop()
     }
 
     # ensure objects are character type
     if (is.character(model.name) == FALSE) {
-      stop("Parameter 'model.name' must be of type character")
+      cli::cli_alert_danger("Parameter 'model.name' must be of type character")
+      stop()
     }
     if (is.character(jk.test.type) == FALSE) {
-      stop("Parameter 'jk.test.type' must be of type character")
+      # error message
+      cli::cli_alert_danger("Parameter 'jk.test.type' must be of type character")
+      stop()
     }
-    if (is.character(threshold.types) == FALSE) {
-      stop("Parameter 'threshold.types' must be of type character")
+    if (is.character(threshold.type) == FALSE) {
+      cli::cli_alert_danger("Parameter 'threshold.type' must be of type character")
+      stop()
     }
     if (is.character(mypath) == FALSE) {
-      stop("Parameter 'mypath' must be of type character")
+      cli::cli_alert_danger("Parameter 'mypath' must be of type character")
+      stop()
     }
 
     ## Create sub directory for files-----------------------------------------------
 
     if (create.dir == FALSE) {
       # print message
-      print("proceeding without creating model subdirectory folder")
+      cli::cli_alert_info("proceeding without creating model subdirectory folder")
       # create plots subfolder
       dir.create(mypath, "plots")
 
@@ -108,7 +126,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       # create sub directory from ending of mypath object
       dir.create(mypath)
       # print message
-      print(paste0("sub directory for files created at: ", mypath))
+      cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
       # create plots folder within
       dir.create(mypath, "plots")
 
@@ -163,6 +181,11 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
     ### Plot ROC Curves---------------------------------------------------------
 
+    # status update
+    cli::cli_alert_success("plotting ROC curves")
+
+
+
     # loop that plots an ROC curve for each model iteration
     for (a in seq(length(model.obj@models))) {
 
@@ -171,7 +194,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
       # add title
       plot.ROC <- plot.ROC +
-        ggtitle(paste("ROC curve (sensitivity  vs 1 - Specificity) for", model.name, "iteration", a))
+        ggtitle(paste("ROC curve (sensitivity  vs 1 - Specificity)- '", model.name, "model', iteration", a))
 
       # save output
       ggsave(plot.ROC,
@@ -188,11 +211,16 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
     ### Plot Univariate Response Curves-----------------------------------------
 
+    # status update
+    cli::cli_alert_success("plotting univariate and marginal response curves")
+
+
+
     # for each variable used in the model, create a response curve
     for (a in names(env.covar.obj)) {
 
       # for each threshold type, plot a response curve
-      for (b in threshold.types) {
+      for (b in threshold.type) {
 
         # load in temp plot object
         plot.univar <- SDMtune::plotResponse(
@@ -205,7 +233,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
         # add title
         plot.univar <- plot.univar +
-          ggtitle(paste(model.name, a, "univariate response curve-", b, "output"))
+          ggtitle(paste0("'", model.name, " model'- ", a, " univariate response curve- ", b, " output"))
 
         # save output
         ggsave(plot.univar,
@@ -228,7 +256,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     for (a in names(env.covar.obj)) {
 
       # for each threshold type, plot a response curve
-      for (b in threshold.types) {
+      for (b in threshold.type) {
 
         # load in temp plot object
         plot.response <- SDMtune::plotResponse(
@@ -242,7 +270,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
         # add title
         plot.response <- plot.response +
-          ggtitle(paste(model.name, a, "marginal response curve-", b, "output"))
+          ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve- ", b, " output"))
 
         # save output
         ggsave(plot.response,
@@ -260,6 +288,8 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     }
 
     ## Extract summary statistics-----------------------------------------------
+
+    cli::cli_alert_success("writing summary statistics")
 
     # create empty date frame for joining
     empty.table <- as.data.frame(model.obj@models[[1]]@model@results) %>%
@@ -284,18 +314,12 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       # add column name to data object
       data.obj <- mutate(data.obj, statistic = row.names(model.obj@models[[1]]@model@results))
 
-      # while i has not reached the length of the model replicates, append the summary statistics to the empty table
-      while (i < length(model.obj@models)) {
-        # join data.obj temporary object to empty table
-        empty.table <- right_join(empty.table, data.obj, by = "statistic")
-
-        break
-
-      }
+      # join data.obj temporary object to empty table
+      empty.table <- right_join(empty.table, data.obj, by = "statistic")
 
       # if i has reached the length of the model replicates, compute a mean and write the final table to .csv
       if (i == length(model.obj@models)) {
-        # compute the mean of the 5 columns
+        # compute the mean of the columns
         empty.table <- mutate(empty.table, mean = rowMeans(empty.table[, -1]))
         # write to csv
         write.csv(
@@ -327,6 +351,8 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
     ## Jackknife test for variable importance-----------------------------------
 
+    # status update
+    cli::cli_alert_success("performing jackknife tests")
 
     ### Jackknife test for entire model training--------------------------------
 
@@ -346,7 +372,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     JK.obj_df_plot <- plotJk(jk = JK.obj_df, type = "train")
 
     JK.obj_df_plot <- JK.obj_df_plot +
-      ggtitle(paste0(model.name, "- jackknife test")) +
+      ggtitle(paste0("'", model.name, " model'- jackknife test")) +
       labs(subtitle = "all iterations, training data")
 
     ggsave(JK.obj_df_plot,
@@ -382,7 +408,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
           # modify objects to add titles and subtitles
           jk.obj_plot <- jk.obj_plot +
-            ggtitle(paste0(model.name, "- jackknife test")) +
+            ggtitle(paste0("'", model.name, " model'- jackknife test")) +
             labs(subtitle = paste0("iter ", a, ", ", b, "ing data"))
 
           ggsave(jk.obj_plot,
@@ -413,7 +439,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
 
     var_imp_plot <- var_imp_plot +
-      ggtitle(paste("Variable importance for", model.name))
+      ggtitle(paste("Variable importance for '", model.name, "model'"))
 
     ggsave(var_imp_plot,
            filename = file.path(mypath, "plots", paste0(model.name, "_variable_importance.jpg")),
@@ -423,6 +449,9 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
            dpi = "retina")
 
     ## Confusion Matrix for common threshold values-----------------------------
+
+    # status update
+    cli::cli_alert_success("generating confusion matrices")
 
     # load in summary file and slice the threshold values
     conf.matr.data <- read.csv(file.path(mypath, paste0(model.name, "_summary_all_iterations.csv"))) %>%
@@ -495,6 +524,8 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
     }
 
+    # status update
+    cli::cli_alert_success("finished creating summary statistics")
 
 }
 

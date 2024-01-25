@@ -706,13 +706,22 @@ From the map, we can see the final points that were selected. We have a good spr
 
 ```{r number points invaded vs native range}
 
-(ggplot(data = slf_all_coords3) +
-   geom_histogram(aes(x = x)) +
-   ggtitle("count of SLF presence records invaded vs native range") +
-   xlab("longitude") +
-   ylab("count of SLF presences") +
-   theme_minimal() 
-   )
+SLF_by_longitude <- ggplot(data = slf_all_coords3) +
+  geom_histogram(aes(x = x)) +
+  ggtitle("count of SLF presence records invaded vs native range") +
+  labs(caption = "the longitudinal range between the two dashed lines represents the native range for SLF") +
+  xlab("longitude") +
+  ylab("count of SLF presences") +
+  geom_vline(xintercept = 73.37, linetype = "dashed") +
+  geom_vline(xintercept = 124.06, linetype = "dashed") +
+  theme_minimal()
+
+# save output
+ggsave(SLF_by_longitude, filename = file.path(here(), "vignette-outputs", "figures", "SLF_final_all_coords_by_longitude.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
 
 ```
 

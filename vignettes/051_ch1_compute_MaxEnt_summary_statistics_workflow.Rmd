@@ -1,5 +1,5 @@
 ---
-title: "maxent_workflow"
+title: "MaxEnt Summary Statistics Output- workflow (chapter 1)"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2023-09-28"

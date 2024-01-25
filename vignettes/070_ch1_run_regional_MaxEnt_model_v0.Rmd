@@ -1,5 +1,5 @@
 ---
-title: "Run global MaxEnt model (chapter 1)"
+title: "Run regional MaxEnt model (chapter 1)"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-01-09"
@@ -7,11 +7,7 @@ output: html_document
 ---
 # Overview
 
-In the last vignette, I set up for the models I will run by cropping my chosen environmental covariates to the proper extents for both training and projecting the models. I also produced the background point datasets that are needed for MaxEnt to run.
-
-In this vignette, I will (finally) start training MaxEnt models and obtaining the outputs I will need for my analysis! This vignette will train the `global` scale model and the next vignette will train the `regional` scale model. I begin by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. 
-
-This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics.R`, `create_MaxEnt_suitability_maps.R`, and `predict_xy_suitability.R`. Please see these subvignettes for a step-by-step guide to the creation of these functions. 
+In the last vignette, I 
 
 (THEORY)
 

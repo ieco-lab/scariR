@@ -2,7 +2,7 @@
 % Please edit documentation in R/compute_MaxEnt_summary_statistics.R
 \name{compute_MaxEnt_summary_statistics}
 \alias{compute_MaxEnt_summary_statistics}
-\title{Create a model output}
+\title{Output summary statistics for a MaxEnt model ('SDMmodelCV' object)}
 \usage{
 compute_MaxEnt_summary_statistics(
   model.obj,
@@ -14,7 +14,7 @@ compute_MaxEnt_summary_statistics(
   trainFolds.obj,
   test.obj,
   jk.test.type,
-  threshold.types
+  threshold.type
 )
 }
 \arguments{
@@ -58,17 +58,34 @@ specifies whether to conduct the test on the trained model or using the test
 dataset. Choices are one of both of "train" and "test". If both are used,
 must be concatenated in the form: \code{c("train", "test")}.}
 
-\item{threshold.types}{Character. The type of output desired for the marginal and
+\item{threshold.type}{Character. The type of output desired for the marginal and
 univariate response curves. Choices are one of both of "logical" and "cloglog".
 If both are used, must be concatenated in the form: \code{c("logical", "cloglog")}.}
 }
 \value{
-All MaxEnt Summary Statistics
+The output of this function includes the following:
+\itemize{
+\item training and test datasets used for the model
+\item listed model parameters and suitability thresholds
+\item K-folds and which samples were included per fold
+\item variable contributions, permutation importance and SD
+\item confusion matrices per iteration
+\item jackknife tests for both training and testing data, per iteration
+\item jackknife plots
+\item AUC / TSS
+\item ROC plots
+\item marginal and univariate response curves
+}
 }
 \description{
-The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC' and 'terra'.
+This function will create a directory for and save a MaxEnt model that was run
+using the \code{SDMtune} R package. It will use the model to calculate a list of
+summary statistics based on the test data and covariates given. See 'return'
+for a list of summary statistics outputs.
 }
 \details{
+The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC', 'cli', and 'terra'.
+
 model.obj <- entire_easternUSA_model
 model.name <- "entire_easternUSA_model"
 mypath <- file.path(here() \%>\%
@@ -79,7 +96,7 @@ train.obj <- entire_easternUSA_train
 trainFolds.obj <- entire_easternUSA_trainFolds
 test.obj <- entire_easternUSA_test
 jk.test.type <- c("train", "test") # used to produce jackknife plots
-threshold.types <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+threshold.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 }
 \examples{
 

@@ -66,99 +66,9 @@ map_style <- list(
 
 # 1. Trim Bioclim layers 
 
-First, I will need to create a few copies of the bioclim layers that I tidied in the last vignette. I will create a set that have been cropped only to the eastern USA, which will be used to train the invaded regional models I produce. Second, I will create a set of rasters cropped to most of North America, which will be used to project all model outputs from both the regional and global models. 
+First, I will need to create a few copies of the bioclim layers that I tidied in the last vignette. I will create a set of rasters cropped to most of North America, which will be used to project all model outputs from both the regional and global models. 
 
-## Historical Rasters
-
-### Eastern USA
-
-These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
-
-```{r set wd}
-
-# path to directory
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
-
-```{r setup for cropping bioclim layers}
-
-# lists of target files in the directory
-# load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
-  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
-
-# output file names
-output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "easternUSA")
-
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
-
-```
-
-These rasters need to be cropped and converted to the .ascii format for MaxEnt.
-
-```{r loop to crop bioclim layers to eastern N america}
-
-# view list of filetypes for terra, use .ascii
-View(terra::gdal(drivers = TRUE))
-
-if(FALSE) {
-  
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
-
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
-  
-}
-
-# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
-
-```
-
-Lets plot one of the new layers to make sure the cropping worked.
-
-```{r plot main_layer to ensure cropping worked}
-
-bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
-# convert to df
-bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
-
-# plot main layer as example
-(ggplot() +
-  # change scale of plots to be standard across figures
-  geom_raster(data = bio11_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  coord_equal()
-)
-# the cropping worked
-
-```
-
-The rasters look good!
-
-### North America
+## Historical Rasters- N America
 
 These raster copies will be used to project all models. We are specifically interested in the suitable area for the entire North American continent, but model training should not take place at this scale because it is too large. When projecting a model to create a raster of suitability, SDMtune requires a raster stack containing a layer for each covariate that was used to create the model, with the same naming convention. 
 
@@ -189,7 +99,7 @@ ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
 
 ```
 
-Here I will actually crop the layers.
+Here I will actually crop the layers and convert them to the .ascii format for MaxEnt.
 
 ```{r loop to crop bioclim layers to N america}
 
@@ -381,9 +291,9 @@ global_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_ch1_v2.csv"))
+write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
 # save as rda file
-save(global_points, file = file.path(here(), "data", "global_background_points_ch1_v2.csv"))
+save(global_points, file = file.path(here(), "data", "global_background_points_v2.csv"))
   
   
 ```
@@ -399,7 +309,7 @@ mypath <- file.path(here() %>%
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_ch1_v2.csv"))
+global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
 
 ```
 
@@ -419,84 +329,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(global_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_ch1_v2.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
-
-```
-
-## Invaded Regional Model (eastern USA)
-
-I will also select a set of background points for the invaded regional model. I will select only half as many points (10,000) to account for the decrease in the overall training area.
-
-```{r background points for invaded regional models}
-
-# file path to local directory
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-# load in reference layer. needs to be done with raster package because dismo doesnt recognize terra package objects
-easternUSA_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_easternUSA.asc"))
-# check number of cells
-terra::ncell(easternUSA_bio2)
-# plenty of cells to work with if we remove those with SLF points
-
-# set seed so that the random points for this dataset are the same the next time this code is run
-set.seed(2)
-# generate random points 
-easternUSA_points <- dismo::randomPoints(
-  mask = easternUSA_bio2, 
-  n = 10000, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
-
-# save as csv
-write_csv(x = easternUSA_points, file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_background_points_ch1.csv"))
-# save as rda file
-save(easternUSA_points, file = file.path(here(), "data", "easternUSA_background_points_ch1.csv"))
-  
-  
-```
-
-Now, I will plot these points for visualization purposes.
-
-```{r load in files for plotting}
-
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-easternUSA_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_easternUSA.asc")) %>%
-  terra::as.data.frame(., xy = TRUE)
-
-easternUSA_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "easternUSA_background_points_ch1.csv"))
-
-```
-
-```{r plot points}
-
-easternUSA_points_plot <- ggplot() +
-    geom_raster(data = easternUSA_bio2_df, aes(x = x, y = y), fill = "azure1") +
-    geom_point(data = easternUSA_points, aes(x = x, y = y), color = "darkorange", size = 0.5) +
-    ggtitle("Eastern USA background points") +
-    map_style +
-    theme(legend.position = "none") 
-
-```
-
-The points cover the extent of the regional study area, so this will be sufficient for our analysis.
-
-```{r save plot}
-
-ggsave(easternUSA_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "easternUSA_background_points_ch1.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_v2.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",

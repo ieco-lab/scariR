@@ -1,6 +1,9 @@
-#' DESCRIPTION
+#'Predicts maps of establishment suitability based on MaxEnt model (SDMmodelCV object)
 #'
-#'The function requires the packages 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
+#'This function will create a map of establishment suitability based on a MaxEnt
+#'model trained using the `SDMtune` R package. It will optionally create
+#'thresholded versions of these maps using thresholds given by the MaxEnt
+#'algorithm.
 #'
 #'@param model.obj A model object created by the package 'SDMtune', should be of
 #'class 'SDMmodelCV'.
@@ -31,11 +34,11 @@
 #'or region. This ensures that plot titles and file names reflect the projected
 #'region or time period. If using multiple words, separate with an underscore.
 #'
-#'@param predict.fun Character. The function to be applied to combine the
-#'iterations of the model when predicting a raster output. Can be one of:
-#'"min", "mean", "median", "max", or "sd" (standard deviation). If multiple are
-#'desired, must be in the concatenated form: `c("mean", "sd")`. Should be all
-#'lowercase.
+#'@param predict.fun Character. The default is "mean". This is the function to
+#'be applied to combine the iterations of the model when predicting a raster
+#'output. Can be one of: "min", "mean", "median", "max", or "sd"
+#'(standard deviation). If multiple are desired, must be in the concatenated
+#'form: `c("mean", "sd")`. Should be all lowercase.
 #'
 #'@param map.thresh Logical, TRUE by default. This function determines if a
 #'thresholded suitability map will be created. If not, output will only consist
@@ -58,19 +61,35 @@
 #'ggplot aesthetics to the plot outputs. If specified, the given value should be
 #'a list of ggplot aesthetic options. See examples.
 #'
-#'
 #'@details
 #'
+#'The function requires the packages 'cli', 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
+#'
+#'The thresholding feature of this function will limit what is considered
+#'suitable using one of a list of commonly applied thresholds. These threshold
+#'values are determined by the MaxEnt algorithm. (ie, a non-thresholded map on
+#'the cloglog scale has a lower color scale limit of 0, while a thresholded map
+#'has a lower limit determined by the algorithm.)
+#'
 #'*NOTE* This function will create a thresholded suitability map for a raster
-#'output using the SD function, but these maps are not very meaningful because
-#'they do not illustrate cloglog suitability (while thresholds are created
+#'output using the SD function, but this map would not be meaningful because
+#'it does not illustrate cloglog suitability (while thresholds are created
 #'using the cloglog suitability metrics).
 #'
 #'## thresh:
 #'
 #'This can be a single numeric or preset character value. It may also be a
-#'concatenated set of numerics or presets, as in  c(0.2, 0.3) or
-#'c("MTSS", "BTO").
+#'concatenated set of numerics or presets, as in  `c(0.2, 0.3)` or
+#'`c("MTSS", "BTO")`. Note that this function only uses the cloglog version of
+#'these thresholds.
+#'
+#'Thresh presets list:
+#'* `BTO` = Balance training omission predicted area and threshold value
+#'* `EE` = Equate entropy of thresholded and original distributions
+#'* `ETSS` = Equal training sensitivity and specificity
+#'* `MTP` = Minimum Training Presence
+#'* `MTSS` = Maximum training sensitivity plus specificity
+#'* `ten_percentile` or `10_percentile` = Ten percentile training presence
 #'
 #'## env.covar.obj:
 #'This must a `SpatRaster` raster stack created using [terra::rast()]. The stack
@@ -82,7 +101,7 @@
 #'@return
 #'A raster of suitability values projected to the same spatial extent as the
 #'input `env.covar.obj` and a corresponding .jpg figure are created. If multiple
-#'If multiple values are given for `predict.fun`, then one raster and jpg image
+#'values are given for `predict.fun`, then one raster and jpg image
 #'will be created for each value. If `map.thresh = TRUE`, then the output will
 #'also include a binary raster of suitability and a .jpg image of unsuitable
 #'areas layered on top of suitability raster. This threshold of suitability is
@@ -104,23 +123,27 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
   # ensure objects are character type
   if (is.character(model.name) == FALSE) {
-    stop("Parameter 'model.name' must be of type 'character'")
+    cli::cli_alert_danger("Parameter 'model.name' must be of type 'character'")
+    stop()
   }
   if (is.character(predict.fun) == FALSE) {
-    stop("Parameter 'predict.fun' must be of type 'character'")
+    cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
+    stop()
   }
   if (is.character(mypath) == FALSE) {
-    stop("Parameter 'mypath' must be of type 'character'")
+    cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
+    stop()
   }
   if (is.character(projected) == FALSE) {
-    stop("Parameter 'projected' must be of type 'character'")
+    cli::cli_alert_danger("Parameter 'projected' must be of type 'character'")
+    stop()
   }
 
   # Create sub directory for files----------------------------------------------
 
   if (create.dir == FALSE) {
     # print message
-    print("proceeding without creating model subdirectory folder")
+    cli::cli_alert_info("proceeding without creating model subdirectory folder")
     # create plots subfolder
     dir.create(mypath, "plots")
 
@@ -128,7 +151,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     # create sub directory from ending of mypath object
     dir.create(mypath)
     # print message
-    print(paste0("sub directory for files created at: ", mypath))
+    cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
     # create plots folder within
     dir.create(mypath, "plots")
 
@@ -158,7 +181,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
     # otherwise, warn that given values must be a list
   } else {
-    stop("parameter 'map.style' must be of type 'list'")
+    cli::cli_alert_danger("parameter 'map.style' must be of type 'list'")
+    stop()
 
   }
 
@@ -231,7 +255,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       thresh_preset_import <- read.csv(summary.file) # read as csv
 
     } else if(is.data.frame(summary.file)){
-      thresh_preset_import <- summary.file # just read in if its a df
+      thresh_preset_import <- as.data.frame(summary.file) # just read in if its a df
 
     } else {
       thresh_preset_import <- as.data.frame(summary.file) # make data frame
@@ -324,17 +348,17 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           becomes = 1
         )
 
-          # reclassify and write regional raster
-          mask_layer <- terra::classify(x = model_suit_raster,
-                                        rcl = mask_rescale_class,
-                                        right = TRUE, # includes both sides
-                                        include.lowest = TRUE,
-                                        others = NA,
-                                        filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
-                                        overwrite = FALSE)
+        # reclassify and write regional raster
+        mask_layer <- terra::classify(x = model_suit_raster,
+                                      rcl = mask_rescale_class,
+                                      right = TRUE, # includes both sides
+                                      include.lowest = TRUE,
+                                      others = NA,
+                                      filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
+                                      overwrite = FALSE)
 
-          # message of completion
-          print(paste0(i, ", ", thresh_name, " mask layer raster created and saved at: ", mypath))
+        # message of completion
+        print(paste0(i, ", ", thresh_name, " mask layer raster created and saved at: ", mypath))
 
 
         # Create thresholded suitability map------------------------------------
@@ -384,6 +408,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
   } # end of if (map.thresh == TRUE) statement
 
+  # status update
+  print("finished plotting suitability maps")
 
 } # end of function
 
