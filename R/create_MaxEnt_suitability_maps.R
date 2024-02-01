@@ -102,14 +102,14 @@
 #'
 #'Map style default options:
 #'
-#'* xlab("longitude")
-#'* ylab("latitude")
-#'* labs(fill = "Suitability for SLF"),
-#'* theme_classic()
-#'* theme(legend_position = "bottom")
-#'* theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))
-#'* coord_equal()
-#'* viridis::scale_fill_viridis(option = "D"),
+#'* `xlab("longitude")`
+#'* `ylab("latitude")`
+#'* `labs(fill = "Suitability for SLF")`
+#'* `theme_classic()`
+#'* `theme(legend_position = "bottom")`
+#'* `theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))`
+#'* `coord_equal()`
+#'* `viridis::scale_fill_viridis(option = "D")`
 #'
 #'@return
 #'A raster of suitability values projected to the same spatial extent as the

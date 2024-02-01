@@ -134,14 +134,14 @@ You can check for naming consistency using \code{\link[=names]{names()}}.
 
 Map style default options:
 \itemize{
-\item xlab("longitude")
-\item ylab("latitude")
-\item labs(fill = "Suitability for SLF"),
-\item theme_classic()
-\item theme(legend_position = "bottom")
-\item theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))
-\item coord_equal()
-\item viridis::scale_fill_viridis(option = "D"),
+\item \code{xlab("longitude")}
+\item \code{ylab("latitude")}
+\item \code{labs(fill = "Suitability for SLF")}
+\item \code{theme_classic()}
+\item \code{theme(legend_position = "bottom")}
+\item \code{theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))}
+\item \code{coord_equal()}
+\item \code{viridis::scale_fill_viridis(option = "D")}
 }
 }
 }

@@ -16,11 +16,11 @@ I will crop the rasters that were retrieved and tidied in the previous vignette 
 ```{r extents table}
 
 extents <- data.frame(
-  "spatial_extent" = c("global model training", "regional model training", "projection"),
-  "long_min" = c(-180, -96.504, -140.977),
-  "long_max" = c(179, -59.590, -51.064),
-  "lat_min" = c(-60, 23.5, 15.182),
-  "lat_max" = c(83, 47.458, 60.589)
+  "spatial_extent" = c("global model training", "invaded_regional model training", "native_regional model training", "projection"),
+  "long_min" = c(-180, -96.504, , -140.977),
+  "long_max" = c(179, -59.590, , -51.064),
+  "lat_min" = c(-60, 23.5, , 15.182),
+  "lat_max" = c(83, 47.458, , 60.589)
 )
 
 extents_kable <- knitr::kable(x = extents)

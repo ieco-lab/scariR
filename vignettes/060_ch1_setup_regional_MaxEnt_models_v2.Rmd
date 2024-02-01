@@ -14,11 +14,11 @@ This vignette will set up for the regional model in a similar fashion to the set
 ```{r extents table}
 
 extents <- data.frame(
-  "spatial_extent" = c("global model training", "regional model training", "projection"),
-  "long_min" = c(-180, -96.504, -140.977),
-  "long_max" = c(179, -59.590, -51.064),
-  "lat_min" = c(-60, 23.5, 15.182),
-  "lat_max" = c(83, 47.458, 60.589)
+  "spatial_extent" = c("global model training", "invaded_regional model training", "native_regional model training", "projection"),
+  "long_min" = c(-180, -96.504, , -140.977),
+  "long_max" = c(179, -59.590, , -51.064),
+  "lat_min" = c(-60, 23.5, , 15.182),
+  "lat_max" = c(83, 47.458, , 60.589)
 )
 
 extents_kable <- knitr::kable(x = extents)
@@ -43,6 +43,12 @@ library(dismo) # generate random background points
 # spatial data handling
 library(raster) 
 library(terra)
+library(sf)
+
+# spatial data sources
+library(rnaturalearth)
+# remotes::install_github("ropensci/rnaturalearthhires")
+library(rnaturalearthhires)
 
 ```
 
@@ -63,7 +69,7 @@ map_style <- list(
 
 # 1. Trim Bioclim layers
 
-## Historical- eastern USA
+## Invaded regional (eastern USA)
 
 First, I will need to create a few copies of the bioclim layers that I tidied in vignette 030. I will create a set that have been cropped only to the eastern USA, which will be used to train the invaded regional models I produce. These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
 
@@ -149,11 +155,74 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
+## Native regional (China)
+
+
+
+
+```{r rnaturalearth download}
+
+# check which types of data are available
+data(df_layers_cultural) 
+# I will use states_provinces
+
+# get metadata
+ne_metadata <- ne_find_vector_data(
+  scale = 10,
+  category = "cultural",
+  getmeta = TRUE
+) %>%
+  dplyr::filter(layer == "admin_1_states_provinces")
+# URL to open metadata
+utils::browseURL(ne_metadata[, 3])
+
+
+# download data
+china_provinces <- rnaturalearth::ne_download(
+  scale = 10, # highest resolution
+  type = "admin_1_states_provinces", # states and provinces
+  category = "cultural",
+  #destdir = file.path(here(), "data-raw", "ne_states_provinces"),
+  #load = TRUE, # load into environment
+  returnclass = "sf" #terra spatvector
+)
+
+```
+
+```{r ready data for intersect}
+
+# load in slf points to intersect
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+  dplyr::select(-species) %>%
+  sf::st_as_sf(coords = c("x", "y")) # convert to sf object
+# set crs
+sf::st_crs(slf_points) <- "EPSG:4326"
+  
+
+
+# china shapefile  
+china_provinces <- china_provinces %>%
+  dplyr::filter(geonunit == "China")
+# set crs
+sf::st_crs(china_provinces) <- "EPSG:4326"
+
+```
+
+
+```{r intersect}
+
+china_provinces_withSLF <- sf::st_filter(x = china_provinces, y = slf_points)
+
+```
+
+
+
+
 The rasters look good!
 
 # 2. Background point choice
 
-## Invaded Regional Model (eastern USA)
+## Invaded Regional (eastern USA)
 
 Gallien et.al found that the regional model performed better when the background point were weighted by the output of the global model. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
 
@@ -328,6 +397,13 @@ ggsave(regional_points_plot1,
  #      )
 
 ```
+
+## Native regional (China)
+
+
+
+
+
 
 
 # Appendix
