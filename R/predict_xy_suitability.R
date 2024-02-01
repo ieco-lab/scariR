@@ -9,8 +9,8 @@
 #'listed first, followed by latitude. If a .csv file, file path should be in the
 #'format produced by the [file.path()] function (i.e. with '/' instead of '\\').
 #'
-#'@param xy.type Character. The type of xy data. If species occurrence data,
-#'list the name of the species. If another type of coordinate data, list that
+#'@param xy.type Character. Description of the xy data. If species occurrence
+#'data, list the name of the species. If another type of coordinate data, list that
 #'name. If providing more than one data type or species, separate into different
 #'data frames before adding to this function
 #'
@@ -34,7 +34,10 @@
 #'(standard deviation). If multiple are desired, must be in the concatenated
 #'form: `c("mean", "max")`. Should be all lowercase.
 #'
-#'@param output.name The name of the file output. Separate words with _.
+#'@param output.name The name of the file output. Separate words with _. Relevant
+#'information might include the name of the model used to predict, the spatial
+#'scale, the temporal scale, and the type of data points that are being used for
+#'predictions.
 #'
 #'@details
 #'
@@ -59,10 +62,6 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   # Error checks----------------------------------------------------------------
 
   # ensure objects are character type
-  if (is.character(model.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'model.name' must be of type 'character'")
-    stop()
-  }
   if (is.character(predict.fun) == FALSE) {
     cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
     stop()

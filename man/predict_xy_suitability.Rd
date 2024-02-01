@@ -20,8 +20,8 @@ data only. Coordinates should be in decimal degree format. Longitude should be
 listed first, followed by latitude. If a .csv file, file path should be in the
 format produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
 
-\item{xy.type}{Character. The type of xy data. If species occurrence data,
-list the name of the species. If another type of coordinate data, list that
+\item{xy.type}{Character. Description of the xy data. If species occurrence
+data, list the name of the species. If another type of coordinate data, list that
 name. If providing more than one data type or species, separate into different
 data frames before adding to this function}
 
@@ -45,7 +45,10 @@ output. Can be one of: \code{min}, \code{mean}, \code{median}, \code{max}, or \c
 (standard deviation). If multiple are desired, must be in the concatenated
 form: \code{c("mean", "max")}. Should be all lowercase.}
 
-\item{output.name}{The name of the file output. Separate words with _.}
+\item{output.name}{The name of the file output. Separate words with _. Relevant
+information might include the name of the model used to predict, the spatial
+scale, the temporal scale, and the type of data points that are being used for
+predictions.}
 }
 \value{
 Returns 3 .csv files. The first file \code{xy_with_data} contains the input xy

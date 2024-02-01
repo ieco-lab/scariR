@@ -194,7 +194,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
       # add title
       plot.ROC <- plot.ROC +
-        ggtitle(paste("ROC curve (sensitivity  vs 1 - Specificity)- '", model.name, "model', iteration", a))
+        ggtitle(paste0("ROC curve (sensitivity vs 1 - Specificity)- '", model.name, " model', iteration ", a))
 
       # save output
       ggsave(plot.ROC,
@@ -439,7 +439,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
 
     var_imp_plot <- var_imp_plot +
-      ggtitle(paste("Variable importance for '", model.name, "model'"))
+      ggtitle(paste0("Variable importance for '", model.name, " model'"))
 
     ggsave(var_imp_plot,
            filename = file.path(mypath, "plots", paste0(model.name, "_variable_importance.jpg")),

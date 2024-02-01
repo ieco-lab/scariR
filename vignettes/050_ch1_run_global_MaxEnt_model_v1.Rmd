@@ -406,7 +406,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
-  projected = "NAmerica_1981-2010", # name of area or time period projected to
+  describe.proj = "NAmerica_1981-2010", # name of area or time period projected to
   predict.fun = "mean",
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
@@ -425,7 +425,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
-  projected = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
+  describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
   predict.fun = "mean",
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),

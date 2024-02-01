@@ -28,9 +28,9 @@
 #'predictions will be made based on these rasters. See details for additional
 #'formatting information.
 #'
-#'@param projected Character. Is the environmental covariate raster stack in
+#'@param describe.proj Character. Is the environmental covariate raster stack in
 #'`env.covar.obj` projected to a different geographical space, time period, etc
-#'than the model was trained on? If so, enter the name of the projected period
+#'than the model was trained on? If yes, enter the name of the projected period
 #'or region. This ensures that plot titles and file names reflect the projected
 #'region or time period. If using multiple words, separate with an underscore.
 #'
@@ -59,7 +59,8 @@
 #'
 #'@param map.style List, default is NA. This is used to apply
 #'ggplot aesthetics to the plot outputs. If specified, the given value should be
-#'a list of ggplot aesthetic options. See examples.
+#'a list of ggplot aesthetic options. If not, the built-in default list will be
+#'used (see details). See examples for usage.
 #'
 #'@details
 #'
@@ -97,6 +98,18 @@
 #'the model and the names of the variables in these layers must be the same.
 #'You can check for naming consistency using [names()].
 #'
+#'## map.style:
+#'
+#'Map style default options:
+#'
+#'* xlab("longitude")
+#'* ylab("latitude")
+#'* labs(fill = "Suitability for SLF"),
+#'* theme_classic()
+#'* theme(legend_position = "bottom")
+#'* theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))
+#'* coord_equal()
+#'* viridis::scale_fill_viridis(option = "D"),
 #'
 #'@return
 #'A raster of suitability values projected to the same spatial extent as the
@@ -117,7 +130,7 @@
 #'
 #'
 #'@export
-create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, projected = NA, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
+create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -134,8 +147,8 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
     stop()
   }
-  if (is.character(projected) == FALSE) {
-    cli::cli_alert_danger("Parameter 'projected' must be of type 'character'")
+  if (is.character(describe.proj) == FALSE) {
+    cli::cli_alert_danger("Parameter 'describe.proj' must be of type 'character'")
     stop()
   }
 
@@ -202,7 +215,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       type = "cloglog",
       clamp = FALSE,
       progress = TRUE,
-      filename = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")),
+      filename = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")),
       # the function automatically adds the function name on the end
       filetype = "AAIGrid"
     )
@@ -213,7 +226,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
 
     # load in predictions
-    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", a, ".asc"))) %>%
+    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", a, ".asc"))) %>%
       terra::as.data.frame(., xy = TRUE)
 
     # plot
@@ -221,12 +234,12 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       geom_raster(data = model_suit,
                   aes(x = x, y = y, fill = model_suit[, 3])) +
       labs(title = paste0(toupper(a), " suitability for SLF"),
-           subtitle = paste0("Model: ", model.name, ifelse(is.na(projected), "", paste0(", projected to ", projected)))) +
+           subtitle = paste0("Model: '", model.name, "'", ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
       map_style
 
     # save plot output
     ggsave(model_suit_plot,
-           filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", a, ".jpg")),
+           filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", a, ".jpg")),
            height = 8,
            width = 10,
            device = "jpeg",
@@ -278,7 +291,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     for (i in predict.fun) {
 
       # load in raster created in last loop
-      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(projected), "", paste0("_", projected, "_projected")), "_", i, ".asc")))
+      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", i, ".asc")))
 
       # allow multiple entries for thresh
       for (b in thresh) {
@@ -332,7 +345,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
                         rcl = binary_rescale_class,
                         right = TRUE,
                         include.lowest = TRUE,
-                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
+                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")), # also write to file
                         overwrite = FALSE
         )
 
@@ -354,7 +367,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
                                       right = TRUE, # includes both sides
                                       include.lowest = TRUE,
                                       others = NA,
-                                      filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc")), # also write to file
+                                      filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")), # also write to file
                                       overwrite = FALSE)
 
         # message of completion
@@ -367,7 +380,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
 
         # load in mask layer and convert to df for plotting
-        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".asc"))) %>%
+        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc"))) %>%
           terra::as.data.frame(., xy = TRUE)
 
         # plot suitability raster first
@@ -379,12 +392,12 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           geom_raster(data = model_mask_layer_df,
                       aes(x = x, y = y), fill = "azure4") +
           labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold"),
-               subtitle = paste0("Model: ", model.name, ifelse(is.na(projected), "", paste0(", projected to ", projected)))) +
+               subtitle = paste0("Model: '", model.name, "'", ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
           map_style
 
         # save plot output
         ggsave(model_threshold_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(projected), "", paste0("_", projected, "_projected")), ".jpg")),
+               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".jpg")),
                height = 8,
                width = 10,
                device = "jpeg",

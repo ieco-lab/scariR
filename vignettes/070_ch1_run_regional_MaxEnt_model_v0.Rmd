@@ -437,25 +437,23 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_invaded_regional_ch1")
 
 ```
 
 ```{r predict mean and thresholded suitability maps for historical data}
 
-
-
 slfSpread::create_MaxEnt_suitability_maps(
-  model.obj = global_model,
-  model.name = "global", 
+  model.obj = invaded_regional_model,
+  model.name = "invaded_regional", 
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
-  projected = "NAmerica_1981-2010", # name of area or time period projected to
+  describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
   predict.fun = "mean",
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
-  summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+  summary.file = file.path(mypath, "invaded_regional_summary_all_iterations.csv")
 )
 
 ```
@@ -465,16 +463,16 @@ I will also need to create a suitability map for the projected 2041-2070 climate
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
-  model.obj = global_model,
-  model.name = "global", 
+  model.obj = invaded_regional_model,
+  model.name = "invaded_regional", 
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
-  projected = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
+  describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
   predict.fun = "mean",
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
-  summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+  summary.file = file.path(mypath, "invaded_regional_summary_all_iterations.csv")
 )
 
 ```
@@ -492,7 +490,7 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_invaded_regional_ch1")
 
 # slf presence data
 slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
@@ -505,10 +503,10 @@ slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tab
 slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
-  env.covar.obj = x_global_env_covariates,
-  model.obj = global_model,
+  env.covar.obj = x_global_hist_env_covariates,
+  model.obj = invaded_regional_model,
   mypath = mypath,
-  output.name = "global_slf_all_coords_1981-2010"
+  output.name = "invaded_regional_slf_all_coords_1981-2010"
 )
 
 ```
@@ -523,9 +521,9 @@ slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_CMIP6_env_covariates,
-  model.obj = global_model,
+  model.obj = invaded_regional_model,
   mypath = mypath,
-  output.name = "global_slf_all_coords_2041-2070_GFDL_ssp370"
+  output.name = "invaded_regional_slf_all_coords_2041-2070_GFDL_ssp370"
 )
 
 ```
@@ -542,7 +540,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_invaded_regional_ch1")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
@@ -559,10 +557,10 @@ IVR_regions <- wineries %>%
 slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
-  env.covar.obj = x_global_env_covariates,
-  model.obj = global_model,
+  env.covar.obj = x_global_hist_env_covariates,
+  model.obj = invaded_regional_model,
   mypath = mypath,
-  output.name = "global_wineries_1981-2010"
+  output.name = "invaded_regional_wineries_1981-2010"
 )
 
 ```
@@ -575,9 +573,9 @@ slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_CMIP6_env_covariates,
-  model.obj = global_model,
+  model.obj = invaded_regional_model,
   mypath = mypath,
-  output.name = "global_wineries_2041-2070_GFDL_ssp370"
+  output.name = "invaded_regional_wineries_2041-2070_GFDL_ssp370"
 )
 
 ```

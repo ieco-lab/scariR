@@ -10,7 +10,7 @@ create_MaxEnt_suitability_maps(
   mypath,
   create.dir = FALSE,
   env.covar.obj,
-  projected = NA,
+  describe.proj = NA,
   predict.fun = "mean",
   map.thresh = FALSE,
   thresh = NA,
@@ -42,9 +42,9 @@ temporally or spatially projected (ex, for climate change). Suitability
 predictions will be made based on these rasters. See details for additional
 formatting information.}
 
-\item{projected}{Character. Is the environmental covariate raster stack in
+\item{describe.proj}{Character. Is the environmental covariate raster stack in
 \code{env.covar.obj} projected to a different geographical space, time period, etc
-than the model was trained on? If so, enter the name of the projected period
+than the model was trained on? If yes, enter the name of the projected period
 or region. This ensures that plot titles and file names reflect the projected
 region or time period. If using multiple words, separate with an underscore.}
 
@@ -73,7 +73,8 @@ produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' in
 
 \item{map.style}{List, default is NA. This is used to apply
 ggplot aesthetics to the plot outputs. If specified, the given value should be
-a list of ggplot aesthetic options. See examples.}
+a list of ggplot aesthetic options. If not, the built-in default list will be
+used (see details). See examples for usage.}
 }
 \value{
 A raster of suitability values projected to the same spatial extent as the
@@ -127,6 +128,21 @@ This must a \code{SpatRaster} raster stack created using \code{\link[terra:rast]
 should include the same covariates (as raster layers) that you used to train
 the model and the names of the variables in these layers must be the same.
 You can check for naming consistency using \code{\link[=names]{names()}}.
+}
+
+\subsection{map.style:}{
+
+Map style default options:
+\itemize{
+\item xlab("longitude")
+\item ylab("latitude")
+\item labs(fill = "Suitability for SLF"),
+\item theme_classic()
+\item theme(legend_position = "bottom")
+\item theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))
+\item coord_equal()
+\item viridis::scale_fill_viridis(option = "D"),
+}
 }
 }
 \examples{
