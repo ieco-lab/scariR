@@ -368,9 +368,9 @@ map_gbif_thinned <- ggplot() +
   # the second line is a basemap from ggplot2
   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
-  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
-  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (red)") +
+  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -381,9 +381,9 @@ map_gbif_thinned_NAmerica <- ggplot() +
   # the second line is a basemap from ggplot2
   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
-  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (red)") +
+  ggtitle("SLF GBIF records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -395,7 +395,7 @@ map_gbif_thinned + map_gbif_thinned_NAmerica +
 
 ```
 
-From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the invaded range, and indeed every blue point is paired with at least 1 red point. So, our goal was met! We will do the same for the LydemapR data to ensure spatial thinning success.
+From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the invaded range, and indeed every blue point is paired with at least 1 darkorange point. So, our goal was met! We will do the same for the LydemapR data to ensure spatial thinning success.
 
 ```{r visualize raw and thinned lydemapr records}
 
@@ -410,9 +410,9 @@ map_lyde_thinned <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
-  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -431,9 +431,9 @@ map_lyde_allRecords <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
-  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "red", shape = 2) +
+  geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (red)") +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -482,7 +482,7 @@ write_rds(x = slf_published, file = file.path(here(), "data", "slf_publishedOccu
 map_published_Asia <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "red") +
+  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "darkorange") +
   coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
   ggtitle("SLF data from published sources \n in China") +
   theme(panel.grid.major = element_blank(),
@@ -493,7 +493,7 @@ map_published_Asia <- ggplot() +
 map_published_NAmerica <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "red") +
+  geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "darkorange") +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
   ggtitle("SLF data from published sources \n in N America") +
   theme(panel.grid.major = element_blank(),
@@ -674,7 +674,7 @@ slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-t
 
  map_all <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 1) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
     coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
     ggtitle("All SLF presences") +
     theme(panel.grid.major = element_blank(),
@@ -684,7 +684,7 @@ slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-t
 
  map_all_NAmerica <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 1) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
     coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
     ggtitle("SLF presences N AMerica") +
     theme(panel.grid.major = element_blank(),
@@ -694,7 +694,7 @@ slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-t
  
   map_all_Asia <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "red", size = 1) +
+    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
     coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
     ggtitle("SLF presences Asia") +
     theme(panel.grid.major = element_blank(),
@@ -779,7 +779,7 @@ if(FALSE) {
   # plot error points
   map_errors <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_error_points, aes(x = x, y = y), color = "red", size = 2) +
+    geom_point(data = slf_error_points, aes(x = x, y = y), color = "darkorange", size = 2) +
     coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
     ggtitle("SLF errors") +
     theme(panel.grid.major = element_blank(),
@@ -839,16 +839,16 @@ if(FALSE) {
   # plot SLF
   map_slf <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_2020, aes(x = longitude, y = latitude), color = "red", size = 2) +
+    geom_point(data = slf_2020, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
     geom_point(data = slf_new, aes(x = x, y = y), color = "blue", shape = 2) +
     coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
-    ggtitle("SLF new points (red) vs old (blue)") +
+    ggtitle("SLF new points (darkorange) vs old (blue)") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank()) +
     theme_bw()
   
-  # The old points are in blue and the new points are in red
+  # The old points are in blue and the new points are in darkorange
   
 }
 

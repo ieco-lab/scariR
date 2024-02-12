@@ -6,15 +6,16 @@
 \usage{
 compute_MaxEnt_summary_statistics(
   model.obj,
-  model.name,
+  model.name = "MODEL",
   mypath,
   create.dir = FALSE,
   env.covar.obj,
   train.obj,
   trainFolds.obj,
   test.obj,
-  jk.test.type,
-  threshold.type
+  plot.fun = "mean",
+  plot.type = "cloglog",
+  jk.test.type = "test"
 )
 }
 \arguments{
@@ -53,14 +54,19 @@ created using the \code{\link[SDMtune:randomFolds]{SDMtune::randomFolds()}} func
 test the model after training. Should be a SWD object, created using the
 \code{\link[SDMtune:prepareSWD]{SDMtune::prepareSWD()}} function.}
 
-\item{jk.test.type}{Character. When a jackknife test is conducted, this
-specifies whether to conduct the test on the trained model or using the test
-dataset. Choices are one of both of "train" and "test". If both are used,
-must be concatenated in the form: \code{c("train", "test")}.}
+\item{plot.fun}{Character. Default is "mean". The function used to determine
+the level of the other variables when creating the marginal curve. Can be one
+of: \code{min}, \code{mean}, \code{median}, \code{max}, or \code{sd} (standard deviation).}
 
-\item{threshold.type}{Character. The type of output desired for the marginal and
-univariate response curves. Choices are one of both of "logical" and "cloglog".
-If both are used, must be concatenated in the form: \code{c("logical", "cloglog")}.}
+\item{plot.type}{Character. Default is "cloglog".The type of output
+desired for the marginal and univariate response curves. Choices are "logistic"
+and "cloglog".If both are used, must be concatenated in the form:
+\code{c("logistic", "cloglog")}.}
+
+\item{jk.test.type}{Character. Default is "test". When a jackknife test is
+conducted, this specifies whether to conduct the test on the training or the
+test dataset. Choices are one of both of "train" and "test". If both are used,
+must be concatenated in the form: \code{c("train", "test")}.}
 }
 \value{
 The output of this function includes the following:
@@ -96,7 +102,7 @@ train.obj <- entire_easternUSA_train
 trainFolds.obj <- entire_easternUSA_trainFolds
 test.obj <- entire_easternUSA_test
 jk.test.type <- c("train", "test") # used to produce jackknife plots
-threshold.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 }
 \examples{
 

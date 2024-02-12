@@ -10,7 +10,8 @@ compute_MaxEnt_fixed_ROC(
   mypath,
   fixed.area.points,
   env.covar.obj,
-  test.obj
+  test.obj,
+  create.dir = FALSE
 )
 }
 \arguments{

@@ -34,15 +34,24 @@
 #'or region. This ensures that plot titles and file names reflect the projected
 #'region or time period. If using multiple words, separate with an underscore.
 #'
+#'@param predict.type Character. Default is "cloglog". The type of raster output
+#'to be created from the trained model. Can be either `cloglog` or
+#'`c("cloglog", "logistic")`. Cannot only be `logistic`.
+#'
 #'@param predict.fun Character. The default is "mean". This is the function to
 #'be applied to combine the iterations of the model when predicting a raster
-#'output. Can be one of: "min", "mean", "median", "max", or "sd"
+#'output. Can be one of: `min`, `mean`, `median`, `max`, or `sd`
 #'(standard deviation). If multiple are desired, must be in the concatenated
 #'form: `c("mean", "sd")`. Should be all lowercase.
 #'
+#'@param clamp.pred Logical. Default is TRUE. Should clamping be performed?
+#'
 #'@param map.thresh Logical, TRUE by default. This function determines if a
 #'thresholded suitability map will be created. If not, output will only consist
-#'of suitability maps of the type specified in `predict.fun`.
+#'of suitability maps of the type specified in `predict.fun`. **Note** threshold
+#'maps can only be created for the cloglog output from the model. If multiple
+#'values for `predict.type` are specified, the function will still only produce
+#'a threshold map based on the cloglog output
 #'
 #'@param thresh Numeric or Character. Does not need to be defined if
 #'`map.thresh = FALSE` This may be imported manually (numeric), or may be
@@ -72,7 +81,7 @@
 #'the cloglog scale has a lower color scale limit of 0, while a thresholded map
 #'has a lower limit determined by the algorithm.)
 #'
-#'*NOTE* This function will create a thresholded suitability map for a raster
+#'**NOTE** This function will create a thresholded suitability map for a raster
 #'output using the SD function, but this map would not be meaningful because
 #'it does not illustrate cloglog suitability (while thresholds are created
 #'using the cloglog suitability metrics).
@@ -130,7 +139,7 @@
 #'
 #'
 #'@export
-create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
+create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -143,12 +152,35 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
     stop()
   }
+  if (is.character(predict.type) == FALSE) {
+    cli::cli_alert_danger("Parameter 'predict.type' must be of type 'character'")
+    stop()
+  }
   if (is.character(mypath) == FALSE) {
     cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
     stop()
   }
   if (is.character(describe.proj) == FALSE) {
     cli::cli_alert_danger("Parameter 'describe.proj' must be of type 'character'")
+    stop()
+  }
+
+  # ensure objects are logical type
+  if (is.logical(clamp.pred) == FALSE) {
+    cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
+    stop()
+  }
+  if (is.logical(map.thresh) == FALSE) {
+    cli::cli_alert_danger("Parameter 'map.thresh' must be of type 'logical'")
+    stop()
+  }
+
+  # ensure predict.type contains at least "cloglog"
+  if ("cloglog" %in% predict.type == TRUE) {
+    predict_type <- predict.type
+
+  } else {
+    cli::cli_alert_danger("Parameter 'predict.type' must at least contain 'cloglog'")
     stop()
   }
 
@@ -167,6 +199,10 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
     cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
     # create plots folder within
     dir.create(mypath, "plots")
+
+  } else {
+    cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+    stop()
 
   }
 
@@ -199,124 +235,134 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
   }
 
+  # Create main distribution map------------------------------------------------
+
   # create a suitability map for every function listed
   for (a in predict.fun) {
 
-    # Create distribution map---------------------------------------------------
+    # create suitability map for every type of output listed
+    for (b in predict_type) {
 
-    # initialization message
-    print(paste0("predicting raster: ", a))
+      # initialization message
+      print(paste0("predicting raster: ", a, " | ", b))
 
-    # use predict function
-    SDMtune::predict(
-      object = model.obj,
-      data = env.covar.obj, # the covariate layers used to train the model
-      fun = a,
-      type = "cloglog",
-      clamp = FALSE,
-      progress = TRUE,
-      filename = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")),
-      # the function automatically adds the function name on the end
-      filetype = "AAIGrid"
-    )
+      # use predict function
+      SDMtune::predict(
+        object = model.obj,
+        data = env.covar.obj, # the covariate layers used to train the model
+        fun = a,
+        type = b,
+        clamp = clamp.pred,
+        progress = TRUE,
+        filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")),
+        # the function automatically adds the function name on the end
+        filetype = "AAIGrid"
+      )
+
+      # message of completion
+      print(paste0(a, " | ", b, " raster created and saved at: ", mypath))
 
 
-    # message of completion
-    print(paste0(a, " raster created and saved at: ", mypath))
+      # load in predictions
+      model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", a, ".asc"))) %>%
+        terra::as.data.frame(., xy = TRUE)
 
+      # plot
+      model_suit_plot <- ggplot() +
+        geom_raster(data = model_suit,
+                    aes(x = x, y = y, fill = model_suit[, 3])) +
+        labs(title = paste0("Suitability for SLF: ", toupper(a), " | ", b),
+             subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
+        map_style
 
-    # load in predictions
-    model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", a, ".asc"))) %>%
-      terra::as.data.frame(., xy = TRUE)
+      # save plot output
+      ggsave(model_suit_plot,
+             filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", a, ".jpg")),
+             height = 8,
+             width = 10,
+             device = "jpeg",
+             dpi = "retina")
 
-    # plot
-    model_suit_plot <- ggplot() +
-      geom_raster(data = model_suit,
-                  aes(x = x, y = y, fill = model_suit[, 3])) +
-      labs(title = paste0(toupper(a), " suitability for SLF"),
-           subtitle = paste0("Model: '", model.name, "'", ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
-      map_style
+      # end of loop-------------------------------------------------------------
 
-    # save plot output
-    ggsave(model_suit_plot,
-           filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", a, ".jpg")),
-           height = 8,
-           width = 10,
-           device = "jpeg",
-           dpi = "retina")
+      # message of completion
+      print(paste0("figure created for raster: ", a, " | ", b))
 
-    # end of loop---------------------------------------------------------------
+      # remove raster objects
+      rm(model_suit)
+      rm(model_suit_plot)
 
-    # message of completion
-    print(paste0("figure created for raster: ", a))
+    } # end of for(b in predict_type) statement
 
-    # remove raster objects
-    rm(model_suit)
-    rm(model_suit_plot)
-
-  }
+  } # and of for(a in predict.fun) statement
 
   # thresholded mapping---------------------------------------------------------
 
   # conditional statement if thresholded maps will be created
   if (map.thresh == TRUE) {
 
-    # Thresh preset values------------------------------------------------------
-
-    # import settings for summary.file
-    if (is.character(summary.file)) {
-      thresh_preset_import <- read.csv(summary.file) # read as csv
-
-    } else if(is.data.frame(summary.file)){
-      thresh_preset_import <- as.data.frame(summary.file) # just read in if its a df
-
-    } else {
-      thresh_preset_import <- as.data.frame(summary.file) # make data frame
-
-      }
-
-    # preset values for thresh parameter
-    thresh_presets <- c(
-      "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
-      "ten_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
-      "10_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
-      "ETSS" = as.numeric(thresh_preset_import[38, ncol(thresh_preset_import)]), # Equal.training.sensitivity.and.specificity.Cloglog.threshold
-      "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-      "BTO" = as.numeric(thresh_preset_import[46, ncol(thresh_preset_import)]), # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
-      "EE" = as.numeric(thresh_preset_import[50, ncol(thresh_preset_import)]) # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
-    )
-
     # create a suitability map for every function listed
     # note, i was used because this loop was copied
     for (i in predict.fun) {
 
+      # Thresh import rules-----------------------------------------------------
+
+      # import settings for summary.file
+      if (is.character(summary.file)) {
+        thresh_preset_import <- read.csv(summary.file) # read as csv
+
+      } else if(is.data.frame(summary.file)){
+        thresh_preset_import <- as.data.frame(summary.file) # just read in if its a df
+
+      } else {
+        thresh_preset_import <- as.data.frame(summary.file) # make data frame
+
+      }
+
+      # Modeled thresh values---------------------------------------------------
+
+      # import thresh presets
+      thresh_presets <- c(
+        "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
+        "ten_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
+        "10_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
+        "ETSS" = as.numeric(thresh_preset_import[38, ncol(thresh_preset_import)]), # Equal.training.sensitivity.and.specificity.Cloglog.threshold
+        "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+        "BTO" = as.numeric(thresh_preset_import[46, ncol(thresh_preset_import)]), # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
+        "EE" = as.numeric(thresh_preset_import[50, ncol(thresh_preset_import)]) # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
+        )
+
+      # import previous raster layer--------------------------------------------
+
       # load in raster created in last loop
-      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_predicted_suitability", ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), "_", i, ".asc")))
+      model_suit_raster <- terra::rast(x = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog", ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", i, ".asc")))
+
+      # thresh import-----------------------------------------------------------
 
       # allow multiple entries for thresh
-      for (b in thresh) {
+      for (k in thresh) {
 
 
         # conditional statement to create tailored name for outputs
         # if a is a numeric, import this value to naming object used to name outputs
-        if(is.numeric(b)) {
-          thresh_name <- b
+        if(is.numeric(k)) {
+          thresh_name <- k
 
           # otherwise (if it is a preset value), change value to as.character to name outputs
         } else {
-          thresh_name <- as.character(b)
+          thresh_name <- as.character(k)
         }
 
 
         # Criteria for selecting thresh value-----------------------------------
 
         # if numeric, import
-        if(is.numeric(b)) {
-          thresh_value <- b
+        if(is.numeric(k)) {
+          thresh_value <- k
 
           # if a preset, import value of preset
-        } else if(is.element(b, names(thresh_presets))){
-          thresh_value <- thresh_presets[b]
+        } else if(is.element(k, names(thresh_presets))){
+          thresh_value <- thresh_presets[k]
 
           # otherwise, stop and give warning
         } else {
@@ -327,7 +373,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         # print messages--------------------------------------------------------
 
         # loop start
-        print(paste0("begin threshold raster and map: ", i, ", ", thresh_name))
+        print(paste0("begin threshold raster and map: ", i, " | ", thresh_name))
         # thresh value
         print(paste0("threshold value for ", thresh_name, ": ", thresh_value))
 
@@ -345,12 +391,12 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
                         rcl = binary_rescale_class,
                         right = TRUE,
                         include.lowest = TRUE,
-                        filename = file.path(mypath, paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")), # also write to file
+                        filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
                         overwrite = FALSE
         )
 
         # message of completion
-        print(paste0(i, ", ", thresh_name, " binary raster created and saved at: ", mypath))
+        print(paste0(i, " | ", thresh_name, " binary raster created and saved at: ", mypath))
 
         # Create mask raster for thresholded raster figure----------------------
 
@@ -367,11 +413,11 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
                                       right = TRUE, # includes both sides
                                       include.lowest = TRUE,
                                       others = NA,
-                                      filename = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc")), # also write to file
+                                      filename = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
                                       overwrite = FALSE)
 
         # message of completion
-        print(paste0(i, ", ", thresh_name, " mask layer raster created and saved at: ", mypath))
+        print(paste0(i, " | ", thresh_name, " mask layer raster created and saved at: ", mypath))
 
 
         # Create thresholded suitability map------------------------------------
@@ -380,7 +426,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
 
         # load in mask layer and convert to df for plotting
-        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer_", i, "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".asc"))) %>%
+        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))) %>%
           terra::as.data.frame(., xy = TRUE)
 
         # plot suitability raster first
@@ -391,13 +437,13 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           # plot binary threshold on top
           geom_raster(data = model_mask_layer_df,
                       aes(x = x, y = y), fill = "azure4") +
-          labs(title = paste0(toupper(i), " suitability for SLF, ", thresh_name, " threshold"),
-               subtitle = paste0("Model: '", model.name, "'", ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
+          labs(title = paste0("suitability for SLF: ", toupper(i), " | cloglog | ", thresh_name, " threshold"),
+               subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
           map_style
 
         # save plot output
         ggsave(model_threshold_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_predicted_suitability_", i, "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj, "_projected")), ".jpg")),
+               filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
                height = 8,
                width = 10,
                device = "jpeg",
@@ -406,24 +452,24 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
         # end of loop operations------------------------------------------------
 
         # message of completion
-        print(paste0("figure created for raster: ", i, ", ", thresh_name))
+        print(paste0("figure created for raster: ", i, " | ", thresh_name))
 
         # remove temp objects
         rm(thresh_name)
         rm(thresh_value)
 
-      } # end of for(b in thresh) statement
+      } # end of for(k in thresh) statement
 
       # remove temp raster
       rm(model_suit_raster)
 
-    } # end of for(a in predict.fun) statement
+      } # end of for(i in predict.fun) statement
 
-  } # end of if (map.thresh == TRUE) statement
+    } # end of if (map.thresh == TRUE) statement
 
   # status update
-  print("finished plotting suitability maps")
+  cli::cli_alert_success("finished plotting suitability maps")
 
-} # end of function
+  } # end of function
 
 

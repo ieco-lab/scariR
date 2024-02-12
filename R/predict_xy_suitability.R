@@ -29,7 +29,7 @@
 #'create a folder from the last part of the filepath in `mypath`.
 #'
 #'@param predict.fun Character. The default is `mean`. This is the function to
-#'be applied to combine the iterations of the model when predicting a raster
+#'be applied to combine the iterations of the model when predicting a suitability
 #'output. Can be one of: `min`, `mean`, `median`, `max`, or `sd`
 #'(standard deviation). If multiple are desired, must be in the concatenated
 #'form: `c("mean", "max")`. Should be all lowercase.
@@ -57,7 +57,7 @@
 #'
 #'
 #'@export
-predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", output.name) {
+predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", clamp.pred = TRUE, output.name) {
 
   # Error checks----------------------------------------------------------------
 
@@ -76,6 +76,12 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   }
   if (is.character(output.name) == FALSE) {
     cli::cli_alert_danger("Parameter 'output.name' must be of type 'character'")
+    stop()
+  }
+
+  # ensure objects are logical type
+  if (is.logical(clamp.pred) == FALSE) {
+    cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
     stop()
   }
 
@@ -153,7 +159,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
       data = xy_covariates, # data for prediction
       fun = a, # function to be applied
       type = "cloglog", # default for MaxEnt
-      clamp = FALSE, # dont do clamping to restrict predictions
+      clamp = clamp.pred,
       progress = TRUE # progress bar
     ) %>%
       as.data.frame() %>%
@@ -168,7 +174,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
       dplyr::select(Species, x, y, cloglog_suitability)
 
     # save output
-    write_csv(x = xy_predict, file = file.path(mypath, paste0(output.name, "_xy_predicted_suitability_", a, ".csv")))
+    write_csv(x = xy_predict, file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), a, ".csv")))
 
     # remove prediction
     rm(xy_predict)

@@ -46,7 +46,7 @@
 #'TBD
 #'
 #'@export
-compute_MaxEnt_fixed_ROC <- function(model.obj, model.name, mypath, fixed.area.points, env.covar.obj, test.obj) {
+compute_MaxEnt_fixed_ROC <- function(model.obj, model.name, mypath, fixed.area.points, env.covar.obj, test.obj, create.dir = FALSE) {
 
   # Error Checks----------------------------------------------------------------
 
@@ -58,9 +58,25 @@ compute_MaxEnt_fixed_ROC <- function(model.obj, model.name, mypath, fixed.area.p
     stop("Parameter 'mypath' must be of type character")
   }
 
-  # ensure directory mypath exists
-  if (dir.exists(mypath) == FALSE) {
-    stop("Sub directory specified in object 'mypath' does not exist")
+  # Create sub directory for files----------------------------------------------
+
+  if (create.dir == FALSE) {
+    # print message
+    cli::cli_alert_info("proceeding without creating model subdirectory folder")
+    # create plots subfolder
+    dir.create(mypath, "plots")
+
+  } else if (create.dir == TRUE) {
+    # create sub directory from ending of mypath object
+    dir.create(mypath)
+    # print message
+    cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
+    # create plots folder within
+    dir.create(mypath, "plots")
+
+  } else {
+    cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+    stop()
   }
 
   ## Read in fixed area points data---------------------------------------------

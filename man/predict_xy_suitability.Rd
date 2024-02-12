@@ -11,6 +11,7 @@ predict_xy_suitability(
   model.obj,
   mypath,
   predict.fun = "mean",
+  clamp.pred = TRUE,
   output.name
 )
 }
@@ -40,7 +41,7 @@ and should be created by the function, set \code{create.dir = TRUE}. This will
 create a folder from the last part of the filepath in \code{mypath}.}
 
 \item{predict.fun}{Character. The default is \code{mean}. This is the function to
-be applied to combine the iterations of the model when predicting a raster
+be applied to combine the iterations of the model when predicting a suitability
 output. Can be one of: \code{min}, \code{mean}, \code{median}, \code{max}, or \code{sd}
 (standard deviation). If multiple are desired, must be in the concatenated
 form: \code{c("mean", "max")}. Should be all lowercase.}

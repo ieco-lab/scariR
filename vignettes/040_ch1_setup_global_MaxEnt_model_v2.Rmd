@@ -17,10 +17,10 @@ I will crop the rasters that were retrieved and tidied in the previous vignette 
 
 extents <- data.frame(
   "spatial_extent" = c("global model training", "invaded_regional model training", "native_regional model training", "projection"),
-  "long_min" = c(-180, -96.504, , -140.977),
-  "long_max" = c(179, -59.590, , -51.064),
-  "lat_min" = c(-60, 23.5, , 15.182),
-  "lat_max" = c(83, 47.458, , 60.589)
+  "long_min" = c(-180, -96.504, 89.43514, -140.977),
+  "long_max" = c(179, -59.590, 126.05626, -51.064),
+  "lat_min" = c(-60, 23.5, 20.23827, 15.182),
+  "lat_max" = c(83, 47.458, 53.32406, 60.589)
 )
 
 extents_kable <- knitr::kable(x = extents)
@@ -45,9 +45,6 @@ library(dismo) # generate random background points
 # spatial data handling
 library(raster) 
 library(terra)
-
-# aesthetics
-library(viridis)
 
 ```
 
@@ -249,7 +246,7 @@ First, I will load in known SLF presences so that background sampling does not o
 ```{r load in SLF presence}
 
 # dismo requires the base function (not tidyverse)
-slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
    dplyr::select(-species) 
 
 ```
@@ -290,9 +287,9 @@ global_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
-# save as rda file
-save(global_points, file = file.path(here(), "data", "global_background_points_v2.rda"))
+write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+# save as rds file
+write_rds(global_points, file = file.path(here(), "data", "global_background_points_v3.rds"))
   
   
 ```
@@ -308,7 +305,7 @@ mypath <- file.path(here() %>%
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
+global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
 
 ```
 
@@ -316,7 +313,7 @@ global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tab
 
 global_points_plot <- ggplot() +
     geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
-    geom_point(data = global_points, aes(x = x, y = y), color = "darkorange", size = 0.25) +
+    geom_point(data = global_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
     ggtitle("Global Background Points") +
     map_style +
     theme(legend.position = "none") 
@@ -328,7 +325,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(global_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_v2.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_v3.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",

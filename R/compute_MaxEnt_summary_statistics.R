@@ -40,14 +40,19 @@
 #'test the model after training. Should be a SWD object, created using the
 #'[SDMtune::prepareSWD()] function.
 #'
-#'@param jk.test.type Character. When a jackknife test is conducted, this
-#'specifies whether to conduct the test on the trained model or using the test
-#'dataset. Choices are one of both of "train" and "test". If both are used,
-#'must be concatenated in the form: `c("train", "test")`.
+#'@param plot.fun Character. Default is "mean". The function used to determine
+#'the level of the other variables when creating the marginal curve. Can be one
+#'of: `min`, `mean`, `median`, `max`, or `sd` (standard deviation).
 #'
-#'@param threshold.type Character. The type of output desired for the marginal and
-#'univariate response curves. Choices are one of both of "logical" and "cloglog".
-#'If both are used, must be concatenated in the form: `c("logical", "cloglog")`.
+#'@param plot.type Character. Default is "cloglog".The type of output
+#'desired for the marginal and univariate response curves. Choices are "logistic"
+#'and "cloglog".If both are used, must be concatenated in the form:
+#'`c("logistic", "cloglog")`.
+#'
+#'@param jk.test.type Character. Default is "test". When a jackknife test is
+#'conducted, this specifies whether to conduct the test on the training or the
+#'test dataset. Choices are one of both of "train" and "test". If both are used,
+#'must be concatenated in the form: `c("train", "test")`.
 #'
 #'@details
 #'
@@ -63,7 +68,7 @@
 #'trainFolds.obj <- entire_easternUSA_trainFolds
 #'test.obj <- entire_easternUSA_test
 #'jk.test.type <- c("train", "test") # used to produce jackknife plots
-#'threshold.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+#'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 #'
 #'@return
 #'The output of this function includes the following:
@@ -83,7 +88,7 @@
 #'TBD
 #'
 #'@export
-compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, jk.test.type, threshold.type) {
+compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {
 
     ## Error checks-------------------------------------------------------------
 
@@ -105,8 +110,12 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       cli::cli_alert_danger("Parameter 'jk.test.type' must be of type character")
       stop()
     }
-    if (is.character(threshold.type) == FALSE) {
-      cli::cli_alert_danger("Parameter 'threshold.type' must be of type character")
+    if (is.character(plot.fun) == FALSE) {
+      cli::cli_alert_danger("Parameter 'plot.fun' must be of type character")
+      stop()
+    }
+    if (is.character(plot.type) == FALSE) {
+      cli::cli_alert_danger("Parameter 'plot.type' must be of type character")
       stop()
     }
     if (is.character(mypath) == FALSE) {
@@ -129,6 +138,10 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
       # create plots folder within
       dir.create(mypath, "plots")
+
+    } else {
+      cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+      stop()
 
     }
 
@@ -194,11 +207,11 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
 
       # add title
       plot.ROC <- plot.ROC +
-        ggtitle(paste0("ROC curve (sensitivity vs 1 - Specificity)- '", model.name, " model', iteration ", a))
+        ggtitle(paste0("ROC curve (sensitivity vs 1 - specificity)- '", model.name, " model', iteration ", a))
 
       # save output
       ggsave(plot.ROC,
-             filename = file.path(mypath, "plots", paste0(model.name, "_", "iter", a, "_ROC.jpg")),
+             filename = file.path(mypath, "plots", paste0(model.name, "_", "iteration", a, "_ROC.jpg")),
              height = 8,
              width = 10,
              device = "jpeg",
@@ -220,20 +233,21 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     for (a in names(env.covar.obj)) {
 
       # for each threshold type, plot a response curve
-      for (b in threshold.type) {
+      for (b in plot.type) {
 
         # load in temp plot object
         plot.univar <- SDMtune::plotResponse(
           model = model.obj,
           var = a,
           type = b,
-          fun = "mean",
+          only_presence = TRUE,
           rug = TRUE
         )
 
         # add title
         plot.univar <- plot.univar +
-          ggtitle(paste0("'", model.name, " model'- ", a, " univariate response curve- ", b, " output"))
+          ggtitle(paste0("'", model.name, " model'- ", a, " univariate response curve: ", b)) +
+          labs(caption = "rug plots: top = presences, bottom = background/pseudoabsences")
 
         # save output
         ggsave(plot.univar,
@@ -256,32 +270,38 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     for (a in names(env.covar.obj)) {
 
       # for each threshold type, plot a response curve
-      for (b in threshold.type) {
+      for (b in plot.type) {
 
-        # load in temp plot object
-        plot.response <- SDMtune::plotResponse(
-          model = model.obj,
-          var = a,
-          type = b,
-          marginal = TRUE,
-          fun = "mean",
-          rug = TRUE
-        )
+        for (c in plot.fun) {
 
-        # add title
-        plot.response <- plot.response +
-          ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve- ", b, " output"))
+          # load in temp plot object
+          plot.response <- SDMtune::plotResponse(
+            model = model.obj,
+            var = a,
+            type = b,
+            fun = c,
+            only_presence = TRUE,
+            marginal = TRUE,
+            rug = TRUE
+          )
 
-        # save output
-        ggsave(plot.response,
-               filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_marg_resp_curve_", b, ".jpg")),
-               height = 8,
-               width = 10,
-               device = "jpeg",
-               dpi = "retina")
+          # add title
+          plot.response <- plot.response +
+            ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, "|", c)) +
+            labs(caption = "rug plots: top = presences, bottom = background/pseudoabsences")
 
-        # remove temp object
-        rm(plot.response)
+          # save output
+          ggsave(plot.response,
+                 filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_marg_resp_curve_", b, "_", c, ".jpg")),
+                 height = 8,
+                 width = 10,
+                 device = "jpeg",
+                 dpi = "retina")
+
+          # remove temp object
+          rm(plot.response)
+
+        }
 
       }
 
@@ -303,11 +323,11 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       data.obj <- as.data.frame(model.obj@models[[i]]@model@results)
 
       # change colname
-      colnames(data.obj) <- paste0("iter_", i, "_summary")
+      colnames(data.obj) <- paste0("iteration_", i, "_summary")
       # write to csv
       write.csv(
         x = data.obj,
-        file = file.path(mypath, paste0(model.name, "_summary_iter", i, ".csv")),
+        file = file.path(mypath, paste0(model.name, "_summary_iteration", i, ".csv")),
         row.names = TRUE
       )
 
@@ -398,7 +418,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
         )
 
       # write raw data to csv
-      write_csv(x = jk.obj, file = file.path(mypath, paste0(model.name, "_jackknife_iter", a, "_training_testing.csv")))
+      write_csv(x = jk.obj, file = file.path(mypath, paste0(model.name, "_jackknife_iteration", a, "_training_testing.csv")))
 
       # sub-loop to output 2 types of plots per test, training and testing
         for(b in jk.test.type) {
@@ -409,10 +429,10 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
           # modify objects to add titles and subtitles
           jk.obj_plot <- jk.obj_plot +
             ggtitle(paste0("'", model.name, " model'- jackknife test")) +
-            labs(subtitle = paste0("iter ", a, ", ", b, "ing data"))
+            labs(subtitle = paste0("iteration ", a, ", ", b, "ing data"))
 
           ggsave(jk.obj_plot,
-                 filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_iter", a, "_", b, "ing.jpg")),
+                 filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_iteration", a, "_", b, "ing.jpg")),
                  height = 8,
                  width = 10,
                  device = "jpeg",
@@ -429,6 +449,9 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
     }
 
     ## Variable importance------------------------------------------------------
+
+    # status update
+    cli::cli_alert_success("computing variable importance")
 
     # calculate variable importance
     var_imp <- SDMtune::varImp(model = model.obj, progress = TRUE)
@@ -481,7 +504,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name, mypath, cre
       write.table(
         x = conf.matr.hold,
         sep = ",",
-        file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_iter", a, ".csv")),
+        file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_iteration", a, ".csv")),
         row.names = FALSE,
         col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
       )

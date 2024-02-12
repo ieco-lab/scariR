@@ -107,11 +107,11 @@ In this chunk, I will load in the SLF presence dataset created in vignette 030 a
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
+p_slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_global_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
+a_global_background_points <- read_rds(file = file.path(here(), "data", "global_background_points_v3.rds"))
 
 ```
 
@@ -205,13 +205,13 @@ if (FALSE) {
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
+I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 4 presence records, so this is acceptable. I will also save the output to be used later.
 
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = global_SWD, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v2.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v2.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
   ))
 
 ```
@@ -315,6 +315,11 @@ if (TRUE) {
     progress = TRUE
     )
   
+  # show tuning results
+  global_model_tuned@results
+  # select number of best model
+  best.model <- which.max(global_model_tuned@results$test_AUC)
+  
 }
 
 ```
@@ -324,10 +329,6 @@ Based on the model tuning, we see that the highest test AUC value was attributed
 ## Re-training based on tuning
 
 ```{r train maxent model}
-
-global_model_tuned@results
-
-best.model <- which.max(global_model_tuned@results$test_AUC)
 
 global_model <- SDMtune::train(
   method = "Maxent",
@@ -350,7 +351,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_global_v1")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = global_model, 
@@ -362,7 +363,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
   trainFolds.obj = global_trainFolds,  # k-folds of training data
   test.obj = global_test, # data you wish to use to test the model
   jk.test.type = c("train", "test"), # types of jackknife curves to be created
-  threshold.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
 
 ```
@@ -392,13 +393,11 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_global_v1")
 
 ```
 
 ```{r predict mean and thresholded suitability maps for historical data}
-
-
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = global_model,
@@ -407,7 +406,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
   describe.proj = "NAmerica_1981-2010", # name of area or time period projected to
-  predict.fun = "mean",
+  clamp.pred = TRUE,
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
@@ -426,7 +425,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
   describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
-  predict.fun = "mean",
+  clamp.pred = TRUE,
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
@@ -447,10 +446,10 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_global_v1")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
+slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species)
 
 ``` 
@@ -463,6 +462,7 @@ slfSpread::predict_xy_suitability(
   env.covar.obj = x_global_env_covariates,
   model.obj = global_model,
   mypath = mypath,
+  clamp.pred = TRUE, # clamp predictions
   output.name = "global_slf_all_coords_1981-2010"
 )
 
@@ -480,6 +480,7 @@ slfSpread::predict_xy_suitability(
   env.covar.obj = x_global_CMIP6_env_covariates,
   model.obj = global_model,
   mypath = mypath,
+  clamp.pred = TRUE,
   output.name = "global_slf_all_coords_2041-2070_GFDL_ssp370"
 )
 
@@ -493,7 +494,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_ch1")
+                     "maxent/models/slf_global_v1")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
@@ -513,6 +514,7 @@ slfSpread::predict_xy_suitability(
   env.covar.obj = x_global_env_covariates,
   model.obj = global_model,
   mypath = mypath,
+  clamp.pred = TRUE,
   output.name = "global_wineries_1981-2010"
 )
 
@@ -528,6 +530,7 @@ slfSpread::predict_xy_suitability(
   env.covar.obj = x_global_CMIP6_env_covariates,
   model.obj = global_model,
   mypath = mypath,
+  clamp.pred = TRUE,
   output.name = "global_wineries_2041-2070_GFDL_ssp370"
 )
 

@@ -12,6 +12,8 @@ create_MaxEnt_suitability_maps(
   env.covar.obj,
   describe.proj = NA,
   predict.fun = "mean",
+  predict.type = "cloglog",
+  clamp.pred = TRUE,
   map.thresh = FALSE,
   thresh = NA,
   summary.file = NA,
@@ -50,13 +52,22 @@ region or time period. If using multiple words, separate with an underscore.}
 
 \item{predict.fun}{Character. The default is "mean". This is the function to
 be applied to combine the iterations of the model when predicting a raster
-output. Can be one of: "min", "mean", "median", "max", or "sd"
+output. Can be one of: \code{min}, \code{mean}, \code{median}, \code{max}, or \code{sd}
 (standard deviation). If multiple are desired, must be in the concatenated
 form: \code{c("mean", "sd")}. Should be all lowercase.}
 
+\item{predict.type}{Character. Default is "cloglog". The type of raster output
+to be created from the trained model. Can be either \code{cloglog} or
+\code{c("cloglog", "logistic")}. Cannot only be \code{logistic}.}
+
+\item{clamp.pred}{Logical. Default is TRUE. Should clamping be performed?}
+
 \item{map.thresh}{Logical, TRUE by default. This function determines if a
 thresholded suitability map will be created. If not, output will only consist
-of suitability maps of the type specified in \code{predict.fun}.}
+of suitability maps of the type specified in \code{predict.fun}. \strong{Note} threshold
+maps can only be created for the cloglog output from the model. If multiple
+values for \code{predict.type} are specified, the function will still only produce
+a threshold map based on the cloglog output}
 
 \item{thresh}{Numeric or Character. Does not need to be defined if
 \code{map.thresh = FALSE} This may be imported manually (numeric), or may be
@@ -100,7 +111,7 @@ values are determined by the MaxEnt algorithm. (ie, a non-thresholded map on
 the cloglog scale has a lower color scale limit of 0, while a thresholded map
 has a lower limit determined by the algorithm.)
 
-\emph{NOTE} This function will create a thresholded suitability map for a raster
+\strong{NOTE} This function will create a thresholded suitability map for a raster
 output using the SD function, but this map would not be meaningful because
 it does not illustrate cloglog suitability (while thresholds are created
 using the cloglog suitability metrics).
