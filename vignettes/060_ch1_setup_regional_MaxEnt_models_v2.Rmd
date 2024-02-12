@@ -105,7 +105,7 @@ ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
 These rasters need to be cropped and converted to the .ascii format for MaxEnt.
 
-```{r loop to crop bioclim layers to eastern N america}
+```{r loop to crop bioclim layers to easternUSA}
 
 # view list of filetypes for terra, use .ascii
 View(terra::gdal(drivers = TRUE))
@@ -209,13 +209,19 @@ china_provinces <- china_provinces %>%
   # set crs
   sf::st_transform(x = ., dst = "EPSG:4326") 
 
+# copy of china shapefile with extra province selected
+china_guangxi <- china_provinces %>%
+  dplyr::filter(name == "Guangxi")
+
 ```
 
 
 ```{r intersect and save}
 
 # intersect
-china_provinces_withSLF <- sf::st_filter(x = china_provinces, y = slf_points)
+china_provinces_withSLF <- sf::st_filter(x = china_provinces, y = slf_points) %>%
+  # add Guangxi province
+  dplyr::bind_rows(., china_guangxi)
 
 # also retrieve bounding box for records
 sf::st_bbox(china_provinces_withSLF)
@@ -232,6 +238,11 @@ sf::st_write(
 
 ```
 
+```{r re-load shapefile as needed}
+
+china_provinces_withSLF <- sf::read_sf(dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+
+```
 
 
 ```{r plot china}
@@ -239,7 +250,7 @@ sf::st_write(
 (native_map <- ggplot() +
    # world map
    geom_polygon(data = map_data('world', region = "China"), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # raster data
+   # slf native range shapefile
    geom_sf(data = china_provinces_withSLF, fill = "darkorange", color = "black") +
    # geom_sf_label(data = china_provinces_withSLF, aes(label = name), size = 2, position = "dodge") +
    ggrepel::geom_label_repel(
@@ -252,7 +263,8 @@ sf::st_write(
      ) +
    xlab("longitude") +
    ylab("latitude") +
-   labs(title = "Native range for SLF (Chinese provinces containing SLF records)") +
+   labs(title = "Native range for SLF (Chinese provinces containing SLF records)",
+        caption = "NOTE: Guangxi did not contain SLF presences, but was added based on expert opinion") +
    theme_classic()
 )
 ```
@@ -260,7 +272,7 @@ sf::st_write(
 ```{r save plot}
 
 ggsave(native_map, 
-       filename = file.path(here(), "vignette-outputs", "figures", "SLF_native_range_extent.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "SLF_native_range_extent_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -274,7 +286,7 @@ This roughly corresponds to the survey performed by Xin et al. This study perfor
 
 Another study by Du et al surveyed SLF populations to explain the phylogenetic origins of invasive SLF populations (Du et al, 2021). Du et al took measures to ensure that SLF populations surveyed for their study represented established populations and they specifically surveyed egg masses (Du et al, 2021). Our range map also corresponds to the map of surveyed populations in [figure 1](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). 
 
-Our native range map included two additional provinces, one in the far south (Guangdong) and one at the western edge (Qinghai). This is likely due to additional records that we retrieved from the literature in vignette 020. This range map will represent the native range training area for our native regional model. Background points will be chosen specifically from this region of China. Other countries have been named as part of the SLF native range (India, Vietnam, Taiwan, Bangaladesh), but no data exists to support these claims, so we chose to be conservative with our consideration of the SLF native range (SOURCE). Our consideration of the SLF native range also corresponds with the above mentioned surveys for SLF. 
+Our native range map included three additional provinces, two in the far south (Guangdong and Guangxi) and one at the western edge (Qinghai). Guangxi was added manually based on expert opinion of SLF presence (Matthew Helmus). The other two provinces (Guangdong and Quighai) were added due to due to additional SLF records that we retrieved, likely from our literature search outlined in vignette 020. This range map will represent the native range training area for our native regional model. Background points will be chosen specifically from this region of China. Other countries have been named as part of the SLF native range (India, Vietnam, Taiwan, Bangaladesh), but no data exists to support these claims, so we chose to be conservative with our consideration of the SLF native range (SOURCE). Our consideration of the SLF native range also corresponds with the above mentioned surveys for SLF. 
 
 *NOTE* inaturalist contains a single SLF presence in Taiwan, but this data point was not licensed for re-use and so we chose not to include it. Otherwise, no SLF presence data could be found in any data repository (GBIF, inaturalist) or the literature for the countries we chose to exclude from the SLF native range.
 
@@ -545,7 +557,90 @@ ggsave(regional_points_plot,
 
 ## Native regional (China)
 
+I need to do the same thing for China. I will only need to load in the China raster and the global weighted raster. I will then mask the global weighted raster by the China raster and use it to choose background points for the native model
 
+```{r set wd}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent")
+
+```
+
+```{r load in datasets}
+
+# slf points
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+   dplyr::select(-species) 
+
+# mask layer I will use
+China_bio2 <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio2_1981-2010_China.asc"))
+
+```
+
+```{r background points for global models}
+
+# set seed so that the random points for this dataset are the same the next time this code is run
+set.seed(6)
+# generate random points 
+China_points <- dismo::randomPoints(
+  mask = China_bio2, 
+  n = 10000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
+
+# save as csv
+write_csv(x = China_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
+# save as rds file
+write_rds(China_points, file = file.path(here(), "data", "regional_native_background_points_v0.rds"))
+  
+  
+```
+
+Now, I will plot these points for visualization purposes.
+
+```{r load in files for plotting}
+
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+China_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_China.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+regional_native_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
+
+```
+
+```{r plot points}
+
+native_points_plot <- ggplot() +
+  geom_polygon(data = map_data('world', region = "China"), aes(x = long, y = lat, group = group), fill = "azure4") +
+  geom_raster(data = China_bio2_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = regional_native_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
+  ggtitle("Regional Native model Background Points") +
+  map_style +
+  theme(legend.position = "none") 
+
+```
+
+The points seem to sufficiently cover the global extent. I can also see the latitude weighting, as the areas nearest the poles are less densely covered with points than areas near the equator.
+
+```{r save plot}
+
+ggsave(native_points_plot, 
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_native_background_points_v0.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina")
+
+```
 
 
 
