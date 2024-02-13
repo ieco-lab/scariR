@@ -188,7 +188,7 @@ I will need to combine the above covariate, presence and background point datase
 
 ```{r prepare SWD data object}
 
-if (FALSE) {
+if (TRUE) {
 
   global_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_global_env_covariates,
@@ -353,7 +353,7 @@ mypath <- file.path(here() %>%
                        dirname(),
                      "maxent/models/slf_global_v1")
 
-slfSpread::compute_MaxEnt_summary_statistics(
+slfSpread::compute_MaxEnt_summary_statistics_CV(
   model.obj = global_model, 
   model.name = "global", 
   mypath = mypath, 

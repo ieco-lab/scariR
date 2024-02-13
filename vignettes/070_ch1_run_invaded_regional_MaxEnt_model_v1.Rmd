@@ -217,11 +217,9 @@ a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-out
 
 ```
 
-I will need to combine the above covariate, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset.
+I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation.
 
 ### Model training object
-
-I will need to perform some extra edits on the regional version of the slf presences. I will need to filter these presences by two different extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model.
 
 ```{r filter presences from invaded range}
 
@@ -289,6 +287,8 @@ SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
 
 ### Model testing object
 
+The testing / validation SWD object will be created in the same fashion, except using the presences from the native range. These presences will be selected using a shapefile of the Chinese extent as a mask.
+
 ```{r filter presences from native range}
 
 # native range extent shapefile used to select slf presences
@@ -315,7 +315,7 @@ rm(p_slf_points_masked)
 if (TRUE) {
 
   regional_invaded_test <- SDMtune::prepareSWD(species = "Lycorma delicatula",
-                                    env = x_global_hist_env_covariates,
+                                    env = x_global_hist_env_covariates, # need the global covariates for China
                                     p = p_slf_points_native, 
                                     a = a_regional_invaded_background_points,
                                     verbose = TRUE # print helpful messages
@@ -343,13 +343,13 @@ SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
 
 ## Intitial Training
 
-First, I will train a model with 10 cross-validated replicates. The model will only be trained on the proportion of presence data from the invaded range. It will then be validated using the presence data from the native range (China).
+First, I will train a maxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). The regional_invaded model will only be trained on the proportion of presence data from the invaded range. It will then be validated using the presence data from the native range (China).
+
+I will use the following list of hyperparameters to train the initial model, but these parameters may change based on model tuning, which I will perform next.
 
 * ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
 * replicates = all final models will have 10 replicates
 * iterations = 5000. This is the max number of iterations for the optimization algorithm to perform before stopping training. Increasing this number from the default of 500 allows the algorithm to make more refined predictions.
-
-I will use these hyperparameters to train the initial model, but these parameters may change based on model tuning, which I will perform next.
 
 ```{r train maxent model}
 
@@ -441,15 +441,16 @@ mypath <- file.path(here() %>%
                      "maxent/models/slf_regional_invaded_v1")
 
 slfSpread::compute_MaxEnt_summary_statistics(
-  model.obj = invaded_regional_model, 
-  model.name = "invaded_regional", 
+  model.obj = regional_invaded_model, 
+  model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = TRUE, # create subdirectory
   env.covar.obj = x_easternUSA_env_covariates, # env covariates raster stacked
   train.obj = regional_invaded_train, # training data used to create model
   test.obj = regional_invaded_test, # data you wish to use to test the model
-  jk.test.type = c("train", "test"), # types of jackknife curves to be created
-  threshold.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+  plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
+  jk.test.type = c("train", "test") # types of jackknife curves to be created
+
   )
 
 ```
@@ -461,10 +462,10 @@ I will now save the results from the model tuning that I performed a few chunks 
 # save gridsearch interactive table from Viewer pane
 
 # save df results of model tuning
-write.csv(invaded_regional_model_tuned@results, file = file.path(mypath, "invaded_regional_model_tuning_results.csv"))
+write.csv(regional_invaded_model_tuned@results, file = file.path(mypath, "regional_invaded_model_tuning_results.csv"))
 
 # save model tuning object
-write_rds(regional_invaded_model_tuned, file = file.path(mypath, "regional_invaded_model_tuned.rds"))
+write_rds(regional_invaded_model_tuned, file = file.path(mypath, "regional_invaded_models_tuned.rds"))
 
 ```
 
@@ -482,15 +483,15 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_invaded_regional_ch1")
+                     "maxent/models/slf_regional_invaded_v1")
 
 ```
 
 ```{r predict mean and thresholded suitability maps for historical data}
 
 slfSpread::create_MaxEnt_suitability_maps(
-  model.obj = invaded_regional_model,
-  model.name = "invaded_regional", 
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
@@ -498,7 +499,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   predict.fun = "mean",
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
-  summary.file = file.path(mypath, "invaded_regional_summary_all_iterations.csv")
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
 )
 
 ```

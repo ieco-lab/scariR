@@ -3,6 +3,7 @@
 export(compute_DD_suitability)
 export(compute_MaxEnt_fixed_ROC)
 export(compute_MaxEnt_summary_statistics)
+export(compute_MaxEnt_summary_statistics_CV)
 export(convert_to_celsius)
 export(create_MaxEnt_suitability_maps)
 export(pestHub_compile)

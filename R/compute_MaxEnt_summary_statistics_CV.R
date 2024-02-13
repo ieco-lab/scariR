@@ -1,4 +1,4 @@
-#'Output summary statistics for a MaxEnt model ('Maxent' object)
+#'Output summary statistics for a MaxEnt model ('SDMmodelCV' object)
 #'
 #'This function will create a directory for and save a MaxEnt model that was run
 #'using the `SDMtune` R package. It will use the model to calculate a list of
@@ -31,6 +31,10 @@
 #'train the model. Should be a SWD object, created using the
 #'[SDMtune::prepareSWD()] function.
 #'
+#'@param trainFolds.obj A list of two matrices that specify the fold of the
+#'training and testing points. This object is used to create k-fold partitions
+#'from presence and background datasets to train a `SWDmodelCV` object. This is
+#'created using the [SDMtune::randomFolds()] function.
 #'
 #'@param test.obj A withheld group of presence and background points used to
 #'test the model after training. Should be a SWD object, created using the
@@ -61,6 +65,7 @@
 #'                                   "maxent/models/slf_easternUSA_entire_step1")
 #'env.covar.obj <- x_env_covariates
 #'train.obj <- entire_easternUSA_train
+#'trainFolds.obj <- entire_easternUSA_trainFolds
 #'test.obj <- entire_easternUSA_test
 #'jk.test.type <- c("train", "test") # used to produce jackknife plots
 #'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
@@ -69,9 +74,10 @@
 #'The output of this function includes the following:
 #'* training and test datasets used for the model
 #'* listed model parameters and suitability thresholds
+#'* K-folds and which samples were included per fold
 #'* variable contributions, permutation importance and SD
-#'* confusion matrix
-#'* jackknife tests for both training and testing data
+#'* confusion matrices per iteration
+#'* jackknife tests for both training and testing data, per iteration
 #'* jackknife plots
 #'* AUC / TSS
 #'* ROC plots
@@ -82,7 +88,7 @@
 #'TBD
 #'
 #'@export
-compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {
+compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {
 
     ## Error checks-------------------------------------------------------------
 
@@ -117,9 +123,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
       stop()
     }
 
-
-
-    ## Create sub directory for files-------------------------------------------
+    ## Create sub directory for files-----------------------------------------------
 
     if (create.dir == FALSE) {
       # print message
@@ -141,21 +145,15 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     }
 
-
-
     ## MaxEnt settings----------------------------------------------------------
 
     # set memory usage for Java
     options(java.parameters = "-Xmx2048m")
 
-
-
     ## Save MaxEnt model object-------------------------------------------------
 
     # save model
     readr::write_rds(model.obj, file = file.path(mypath, paste0(model.name, "_model.rds")))
-
-
 
     ## Get AUC, TSS, and variable contributions---------------------------------
 
@@ -191,8 +189,6 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
     # write to csv
     write.csv(var_imp, file = file.path(mypath, paste0(model.name, "_var_contrib.csv")), row.names = FALSE)
 
-
-
     ## Plot ROC, univariate and marginal response curves------------------------
 
 
@@ -203,22 +199,28 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
 
 
-    # load in temp plot object
-    plot.ROC <- SDMtune::plotROC(model.obj, test = test.obj)
+    # loop that plots an ROC curve for each model iteration
+    for (a in seq(length(model.obj@models))) {
 
-    # add title
-    plot.ROC <- plot.ROC +
-      ggtitle(paste0("ROC curve (sensitivity vs 1 - specificity)- '", model.name, " model'"))
+      # load in temp plot object
+      plot.ROC <- SDMtune::plotROC(model.obj@models[[a]], test = test.obj)
 
-    # save output
-    ggsave(plot.ROC,
-           filename = file.path(mypath, "plots", paste0(model.name, "_ROC.jpg")),
-           height = 8,
-           width = 10,
-           device = "jpeg",
-           dpi = "retina")
+      # add title
+      plot.ROC <- plot.ROC +
+        ggtitle(paste0("ROC curve (sensitivity vs 1 - specificity)- '", model.name, " model', iteration ", a))
 
+      # save output
+      ggsave(plot.ROC,
+             filename = file.path(mypath, "plots", paste0(model.name, "_", "iteration", a, "_ROC.jpg")),
+             height = 8,
+             width = 10,
+             device = "jpeg",
+             dpi = "retina")
 
+      # remove temp object
+      rm(plot.ROC)
+
+    }
 
     ### Plot Univariate Response Curves-----------------------------------------
 
@@ -262,8 +264,6 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     }
 
-
-
     ### Plot Marginal Response Curves-------------------------------------------
 
     # for each variable used in the model, create a response curve
@@ -287,7 +287,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
           # add title
           plot.response <- plot.response +
-            ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, " | ", c)) +
+            ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, "|", c)) +
             labs(caption = "rug plots: top = presences, bottom = background/pseudoabsences")
 
           # save output
@@ -307,81 +307,146 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     }
 
-
-
     ## Extract summary statistics-----------------------------------------------
 
     cli::cli_alert_success("writing summary statistics")
 
+    # create empty date frame for joining
+    empty.table <- as.data.frame(model.obj@models[[1]]@model@results) %>%
+      mutate(statistic = row.names(model.obj@models[[1]]@model@results)) %>% # add column of statistic names
+      dplyr::select(statistic)
+
+    # loop to write summary statistics for each iteration of the model
+    for (i in seq(length(model.obj@models))) {
+
       # load in temp object
-      data.obj <- as.data.frame(model.obj@model@results)
+      data.obj <- as.data.frame(model.obj@models[[i]]@model@results)
 
       # change colname
-      colnames(data.obj) <- paste0("statistic_value")
+      colnames(data.obj) <- paste0("iteration_", i, "_summary")
       # write to csv
       write.csv(
         x = data.obj,
-        file = file.path(mypath, paste0(model.name, "_summary.csv")),
+        file = file.path(mypath, paste0(model.name, "_summary_iteration", i, ".csv")),
         row.names = TRUE
       )
 
+      # add column name to data object
+      data.obj <- mutate(data.obj, statistic = row.names(model.obj@models[[1]]@model@results))
 
+      # join data.obj temporary object to empty table
+      empty.table <- right_join(empty.table, data.obj, by = "statistic")
+
+      # if i has reached the length of the model replicates, compute a mean and write the final table to .csv
+      if (i == length(model.obj@models)) {
+        # compute the mean of the columns
+        empty.table <- mutate(empty.table, mean = rowMeans(empty.table[, -1]))
+        # write to csv
+        write.csv(
+          x = empty.table,
+          file = file.path(mypath, paste0(model.name, "_summary_all_iterations.csv")),
+          row.names = FALSE
+        )
+
+      }
+
+      # remove temp object
+      rm(data.obj)
+
+    }
 
     ## Write training and testing data to file----------------------------------
 
     # write training data to csv
-    SDMtune::swd2csv(swd = train.obj, file_name = file.path(mypath, paste0(model.name, "_train.csv")))
+    SDMtune::swd2csv(swd = train.obj, file_name = file.path(mypath, paste0(model.name, "_train_Kfold.csv")))
+    # load csv in again
+    trainFolds.obj_output <- read.csv(file = file.path(mypath, paste0(model.name, "_train_Kfold.csv")))
+    # bind training data with folds
+    trainFolds.obj_output <- cbind(trainFolds.obj_output, trainFolds.obj)
+    # overwrite csv for training
+    write_csv(x = trainFolds.obj_output, file = file.path(mypath, paste0(model.name, "_train_Kfold.csv")))
 
     # write testing data to csv
     SDMtune::swd2csv(swd = test.obj, file_name = file.path(mypath, paste0(model.name, "_test.csv")))
-
-
 
     ## Jackknife test for variable importance-----------------------------------
 
     # status update
     cli::cli_alert_success("performing jackknife tests")
 
+    ### Jackknife test for entire model training--------------------------------
 
     # jackknife
-    jk.obj <- SDMtune::doJk(
+    JK.obj_df <- SDMtune::doJk(
       model = model.obj,
-      test = test.obj,
+      # test = test.obj, # not used for models with replicates
       metric = "auc",
       with_only = TRUE, # also run test for each variable alone
       progress = TRUE
       )
 
     # write raw data to csv
-    write_csv(x = jk.obj, file = file.path(mypath, paste0(model.name, "_jackknife_training_testing.csv")))
+    write_csv(x = JK.obj_df, file = file.path(mypath, paste0(model.name, "_jackknife_all_iterations_training.csv")))
 
-    # sub-loop to output jackknife plots
-      for(a in jk.test.type) {
+    # plot jackknife
+    JK.obj_df_plot <- plotJk(jk = JK.obj_df, type = "train")
 
-        # plot jackknife
-        jk.obj_plot <- plotJk(jk = jk.obj, type = a)
+    JK.obj_df_plot <- JK.obj_df_plot +
+      ggtitle(paste0("'", model.name, " model'- jackknife test")) +
+      labs(subtitle = "all iterations, training data")
 
-        # modify objects to add titles and subtitles
-        jk.obj_plot <- jk.obj_plot +
-          ggtitle(paste0("'", model.name, " model'- jackknife test")) +
-          labs(subtitle = paste0(a, "ing data"))
-
-        ggsave(jk.obj_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_", a, "ing.jpg")),
+    ggsave(JK.obj_df_plot,
+               filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_all_iterations_training.jpg")),
                height = 8,
                width = 10,
                device = "jpeg",
                dpi = "retina")
 
-        # remove temp object
-        rm(jk.obj_plot)
+
+    ### Jackknife test for each model iteration--------------------------------
+
+    # for loop to output csv file of jackknife test, one per model iteration
+    for (a in seq(length(model.obj@models))) {
+
+      # jackknife
+      jk.obj <- SDMtune::doJk(
+        model = model.obj@models[[a]],
+        test = test.obj,
+        metric = "auc",
+        with_only = TRUE, # also run test for each variable alone
+        progress = TRUE
+        )
+
+      # write raw data to csv
+      write_csv(x = jk.obj, file = file.path(mypath, paste0(model.name, "_jackknife_iteration", a, "_training_testing.csv")))
+
+      # sub-loop to output 2 types of plots per test, training and testing
+        for(b in jk.test.type) {
+
+          # plot training jackknife
+          jk.obj_plot <- plotJk(jk = jk.obj, type = b)
+
+          # modify objects to add titles and subtitles
+          jk.obj_plot <- jk.obj_plot +
+            ggtitle(paste0("'", model.name, " model'- jackknife test")) +
+            labs(subtitle = paste0("iteration ", a, ", ", b, "ing data"))
+
+          ggsave(jk.obj_plot,
+                 filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_iteration", a, "_", b, "ing.jpg")),
+                 height = 8,
+                 width = 10,
+                 device = "jpeg",
+                 dpi = "retina")
+
+          # remove temp object
+          rm(jk.obj_plot)
+
+      }
+
+      # remove temp object
+      rm(jk.obj)
 
     }
-
-    # remove temp object
-    rm(jk.obj)
-
-
 
     ## Variable importance------------------------------------------------------
 
@@ -406,15 +471,13 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
            device = "jpeg",
            dpi = "retina")
 
-
-
     ## Confusion Matrix for common threshold values-----------------------------
 
     # status update
     cli::cli_alert_success("generating confusion matrices")
 
     # load in summary file and slice the threshold values
-    conf.matr.data <- read.csv(file.path(mypath, paste0(model.name, "_summary.csv"))) %>%
+    conf.matr.data <- read.csv(file.path(mypath, paste0(model.name, "_summary_all_iterations.csv"))) %>%
       dplyr::slice(18, 22, 26, 30, 34, 38, 42, 46, 50) # the rows containing the threshold data
 
 
@@ -423,29 +486,66 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
     conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
       rename("hold_type" = "conf.matr.data[, 1]")
 
+    for (a in seq(length(model.obj@models))) {
 
-    # calculate confusion matrix using SDMtune
-    conf.matr.hold <- SDMtune::confMatrix(
-      model = model.obj,
-      test = test.obj,
-      type = "cloglog",
-      th = conf.matr.data[, ncol(conf.matr.data)] # the mean value for all cloglog thresholds
-    )
+      conf.matr.hold <- SDMtune::confMatrix(
+        model = model.obj@models[[a]],
+        test = test.obj,
+        type = "cloglog",
+        th = conf.matr.data[, ncol(conf.matr.data)] # the mean value for all cloglog thresholds
+      )
 
-    # bind threshold names
-    conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
-      rename("hold_type" = "conf.matr.data[, 1]") %>%
-      dplyr::select(hold_type, everything())
+      # bind threshold names
+      conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
+        rename("hold_type" = "conf.matr.data[, 1]") %>%
+        dplyr::select(hold_type, everything())
 
-    # write individual run results to file
-    write.table(
-      x = conf.matr.hold,
-      sep = ",",
-      file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix.csv")),
-      row.names = FALSE,
-      col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
-    )
+      # write individual run results to file
+      write.table(
+        x = conf.matr.hold,
+        sep = ",",
+        file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_iteration", a, ".csv")),
+        row.names = FALSE,
+        col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
+      )
 
+      # before all model iterations have been summarized, append to empty table
+      while (a < length(model.obj@models)) {
+        # join conf.matr.hold temporary object to empty table
+        conf.matr.output <- right_join(conf.matr.output, conf.matr.hold, by = "hold_type")
+
+        break
+
+      }
+
+      # when all model iterations have been appended, take the mean threshold value and write to csv
+      if (a == length(model.obj@models)) {
+        # compute the mean of the 5 columns
+        conf.matr.output <- mutate(conf.matr.output,
+                                   tp_mean = rowMeans(dplyr::across(contains("tp"))), # compute the average of all "tp" columns
+                                   fp_mean = rowMeans(dplyr::across(contains("fp"))),
+                                   fn_mean = rowMeans(dplyr::across(contains("fn"))),
+                                   tn_mean = rowMeans(dplyr::across(contains("tn"))),
+                                   th = rowMeans(dplyr::across(contains("th")))
+        ) %>%
+          dplyr::select(hold_type, th, tp_mean, fp_mean, fn_mean, tn_mean) %>%
+          rename("threshold_value" = "th",
+                 "threshold_type" = "hold_type") %>%
+          dplyr::select(threshold_type, threshold_value, everything())
+
+        # write to csv
+        write.csv(
+          x = conf.matr.output,
+          file = file.path(mypath, paste0(model.name, "_thresh_confusion_matrix_all_iterations.csv")),
+          row.names = FALSE
+        )
+
+      }
+
+      #remove temp object
+      rm(conf.matr.hold)
+
+    }
 
     # status update
     cli::cli_alert_success("finished creating summary statistics")
