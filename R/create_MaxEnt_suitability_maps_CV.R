@@ -1,4 +1,4 @@
-#'Predicts maps of establishment suitability based on MaxEnt model (SDMmodelCV object)
+#'Predicts maps of establishment suitability based on MaxEnt model ('SDMmodelCV' object)
 #'
 #'This function will create a map of establishment suitability based on a MaxEnt
 #'model trained using the `SDMtune` R package. It will optionally create
@@ -139,7 +139,7 @@
 #'
 #'
 #'@export
-create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
+create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -310,9 +310,6 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       # import settings for summary.file
       if (is.character(summary.file)) {
         thresh_preset_import <- read.csv(summary.file) # read as csv
-
-      } else if(is.data.frame(summary.file)){
-        thresh_preset_import <- as.data.frame(summary.file) # just read in if its a df
 
       } else {
         thresh_preset_import <- as.data.frame(summary.file) # make data frame

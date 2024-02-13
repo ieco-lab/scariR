@@ -496,7 +496,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
   describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
-  predict.fun = "mean",
+  clamp.pred = TRUE,
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
@@ -509,16 +509,16 @@ I will also need to create a suitability map for the projected 2041-2070 climate
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
-  model.obj = invaded_regional_model,
-  model.name = "invaded_regional", 
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
   describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
-  predict.fun = "mean",
+  clamp.pred = TRUE,
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
-  summary.file = file.path(mypath, "invaded_regional_summary_all_iterations.csv")
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
 )
 
 ```
@@ -536,10 +536,10 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_invaded_regional_ch1")
+                     "maxent/models/slf_regional_invaded_v1")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-01-05.csv")) %>%
+slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species)
 
 ``` 
@@ -550,9 +550,10 @@ slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_hist_env_covariates,
-  model.obj = invaded_regional_model,
+  model.obj = regional_invaded_model,
   mypath = mypath,
-  output.name = "invaded_regional_slf_all_coords_1981-2010"
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_1981-2010"
 )
 
 ```
@@ -567,9 +568,10 @@ slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_CMIP6_env_covariates,
-  model.obj = invaded_regional_model,
+  model.obj = regional_invaded_model,
   mypath = mypath,
-  output.name = "invaded_regional_slf_all_coords_2041-2070_GFDL_ssp370"
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_2041-2070_GFDL_ssp370"
 )
 
 ```
@@ -586,7 +588,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_invaded_regional_ch1")
+                     "maxent/models/slf_regional_invaded_v1")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
@@ -604,9 +606,10 @@ slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_hist_env_covariates,
-  model.obj = invaded_regional_model,
+  model.obj = regional_invaded_model,
   mypath = mypath,
-  output.name = "invaded_regional_wineries_1981-2010"
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_1981-2010"
 )
 
 ```
@@ -619,16 +622,16 @@ slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_CMIP6_env_covariates,
-  model.obj = invaded_regional_model,
+  model.obj = regional_invaded_model,
   mypath = mypath,
-  output.name = "invaded_regional_wineries_2041-2070_GFDL_ssp370"
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp370"
 )
 
 ```
 
-Now I have all of the outputs I need from the global model! These outputs will be used in comparison with their regional version of their time period to analyze the realized regional niche for SLF at multiple spatial scales. These will be used to make inferences about the impacts of climate change on suitability for SLF.
 
-In the next vignette, I will train the regional model needed for the spatial scale comparison and retrieve the data needed for the climate change comparison.
+END
 
 # References
 

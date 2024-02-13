@@ -2,7 +2,7 @@
 % Please edit documentation in R/compute_MaxEnt_summary_statistics.R
 \name{compute_MaxEnt_summary_statistics}
 \alias{compute_MaxEnt_summary_statistics}
-\title{Output summary statistics for a MaxEnt model ('Maxent' object)}
+\title{Output summary statistics for a MaxEnt model without cross-validation ('Maxent' object)}
 \usage{
 compute_MaxEnt_summary_statistics(
   model.obj,

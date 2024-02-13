@@ -1,4 +1,4 @@
-#'Predicts suitability for xy coordinates according to a trained MaxEnt model without cross-validation ('Maxent' object)
+#'Predicts suitability for xy coordinates according to a trained MaxEnt model ('SDMmodelCV' object)
 #'
 #'This function predicts establishment suitability based on a trained
 #'MaxEnt model for a set of xy coordinates. These coordinates do not need to be
@@ -27,6 +27,12 @@
 #'(i.e. with '/' instead of '\\'). If this sub directory does not already exist
 #'and should be created by the function, set `create.dir = TRUE`. This will
 #'create a folder from the last part of the filepath in `mypath`.
+#'
+#'@param predict.fun Character. The default is `mean`. This is the function to
+#'be applied to combine the iterations of the model when predicting a suitability
+#'output. Can be one of: `min`, `mean`, `median`, `max`, or `sd`
+#'(standard deviation). If multiple are desired, must be in the concatenated
+#'form: `c("mean", "max")`. Should be all lowercase.
 #'
 #'@param predict.type Character. Default is "cloglog". The type of raster output
 #'to be created from the trained model. Can be one of `raw`, `logistic` or
@@ -58,11 +64,15 @@
 #'
 #'
 #'@export
-predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.type = "cloglog", clamp.pred = TRUE, output.name) {
+predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, output.name) {
 
   # Error checks----------------------------------------------------------------
 
   # ensure objects are character type
+  if (is.character(predict.fun) == FALSE) {
+    cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
+    stop()
+  }
   if (is.character(predict.type) == FALSE) {
     cli::cli_alert_danger("Parameter 'predict.type' must be of type 'character'")
     stop()
@@ -88,7 +98,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
 
   # import for xy.obj-----------------------------------------------------------
 
-  # import settings
+  # imoport settings
   if (is.character(xy.obj)) {
     xy_import <- read.csv(xy.obj) # read as csv
 
@@ -155,15 +165,18 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
     dplyr::select(5:length(.))
 
   # loop for every function listed
+  for (a in predict.fun) {
+
     for (b in predict.type) {
 
       # initialization message
-      print(paste0("predicting xy suitability for function: ", b))
+      print(paste0("predicting xy suitability for function: ", a, " | ", b))
 
       # make predictions
       xy_predict <- SDMtune::predict(
         object = model.obj, # model
         data = xy_covariates, # data for prediction
+        fun = a, # function to be applied
         type = b, # type of prediction made
         clamp = clamp.pred,
         progress = TRUE # progress bar
@@ -182,15 +195,17 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
         dplyr::select(Species, x, y, contains("suitability"))
 
       # save output
-      write_csv(x = xy_predict, file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ".csv")))
+      write_csv(x = xy_predict, file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, "_", a, ".csv")))
 
 
       # remove prediction
       rm(xy_predict)
       # success message
-      print(paste0("finished predicting xy suitability for function: ", b))
+      print(paste0("finished predicting xy suitability for function: ", a, " | ", b))
 
     } # end of for(b in predict.type) statement
+
+  } # end of for(a in predict.fun) statement
 
   # status update
   cli::cli_alert_success("finished predicting xy suitability")
