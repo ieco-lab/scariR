@@ -1,0 +1,579 @@
+---
+title: "Run Invaded Regional MaxEnt model (chapter 1)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-02-15"
+output: html_document
+---
+# Overview
+
+In the last vignette, I 
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here() # here() starts at the root folder of this package.
+library(devtools)
+
+# SDMtune and dependencies
+library(SDMtune) # main package used to run SDMs
+library(dismo) # package underneath SDMtune
+library(rJava) # for running MaxEnt
+library(plotROC) # plots ROCs
+
+# spatial data handling
+library(raster) 
+library(terra) 
+
+library(viridis)
+
+```
+
+`SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+
+```{r check maxent installation}
+
+checkMaxentInstallation(verbose = TRUE)
+
+```
+
+This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory. 
+
+```{r control MaxEnt settings}
+
+# xmx sets java memory allocation
+options(java.parameters = "-Xmx2048m")
+
+# xss sets java stack size
+# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
+
+```
+
+# 1. Format Data for invaded regional Model
+
+## Input Data- env covariates
+
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The easternUSA versions will be used to train the regional model, while the NAmerica and global scales will be used to project the models (apply the trained model to a new dataset and obtain results).
+
+```{r load in historical covariates}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+
+# the env covariate scale used to train the model
+x_easternUSA_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+    grep("bio2_1981-2010_easternUSA.asc|bio11_1981-2010_easternUSA.asc|bio12_1981-2010_easternUSA.asc|bio15_1981-2010_easternUSA.asc", ., value = TRUE)
+
+# the scale used to make xy predictions
+x_global_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+    grep("bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# the scale used to project maps
+x_NAmerica_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+```
+
+The CMIP6 versions of these covariates will only be used for projection purposes.
+
+```{r load in CMIP6 covariates}
+
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# the env covariates for performing xy predictions for global slf and IVR points
+x_global_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+# the env covariates for creating prediction maps for N America
+x_NAmerica_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+```
+
+I will create rasters of the environmental covariates, stack and gather summary statistics. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune making predictions for tables downstream).
+
+```{r stack historical covariates and make naming consistent}
+
+# layer name object. Check order of layers first
+env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
+
+
+# easternUSA rasters
+# stack env covariates
+x_easternUSA_env_covariates <- terra::rast(x = x_easternUSA_env_covariates_list)
+
+# attributes
+nlyr(x_easternUSA_env_covariates)
+names(x_easternUSA_env_covariates)
+minmax(x_easternUSA_env_covariates)
+# ext(x_easternUSA_env_covariates)
+# crs(x_easternUSA_env_covariates)
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_easternUSA_env_covariates) <- env_layer_names
+
+
+
+# global rasters
+# stack env covariates
+x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_list)
+
+# attributes
+nlyr(x_global_hist_env_covariates)
+names(x_global_hist_env_covariates)
+minmax(x_global_hist_env_covariates)
+# ext(x_global_hist_env_covariates)
+# crs(x_global_hist_env_covariates)
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_global_hist_env_covariates) <- env_layer_names
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+
+
+# NAmerica rasters
+# stack env covariates
+x_NAmerica_hist_env_covariates <- terra::rast(x = x_NAmerica_hist_env_covariates_list)
+
+# attributes
+nlyr(x_NAmerica_hist_env_covariates)
+names(x_NAmerica_hist_env_covariates)
+minmax(x_NAmerica_hist_env_covariates)
+# ext(x_NAmerica_hist_env_covariates)
+# crs(x_NAmerica_hist_env_covariates)
+
+names(x_NAmerica_hist_env_covariates) <- env_layer_names
+
+```
+
+```{r stack CMIP6 covariates and make naming consistent}
+
+# stack env covariates
+x_global_CMIP6_env_covariates <- terra::rast(x = x_global_CMIP6_env_covariates_list)
+
+# attributes
+nlyr(x_global_CMIP6_env_covariates)
+names(x_global_CMIP6_env_covariates)
+minmax(x_global_CMIP6_env_covariates)
+# ext(x_global_CMIP6_env_covariates)
+# crs(x_global_CMIP6_env_covariates)
+
+names(x_global_CMIP6_env_covariates) <- env_layer_names
+
+
+
+# stack env covariates
+x_NAmerica_CMIP6_env_covariates <- terra::rast(x = x_NAmerica_CMIP6_env_covariates_list)
+
+# attributes
+nlyr(x_NAmerica_CMIP6_env_covariates)
+names(x_NAmerica_CMIP6_env_covariates)
+minmax(x_NAmerica_CMIP6_env_covariates)
+# ext(x_NAmerica_CMIP6_env_covariates)
+# crs(x_NAmerica_CMIP6_env_covariates)
+
+names(x_NAmerica_CMIP6_env_covariates) <- env_layer_names
+  
+```
+
+```{r remove lists}
+
+rm(x_easternUSA_env_covariates_list)
+rm(x_NAmerica_hist_env_covariates_list)
+rm(x_global_hist_env_covariates_list)
+rm(x_NAmerica_CMIP6_env_covariates_list)
+rm(x_global_CMIP6_env_covariates_list)
+
+```
+
+
+## Input data- presences / absences (training and testing)
+
+I need to also load in the SLF presence dataset created in vignette 030 and the background points dataset created in vignette 040.
+
+```{r load in points datasets}
+
+# slf presences
+p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+  dplyr::select(-species)
+
+# entire eastern USA background point set
+a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v1.csv"))
+
+```
+
+I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation.
+
+### Model training object
+
+```{r filter presences from invaded range}
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
+
+# convert to vector
+p_slf_points_vect <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+p_slf_points_invaded <- terra::as.data.frame(p_slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole))
+
+# will not need this object again
+rm(p_slf_points_vect)
+
+```
+
+Now I will create the "samples with data" object that SDMtune requires. 
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  regional_invaded_train <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                    env = x_easternUSA_env_covariates,
+                                    p = p_slf_points_invaded, 
+                                    a = a_regional_invaded_background_points,
+                                    verbose = TRUE # print helpful messages
+                                    )
+  
+  regional_invaded_train@coords # coordinates
+  regional_invaded_train@pa # presence / absence (background counted as absence)
+  regional_invaded_train@data # extracted data from 
+
+}
+
+
+
+# OLD method
+#regional_trainTest <-  SDMtune::trainValTest(
+#  x = regional_invaded_SWD,
+#  test = 0.2,
+#  only_presence = TRUE,
+#  seed = 6
+#)
+
+
+```
+
+I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data.csv")
+  ))
+
+```
+
+### Model testing object
+
+The testing / validation SWD object will be created in the same fashion, except using the presences from the native range. These presences will be selected using a shapefile of the Chinese extent as a mask.
+
+```{r filter presences from native range}
+
+# native range extent shapefile used to select slf presences
+mask_layer <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+
+# convert to vector
+p_slf_points_masked <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+# crop by extent area of interest
+terra::mask(., mask = mask_layer) %>%
+# convert to geom, which gets coordinates of a spatVector
+terra::geom() 
+
+# convert back to data frame
+p_slf_points_native <- terra::as.data.frame(p_slf_points_masked) %>%
+  dplyr::select(-c(geom, part, hole))
+  
+# will not need this object again
+rm(p_slf_points_masked)
+
+```
+
+```{r prepare SWD data object}
+
+if (FALSE) {
+
+  regional_invaded_test <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                    env = x_global_hist_env_covariates, # need the global covariates for China
+                                    p = p_slf_points_native, 
+                                    a = a_regional_invaded_background_points,
+                                    verbose = TRUE # print helpful messages
+                                    )
+  
+  regional_invaded_test@coords # coordinates
+  regional_invaded_test@pa # presence / absence (background counted as absence)
+  regional_invaded_test@data # extracted data from 
+
+}
+
+```
+
+I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
+
+```{r save SWD file}
+
+SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data.csv")
+  ))
+
+```
+
+# 2. Train Invaded Regional Model
+
+## Intitial Training
+
+First, I will train a maxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). The regional_invaded model will only be trained on the proportion of presence data from the invaded range. It will then be validated using the presence data from the native range (China).
+
+I will use the following list of hyperparameters to train the initial model, which I selected via tuning for the global model.
+
+* ALL feature classes (fc) used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
+* regularization multiplier (reg) set to 1.5 (more regularized than default of 1)
+* iterations = 5000. This is the max number of iterations for the optimization algorithm to perform before stopping training. Increasing this number from the default of 500 allows the algorithm to make more refined predictions.
+
+```{r train maxent model}
+
+regional_invaded_model <- SDMtune::train(
+  method = "Maxent",
+  data = regional_invaded_train,
+  fc = "lqpht", # feature classes set to ALL
+  reg = 1.5,
+  iter = 5000, # number of iterations
+  progress = TRUE
+)
+
+```
+
+## Summary Statistics
+
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`. 
+
+```{r compute summary statistics using custom function}
+
+# output directory
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_invaded_v2")
+
+slfSpread::compute_MaxEnt_summary_statistics(
+  model.obj = regional_invaded_model, 
+  model.name = "regional_invaded", 
+  mypath = mypath, 
+  create.dir = TRUE, # create subdirectory
+  env.covar.obj = x_easternUSA_env_covariates, # env covariates raster stacked
+  train.obj = regional_invaded_train, # training data used to create model
+  test.obj = regional_invaded_test, # data you wish to use to test the model
+  plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
+  jk.test.type = c("train", "test") # types of jackknife curves to be created
+
+  )
+
+```
+
+# 3. Create Outputs for Analysis
+
+## Create distribution map for area of interest
+
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
+
+I will take the above map and reclassify it so that areas that aren't suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum training presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
+
+I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of MaxEnt predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+```{r set wd}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_invaded_v2")
+
+```
+
+```{r predict mean and thresholded suitability maps for historical data}
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_NAmerica_hist_env_covariates, 
+  describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
+  clamp.pred = TRUE,
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
+)
+
+```
+
+I will also need to create a suitability map for the projected 2041-2070 climate data for N. America.
+
+```{r predict normal and thresholded suitability maps for CMIP6 data}
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
+  describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
+  clamp.pred = TRUE,
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
+)
+
+```
+
+
+## Predict suitability for all SLF presences
+
+I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
+
+During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
+
+### Historical Data
+
+```{r data import}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_invaded_v2")
+
+# slf presence data
+slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+  dplyr::select(-species)
+
+``` 
+
+```{r predictions for SLF coordinate data}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_hist_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_1981-2010"
+)
+
+```
+
+### CMIP6 Data
+
+I will repeat the same process for the CMIP6 data.
+
+```{r predictions for SLF coordinate data CMIP6}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_CMIP6_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_2041-2070_GFDL_ssp370"
+)
+
+```
+
+
+
+
+
+## Predict suibability for IVR regions
+
+I will perform the same action as above, but for the locations of important wineries around the world. 
+
+```{r data import}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_invaded_v2")
+
+# load in all IVR points
+load(file = file.path(here(), "data", "wineries.rda")) 
+
+IVR_regions <- wineries %>%
+  dplyr::select(x, y)
+
+``` 
+
+### Historical Data
+
+```{r predictions for IVR coordinate data}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_hist_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_1981-2010"
+)
+
+```
+
+### CMIP6 Data
+
+```{r predictions for SLF coordinate data CMIP6}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_CMIP6_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp370"
+)
+
+```
+
+
+END
+
+# References
+
+Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
+
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+Maryam Bordkhani. (n.d.). threshold rule.
+
+Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
+
+Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
+
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
+
+Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+
+VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
+
+
