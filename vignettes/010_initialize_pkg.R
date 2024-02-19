@@ -1,3 +1,9 @@
+# INTITALIZE PACKAGE
+library(here)
+
+# list package dependencies
+print(list.files(file.path(here(), "renv/library/R-4.2/x86_64-w64-mingw32")))
+
 # renv initialization
 
 # activate renv

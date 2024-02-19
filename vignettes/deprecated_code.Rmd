@@ -718,7 +718,7 @@ mypath <- file.path(here() %>%
                        dirname(),
                      "maxent/models/slf_easternUSA_entire_step1_v1")
 
-example
+
 # load model object
 readr::read_rds(file = file.path(mypath, "easternUSA_entire_model.rds"))
 
