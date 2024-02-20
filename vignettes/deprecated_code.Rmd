@@ -9,6 +9,131 @@ This file was written to hold deprecated code chunks. The original file will be 
 
 # vignette 050
 
+Attempt blocked cross validation 
+
+I will split the presences into training and testing, using 60% of the points for training, 20% for tuning, and 20% for testing. 
+
+```{r convert slf presences to sf object}
+
+#presences
+global_presences_with_data <- read_csv(
+  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
+  ) %>%
+  # add presence/absence column
+  mutate(pa = 1)
+
+# background points
+global_background_with_data <-  read_csv(
+  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  ) %>%
+  mutate(pa = 0)
+
+
+# join
+global_all_points_with_data <- full_join(global_presences_with_data, global_background_with_data) %>%
+  sf::st_as_sf(coords = c("X", "Y"), crs = 4326)
+
+```
+
+First, check spatial autocorrelation level
+
+```{r check spatial autocorrelation level}
+
+# set seed for consistency of random sampling
+set.seed(2)
+
+# take spatial autocorrelation distance
+spatial_autocor <- blockCV::cv_spatial_autocor(
+  x = global_all_points_with_data,
+  column = "pa",
+  plot = TRUE,
+  progress = TRUE
+)
+
+spatial_autocor$range
+spatial_autocor$plots
+
+# OLD METHOD
+# convert to a Lambert projection because variograms do not work with lat/long projections
+# using EPSG:9834, Lambert Cylindrical Equal Area (Spherical)
+#global_raster <- terra::project(x = x_global_hist_env_covariates, y = "EPSG:9834", method = "bilinear", threads = TRUE)
+# test for spatial autocorrelation distance
+#spatial_autocor <- blockCV::cv_spatial_autocor(
+#  r = global_raster,
+#  num_sample = 20000, # quadrupled from default due to raster size
+#  plot = TRUE,
+#  progress = TRUE
+#)
+
+```
+
+The range of spatial autocorrelation is estimated at 1,495,777 meters for the presence/absence data I am using to build the model. 
+
+```{r visualize block sizes}
+
+blockCV::cv_block_size(
+  x = global_all_points_with_data,
+  column = "pa"
+)
+
+```
+
+
+```{r}
+
+global_folds <- blockCV::cv_spatial(
+  x = global_all_points_with_data,
+  column = "pa",
+  r = x_global_hist_env_covariates,
+  k = 5,
+  size = 1495772,
+  hexagon = FALSE, # I am pretty sure the function used to calculate the autocorrelation distance used square blocks
+  selection = "random",
+  iteration = 50,
+  seed = 3,
+  progress = TRUE, 
+  report = TRUE
+)
+
+
+
+```
+
+```{r output and plot}
+
+# 
+View(global_folds$folds_list)
+# this fold list contains each block 
+global_folds$records
+
+blockCV::cv_plot(
+  cv = global_folds,
+  r = x_global_hist_env_covariates
+)
+
+```
+
+```{r check similarity}
+
+cv_similarity
+
+```
+
+```{r}
+
+global_folds <- blockCV::cv_cluster(
+  x = global_all_points_with_data,
+  column = "pa",
+  k = 10,
+  r = x_global_hist_env_covariates,
+  scale = TRUE,
+  raster_cluster = TRUE,
+  report = TRUE
+)
+
+```
+
+
 ```{r set random seed}
 
 # set random seed so it is consistent every time

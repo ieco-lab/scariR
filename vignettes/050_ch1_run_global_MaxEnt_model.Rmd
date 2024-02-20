@@ -34,11 +34,6 @@ library(plotROC) # plots ROCs
 # spatial data handling
 library(raster) 
 library(terra) 
-library(sf)
-
-# cross-validation
-library(blockCV)
-library(automap)
 
 library(viridis)
 
@@ -122,10 +117,15 @@ a_global_background_points <- read_rds(file = file.path(here(), "data", "global_
 
 I will create rasters of the environmental covariates, stack and gather summary statistics. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune making predictions for tables downstream).
 
-```{r stack historical covariates and make naming consistent}
+```{r naming object}
 
 # layer name object. Check order of layers first
 env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
+
+```
+
+
+```{r stack historical covariates and make naming consistent}
 
 # stack env covariates
 x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_list)
@@ -134,8 +134,8 @@ x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_lis
 nlyr(x_global_hist_env_covariates)
 names(x_global_hist_env_covariates)
 minmax(x_global_hist_env_covariates)
-ext(x_global_hist_env_covariates)
-crs(x_global_hist_env_covariates)
+# ext(x_global_hist_env_covariates)
+# crs(x_global_hist_env_covariates)
 
 
 # I will change the name of the variables because they are throwing errors in SDMtune
@@ -187,14 +187,15 @@ names(x_NAmerica_CMIP6_env_covariates) <- env_layer_names
   
 ```
 
-```{r remove lists}
+```{r remove unneeded objects}
 
-rm(x_NAmerica_hist_env_covariates_list)
 rm(x_global_hist_env_covariates_list)
-rm(x_NAmerica_CMIP6_env_covariates_list)
+rm(x_NAmerica_hist_env_covariates_list)
 rm(x_global_CMIP6_env_covariates_list)
+rm(x_NAmerica_CMIP6_env_covariates_list)
 
 ```
+
 
 ### create input data object
 
@@ -232,78 +233,40 @@ SDMtune::swd2csv(swd = global_SWD, file_name = c(
 
 ### Create training / test split
 
-I will split the presences into training and testing, using 60% of the points for training and 20% for testing. 
+I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 10 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
 
-```{r convert slf presences to sf object}
+```{r split data for training and testing}
 
-#presences
-global_presences_with_data <- read_csv(
-  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
-  ) %>%
-  # add presence/absence column
-  mutate(pa = 1)
+global_trainValTest <-  SDMtune::trainValTest(
+  x = global_SWD,
+  val = 0.2,
+  test = 0.2,
+  only_presence = TRUE,
+  seed = 3
+)
 
-# background points
-global_background_with_data <-  read_csv(
-  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
-  ) %>%
-  mutate(pa = 0)
+# separate off training data
+global_train <- global_trainValTest[[1]]
+global_val <- global_trainValTest[[2]]
+global_test <- global_trainValTest[[3]]
 
-
-# join
-global_points_with_data <- full_join(global_presences_with_data, global_background_with_data) %>%
-  sf::st_as_sf(coords = c("X", "Y"), crs = 4326)
-
-```
-
-```{r crop input data}
-
-ext.obj <- ext(-179, 178.99985967515, -60.00013900885, 82.99986041915)
-
-global_raster <- terra::crop(x_global_hist_env_covariates, ext.obj)
-
-ext(global_raster)
+global_train@coords # coordinates
+global_train@pa # presence / absence (background counted as absence)
+global_train@data # extracted data from
 
 ```
 
+```{r split data into k folds}
 
-First, check spatial autocorrelation level
-
-```{r check spatial autocorrelation level}
-
-spatial_autocor <- blockCV::cv_spatial_autocor(
-  r = global_raster,
-  num_sample = 10000, # doubled from default due to raster size
-  plot = TRUE,
-  progress = TRUE
+# create random folds
+global_trainFolds <- SDMtune::randomFolds(
+  data = global_train,
+  k = 10, # 10 folds
+  only_presence = TRUE,
+  seed = 4
 )
 
 ```
-
-```{r}
-
-blockCV::cv_spatial(
-  x = global_points_with_data,
-  column = "pa",
-  r = x_global_hist_env_covariates,
-  k = 10,
-  size = ,
-  selection = "random",
-  iteration = 50,
-  seed = 2,
-  progress = TRUE, 
-  report = TRUE
-)
-
-```
-
-```{r plot}
-
-blockCV::cv_plot()
-
-```
-
-
 
 # 2. Train & Tune Global Model
 
