@@ -72,118 +72,34 @@ map_style <- list(
 
 # 1. Trim Bioclim layers
 
+## Invaded regional (eastern USA)
 
-## Setup mask layers and slf points
+First, I will need to create a few copies of the bioclim layers that I tidied in vignette 030. I will create a set that have been cropped only to the eastern USA, which will be used to train the invaded regional models I produce. These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
 
 ```{r set wd}
 
 # path to directory
   mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent")
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
-
-```{r load in files}
-
-# load in SLF points
-slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) 
-
-# global access to cities as mask
-mask_layer <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
-  )
-
-```
-
-```{r filter presences from invaded range}
-
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
-
-# convert to vector
-slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
-  # crop by extent area of interest
-  terra::crop(., y = ext.obj) %>%
-  # convert to geom, which gets coordinates of a spatVector
-  terra::geom() 
-
-# convert back to data frame
-slf_points_invaded <- terra::as.data.frame(slf_points_vect) %>%
-  dplyr::select(-c(geom, part, hole))
-
-# will not need this object again
-rm(slf_points_vect)
-
-```
-
-```{r create raster of buffers}
-
-# tidy
-slf_points_matrix <- slf_points_invaded %>%
-  # mutate(value = 1) %>% # create a "value" column that contains 1.
-  as.matrix()
-
-slf_points_rasterized <- terra::rasterize(x = slf_points_matrix, y = mask_layer)
-
-# create a raster object that is a buffer around the points, 355,000m (355km)
-buffered_invaded <- terra::buffer(x = slf_points_rasterized, width = 355000, background = 0) %>%
-  terra::mask(., mask = mask_layer)
-
-
-terra::minmax(buffered_invaded)
-
-# replace 0s with NAs
-buffered_invaded <- terra::subst(x = buffered_invaded, from = 0, to = NA)
-
-```
-
-```{r visualize}
-
-buffered_invaded_df <- terra::as.data.frame(x = buffered_invaded, xy = TRUE)
-
-(ggplot() +
-    geom_raster(data = buffered_invaded_df, 
-              aes(x = x, y = y, fill = layer)) +
-    xlab("longitude") +
-    ylab("latitude") +
-    theme_minimal() +
-    theme(legend.position = "none") +
-    coord_equal()
-)
-
-```
-
-```{r save raster}
-
-writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"), filetype = "GTiff", overwrite = FALSE)
-
-```
-
-## trim bioclim layers to mask
 
 ```{r setup for cropping bioclim layers}
 
-# load mask layer
-buffered_invaded <- terra::rast(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
-
-
 # lists of target files in the directory
 # load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(
-  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", 
-  full.names = TRUE
-  ) %>%
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
 # extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
   grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
 # output file names
-output.files <- list.files(
-  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", 
-  full.names = FALSE
-  ) %>%
+output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
   grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "invaded_buffered")
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
 ```
 
@@ -191,7 +107,10 @@ These rasters need to be cropped and converted to the .ascii format for MaxEnt.
 
 ```{r loop to crop bioclim layers to easternUSA}
 
-if(TRUE) {
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
   
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
@@ -200,15 +119,10 @@ if(TRUE) {
     rast.hold <- terra::rast(env.files[a])
     
     # crop new rasters to extent
-    rast.hold <- terra::mask(x = rast.hold, mask = buffered_invaded)
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
     
     #write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]),
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
     
     # remove object once its done
     rm(rast.hold)
@@ -225,7 +139,7 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot main_layer to ensure cropping worked}
 
-bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_invaded_buffered.asc")) 
+bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
 # convert to df
 bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
@@ -243,10 +157,6 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 # the cropping worked
 
 ```
-
-
-
-
 
 ## Native regional (China)
 
@@ -483,7 +393,7 @@ mypath <- file.path(here() %>%
 ```{r load in global model predictions}
 
 # load in averaged global output
-global_mean <- terra::rast(x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean.asc"))
+global_mean <- terra::rast(x = file.path(mypath, "models", "slf_global_v1", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean.asc"))
 # also convert to df
 global_mean_df <- terra::as.data.frame(global_mean, xy = TRUE)
 
@@ -493,8 +403,6 @@ slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables
 
 # mask layer I will use
 mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc"))
-
-mask_layer_2 <- raster::raster(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
 
 ```
 
@@ -519,7 +427,7 @@ names(global_mean_weighted) <- "weight"
 # write to file
 terra::writeRaster(
   x = global_mean_weighted, 
-  filename = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc"),
+  filename = file.path(mypath, "models", "slf_global_v1", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc"),
   filetype = "AAIGrid",
   overwrite = FALSE
   )
@@ -545,22 +453,19 @@ minmax(global_mean_weighted)
 Now, I will sample the raster. I will still correct for the latitudinal stretching of the grid cells and exclude cells containing presences, as before. First, I will need to load in the rasters using the `raster` package for `dismo` compatibility.
 
 ```{r load weighted raster and crop}
+ 
+# ext object for eastern USA
+ext.obj <- raster::extent(-96.503906, -59.589844, 23.5, 47.457809)
 
 # I will load in the raster and crop it to the training area extent.
 global_mean_weighted <- raster::raster(
-  x = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc")
-  )
+  x = file.path(mypath, "models", "slf_global_v1", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc")
+  ) %>%
+  raster::mask(x = ., mask = mask_layer) %>%
+  raster::crop(x = ., y = ext.obj) # crop to EasternUSA
 
-# crop mask layer to extent of weighted layer
-mask_layer_2 <- mask_layer_2 %>%
-  raster::crop(., y = global_mean_weighted)
-
-# mask by weighted layer
-global_mean_weighted <- global_mean_weighted %>%
-  raster::mask(., mask = mask_layer_2) 
   
-
-# also convert to df
+# also conver to df
 global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
 
 ```
@@ -573,19 +478,19 @@ set.seed(5)
 # generate random points 
 regional_points <- dismo::randomPoints(
   mask = global_mean_weighted, 
-  n = 7500, # default number used by maxent
+  n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
   prob = TRUE,  # the raster contains probability weights
-  lonlatCorrection = FALSE, # weight samples by latitude because cell size is larger closer to equator
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
   warn = 2 # higher number gives most warnings, including if sample size not reached
   ) %>%
   as.data.frame(.)
 
 # save as csv
-write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v2.csv"))
+write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v1.csv"))
 # save as rds file
-write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v2.rds"))
+write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v1.rds"))
 
 ```
 
@@ -593,14 +498,12 @@ Now lets visualize the result.
 
 ```{r load in raster for plotting}
 
-NAmerica <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc")
+easternUSA <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_easternUSA.asc")
   )
 
 # also convert to df
-NAmerica_df <- terra::as.data.frame(NAmerica, xy = TRUE)
-
-mask_layer_2_df <- as.data.frame(mask_layer_2, xy = TRUE)
+easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
 
 ```
 
@@ -610,7 +513,7 @@ mask_layer_2_df <- as.data.frame(mask_layer_2, xy = TRUE)
 # plot at the continental scale
 (regional_points_plot <- ggplot() +
    geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = mask_layer_2_df, aes(x = x, y = y), fill = "azure1") +
+   geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
    geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.10) +
    ggtitle("Regional background points") +
    map_style +
@@ -635,7 +538,7 @@ We can see that the background points are isolated to the eastern half of the Un
 ```{r save plot}
 
 ggsave(regional_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_background_points_v2.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_background_points_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -744,92 +647,6 @@ ggsave(native_points_plot,
 
 
 # Appendix
-
-## Trim bioclim layers to Invaded regional (eastern USA entire)
-
-First, I will need to create a few copies of the bioclim layers that I tidied in vignette 030. I will create a set that have been cropped only to the eastern USA, which will be used to rasterize the SLF points. These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
-
-```{r set wd}
-
-# path to directory
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
-
-```{r setup for cropping bioclim layers}
-
-# lists of target files in the directory
-# load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
-  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
-
-# output file names
-output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "easternUSA")
-
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
-
-```
-
-These rasters need to be cropped and converted to the .ascii format for MaxEnt.
-
-```{r loop to crop bioclim layers to easternUSA}
-
-# view list of filetypes for terra, use .ascii
-View(terra::gdal(drivers = TRUE))
-
-if(FALSE) {
-  
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
-
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
-  
-}
-
-# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
-
-```
-
-Lets plot one of the new layers to make sure the cropping worked.
-
-```{r plot main_layer to ensure cropping worked}
-
-bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
-# convert to df
-bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
-
-# plot main layer as example
-(ggplot() +
-  # change scale of plots to be standard across figures
-  geom_raster(data = bio11_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  coord_equal()
-)
-# the cropping worked
-
-```
 
 ### Trim CMIP6 rasters to Eastern USA
 

@@ -9,7 +9,7 @@ This file was written to hold deprecated code chunks. The original file will be 
 
 # vignette 050
 
-Attempt blocked cross validation 
+## Attempt blocked cross validation 
 
 I will split the presences into training and testing, using 60% of the points for training, 20% for tuning, and 20% for testing. 
 

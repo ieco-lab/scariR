@@ -287,7 +287,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
 
           # add title
           plot.response <- plot.response +
-            ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, "|", c)) +
+            ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, " | ", c)) +
             labs(caption = "rug plots: top = presences, bottom = background/pseudoabsences")
 
           # save output

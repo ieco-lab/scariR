@@ -8,17 +8,32 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 
 ########## FILES ########## 
 
-----------_ch1_run_native_regional_MaxEnt_model_ .Rmd----------
+----------_ch1_run_global_MaxEnt_model_ .Rmd----------
 
 ## About
 
-This vignette creates all data objects needed to run the regional_native model. It trains the model and uses various functions to create suitability maps, summary statistics, etc.
+This vignette creates all data objects needed to run the global model. It trains the model and uses various functions to create suitability maps, summary statistics, etc.
 
 ## Changelog
 
 v0- initial version- in sandbox/vignettes_old
-v1- in sandbox/vignettes_old
-v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.
+v1- in sandbox/vignettes_old. creates v1 of the global model
+v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates 
+
+
+
+----------_ch1_setup_regional_MaxEnt_models.Rmd----------
+
+## About
+
+This vignette creates rasters and background point datasets needed for both regional-scale models.
+
+## Changelog
+
+v0- initial version- in sandbox/vignettes_old- trained the invaded model on the entire easternUSA
+v1- updated invaded model weighting to use new global model output, updated invaded model background selection to 355km buffer around presences- generated invaded background points v2 and regional_invaded_buffer layers
+
+
 
 ----------_ch1_run_invaded_regional_MaxEnt_model_ .Rmd----------
 
@@ -31,15 +46,18 @@ This vignette creates all data objects needed to run the regional_invaded model.
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old
 v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridSearch and used model settings from global instead.
+v3- creates the v3 of the regional_invaded model in maxent/models
 
-----------_ch1_run_global_MaxEnt_model_ .Rmd----------
+
+
+----------_ch1_run_native_regional_MaxEnt_model_ .Rmd----------
 
 ## About
 
-This vignette creates all data objects needed to run the global model. It trains the model and uses various functions to create suitability maps, summary statistics, etc.
+This vignette creates all data objects needed to run the regional_native model. It trains the model and uses various functions to create suitability maps, summary statistics, etc.
 
 ## Changelog
 
 v0- initial version- in sandbox/vignettes_old
-v1- in sandbox/vignettes_old. creates v1 of the global model
-v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage
+v1- in sandbox/vignettes_old
+v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.

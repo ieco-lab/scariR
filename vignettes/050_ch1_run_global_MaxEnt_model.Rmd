@@ -235,20 +235,22 @@ SDMtune::swd2csv(swd = global_SWD, file_name = c(
 
 I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 10 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
 
+Before settling on this method, I attempted a blocked cross-validation methodology using the package `blockCV`. I attempted it because many papers say that spatially segmenting the k-folds is a more rigorous method than simple random k-fold. However, this method did not work for my dataset and left many test folds with 0 points. I believe this is due to both the spatial scale I am working in for this model (global) and the comparatively narrow species range (limited to only east asia and the USA). The block size that reduces autocorrelation was about 1.5 million meters,  but this made the blocks too large for each block to receive adequate species presences. I also attempted spatial blocking by distance, but this yielded similar results. See `deprecated_code.Rmd` for code.
+
+I will use 10-fold random cross validation.
+
 ```{r split data for training and testing}
 
-global_trainValTest <-  SDMtune::trainValTest(
+global_trainTest <-  SDMtune::trainValTest(
   x = global_SWD,
-  val = 0.2,
   test = 0.2,
   only_presence = TRUE,
   seed = 3
 )
 
 # separate off training data
-global_train <- global_trainValTest[[1]]
-global_val <- global_trainValTest[[2]]
-global_test <- global_trainValTest[[3]]
+global_train <- global_trainTest[[1]]
+global_test <- global_trainTest[[2]]
 
 global_train@coords # coordinates
 global_train@pa # presence / absence (background counted as absence)
@@ -298,7 +300,7 @@ global_model <- SDMtune::train(
 I selected the hyperparameters that I thought were best for the model based on numerous papers. However, modeling papers for other species have made different choices for the parameter selection that I did not. Luckily, `SDMtune` makes it easy to select the best fit set of hyperparameters from a range of possibilities using the `gridSearch()` function. This function trains a different model for every possible combination of hyperparameters that is listed. I selected these hyperparameters for specific reasons listed in the literature.
 
 Feature classes: h, qpht, lqpht
-Feature classes are important because they govern how your environmental covariates are transformed by the algorithm (for example, if most presences fall beyond a specific point on the range of values, the algorithm might determine that a threshold feature is most appropriate.) 
+Feature classes are important because they govern how your environmental covariates are transformed by the algorithm (for example, if most presences fall beyond a specific point on the range of values, the algorithm might determine that a threshold feature is most appropriate.)
 
 * Elith et.al, 2011 used only hinge features or all features and showed that hinge features alone may perform better. They referred to a MaxEnt model using only hinge features as resembling an additive model, not unlike a GAM. 
 * The supplemental materials from the same paper demonstrated that linear features are redundant if also using hinge features.
@@ -368,7 +370,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v1")
+                     "maxent/models/slf_global_v2")
 
 slfSpread::compute_MaxEnt_summary_statistics_CV(
   model.obj = global_model, 
@@ -394,6 +396,9 @@ I will now save the results from the model tuning that I performed a few chunks 
 # save df results of model tuning
 write.csv(global_model_tuned@results, file = file.path(mypath, "global_model_tuning_results.csv"))
 
+# save tuned models
+write_rds(global_model_tuned, file = file.path(mypath, "global_models_tuned.rds"))
+
 ```
 
 # 3. Create Outputs for Analysis
@@ -410,13 +415,17 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v1")
+                     "maxent/models/slf_global_v2")
 
 ```
 
-```{r re-load model}
+```{r re-load model as needed}
 
-global_model <- read_rds(file = file.path(mypath, "global_model.rds"))
+if (FALSE) {
+  
+  global_model <- read_rds(file = file.path(mypath, "global_model.rds"))
+
+}
 
 ```
 
@@ -447,7 +456,7 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
   mypath = mypath, 
   create.dir = FALSE, 
   env.covar.obj = x_global_hist_env_covariates, 
-  describe.proj = "global_1981-2010", # name of area or time period projected to
+  describe.proj = "globe_1981-2010", # name of area or time period projected to
   clamp.pred = TRUE,
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
@@ -488,7 +497,7 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v1")
+                     "maxent/models/slf_global_v2")
 
 # slf presence data
 slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
@@ -505,8 +514,8 @@ slfSpread::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE, # clamp predictions
-  output.name = "global_slf_all_coords_1981-2010",
-  predict.type = c("cloglog", "logistic", "raw")
+  predict.type = c("cloglog", "logistic"),
+  output.name = "global_slf_all_coords_1981-2010"
 )
 
 ```
@@ -517,14 +526,14 @@ I will repeat the same process for the CMIP6 data.
 
 ```{r predictions for SLF coordinate data CMIP6}
 
-slfSpread::predict_xy_suitability(
+slfSpread::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_CMIP6_env_covariates,
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
-  predict.type = "cloglog",
+  predict.type = c("cloglog", "logistic"),
   output.name = "global_slf_all_coords_2041-2070_GFDL_ssp370"
 )
 
@@ -538,7 +547,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v1")
+                     "maxent/models/slf_global_v2")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
@@ -552,13 +561,14 @@ IVR_regions <- wineries %>%
 
 ```{r predictions for IVR coordinate data}
 
-slfSpread::predict_xy_suitability(
+slfSpread::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_hist_env_covariates,
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
   output.name = "global_wineries_1981-2010"
 )
 
@@ -568,13 +578,14 @@ slfSpread::predict_xy_suitability(
 
 ```{r predictions for SLF coordinate data CMIP6}
 
-slfSpread::predict_xy_suitability(
+slfSpread::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_CMIP6_env_covariates,
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
   output.name = "global_wineries_2041-2070_GFDL_ssp370"
 )
 
