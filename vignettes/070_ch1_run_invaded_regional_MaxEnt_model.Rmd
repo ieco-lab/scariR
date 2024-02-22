@@ -509,7 +509,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v2")
+                     "maxent/models/slf_regional_invaded_v3")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 

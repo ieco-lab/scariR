@@ -9,9 +9,9 @@ output: html_document
 
 In the last vignette, I set up for the models I will run by cropping my chosen environmental covariates to the proper extents for both training and projecting the models. I also produced the background point datasets that are needed for MaxEnt to run.
 
-In this vignette, I will (finally) start training MaxEnt models and obtaining the outputs I will need for my analysis! This vignette will train the `global` scale model and the next vignette will train the `regional` scale model. I begin by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. 
+In this vignette, I will (finally) start training MaxEnt models and obtaining the outputs I will need for my analysis! This vignette will train the global scale model and the next vignette will train the regional scale models. I begin by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. 
 
-This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics.R`, `create_MaxEnt_suitability_maps.R`, and `predict_xy_suitability.R`. Please see these subvignettes for a step-by-step guide to the creation of these functions. 
+This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics_CV.R`, `create_MaxEnt_suitability_maps_CV.R`, and `predict_xy_suitability_CV.R`. Please see these subvignettes for a step-by-step guide to the creation of these functions. This package also has versions of the same functions that are designed for MaxEnt models without cross-validation. These share the same name but without the `_CV` ending and will be used for the regional models.
 
 (THEORY)
 
@@ -34,6 +34,8 @@ library(plotROC) # plots ROCs
 # spatial data handling
 library(raster) 
 library(terra) 
+library(sf)
+library(blockCV) # appendix
 
 library(viridis)
 
@@ -102,7 +104,7 @@ x_NAmerica_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_
 
 ```
 
-In this chunk, I will load in the SLF presence dataset created in vignette 030 and the background points dataset created in vignette 040.
+In this chunk, I will load in the SLF presence dataset created in vignette 030 and the background points dataset created in the last vignette.
 
 ```{r load in points datasets}
 
@@ -115,7 +117,7 @@ a_global_background_points <- read_rds(file = file.path(here(), "data", "global_
 
 ```
 
-I will create rasters of the environmental covariates, stack and gather summary statistics. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune making predictions for tables downstream).
+I will import rasters of the environmental covariates, stack them and gather summary statistics. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune making predictions for tables downstream).
 
 ```{r naming object}
 
@@ -196,7 +198,6 @@ rm(x_NAmerica_CMIP6_env_covariates_list)
 
 ```
 
-
 ### create input data object
 
 I will need to combine the above covariate, presence and background point datasets into a single dataset to feed into MaxEnt. This dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model, so I will create this now.
@@ -233,9 +234,9 @@ SDMtune::swd2csv(swd = global_SWD, file_name = c(
 
 ### Create training / test split
 
-I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 10 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
+I will randomly split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 10 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
 
-Before settling on this method, I attempted a blocked cross-validation methodology using the package `blockCV`. I attempted it because many papers say that spatially segmenting the k-folds is a more rigorous method than simple random k-fold. However, this method did not work for my dataset and left many test folds with 0 points. I believe this is due to both the spatial scale I am working in for this model (global) and the comparatively narrow species range (limited to only east asia and the USA). The block size that reduces autocorrelation was about 1.5 million meters,  but this made the blocks too large for each block to receive adequate species presences. I also attempted spatial blocking by distance, but this yielded similar results. See `deprecated_code.Rmd` for code.
+Before settling on this method, I attempted a blocked cross-validation methodology using the function `blockCV::cv_spatial()`. I attempted it because many papers say that spatially segmenting the k-folds is a more rigorous method than simple random k-fold. However, this method did not work for my dataset and left many test folds with 0 presence points. I believe this is due to both the spatial scale I am working in for this model (global) and the comparatively narrow species range (limited to only east asia and the USA). The block size that reduces autocorrelation was about 1.5 million meters, but this made the blocks too large for each block to receive adequate species presences. I also attempted spatial blocking by distance (`cv_cluster()`), but this yielded similar results. See Appendix in this file for code.
 
 I will use 10-fold random cross validation.
 
@@ -297,7 +298,7 @@ global_model <- SDMtune::train(
 
 ## Tuning MaxEnt Model
 
-I selected the hyperparameters that I thought were best for the model based on numerous papers. However, modeling papers for other species have made different choices for the parameter selection that I did not. Luckily, `SDMtune` makes it easy to select the best fit set of hyperparameters from a range of possibilities using the `gridSearch()` function. This function trains a different model for every possible combination of hyperparameters that is listed. I selected these hyperparameters for specific reasons listed in the literature.
+Next, I will perform model tuning by varying specific hyperparameters. I selected the hyperparameters that I thought were best for the model based on numerous papers. However, modeling papers for other species have made different choices for the parameter selection that I did not. Luckily, `SDMtune` makes it easy to select the best fit set of hyperparameters from a range of possibilities using the `gridSearch()` function. This function trains a different model for every possible combination of hyperparameters that is listed. I can then pick the best model based on AUC, TSS or AICc. I selected these hyperparameters for specific reasons listed in the literature.
 
 Feature classes: h, qpht, lqpht
 Feature classes are important because they govern how your environmental covariates are transformed by the algorithm (for example, if most presences fall beyond a specific point on the range of values, the algorithm might determine that a threshold feature is most appropriate.)
@@ -310,6 +311,8 @@ Regularization Multiplier: 0.25, 0.5, 1, 1.5, 2
 Regularization penalizes overfitting in the model. If a model is too fit to a range of covariate values, to the point that this model could not be applied to another area with other values, it receives a penalty. 
 
 * Radosavljevic and Anderson 2014 used a range of regularization multipliers, from 0.25 to 2, to test for the most appropriate value.
+
+I will select the model with the highest test AUC value. I will also save all of the model variations in a `.rds` object.
 
 ```{r grid search tunable args}
 
@@ -363,7 +366,7 @@ global_model <- SDMtune::train(
 
 ## Summary Statistics
 
-This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`. 
+This function produces all summary statistics for this model. This list includes marginal and univariate response curves, jackknife tests, variable importance, thresholds and confusion matrices, among other statistics. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`. 
 
 ```{r compute summary statistics using custom function}
 
@@ -387,7 +390,7 @@ slfSpread::compute_MaxEnt_summary_statistics_CV(
 
 ```
 
-I will now save the results from the model tuning that I performed a few chunks ago, because I have created the directory for these model results. I will also save the gridded result figure manually from the Viewer pane to the model directory folder that was created using `compute_MaxEnt_summary_statistics()`.
+I will now save the results from the model tuning that I performed a few chunks ago, because I have created the directory for these model results. I will also save the gridded result figure manually from the Viewer pane to the model directory folder that was created using `compute_MaxEnt_summary_statistics_CV()`.
 
 ```{r save tuning results}
 
@@ -405,7 +408,7 @@ write_rds(global_model_tuned, file = file.path(mypath, "global_models_tuned.rds"
 
 ## Create distribution map for area of interest
 
-Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps_CV()`.
 
 I will take the above map and reclassify it so that areas that aren't suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum training presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
 
@@ -465,7 +468,7 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 ```
 
-I will also need to create a suitability map for the projected 2041-2070 climate data for N. America.
+Lastly, I will create a suitability map for the projected 2041-2070 climate data for N. America.
 
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 
@@ -484,10 +487,9 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 ```
 
+## Predict suitability for known SLF presences
 
-## Predict suitability for all SLF presences
-
-I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
+I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the known SLF populations. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
 
 During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
 
@@ -541,7 +543,7 @@ slfSpread::predict_xy_suitability_CV(
 
 ## Predict suibability for IVR regions
 
-I will perform the same action as above, but for the locations of important wineries around the world. 
+I will perform the same action as above, but for the locations of over 1,000 important wineries around the world. These will be used to create similar scatter plots.
 
 ```{r data import}
 
@@ -591,9 +593,135 @@ slfSpread::predict_xy_suitability_CV(
 
 ```
 
-Now I have all of the outputs I need from the global model! These outputs will be used in comparison with their regional version of their time period to analyze the realized regional niche for SLF at multiple spatial scales. These will be used to make inferences about the impacts of climate change on suitability for SLF.
+Now I have all of the outputs I need from the global model! These outputs will be used in comparison with the regional version of their time period to analyze the realized regional niche for SLF at multiple spatial scales. These will be used to make inferences about the impacts of climate change on suitability for SLF.
 
 In the next vignette, I will train the regional model needed for the spatial scale comparison and retrieve the data needed for the climate change comparison.
+
+
+# Appendix
+
+## Attempt at Spatially Blocked Cross-validation
+
+I attempted this method because of the body of literature that says blocked cross validation is more rigorous than random CV. Blocked CV results is more spatially separated training and testing data, which prevents autocorrelation within the environmental covariates. However, this method did not work because of the combination of the scale of the covariates and the comparatively narrow range of SLF presences. The global scale of analysis means that the block size needs to be quite large (about 1.5 million meters) to reduce spatial autocorrelation between the training points. The narrow spread of presence points in comparison means that not every blocked CV group (out of 10) received test presences and some had no test points.
+
+```{r convert slf presences to sf object}
+
+#presences
+global_presences_with_data <- read_csv(
+  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
+  ) %>%
+  # add presence/absence column
+  mutate(pa = 1)
+
+# background points
+global_background_with_data <-  read_csv(
+  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  ) %>%
+  mutate(pa = 0)
+
+
+# join
+global_all_points_with_data <- full_join(global_presences_with_data, global_background_with_data) %>%
+  sf::st_as_sf(coords = c("X", "Y"), crs = 4326)
+
+```
+
+First, check spatial autocorrelation level. This determines the appropriate block size to prevent spatial autocorrelation.
+
+```{r check spatial autocorrelation level}
+
+# set seed for consistency of random sampling
+set.seed(2)
+
+# take spatial autocorrelation distance
+spatial_autocor <- blockCV::cv_spatial_autocor(
+  x = global_all_points_with_data,
+  column = "pa",
+  plot = TRUE,
+  progress = TRUE
+)
+
+spatial_autocor$range
+spatial_autocor$plots
+
+# OLD METHOD
+# convert to a Lambert projection because variograms do not work with lat/long projections
+# using EPSG:9834, Lambert Cylindrical Equal Area (Spherical)
+#global_raster <- terra::project(x = x_global_hist_env_covariates, y = "EPSG:9834", method = "bilinear", threads = TRUE)
+# test for spatial autocorrelation distance
+#spatial_autocor <- blockCV::cv_spatial_autocor(
+#  r = global_raster,
+#  num_sample = 20000, # quadrupled from default due to raster size
+#  plot = TRUE,
+#  progress = TRUE
+#)
+
+```
+
+The range of spatial autocorrelation is estimated at 1,495,777 meters for the presence/absence data I am using to build the model. I will also use an interactive tool to visualize block size based on pa data.
+
+```{r visualize block sizes}
+
+blockCV::cv_block_size(
+  x = global_all_points_with_data,
+  column = "pa"
+)
+
+```
+
+I will go ahead and use the 1.49 million meter distance for the spatial blocks.
+
+```{r}
+
+global_folds <- blockCV::cv_spatial(
+  x = global_all_points_with_data,
+  column = "pa",
+  r = x_global_hist_env_covariates,
+  k = 5,
+  size = 1495772,
+  hexagon = FALSE, # I am pretty sure the function used to calculate the autocorrelation distance used square blocks
+  selection = "random",
+  iteration = 50,
+  seed = 3,
+  progress = TRUE, 
+  report = TRUE
+)
+
+
+
+```
+
+```{r output and plot}
+
+# 
+View(global_folds$folds_list)
+# this fold list contains each block 
+global_folds$records
+
+blockCV::cv_plot(
+  cv = global_folds,
+  r = x_global_hist_env_covariates
+)
+
+```
+
+This method did not work because about 5 test folds out of 10 received 0 test points. The spread of the presences seems too narrow for each fold to receive adequate training and test presences. I will also try a spatial clustering algorithm.
+
+```{r}
+
+global_folds <- blockCV::cv_cluster(
+  x = global_all_points_with_data,
+  column = "pa",
+  k = 10,
+  r = x_global_hist_env_covariates,
+  scale = TRUE,
+  raster_cluster = TRUE,
+  report = TRUE
+)
+
+```
+
+Clustering based on distance also did not put test presences in each fold (some had 0), so the blocked CV method will not be used and I will revert to k-fold random CV.
 
 # References
 

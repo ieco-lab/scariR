@@ -7,9 +7,52 @@ output: html_document
 ---
 # Overview
 
-In the previous vignette, I retrieved and formatted rasters of 24 global-scale climate and human impact variables from [CHELSA](https://chelsa-climate.org/). These represent some of the most relevant variables for the accomplishment of my goal, which is to explain the distribution for Lycorma delicatula according to climate. I also retrieved climate change versions of these variables, created by the [CMIP6](https://pcmdi.llnl.gov/CMIP6/) climate modeling project. These variables were standardized and formatted for my needs. Additionally, the most relevant variables were chosen for all future models. The goal is to produce two models for chapter 1, a global model and an invaded regional model, both based on historical climate data. The global model will consider and be trained on all available climate data, while the regional model will be trained the subset of climate data from the SLF invaded range in the Eastern half of the United States (easternUSA). Both of these models will then be projected for climate change. 
+In the previous vignette, I retrieved and formatted rasters of 24 global-scale climate and human impact variables from [CHELSA](https://chelsa-climate.org/). These represent some of the most relevant variables for the accomplishment of my goal, which is to explain the distribution for Lycorma delicatula according to climate. I also retrieved climate change versions of these variables, created by the [CMIP6](https://pcmdi.llnl.gov/CMIP6/) climate modeling project. These variables were standardized and formatted for my needs. Additionally, the most relevant variables were chosen for all future models. 
 
-In this vignette, I will set up to run the global model and project it for climate change. In the next vignette I will run this model, and in the following vignette I will set up for the invaded regional model.
+The goal is to produce three models for chapter 1: a global model, a regional_invaded model, and a regional_native model. All three models will be based on historical (1981-2010) climate data and will be extrapolated for climate change using the CMIP6 rasters. Each model will be based on different training and testing ranges. The global model will be trained and tested on all available climate data, which will be split up into 10 random folds. The regional models will be trained on the regional subset of presence data. The regional_native model will be trained on SLF presences and background points chosen from provinces in China which contain known SLF presences. This model will be tested using SLF presence data from the USA. The regional_invaded model will do the opposite: It will be trained on the data from the USA and tested using data from the native range in China. All three of these models will be considered in tandem during analyses. Here is a table that explains the models. The following table outlines the training and testing of these models:
+
+```{r model_info table}
+
+model_info <- data.frame(
+  "model" = c(
+    "global",
+    "regional_native",
+    "regional_invaded"
+    ),
+  "train_data" = c(
+    "80% of global presences, k-fold random cross validation",
+    "SLF presences in mainland China",
+    "SLF presences in North America"
+  ),
+  "number_train_points" = c(
+    "619",
+    "237",
+    "328"
+  ),
+  "test_data" = c(
+    "20% of global presences, k-fold random cross validation",
+    "SLF presences in North America",
+    "SLF presences in mainland China"
+  ),
+  "number_test_points" = c(
+    "155",
+    "328",
+    "237"
+
+  ),
+  "projection" = "North America",
+  "number_background_points" = c(
+    "20,000",
+    "10,000",
+    "7,500"
+  )
+)
+
+model_info_kable <- knitr::kable(x = model_info)
+  
+```
+
+In this vignette, I will set up to run the global model and project it for climate change. In the next vignette I will run this model, and in the following vignette I will set up for the invaded and native regional models.
 
 I will crop the rasters that were retrieved and tidied in the previous vignette to the relevant spatial scale. I will crop the historical and CMIP6 versions of these rasters to North America, which will only be used to produce map outputs of the model's predictions (projection). These rasters will also be used to project the regional model. Next, I will select the background point datasets for the global model. MaxEnt uses these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability (the model output).
 
@@ -239,7 +282,7 @@ bio11_CMIP6_df <- terra::as.data.frame(bio11_CMIP6, xy = TRUE)
 
 # 2. Select Background Points for model
 
-MaxEnt also requires a set of "background" points that it will use to sample these rasters. MaxEnt can randomly pick these internally, but it is more intuitive to manually select them. I can also account for latitudinal stretching of cell size and other factors if these are selected manually. Just for review, these points are used to characterize the variables that affect SLF distribution. Temperature / precipitation values will be extracted from the rasters for each point in this set. MaxEnt will then use these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability. Note that only one set of background points need to be created for each of the global and regional extent models
+MaxEnt also requires a set of "background" points that it will use to sample these rasters. MaxEnt can randomly pick these internally, but it is more intuitive to manually select them. I can also account for latitudinal stretching of cell size and other factors if these are selected manually. Just for review, these points are used to characterize the variables that affect SLF distribution. Temperature / precipitation values will be extracted from the rasters for each point in this set. MaxEnt will then use these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability. Note that only one set of background points need to be created for each of the global and regional models.
 
 First, I will load in known SLF presences so that background sampling does not occur in those grid cells.
 
@@ -259,7 +302,6 @@ mypath <- file.path(here() %>%
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
-
 
 Gallien et.al recommended 20,000 points for background with a global scale model. Gallien also found that a higher number of background points artificially deflates MaxEnt predicitons, so it is important not to choose too many. However, it is appropriate to scale the datasets according to the spatial scale of the rasters. Initially, I selected 42,523 random background points using `dismo::randomPoints()`, because Santana Jr et.al recommended this amount when modeling at a global scale (Santana Jr et.al, 2019). These models were incredibly specific and overfit, and the models were incredible complex, so I downgraded the point count to 20,000. 
 

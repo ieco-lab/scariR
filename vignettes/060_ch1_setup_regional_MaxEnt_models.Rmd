@@ -9,7 +9,52 @@ output: html_document
 
 In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run a model at the regional scale of the Eastern USA. We hypothesize that by creating models at multiple spatial scales, we can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now vs under climate change.
 
-This vignette will set up for the regional model in a similar fashion to the setup I created for the global model in vignette 040. Step 1 will involve cropping the bioclim layers to the proper extent and step 2 will involve choosing the background points for the regional model. Note that background point choice will be weighted by the output of the global model.
+This vignette will set up for the regional model in a similar fashion to the setup I created for the global model in vignette 040. Step 1 will involve cropping the bioclim layers to the proper extent and step 2 will involve choosing the background points for the regional model. Note that background point choice for the regional_invaded model will be weighted by the output of the global model. This is to account for the fact that SLF have likely not had ample time to spread to all suitable areas within the invaded range. (ADD MORE)
+
+Here is the table explaining the model structures:
+
+```{r model_info table}
+
+model_info <- data.frame(
+  "model" = c(
+    "global",
+    "regional_native",
+    "regional_invaded"
+    ),
+  "train_data" = c(
+    "80% of global presences, k-fold random cross validation",
+    "SLF presences in mainland China",
+    "SLF presences in North America"
+  ),
+  "number_train_points" = c(
+    "619",
+    "237",
+    "328"
+  ),
+  "test_data" = c(
+    "20% of global presences, k-fold random cross validation",
+    "SLF presences in North America",
+    "SLF presences in mainland China"
+  ),
+  "number_test_points" = c(
+    "155",
+    "328",
+    "237"
+
+  ),
+  "projection" = "North America",
+  "number_background_points" = c(
+    "20,000",
+    "10,000",
+    "7,500"
+  )
+)
+
+model_info_kable <- knitr::kable(x = model_info)
+  
+```
+
+Here is a table that lists the extents I will use to trim the bioclim layers.
 
 ```{r extents table}
 
@@ -65,6 +110,7 @@ map_style <- list(
         panel.background = element_rect(fill = "lightblue",
                                 colour = "lightblue")
         ),
+  guides(fill = guide_legend(override.aes = list(size = 10))), 
   coord_equal() 
 )
 
@@ -72,8 +118,11 @@ map_style <- list(
 
 # 1. Trim Bioclim layers
 
+Like I did in vignette 040, I will need to trim the 4 selected bioclim layers to a usable extent. In vignette 040, I trimmed the layers to the extent of the projection range (all of North America). However, I still do not have layers that can be used to train either of the regional models. The table above specifies the training areas that will be used for each model. The regional_native model will be trained on a cutout the provinces of China that contain known SLF populations and will not be weighted by the global model. The regional_invaded model will be trained using a 355km buffer around the invaded range presences, to account for the potential area of spread. Calvin et al, 2023 found that the maximum dispersal distance for SLF during a single anthropogenic jump event was 355km, so we used this distance to create a buffer area from which to take background points and train a model.
 
-## Setup mask layers and slf points
+## Invaded Regional (eastern USA)
+
+### Setup mask layers and slf points
 
 ```{r set wd}
 
@@ -96,6 +145,8 @@ mask_layer <- terra::rast(
 
 ```
 
+First, I will need to filter out SLF presences from east asia. I will use the extent of the eastern USA and crop a vector of the SLF presence records.
+
 ```{r filter presences from invaded range}
 
 # extent object for eastern USA
@@ -117,24 +168,36 @@ rm(slf_points_vect)
 
 ```
 
+I will need to 
+
 ```{r create raster of buffers}
 
-# tidy
-slf_points_matrix <- slf_points_invaded %>%
-  # mutate(value = 1) %>% # create a "value" column that contains 1.
-  as.matrix()
+# convert to matrix
+slf_points_matrix <- as.matrix(slf_points_invaded)
+# use matrix to convert SLF points to a raster. 
+slf_points_rasterized <- terra::rasterize(x = slf_points_matrix, y = mask_layer, background = NA)
 
-slf_points_rasterized <- terra::rasterize(x = slf_points_matrix, y = mask_layer)
+# raster stats
+terra::ext(slf_points_rasterized)
+terra::minmax(slf_points_rasterized)
 
 # create a raster object that is a buffer around the points, 355,000m (355km)
-buffered_invaded <- terra::buffer(x = slf_points_rasterized, width = 355000, background = 0) %>%
-  terra::mask(., mask = mask_layer)
+buffered_invaded <- terra::buffer(x = slf_points_rasterized, width = 355000, background = NA) %>%
+  # mask this object using the mask layer 
+  terra::mask(., mask = mask_layer, updatevalue = NA)
 
+# buffered_invaded <- terra::crop(buffered_invaded, ext(!is.na(buffered_invaded)))
 
+non_na_extent <- ext(r[!is.na(values(r))])
+
+extent_with_values <- terra::ext(buffered_invaded, !is.na(buffered_invaded))
+
+# raster stats
+terra::ext(buffered_invaded)
 terra::minmax(buffered_invaded)
 
 # replace 0s with NAs
-buffered_invaded <- terra::subst(x = buffered_invaded, from = 0, to = NA)
+# buffered_invaded <- terra::subst(x = buffered_invaded, from = 0, to = NA)
 
 ```
 
@@ -156,7 +219,7 @@ buffered_invaded_df <- terra::as.data.frame(x = buffered_invaded, xy = TRUE)
 
 ```{r save raster}
 
-writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"), filetype = "GTiff", overwrite = FALSE)
+writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask_test.tif"), filetype = "GTiff", overwrite = FALSE)
 
 ```
 
@@ -912,7 +975,7 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 # References
 
-D.D Calvin, J. Rost, J. Keller, S. Crawford, Julie Urban, B. Walsh, and M. Bosold. Seasonal Activity of Spotted Lanternfly, Lycorma delicatula (White) (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Unpublished.
+Calvin, D. D., J. Rost, J. Keller, S. Crawford, B. Walsh, M. Bosold, and J. Urban. 2023. Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology 52:1108–1125.
 
 Du, Z., Y. Wu, Z. Chen, L. Cao, T. Ishikawa, S. Kamitani, T. Sota, F. Song, L. Tian, W. Cai, and H. Li. 2021. Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications.
 
