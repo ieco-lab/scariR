@@ -168,7 +168,7 @@ rm(slf_points_vect)
 
 ```
 
-I will need to 
+Now, I will create a raster of buffers around these presence points. I will first rasterize the SLF presence records and then use that raster to calculate a 355km buffer. This raster will then be masked by atc_2015 (`mask_layer`) to cut out bodies of water. Lastly, I had to do some acrobatics to crop the resulting raster to the extent of the area that is NA only. I converted this raster to a data frame and dropped the NA values, then took the extent of that raster and used it to crop the final raster.
 
 ```{r create raster of buffers}
 
@@ -186,11 +186,17 @@ buffered_invaded <- terra::buffer(x = slf_points_rasterized, width = 355000, bac
   # mask this object using the mask layer 
   terra::mask(., mask = mask_layer, updatevalue = NA)
 
-# buffered_invaded <- terra::crop(buffered_invaded, ext(!is.na(buffered_invaded)))
+# need to take the extent of just the non NA areas. 
+# I converted to a df and dropped non NA values. Then I converted back to a raster and took the extent of these points
+non_na_extent <- terra::as.data.frame(buffered_invaded, xy = TRUE, na.rm = TRUE) %>%
+  # convert to raster
+  terra::rast(., crs = "EPSG:4326") 
+# take the extent of this raster
+non_na_extent <- terra::ext(non_na_extent)
 
-non_na_extent <- ext(r[!is.na(values(r))])
 
-extent_with_values <- terra::ext(buffered_invaded, !is.na(buffered_invaded))
+# use the above extent to crop the raster
+buffered_invaded <- terra::crop(x = buffered_invaded, y = non_na_extent)
 
 # raster stats
 terra::ext(buffered_invaded)
@@ -219,15 +225,17 @@ buffered_invaded_df <- terra::as.data.frame(x = buffered_invaded, xy = TRUE)
 
 ```{r save raster}
 
-writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask_test.tif"), filetype = "GTiff", overwrite = FALSE)
+writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"), filetype = "GTiff", overwrite = FALSE)
 
 ```
 
-## trim bioclim layers to mask
+### trim bioclim layers to mask
+
+Now that I have created a mask layer of the desired 355km buffer around the SLF presences, I will use this raster to both trim the bioclim layers for training the regional_invaded model and select the background points used to sample those layers. First, I will import the bioclim layers.
 
 ```{r setup for cropping bioclim layers}
 
-# load mask layer
+# re-load mask layer
 buffered_invaded <- terra::rast(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
 
 
@@ -250,7 +258,7 @@ output.files <- list.files(
 
 ```
 
-These rasters need to be cropped and converted to the .ascii format for MaxEnt.
+I will need to crop the main rasters by the smaller raster and then mask by the same raster, so the result is simply a raster of that size and shape. The output rasters also need to be cropped and converted to the .ascii format for MaxEnt.
 
 ```{r loop to crop bioclim layers to easternUSA}
 
@@ -263,6 +271,8 @@ if(TRUE) {
     rast.hold <- terra::rast(env.files[a])
     
     # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = buffered_invaded)
+    # mask by same raster to cut out bodies of water
     rast.hold <- terra::mask(x = rast.hold, mask = buffered_invaded)
     
     #write out the new resampled rasters!
@@ -270,7 +280,7 @@ if(TRUE) {
       x = rast.hold, 
       filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]),
       filetype = "AAIGrid", 
-      overwrite = FALSE
+      overwrite = TRUE
       )
     
     # remove object once its done
@@ -288,15 +298,15 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot main_layer to ensure cropping worked}
 
-bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_invaded_buffered.asc")) 
+bio15 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio15_1981-2010_invaded_buffered.asc")) 
 # convert to df
-bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+bio15_df <- terra::as.data.frame(bio15, xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  geom_raster(data = bio15_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio15_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
@@ -307,11 +317,9 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
-
-
-
-
 ## Native regional (China)
+
+The native range for China will be defined as any Chinese province that contains known SLF populations. We will exclude Vietnam, Thailand India and Bangaladesh due to a lack of data (discussed later). For now, we will need to find a shapefile of the Chinese provinces to use for the regional_native model.
 
 ### Get shapefile for native range
 
@@ -344,6 +352,8 @@ china_provinces <- rnaturalearth::ne_download(
 
 ```
 
+Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply cut out the Chinese provinces. 
+
 ```{r ready data for intersect}
 
 # load in slf points to intersect
@@ -362,12 +372,13 @@ china_provinces <- china_provinces %>%
   # set crs
   sf::st_transform(x = ., dst = "EPSG:4326") 
 
-# copy of china shapefile with extra province selected
+# copy of china shapefile with extra province selected (for later)
 china_guangxi <- china_provinces %>%
   dplyr::filter(name == "Guangxi")
 
 ```
 
+We will keep only the provinces of China that contain SLF points (plus Guangxi, which is explained later). We will perform an intersect between the vectorized SLF points and the provinces shapefiles.
 
 ```{r intersect and save}
 
@@ -397,6 +408,7 @@ china_provinces_withSLF <- sf::read_sf(dsn = file.path(here(), "vignette-outputs
 
 ```
 
+Now lets plot it for a sanity check.
 
 ```{r plot china}
 
@@ -434,14 +446,13 @@ ggsave(native_map,
 
 ```
 
-
-This roughly corresponds to the survey performed by Xin et al. This study performed a rigorous survey of SLF populations across China for biocontrol purposes (Xin et al, 2020). [Here](https://academic.oup.com/view-large/figure/228296055/nvaa137_fig1.jpg) is a figure of the study sites where they retrieved SLF populations. They also mapped the population density to a map of the Chinese provinces [here](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). Our map roughly corresponds to the native extent of SLF, as surveyed by this study. 
+This plotted range roughly corresponds to surveys of SLF performed in the literature. Xin et al performed a rigorous survey of SLF populations across China for biocontrol purposes (Xin et al, 2020). [Here](https://academic.oup.com/view-large/figure/228296055/nvaa137_fig1.jpg) is a figure of the study sites where they retrieved SLF populations. They also mapped the population density to a map of the Chinese provinces [here](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). Our map roughly corresponds to the native extent of SLF, as surveyed by this study. 
 
 Another study by Du et al surveyed SLF populations to explain the phylogenetic origins of invasive SLF populations (Du et al, 2021). Du et al took measures to ensure that SLF populations surveyed for their study represented established populations and they specifically surveyed egg masses (Du et al, 2021). Our range map also corresponds to the map of surveyed populations in [figure 1](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). 
 
-Our native range map included three additional provinces, two in the far south (Guangdong and Guangxi) and one at the western edge (Qinghai). Guangxi was added manually based on expert opinion of SLF presence (Matthew Helmus). The other two provinces (Guangdong and Quighai) were added due to due to additional SLF records that we retrieved, likely from our literature search outlined in vignette 020. This range map will represent the native range training area for our native regional model. Background points will be chosen specifically from this region of China. Other countries have been named as part of the SLF native range (India, Vietnam, Taiwan, Bangaladesh), but no data exists to support these claims, so we chose to be conservative with our consideration of the SLF native range (SOURCE). Our consideration of the SLF native range also corresponds with the above mentioned surveys for SLF. 
+Our native range map included three additional provinces, two in the far south (Guangdong and Guangxi) and one at the western edge (Qinghai). Guangxi was added manually based on expert opinion of SLF presence (Matthew Helmus, PhD). The other two provinces (Guangdong and Quighai) were added due to due to additional SLF records that we retrieved, likely from our literature search outlined in vignette 020. This range map will represent the native range training area for our native regional model. Background points will be chosen specifically from this region of China. Other countries have been named as part of the SLF native range (India, Vietnam, Taiwan, Bangaladesh), but no data exists to support these claims, so we chose to be conservative with our consideration of the SLF native range (SOURCE). Our consideration of the SLF native range also corresponds with the above mentioned surveys for SLF. 
 
-*NOTE* inaturalist contains a single SLF presence in Taiwan, but this data point was not licensed for re-use and so we chose not to include it. Otherwise, no SLF presence data could be found in any data repository (GBIF, inaturalist) or the literature for the countries we chose to exclude from the SLF native range.
+* *NOTE* inaturalist contains a single SLF presence in Taiwan, but this data point was not licensed for re-use and so we chose not to include it. Otherwise, no SLF presence data could be found in any data repository (GBIF, inaturalist) or the literature for the countries we chose to exclude from the SLF native range.*
 
 ### Use shapefile to create rasters for SLF native range
 
@@ -515,6 +526,10 @@ bio11_china_df <- terra::as.data.frame(bio11_china, xy = TRUE)
 
 ```
 
+Now we have the input bioclim rasters for the regional_invaded model cropped and masked to the proper extent. This concludes our raster work. 
+
+We will need to select background points for both the native and invaded regional models, which we will do next.
+
 # 2. Background point choice
 
 ## Invaded Regional (eastern USA)
@@ -555,9 +570,7 @@ slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables
    dplyr::select(-species) 
 
 # mask layer I will use
-mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc"))
-
-mask_layer_2 <- raster::raster(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
+mask_layer <- raster::raster(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
 
 ```
 
@@ -615,18 +628,21 @@ global_mean_weighted <- raster::raster(
   )
 
 # crop mask layer to extent of weighted layer
-mask_layer_2 <- mask_layer_2 %>%
-  raster::crop(., y = global_mean_weighted)
+#mask_layer_2 <- mask_layer_2 %>%
+#  raster::crop(., y = global_mean_weighted)
 
-# mask by weighted layer
+# crop and mask by weighted layer
 global_mean_weighted <- global_mean_weighted %>%
-  raster::mask(., mask = mask_layer_2) 
+  raster::crop(., y = mask_layer) %>%
+  raster::mask(., mask = mask_layer) 
   
 
 # also convert to df
 global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
 
 ```
+
+Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. However, these points will be selected based on a probability (that we created above), unlike the global background points.
 
 ```{r random points}
 
@@ -652,6 +668,8 @@ write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_ba
 
 ```
 
+This function only selects 1 point per cell. With the other restrictions we put on the function, it actually could not select the desired 10,000 points. I decided to settle for 7,500 because it is a neat proportion of the desired total. This is also ok because this background area is far smaller than either the native or global model extents.
+
 Now lets visualize the result.
 
 ```{r load in raster for plotting}
@@ -662,38 +680,26 @@ NAmerica <- terra::rast(
 
 # also convert to df
 NAmerica_df <- terra::as.data.frame(NAmerica, xy = TRUE)
-
-mask_layer_2_df <- as.data.frame(mask_layer_2, xy = TRUE)
+# convert mask layer to df
+mask_layer_df <- as.data.frame(mask_layer, xy = TRUE, na.rm = TRUE)
 
 ```
-
 
 ```{r plot}
 
 # plot at the continental scale
 (regional_points_plot <- ggplot() +
    geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = mask_layer_2_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.10) +
-   ggtitle("Regional background points") +
+   geom_raster(data = mask_layer_df, aes(x = x, y = y), fill = "azure1") +
+   geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.001) +
+   ggtitle("'regional_invaded' model background points") +
    map_style +
    theme(legend.position = "none") 
 )
 
-# plot of just the eastern USA
-# LITERALLY no clue why this plot isnt working
-#(regional_points_plot2 <- ggplot() +
-#    geom_raster(data = global_mean_weighted_df, aes(x = x, y = y), fill = "azure1") +
-#    geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.10) +
-#    ggtitle("regional_invaded Background Points") +
-#    map_style +
-#    theme(legend.position = "none") 
-#)
-
 ```
 
 We can see that the background points are isolated to the eastern half of the United States and some of Canada. This is what we want because the model will be trained on this area. We can also see that points were selected from areas where the model did not predict high suitability (most highly suitable areas were near PA and NJ). For comparison, this figure is roughly opposite of the figure depicting the suitability values for the mean output from the global model.  
-
 
 ```{r save plot}
 
@@ -705,19 +711,11 @@ ggsave(regional_points_plot,
        dpi = "retina"
        )
 
-#ggsave(regional_points_plot2, 
- #      filename = file.path(here(), "vignette-outputs", "figures", "regional_background_points2.jpg"),
-  #     height = 8, 
-  #     width = 10,
- #      device = "jpeg",
- #      dpi = "retina"
- #      )
-
 ```
 
 ## Native regional (China)
 
-I need to do the same thing for China. I will only need to load in the China raster and the global weighted raster. I will then mask the global weighted raster by the China raster and use it to choose background points for the native model
+I need to select points for China as well, but I do not need to weight these. Weighting was done to account for the lack of time for SLF to reach all potentially suitable habitats. The background selection here will be random, but will still exclude cells with SLF points and will correct for latitudinal stretching.
 
 ```{r set wd}
 
@@ -802,8 +800,7 @@ ggsave(native_points_plot,
 
 ```
 
-
-
+Now we are ready to run both regional models!
 
 
 # Appendix
