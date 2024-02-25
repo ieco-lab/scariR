@@ -1,0 +1,339 @@
+---
+title: "PI REPORTS"
+author: "Sam Owens"
+date: "2024-02-23"
+contact: "sam.owens@temple.edU"
+output: html_document
+---
+
+Reports for Matt
+
+# RISCC Conference Feb 2024
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+
+library(here) #making directory pathways easier on different instances
+here()
+# here() is "C:/Users/tun83449/OneDrive - Temple University/Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
+
+library(terra)
+
+# install.packages("metR")
+library(metR)
+
+```
+
+```{r set wd}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent")
+
+```
+
+
+## Generate binary map figures
+
+These rasters were already binarized into 1s and 0s.
+
+```{r load in rasters}
+
+# global model
+# hist
+global_MTP_hist <- terra::rast(
+  x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_MEAN_thresholded_MTP_NAmerica_1981-2010.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+# CMIP6
+global_MTP_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_MEAN_thresholded_MTP_NAmerica_2041-2070_GFDL_ssp370.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+
+
+# regional_native model
+# hist
+regional_native_MTP_hist <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v1", "regional_native_pred_suit_clamped_cloglog_thresholded_MTP_NAmerica_1981-2010.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+# CMIP6
+regional_native_MTP_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v1", "regional_native_pred_suit_clamped_cloglog_thresholded_MTP_NAmerica_2041-2070_GFDL_ssp370.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+
+
+# regional_invaded model
+# hist
+regional_invaded_MTP_hist <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v3", "regional_invaded_pred_suit_clamped_cloglog_thresholded_MTP_NAmerica_1981-2010.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+#CMIP6
+regional_invaded_MTP_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v3", "regional_invaded_pred_suit_clamped_cloglog_thresholded_MTP_NAmerica_2041-2070_GFDL_ssp370.asc")
+  ) %>%
+  terra::subst(., from = NaN, to = NA) %>% # for some reason, writing was done with NaN as NA value
+  terra::as.data.frame(., xy = TRUE)
+
+```
+
+These next datasets will be used as map layers
+
+```{r import datasets to help visualize}
+
+# raster for base map
+basemap <- terra::rast(x = file.path(mypath, "models", "slf_global_v2", "global_mask_layer_clamped_cloglog_MEAN_MTP_globe_1981-2010.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# wineries
+load(file.path(here(), "data", "wineries.rda"))
+# import
+IVR_points <- wineries %>%
+  dplyr::select(x, y)
+
+
+#shapefiles
+# US states
+us_states <- ne_states(
+  country = "united states of america",
+  returnclass = "sf"
+) %>%
+  as_tibble()
+
+# shapefile for outline
+countries <- rnaturalearth::ne_countries(
+  scale = 10,
+  type = "countries",
+  continent = "North America",
+  returnclass = "sf"
+)
+
+```
+
+This is a canned style that will be used for every map
+
+```{r map_style}
+
+map_style_binary <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue2",
+                                colour = "lightblue2")
+        ),
+  # stuff that will change
+  # NAmerica bounding box
+  scale_x_continuous(expand = c(0, 0), limits = c(-140.976563, -51.064453)),
+  scale_y_continuous(expand = c(0, 0), limits = c(15.182421, 60.586967)),
+  scale_fill_stepsn(
+    name = "Suitability for SLF", # name of legend
+    breaks = c(0.1, 1),
+    values = c(0, 1),
+    colors = c("white", "orangered"), # colors for bins
+    labels = c("unsuitable", "suitable"), # names for bins
+    aesthetics = "fill",
+    guide = "legend"
+  ),
+  scale_color_manual(
+    name = "Point Data", 
+    values = c("IVR Regions" = "purple3"),
+    guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3)))
+  )
+)
+
+
+```
+
+```{r historical rasters}
+
+global_MTP_hist_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = global_MTP_hist, aes(x = x, y = y, fill = mean)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'global' model | 1981-2010") +
+  map_style_binary 
+
+#save
+ggsave(
+  global_MTP_hist_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "global_model_1981-2010_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+
+
+# regional_native
+regional_native_MTP_hist_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = regional_native_MTP_hist, aes(x = x, y = y, fill = lyr1)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'regional_native' model | 1981-2010") +
+  map_style_binary 
+
+#save
+ggsave(
+  regional_native_MTP_hist_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "regional_native_model_1981-2010_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+
+
+
+# regional_native
+regional_invaded_MTP_hist_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = regional_invaded_MTP_hist, aes(x = x, y = y, fill = lyr1)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'regional_invaded' model | 1981-2010") +
+  map_style_binary 
+
+#save
+ggsave(
+  regional_invaded_MTP_hist_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "regional_invaded_model_1981-2010_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r CMIP6 rasters}
+
+global_MTP_CMIP6_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = global_MTP_CMIP6, aes(x = x, y = y, fill = mean)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'global' model | 2041-2070 | GFDL ssp370") +
+  map_style_binary 
+
+#save
+ggsave(
+  global_MTP_CMIP6_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "global_model_2041-2070_GFDL_ssp370_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+
+
+# regional_native
+regional_native_MTP_CMIP6_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = regional_native_MTP_CMIP6, aes(x = x, y = y, fill = lyr1)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'regional_native' model | 2041-2070 | GFDL ssp370") +
+  map_style_binary 
+
+#save
+ggsave(
+  regional_native_MTP_CMIP6_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "regional_native_model_2041-2070_GFDL_ssp370_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+
+
+
+# regional_native
+regional_invaded_MTP_CMIP6_plot <- ggplot() +
+  # basemap layer
+  geom_raster(data = basemap, aes(x = x, y = y), fill = "white") +
+  # data layer
+  geom_raster(data = regional_invaded_MTP_CMIP6, aes(x = x, y = y, fill = lyr1)) +
+  # US state outlines layer
+  geom_sf(data = us_states, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+  # slf points layer
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1.5, shape = 18) +
+  geom_point(data = IVR_points, aes(x = x, y = y), color = "purple3", size = 1, shape = 18) +
+  ggtitle("Predicted Suitability for Establishment of Lycorma delicatula",
+          subtitle = "'regional_invaded' model | 2041-2070 | GFDL ssp370") +
+  map_style_binary 
+
+#save
+ggsave(
+  regional_invaded_MTP_CMIP6_plot, 
+  filename = file.path(here() %>%
+                         dirname(),
+                       "PI_REPORTS", "figures", "riscc_conference", "regional_invaded_model_2041-2070_GFDL_ssp370_MTP_binarized.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+

@@ -116,7 +116,9 @@
 #'* `labs(fill = "Suitability for SLF")`
 #'* `theme_classic()`
 #'* `theme(legend_position = "bottom")`
-#'* `theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))`
+#'* `theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"))`
+#'* `scale_x_continuous(expand = c(0, 0))`
+#'* `scale_y_continuous(expand = c(0, 0))`
 #'* `coord_equal()`
 #'* `viridis::scale_fill_viridis(option = "D")`
 #'
@@ -216,9 +218,11 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
       ylab("latitude"),
       theme_classic(),
       theme(legend.position = "bottom",
-            panel.background = element_rect(fill = "lightblue",
-                                            colour = "lightblue")
+            panel.background = element_rect(fill = "lightblue2",
+                                            colour = "lightblue2")
       ),
+      scale_x_continuous(expand = c(0, 0)),
+      scale_y_continuous(expand = c(0, 0)),
       labs(fill = "Suitability for SLF"),
       viridis::scale_fill_viridis(option = "D"),
       coord_equal()
@@ -256,7 +260,8 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         progress = TRUE,
         filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")),
         # the function automatically adds the function name on the end
-        filetype = "AAIGrid"
+        filetype = "AAIGrid",
+        wopt = list(NAflag = NA)
       )
 
       # message of completion
@@ -378,18 +383,21 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
         # terra required classification matrices
         binary_rescale_class <- data.frame(
-          from = c(0, thresh_value + 0.0000001), # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
+          from = c(0, thresh_value + 0.00000000000000000000000001), # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           to = c(thresh_value, 1),
           becomes = c(0, 1)
         )
 
         # re-classify raster according to threshold
-        terra::classify(x = model_suit_raster,
-                        rcl = binary_rescale_class,
-                        right = TRUE,
-                        include.lowest = TRUE,
-                        filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
-                        overwrite = FALSE
+        terra::classify(
+          x = model_suit_raster,
+          rcl = binary_rescale_class,
+          right = TRUE,
+          include.lowest = TRUE,
+          others = NA,
+          filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
+          NAflag = NA,
+          overwrite = FALSE
         )
 
         # message of completion
@@ -400,18 +408,20 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         # create regional suitability value matrix for terra
         mask_rescale_class <- data.frame(
           from = 0,
-          to = thresh_value + 0.0000001, # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
+          to = thresh_value + 0.00000000000000000000000001, # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           becomes = 1
         )
 
         # reclassify and write regional raster
-        mask_layer <- terra::classify(x = model_suit_raster,
-                                      rcl = mask_rescale_class,
-                                      right = TRUE, # includes both sides
-                                      include.lowest = TRUE,
-                                      others = NA,
-                                      filename = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
-                                      overwrite = FALSE)
+        mask_layer <- terra::classify(
+          x = model_suit_raster,
+          rcl = mask_rescale_class,
+          right = TRUE, # includes both sides
+          include.lowest = TRUE,
+          others = NA,
+          filename = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
+          NAflag = NA,
+          overwrite = FALSE)
 
         # message of completion
         print(paste0(i, " | ", thresh_name, " mask layer raster created and saved at: ", mypath))

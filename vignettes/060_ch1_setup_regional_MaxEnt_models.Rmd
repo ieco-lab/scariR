@@ -107,11 +107,14 @@ map_style <- list(
   ylab("latitude"),
   theme_classic(),
   theme(legend.position = "bottom",
-        panel.background = element_rect(fill = "lightblue",
-                                colour = "lightblue")
-        ),
-  guides(fill = guide_legend(override.aes = list(size = 10))), 
-  coord_equal() 
+        panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+  ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  labs(fill = "Suitability for SLF"),
+  viridis::scale_fill_viridis(option = "D"),
+  coord_equal()
 )
 
 ```

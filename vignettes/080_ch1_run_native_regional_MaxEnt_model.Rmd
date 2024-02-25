@@ -107,11 +107,14 @@ x_NAmerica_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_
 
 I will create rasters of the environmental covariates, stack and gather summary statistics. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune making predictions for tables downstream).
 
-```{r stack historical covariates and make naming consistent}
+```{r naming object}
 
 # layer name object. Check order of layers first
 env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
 
+```
+
+```{r stack historical covariates and make naming consistent}
 
 # native range rasters
 # stack env covariates
@@ -396,6 +399,16 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 mypath <- file.path(here() %>% 
                        dirname(),
                      "maxent/models/slf_regional_native_v1")
+
+```
+
+```{r re-load model as needed}
+
+if (FALSE) {
+  
+  regional_native_model <- read_rds(file = file.path(mypath, "regional_native_model.rds"))
+
+}
 
 ```
 

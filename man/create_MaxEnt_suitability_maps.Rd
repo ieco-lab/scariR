@@ -143,7 +143,9 @@ Map style default options:
 \item \code{labs(fill = "Suitability for SLF")}
 \item \code{theme_classic()}
 \item \code{theme(legend_position = "bottom")}
-\item \code{theme(panel.background = element_rect(fill = "lightblue", color = "lightblue"))}
+\item \code{theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"))}
+\item \code{scale_x_continuous(expand = c(0, 0))}
+\item \code{scale_y_continuous(expand = c(0, 0))}
 \item \code{coord_equal()}
 \item \code{viridis::scale_fill_viridis(option = "D")}
 }
