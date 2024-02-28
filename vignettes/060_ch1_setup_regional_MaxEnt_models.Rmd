@@ -426,7 +426,7 @@ We will need to select background points for both the native and invaded regiona
 
 ## Invaded Regional (eastern USA)
 
-Gallien et.al found that the regional model performed better when the background point were weighted by the output of the global model. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
+Gallien et.al found that their regional model of the invaded range performed better when the background point were weighted by the output of the global model. As stated earlier, this also accounts for the fact that SLF has not had an adequate change to reach all potentially suitable areas. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
 
 Gallien et.al provided the following inverse logarithmic weighting formula:
 
@@ -448,7 +448,6 @@ mypath <- file.path(here() %>%
                    "maxent")
 
 ```
-
 
 ```{r load in global model predictions}
 
@@ -539,7 +538,7 @@ set.seed(5)
 
 # generate random points 
 regional_points <- dismo::randomPoints(
-  mask = global_mean_weighted, 
+  mask = global_mean_weighted, # cropped to eastern USA
   n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
@@ -555,8 +554,6 @@ write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "dat
 write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v3.rds"))
 
 ```
-
-This function only selects 1 point per cell. With the other restrictions we put on the function, it actually could not select the desired 10,000 points. I decided to settle for 7,500 because it is a neat proportion of the desired total. This is also ok because this background area is far smaller than either the native or global model extents.
 
 Now lets visualize the result.
 
@@ -602,7 +599,7 @@ ggsave(regional_points_plot,
 
 ## Native regional (China)
 
-I need to select points for China as well, but I do not need to weight these. Weighting was done to account for the lack of time for SLF to reach all potentially suitable habitats. The background selection here will be random, but will still exclude cells with SLF points and will correct for latitudinal stretching.
+I need to select points for China as well, but I do not need to weight these. The background selection here will be random, but will still exclude cells with SLF points and will correct for latitudinal stretching.
 
 ```{r set wd}
 

@@ -7,7 +7,7 @@ output: html_document
 ---
 # Overview
 
-In the last vignette, I 
+In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional model based on the invaded range.
 
 (THEORY)
 
@@ -329,8 +329,6 @@ if (TRUE) {
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
-
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
@@ -454,7 +452,6 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-
 ## Predict suitability for all SLF presences
 
 I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
@@ -507,10 +504,6 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-
-
-
-
 ## Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world. 
@@ -561,8 +554,7 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-
-END
+We have the regional_invaded model trained, so now we will move on to train the regional_native model
 
 # References
 

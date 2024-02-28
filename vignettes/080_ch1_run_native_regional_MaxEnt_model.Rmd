@@ -7,7 +7,7 @@ output: html_document
 ---
 # Overview
 
-In the last vignette, I 
+In the last vignette, I trained the first regional model, based on the invaded range. This vignette will train the regional_native model based on SLF presences found in the native range. This model has the advantage that SLF is likely stable within its niche in China.
 
 (THEORY)
 
@@ -59,7 +59,7 @@ options(java.parameters = "-Xmx2048m")
 
 ## Input Data- env covariates
 
-I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The easternUSA versions will be used to train the regional model, while the NAmerica and global scales will be used to project the models (apply the trained model to a new dataset and obtain results).
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The `China` versions will be used to train the regional model, while the `NAmerica` and `global` scales will be used to project the models (apply the trained model to a new dataset and obtain results).
 
 ```{r load in historical covariates}
 
@@ -220,7 +220,7 @@ a_regional_native_background_points <- read.csv(file.path(here(), "vignette-outp
 
 ```
 
-I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation.
+I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. This process is roughly opposite of what we did in the previous vignette. This time, we will use the native range presences to train the model, and the invaded range presences to validate / test.
 
 ### Model training object
 
@@ -268,8 +268,6 @@ if (FALSE) {
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
-
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_native_train, file_name = c(
@@ -281,7 +279,7 @@ SDMtune::swd2csv(swd = regional_native_train, file_name = c(
 
 ### Model testing object
 
-The testing / validation SWD object will be created in the same fashion, except using the presences from the native range. These presences will be selected using a shapefile of the Chinese extent as a mask.
+The model will be tested using all presences from the USA.
 
 ```{r filter presences from invaded range}
 
@@ -323,8 +321,6 @@ if (FALSE) {
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
-
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_native_test, file_name = c(
@@ -337,7 +333,7 @@ SDMtune::swd2csv(swd = regional_native_test, file_name = c(
 
 ## Training
 
-First, I will train a maxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). The regional_invaded model will only be trained on the proportion of presence data from the invaded range. It will then be validated using the presence data from the native range (China).
+First, I will train a maxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). 
 
 I will use the following list of hyperparameters to train the initial model, which I selected via tuning for the global model.
 
@@ -448,7 +444,6 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-
 ## Predict suitability for all SLF presences
 
 ```{r set wd}
@@ -458,7 +453,6 @@ mypath <- file.path(here() %>%
                      "maxent/models/slf_regional_native_v1")
 
 ```
-
 
 I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
 
@@ -506,10 +500,6 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-
-
-
-
 ## Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world. 
@@ -555,7 +545,6 @@ slfSpread::predict_xy_suitability(
 )
 
 ```
-
 
 END
 
