@@ -131,6 +131,7 @@
 #'areas layered on top of suitability raster. This threshold of suitability is
 #'determined by the value of `thresh`.
 #'
+#'Use caution: will overwrite previous files by default.
 #'
 #'@examples
 #'# x---------------------------------------------------------------------------
@@ -261,7 +262,9 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")),
         # the function automatically adds the function name on the end
         filetype = "AAIGrid",
+        overwrite = TRUE,
         wopt = list(NAflag = NA)
+
       )
 
       # message of completion
@@ -383,7 +386,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
         # terra required classification matrices
         binary_rescale_class <- data.frame(
-          from = c(0, thresh_value + 0.00000000000000000000000001), # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
+          from = c(0, thresh_value + 0.00000000000000000000000000000000000000000000000000000000000001), # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           to = c(thresh_value, 1),
           becomes = c(0, 1)
         )
@@ -397,7 +400,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
           others = NA,
           filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
           NAflag = NA,
-          overwrite = FALSE
+          overwrite = TRUE
         )
 
         # message of completion
@@ -408,7 +411,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         # create regional suitability value matrix for terra
         mask_rescale_class <- data.frame(
           from = 0,
-          to = thresh_value + 0.00000000000000000000000001, # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
+          to = thresh_value + 0.00000000000000000000000000000000000000000000000000000000000001, # there was an issue with creating the threshold map if the threshold was 0- this will avoid the issue by making the classification boundaries different
           becomes = 1
         )
 
@@ -421,7 +424,8 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
           others = NA,
           filename = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")), # also write to file
           NAflag = NA,
-          overwrite = FALSE)
+          overwrite = TRUE
+          )
 
         # message of completion
         print(paste0(i, " | ", thresh_name, " mask layer raster created and saved at: ", mypath))

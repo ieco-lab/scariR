@@ -7,13 +7,11 @@ output: html_document
 ---
 # Overview
 
-In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run two models at the spatial scale of particular regions. I will run two models; one model will be run based on data from the native range (China) and the other will be based on data from the invaded range in North America. We hypothesize that by creating models at multiple spatial scales, we can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change.
+In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run a model at the regional scale of the Eastern USA. We hypothesize that by creating models at multiple spatial scales, we can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now vs under climate change.
 
-(EXPAND)
+This vignette will set up for the regional model in a similar fashion to the setup I created for the global model in vignette 040. Step 1 will involve cropping the bioclim layers to the proper extent and step 2 will involve choosing the background points for the regional model. Note that background point choice for the regional_invaded model will be weighted by the output of the global model. This is to account for the fact that SLF have likely not had ample time to spread to all suitable areas within the invaded range. (ADD MORE)
 
-This vignette will set up for the regional model in a similar fashion to the setup I created for the global model in vignette 040. Step 1 will involve cropping the bioclim layers to the proper extent and step 2 will involve choosing the background points for each regional model. Note that background point choice for the regional_invaded model will be weighted by the output of the global model, but the background point choice for the regional_native model will not be. This is to account for the fact that SLF have likely not had ample time to spread to all suitable areas within the invaded range. MaxEnt assumes that all training areas (in our case, the eastern USA) are equally as likely to host lanternfly, whereas we know this is not the case because SLF was introduced to this region within the past decade. Weighting our regional predictions with a prediction made using all available data should offset this incorrect assumption.
-
-Here is the table summarizing the model structures:
+Here is the table explaining the model structures:
 
 ```{r model_info table}
 
@@ -48,7 +46,7 @@ model_info <- data.frame(
   "number_background_points" = c(
     "20,000",
     "10,000",
-    "10,000"
+    "7,500"
   )
 )
 
@@ -123,45 +121,151 @@ map_style <- list(
 
 # 1. Trim Bioclim layers
 
-## Invaded regional (eastern USA)
+Like I did in vignette 040, I will need to trim the 4 selected bioclim layers to a usable extent. In vignette 040, I trimmed the layers to the extent of the projection range (all of North America). However, I still do not have layers that can be used to train either of the regional models. The table above specifies the training areas that will be used for each model. The regional_native model will be trained on a cutout the provinces of China that contain known SLF populations and will not be weighted by the global model. The regional_invaded model will be trained using a 355km buffer around the invaded range presences, to account for the potential area of spread. Calvin et al, 2023 found that the maximum dispersal distance for SLF during a single anthropogenic jump event was 355km, so we used this distance to create a buffer area from which to take background points and train a model.
 
-First, I will need to create a few copies of the bioclim layers that I tidied in vignette 030. I will create a set that have been cropped only to the eastern USA, which will be used to train the invaded regional models I produce. These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
+## Invaded Regional (eastern USA)
+
+### Setup mask layers and slf points
 
 ```{r set wd}
 
 # path to directory
   mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+                     "maxent")
 
 ```
 
-```{r setup for cropping bioclim layers}
+```{r load in files}
 
-# lists of target files in the directory
-# load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
-  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+# load in SLF points
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) 
 
-# output file names
-output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "easternUSA")
+# global access to cities as mask
+mask_layer <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
+  )
+
+```
+
+First, I will need to filter out SLF presences from east asia. I will use the extent of the eastern USA and crop a vector of the SLF presence records.
+
+```{r filter presences from invaded range}
 
 # extent object for eastern USA
 ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
+# convert to vector
+slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+slf_points_invaded <- terra::as.data.frame(slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole))
+
+# will not need this object again
+rm(slf_points_vect)
+
 ```
 
-These rasters need to be cropped and converted to the .ascii format for MaxEnt.
+Now, I will create a raster of buffers around these presence points. I will first rasterize the SLF presence records and then use that raster to calculate a 355km buffer. This raster will then be masked by atc_2015 (`mask_layer`) to cut out bodies of water. Lastly, I had to do some acrobatics to crop the resulting raster to the extent of the area that is NA only. I converted this raster to a data frame and dropped the NA values, then took the extent of that raster and used it to crop the final raster.
+
+```{r create raster of buffers}
+
+# convert to matrix
+slf_points_matrix <- as.matrix(slf_points_invaded)
+# use matrix to convert SLF points to a raster. 
+slf_points_rasterized <- terra::rasterize(x = slf_points_matrix, y = mask_layer, background = NA)
+
+# raster stats
+terra::ext(slf_points_rasterized)
+terra::minmax(slf_points_rasterized)
+
+# create a raster object that is a buffer around the points, 355,000m (355km)
+buffered_invaded <- terra::buffer(x = slf_points_rasterized, width = 355000, background = NA) %>%
+  # mask this object using the mask layer 
+  terra::mask(., mask = mask_layer, updatevalue = NA)
+
+# need to take the extent of just the non NA areas. 
+# I converted to a df and dropped non NA values. Then I converted back to a raster and took the extent of these points
+non_na_extent <- terra::as.data.frame(buffered_invaded, xy = TRUE, na.rm = TRUE) %>%
+  # convert to raster
+  terra::rast(., crs = "EPSG:4326") 
+# take the extent of this raster
+non_na_extent <- terra::ext(non_na_extent)
+
+
+# use the above extent to crop the raster
+buffered_invaded <- terra::crop(x = buffered_invaded, y = non_na_extent)
+
+# raster stats
+terra::ext(buffered_invaded)
+terra::minmax(buffered_invaded)
+
+# replace 0s with NAs
+# buffered_invaded <- terra::subst(x = buffered_invaded, from = 0, to = NA)
+
+```
+
+```{r visualize}
+
+buffered_invaded_df <- terra::as.data.frame(x = buffered_invaded, xy = TRUE)
+
+(ggplot() +
+    geom_raster(data = buffered_invaded_df, 
+              aes(x = x, y = y, fill = layer)) +
+    xlab("longitude") +
+    ylab("latitude") +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    coord_equal()
+)
+
+```
+
+```{r save raster}
+
+writeRaster(x = buffered_invaded, filename = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"), filetype = "GTiff", overwrite = FALSE)
+
+```
+
+### trim bioclim layers to mask
+
+Now that I have created a mask layer of the desired 355km buffer around the SLF presences, I will use this raster to both trim the bioclim layers for training the regional_invaded model and select the background points used to sample those layers. First, I will import the bioclim layers.
+
+```{r setup for cropping bioclim layers}
+
+# re-load mask layer
+buffered_invaded <- terra::rast(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
+
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the 10km .asc files
+env.files <- list.files(
+  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", 
+  full.names = TRUE
+  ) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(
+  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", 
+  full.names = FALSE
+  ) %>%
+  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "invaded_buffered")
+
+```
+
+I will need to crop the main rasters by the smaller raster and then mask by the same raster, so the result is simply a raster of that size and shape. The output rasters also need to be cropped and converted to the .ascii format for MaxEnt.
 
 ```{r loop to crop bioclim layers to easternUSA}
 
-# view list of filetypes for terra, use .ascii
-View(terra::gdal(drivers = TRUE))
-
-if(FALSE) {
+if(TRUE) {
   
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
@@ -170,10 +274,17 @@ if(FALSE) {
     rast.hold <- terra::rast(env.files[a])
     
     # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    rast.hold <- terra::crop(x = rast.hold, y = buffered_invaded)
+    # mask by same raster to cut out bodies of water
+    rast.hold <- terra::mask(x = rast.hold, mask = buffered_invaded)
     
     #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    terra::writeRaster(
+      x = rast.hold, 
+      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]),
+      filetype = "AAIGrid", 
+      overwrite = TRUE
+      )
     
     # remove object once its done
     rm(rast.hold)
@@ -190,15 +301,15 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot main_layer to ensure cropping worked}
 
-bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
+bio15 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio15_1981-2010_invaded_buffered.asc")) 
 # convert to df
-bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+bio15_df <- terra::as.data.frame(bio15, xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  geom_raster(data = bio15_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio15_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
@@ -462,7 +573,7 @@ slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables
    dplyr::select(-species) 
 
 # mask layer I will use
-mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc"))
+mask_layer <- raster::raster(x = file.path(mypath, "models", "working_dir", "regional_invaded_presences_buffered_mask.tif"))
 
 ```
 
@@ -513,19 +624,23 @@ minmax(global_mean_weighted)
 Now, I will sample the raster. I will still correct for the latitudinal stretching of the grid cells and exclude cells containing presences, as before. First, I will need to load in the rasters using the `raster` package for `dismo` compatibility.
 
 ```{r load weighted raster and crop}
- 
-# ext object for eastern USA
-ext.obj <- raster::extent(-96.503906, -59.589844, 23.5, 47.457809)
 
 # I will load in the raster and crop it to the training area extent.
 global_mean_weighted <- raster::raster(
   x = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc")
-  ) %>%
-  raster::mask(x = ., mask = mask_layer) %>%
-  raster::crop(x = ., y = ext.obj) # crop to EasternUSA
+  )
 
+# crop mask layer to extent of weighted layer
+#mask_layer_2 <- mask_layer_2 %>%
+#  raster::crop(., y = global_mean_weighted)
+
+# crop and mask by weighted layer
+global_mean_weighted <- global_mean_weighted %>%
+  raster::crop(., y = mask_layer) %>%
+  raster::mask(., mask = mask_layer) 
   
-# also conver to df
+
+# also convert to df
 global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
 
 ```
@@ -540,19 +655,19 @@ set.seed(5)
 # generate random points 
 regional_points <- dismo::randomPoints(
   mask = global_mean_weighted, 
-  n = 10000, # default number used by maxent
+  n = 7500, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
   prob = TRUE,  # the raster contains probability weights
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  lonlatCorrection = FALSE, # weight samples by latitude because cell size is larger closer to equator
   warn = 2 # higher number gives most warnings, including if sample size not reached
   ) %>%
   as.data.frame(.)
 
 # save as csv
-write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v2.csv"))
 # save as rds file
-write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v3.rds"))
+write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v2.rds"))
 
 ```
 
@@ -562,12 +677,14 @@ Now lets visualize the result.
 
 ```{r load in raster for plotting}
 
-easternUSA <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_easternUSA.asc")
+NAmerica <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc")
   )
 
 # also convert to df
-easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
+NAmerica_df <- terra::as.data.frame(NAmerica, xy = TRUE)
+# convert mask layer to df
+mask_layer_df <- as.data.frame(mask_layer, xy = TRUE, na.rm = TRUE)
 
 ```
 
@@ -576,10 +693,9 @@ easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
 # plot at the continental scale
 (regional_points_plot <- ggplot() +
    geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
+   geom_raster(data = mask_layer_df, aes(x = x, y = y), fill = "azure1") +
    geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.001) +
    ggtitle("'regional_invaded' model background points") +
-   labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
    map_style +
    theme(legend.position = "none") 
 )
@@ -591,7 +707,7 @@ We can see that the background points are isolated to the eastern half of the Un
 ```{r save plot}
 
 ggsave(regional_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_background_points_v3.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_background_points_v2.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",

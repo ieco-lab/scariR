@@ -88,6 +88,8 @@ will be created for each value. If \code{map.thresh = TRUE}, then the output wil
 also include a binary raster of suitability and a .jpg image of unsuitable
 areas layered on top of suitability raster. This threshold of suitability is
 determined by the value of \code{thresh}.
+
+Use caution: will overwrite previous files by default.
 }
 \description{
 This function will create a map of establishment suitability based on a MaxEnt

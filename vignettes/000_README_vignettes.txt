@@ -32,6 +32,7 @@ This vignette creates rasters and background point datasets needed for both regi
 
 v0- initial version- in sandbox/vignettes_old- trained the invaded model on the entire easternUSA
 v1- updated invaded model weighting to use new global model output, updated invaded model background selection to 355km buffer around presences- generated invaded background points v2 and regional_invaded_buffer layers
+v2- reverted to eastern USA test area instead of 355km buffer
 
 
 
@@ -46,7 +47,8 @@ This vignette creates all data objects needed to run the regional_invaded model.
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old
 v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridSearch and used model settings from global instead.
-v3- creates the v3 of the regional_invaded model in maxent/models
+v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vignettes_old
+v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
 
 
 

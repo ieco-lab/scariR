@@ -59,7 +59,7 @@ options(java.parameters = "-Xmx2048m")
 
 ## Input Data- env covariates
 
-I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The easternUSA versions will be used to train the regional model, while the NAmerica and global scales will be used to project the models (apply the trained model to a new dataset and obtain results).
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The invaded_buffered versions will be used to train the regional model, while the NAmerica and global scales will be used to project the models (apply the trained model to a new dataset and obtain results).
 
 ```{r load in historical covariates}
 
@@ -70,8 +70,8 @@ mypath <- file.path(here() %>%
 
 
 # the env covariate scale used to train the model
-x_easternUSA_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
-    grep("bio2_1981-2010_easternUSA.asc|bio11_1981-2010_easternUSA.asc|bio12_1981-2010_easternUSA.asc|bio15_1981-2010_easternUSA.asc", ., value = TRUE)
+x_invaded_buffered_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+    grep("bio2_1981-2010_invaded_buffered.asc|bio11_1981-2010_invaded_buffered.asc|bio12_1981-2010_invaded_buffered.asc|bio15_1981-2010_invaded_buffered.asc", ., value = TRUE)
 
 # the scale used to make xy predictions
 x_global_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
@@ -116,19 +116,19 @@ env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
 
 ```{r stack historical covariates and make naming consistent}
 
-# easternUSA rasters
+# invaded_buffered rasters
 # stack env covariates
-x_easternUSA_env_covariates <- terra::rast(x = x_easternUSA_env_covariates_list)
+x_invaded_buffered_env_covariates <- terra::rast(x = x_invaded_buffered_env_covariates_list)
 
 # attributes
-nlyr(x_easternUSA_env_covariates)
-names(x_easternUSA_env_covariates)
-minmax(x_easternUSA_env_covariates)
-# ext(x_easternUSA_env_covariates)
-# crs(x_easternUSA_env_covariates)
+nlyr(x_invaded_buffered_env_covariates)
+names(x_invaded_buffered_env_covariates)
+minmax(x_invaded_buffered_env_covariates)
+# ext(x_invaded_buffered_env_covariates)
+# crs(x_invaded_buffered_env_covariates)
 
 # I will change the name of the variables because they are throwing errors in SDMtune
-names(x_easternUSA_env_covariates) <- env_layer_names
+names(x_invaded_buffered_env_covariates) <- env_layer_names
 
 
 
@@ -196,7 +196,7 @@ names(x_NAmerica_CMIP6_env_covariates) <- env_layer_names
 
 ```{r remove lists}
 
-rm(x_easternUSA_env_covariates_list)
+rm(x_invaded_buffered_env_covariates_list)
 rm(x_NAmerica_hist_env_covariates_list)
 rm(x_global_hist_env_covariates_list)
 rm(x_NAmerica_CMIP6_env_covariates_list)
@@ -215,7 +215,7 @@ p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tabl
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v2.csv"))
 
 ```
 
@@ -251,7 +251,7 @@ Now I will create the "samples with data" object that SDMtune requires.
 if (TRUE) {
 
   regional_invaded_train <- SDMtune::prepareSWD(species = "Lycorma delicatula",
-                                    env = x_easternUSA_env_covariates,
+                                    env = x_invaded_buffered_env_covariates,
                                     p = p_slf_points_invaded, 
                                     a = a_regional_invaded_background_points,
                                     verbose = TRUE # print helpful messages
@@ -279,8 +279,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v4.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v4.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v3.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v3.csv")
   ))
 
 ```
@@ -312,7 +312,7 @@ rm(p_slf_points_masked)
 
 ```{r prepare SWD data object}
 
-if (TRUE) {
+if (FALSE) {
 
   regional_invaded_test <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_global_hist_env_covariates, # need the global covariates for China
@@ -334,7 +334,7 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v4.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v3.csv")
   ))
 
 ```
@@ -373,14 +373,14 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v3")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_model, 
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = TRUE, # create subdirectory
-  env.covar.obj = x_easternUSA_env_covariates, # env covariates raster stacked
+  env.covar.obj = x_invaded_buffered_env_covariates, # env covariates raster stacked
   train.obj = regional_invaded_train, # training data used to create model
   test.obj = regional_invaded_test, # data you wish to use to test the model
   plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
@@ -404,7 +404,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v3")
 
 ```
 
@@ -467,7 +467,7 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v3")
 
 # slf presence data
 slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
@@ -519,7 +519,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v3")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
