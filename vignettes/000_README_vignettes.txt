@@ -63,3 +63,18 @@ This vignette creates all data objects needed to run the regional_native model. 
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old
 v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.
+
+
+
+
+
+----------_create_suitability_plots_maps_ .Rmd----------
+
+## About
+
+This vignette begins data analysis for the historical versions of our MaxEnt models. It creates suitability scatterplots and binary suitability maps
+
+## Changelog
+
+v0- initial version
+
