@@ -68,7 +68,7 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 
 
 
-----------_create_suitability_plots_maps_ .Rmd----------
+----------_create_suitability_xy_plots_ .Rmd----------
 
 ## About
 
