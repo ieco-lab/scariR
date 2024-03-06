@@ -1,0 +1,857 @@
+---
+title: "Create suitability scatter plots and binarized maps (chapter 1)"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-03-06"
+output: html_document
+---
+# Overview
+
+EDIT
+
+This vignette will compare the invaded region model for SLF, which was created in `050_run_easternUSA_MaxEnt_models.Rmd`, with the global version of this model, which was created in `070_run_global_historical_MaxEnt_model.Rmd`. First, I will compare these models using flexible AUC. Second, I will also project these models to N. America and compare the proportion of suitable area. Third, I will calculate suitability values for all SLF points and IVR regions. Finally, I will perform an invasion stage analysis following the methods of Gallien et.al, 2012. 
+
+In step 1, I tested the best fit background data using SLF occurrences and climate data only from the SLF invaded range (the eastern half of the United States). 
+
+(THEORY)
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here() # here() starts at the root folder of this package.
+library(devtools)
+
+# SDMtune and dependencies
+library(SDMtune) # main package used to run SDMs
+library(dismo) # package underneath SDMtune
+library(rJava) # for running MaxEnt
+library(plotROC) # plots ROCs
+
+# spatial data handling
+library(raster) 
+library(terra)
+library(scrubr)
+
+# plot aesthetics
+library(scales)
+#install.packages("ggbreak")
+library(ggbreak)
+library(patchwork)
+
+```
+
+```{r set wd}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+```
+
+Load in summary files for thresholds.
+
+```{r load in summary files}
+# summary file to extract thresholds from
+
+# global
+summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
+
+
+# regional_native
+summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_summary.csv"))
+
+
+# regional_native
+summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v1", "regional_native_summary.csv"))
+
+```
+
+Load in dataset containing locations of globally important viticultural regions.
+
+```{r load in wineries dataset}
+
+load(file.path(here(), "data", "wineries.rda"))
+
+IVR_locations <- wineries %>%
+  # tidy
+  dplyr::select(-c(Latitude, Longitude)) %>%
+  dplyr::filter(
+    !is.na(x),
+    !is.na(y)
+    ) %>%
+  # de-duplicate
+  scrubr::dedup(how = "one", tolerance = 0.99) 
+
+# remove unnecessary obj
+rm(wineries)
+
+```
+
+
+
+```{r axis breaks}
+
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+```
+
+# 1981-2010 predictions
+
+I will also de-duplicate the records because there were "many-to-many" joining matches downstream. De-duplicating removed about 17 records. I also remove the species column, which is automatically created by the predict function upstream.
+
+```{r load in xy suitability dfs}
+
+# global
+IVR_suit_global_hist <- read_csv(
+  file = file.path(mypath, "slf_global_v2", "global_wineries_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) %>%
+  dplyr::rename("IVR_suit_global_hist" = "cloglog_suitability") %>%
+  # de-duplicate
+  scrubr::dedup(how = "one", tolerance = 0.99) %>%
+  # tidy data
+  dplyr::select(-Species) %>%
+  dplyr::filter(!is.na(IVR_suit_global_hist))
+
+
+# regional_invaded
+IVR_suit_regional_invaded_hist <- read_csv(
+  file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  ) %>%
+  dplyr::rename("IVR_suit_regional_invaded_hist" = "cloglog_suitability") %>%
+  # de-duplicate
+  scrubr::dedup(how = "one", tolerance = 0.99) %>%
+  # tidy data
+  dplyr::select(-Species) %>%
+  dplyr::filter(!is.na(IVR_suit_regional_invaded_hist))
+
+
+# regional_native
+IVR_suit_regional_native_hist <- read_csv(
+  file = file.path(mypath, "slf_regional_native_v1", "regional_native_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  ) %>%
+  dplyr::rename("IVR_suit_regional_native_hist" = "cloglog_suitability") %>%
+  # de-duplicate
+  scrubr::dedup(how = "one", tolerance = 0.99) %>%
+  # tidy data
+  dplyr::select(-Species) %>%
+  dplyr::filter(!is.na(IVR_suit_regional_native_hist))
+
+```
+
+## regional_invaded vs global
+
+```{r slf_global_invaded plot style}
+
+scatter_style_global_invaded <- list(
+   # aesthetics
+   labs(title ="Suitability for SLF establishment in globally important viticultural areas",
+         subtitle = "'global' vs 'regional_invaded' models | 1981-2010",
+         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         ),
+   xlab("'global' model suitability"),
+   theme_bw(),
+   # MTP threshold
+   geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[30, 2]), linetype = "dotted", alpha = 0.5),
+   # 10 percentile threshold
+   geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5),
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[34, 2]), linetype = "twodash", alpha = 0.5),
+   # MTSS threshold
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5)
+)
+
+```
+
+```{r join datasets}
+
+# join datasets for plotting
+IVR_invaded_global_joined <- full_join(IVR_suit_regional_invaded_hist, IVR_suit_global_hist, by = c("x", "y")) 
+
+```
+
+### 0-1 plot
+
+First, I will plot and save the xy suitability on a 0-1 scale for the axes.
+
+```{r plot SLF suitability values}
+
+# plot
+(IVR_invaded_global_01scale_plot <- ggplot() +
+   # midpoint line
+   geom_vline(xintercept = 0.5) + 
+   geom_hline(yintercept = 0.5) +
+   # data
+   geom_point(data = IVR_invaded_global_joined, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_invaded_hist), 
+               color = "purple3", size = 1
+               ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name = "'invaded_regional' model suitability", limits = c(0, 1), breaks = breaks) +
+   # default plot style
+   scatter_style_global_invaded 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_invaded_global_01scale_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_invaded_regional_01scale.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### rescaled
+
+Now, I will re-scale the plot to have the MTSS threshold as the center line (currently 0.5), indicating suitability.
+
+NOT INFORMATIVE
+
+```{r plot SLF suitability values}
+
+(IVR_invaded_global_MTSS_plot <- ggplot() +
+   # data
+   geom_point(data = IVR_invaded_global_joined, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_invaded_hist), 
+               color = "purple3", size = 1
+               ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25) + 
+   ylab("'regional_invaded' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_invaded 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_invaded_global_MTSS_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_invaded_regional_MTSS.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### by continent
+
+I will plot the same points by country.
+
+ PLOT NOT HELPFUL
+
+```{r find state names for lat/lon data}
+
+# join geocoded data with joined suitability dataset
+IVR_invaded_global_countries <- IVR_invaded_global_joined %>%
+  inner_join(., IVR_locations, by = c("x", "y")) %>%
+  dplyr::select(x:Country)
+
+```
+
+```{r plot SLF suitability values}
+
+(IVR_invaded_global_countries_plot <- ggplot() +
+   # data
+   geom_point(data = IVR_invaded_global_countries, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_invaded_hist, color = Continent), 
+               size = 1
+               ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25, space = 0.25) +
+   ylab("'regional_invaded' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_invaded 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_invaded_global_countries_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_invaded_regional_MTSS_byContinent.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### native vs invaded range
+
+NOT HELPFUL
+
+```{r find state names for lat/lon data}
+
+# join geocoded data with joined suitability dataset
+IVR_invaded_global_range <- IVR_invaded_global_countries %>%
+  dplyr::filter(Country %in% c("China", "United States")) %>%
+  rename("range" = "Country")
+
+# replace values
+IVR_invaded_global_range$range[IVR_invaded_global_range$range == "China"] <- "native"
+IVR_invaded_global_range$range[IVR_invaded_global_range$range == "United States"] <- "invaded"
+
+```
+
+```{r plot SLF suitability values}
+
+(IVR_invaded_global_range_plot <- ggplot() +
+   # data
+   geom_point(data = IVR_invaded_global_range, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_invaded_hist, color = range), 
+               size = 1
+               ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25, space = 0.25) +
+   ylab("'regional_invaded' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_invaded 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_invaded_global_range_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_invaded_regional_MTSS_ranges.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## regional_native vs global
+
+```{r IVR_global_native plot style}
+
+scatter_style_global_native <- list(
+  # aesthetics
+   labs(title = "Suitability for SLF establishment in globally important viticultural areas",
+         subtitle = "'global' vs 'regional_native' models | 1981-2010",
+         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         ),
+   xlab("'global' model suitability"),
+   theme_bw(),
+  # MTP threshold
+  geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
+  geom_hline(yintercept = as.numeric(summary_regional_native[30, 2]), linetype = "dotted", alpha = 0.5),
+  # 10 percentile threshold
+  geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5),
+  geom_hline(yintercept = as.numeric(summary_regional_native[34, 2]), linetype = "twodash", alpha = 0.5),
+  # MTSS threshold
+  geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
+  geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed", alpha = 0.5)
+  
+)
+
+```
+
+```{r join datasets}
+
+# join datasets for plotting
+IVR_native_global_joined <- full_join(IVR_suit_regional_native_hist, IVR_suit_global_hist, by = c("x", "y"))
+
+```
+
+### 0-1 plot
+
+First, I will plot and save the xy suitability on a 0-1 scale for the axes.
+
+```{r plot SLF suitability values}
+
+# plot
+(IVR_native_global_01scale_plot <- ggplot() +
+   # midpoint line
+   geom_vline(xintercept = 0.5) + 
+   geom_hline(yintercept = 0.5) +
+   # data
+   geom_point(data = IVR_native_global_joined, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist), 
+               color = "purple3", size = 1
+               ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name = "'regional_native' model suitability", limits = c(0, 1), breaks = breaks) +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_native_global_01scale_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_01scale.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+#### rescaled by regional model
+
+Now, I will re-scale the plot to have the MTSS threshold as the center line (currently 0.5), indicating suitability.
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_MTSS_plot_y <- ggplot() +
+   # data
+   geom_point(data = IVR_native_global_joined, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist), 
+               color = "purple3", size = 1
+               ) +
+   # scaling for axes
+   scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
+   ylab("'regional_native' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+   
+)
+
+```
+
+```{r save scatterplot}
+
+if (FALSE) {
+  
+  ggsave(
+    IVR_native_global_MTSS_plot_y, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_y_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+  
+}
+
+```
+
+#### rescaled by global model
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_MTSS_plot_x <- ggplot() +
+   # data
+   geom_point(data = IVR_native_global_joined, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist), 
+               color = "purple3", size = 1
+               ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25) + 
+   ylab("'regional_native' model suitability") +
+    # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+if (FALSE) {
+
+  ggsave(
+    IVR_native_global_MTSS_plot_x, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_x_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+  
+}
+
+```
+
+#### both axes
+
+```{r patchwork both axis plots}
+
+# edit x
+IVR_native_global_MTSS_plot_x_edited <- IVR_native_global_MTSS_plot_x +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# edit y
+IVR_native_global_MTSS_plot_y_edited <- IVR_native_global_MTSS_plot_y +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# combined plot
+(IVR_native_global_MTSS_plot_combined <- IVR_native_global_MTSS_plot_x_edited +
+    IVR_native_global_MTSS_plot_y_edited + 
+    plot_layout(axis_titles = "collect") +
+    plot_annotation(
+      title = "Suitability for SLF establishment in globally important viticultural areas",
+      subtitle = "'global' vs 'regional_native' models | 1981-2010",
+      caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+    )
+)
+
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_native_global_MTSS_plot_combined, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_xy_scaled.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### by country
+
+I will plot the same points by country.
+
+```{r find state names for lat/lon data}
+
+# join geocoded data with joined suitability dataset
+IVR_native_global_countries <- IVR_native_global_joined %>%
+  inner_join(., IVR_locations, by = c("x", "y")) %>%
+  dplyr::select(x:Country)
+
+```
+
+#### rescaled by global model
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_countries_plot_x <- ggplot() +
+   # data
+   geom_point(data = IVR_native_global_countries, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist, color = Continent), 
+               size = 1
+               ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25) + 
+   ylab("'regional_native' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+if (FALSE) {
+  
+  ggsave(
+    IVR_native_global_countries_plot_x, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_byCountry_x_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+  
+}
+
+```
+
+#### re-scaled by regional model
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_countries_plot_y <- ggplot() +
+   # data
+   geom_point(data = IVR_native_global_countries, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist, color = Continent), 
+               size = 1
+               ) +
+   # scaling for axes
+   scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
+   ylab("'regional_native' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+if (FALSE) {
+  
+  ggsave(
+    IVR_native_global_countries_plot_y, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_byCountry_y_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+  
+}
+
+```
+
+#### both axes
+
+```{r patchwork both axis plots}
+
+# edit x
+IVR_native_global_countries_plot_x_edited <- IVR_native_global_countries_plot_x +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    # extra edits
+    legend.position = "none"
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# edit y
+IVR_native_global_countries_plot_y_edited <- IVR_native_global_countries_plot_y +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    # extra edits
+    axis.title.y = element_blank()
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# combined plot
+(IVR_native_global_countries_plot_combined <- IVR_native_global_countries_plot_x_edited +
+    IVR_native_global_countries_plot_y_edited + 
+    plot_layout(axis_titles = "collect") +
+    plot_annotation(
+      title = "Suitability for SLF establishment in globally important viticultural areas",
+      subtitle = "'global' vs 'regional_native' models | 1981-2010",
+      caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+      ) +
+    plot_layout(guides = "collect") +
+    theme(legend.position = "bottom")
+)
+
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_native_global_countries_plot_combined, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_byCountry_xy_scaled.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### points labeled by range
+
+#### rescaled by global model
+
+```{r find state names for lat/lon data}
+
+# join geocoded data with joined suitability dataset
+IVR_native_global_range <- IVR_native_global_countries %>%
+  dplyr::filter(Country %in% c("China", "United States")) %>%
+  rename("range" = "Country")
+
+# replace values
+IVR_native_global_range$range[IVR_native_global_range$range == "China"] <- "native"
+IVR_native_global_range$range[IVR_native_global_range$range == "United States"] <- "invaded"
+
+```
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_range_plot_x <- ggplot() +
+   # data
+   geom_point(
+     data = IVR_native_global_range, 
+     aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist, color = range), 
+     size = 1
+     ) +
+   # scaling for axes
+   scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25, space = 0.25) +
+   ylab("'regional_native' model suitability") +
+   # make lines more prominent
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+if (FALSE) {
+  
+  ggsave(
+    IVR_native_global_range_plot_x, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_ranges_x_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+
+}
+
+```
+
+#### re-scaled by regional model
+
+```{r plot SLF suitability values}
+
+(IVR_native_global_range_plot_y <- ggplot() +
+   # data
+   geom_point(data = IVR_native_global_range, 
+               aes(x = IVR_suit_global_hist, y = IVR_suit_regional_native_hist, color = range), 
+               size = 1
+               ) +
+   # scaling for axes
+   scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
+   ylab("'regional_native' model suitability") +
+   # threshold lines
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
+   # default plot style
+   scatter_style_global_native 
+)
+
+```
+
+```{r save scatterplot}
+
+if(FALSE) {
+
+  ggsave(
+    IVR_native_global_range_plot_y, 
+    filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_ranges_y_scaled.jpg"),
+    height = 8, 
+    width = 10,
+    device = "jpeg",
+    dpi = "retina"
+    )
+  
+}
+
+```
+
+#### both axes
+
+```{r patchwork both axis plots}
+
+# edit x
+IVR_native_global_range_plot_x_edited <- IVR_native_global_range_plot_x +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    # extra edits
+    legend.position = "none"
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# edit y
+IVR_native_global_range_plot_y_edited <- IVR_native_global_range_plot_y +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    # extra edits
+    axis.title.y = element_blank()
+    ) +
+  guides(x =  guide_axis(angle = 45))
+
+# combined plot
+(IVR_native_global_range_plot_combined <- IVR_native_global_range_plot_x_edited +
+    IVR_native_global_range_plot_y_edited + 
+    plot_layout(axis_titles = "collect") +
+    plot_annotation(
+      title = "Suitability for SLF establishment in globally important viticultural areas",
+      subtitle = "'global' vs 'regional_native' models | 1981-2010",
+      caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+      ) +
+    plot_layout(guides = "collect") +
+    theme(legend.position = "bottom")
+)
+
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  IVR_native_global_range_plot_combined, 
+  filename = file.path(here(), "vignette-outputs", "figures", "xy_suitability_IVR_1981-2010_global_native_regional_MTSS_ranges_xy_scaled.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+
+
+
+
+
+# References
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+S Xu#, M Chen#, T Feng, L Zhan, L Zhou, G Yu*. Use ggbreak to effectively utilize plotting space to deal with large datasets and outliers. Frontiers in Genetics. 2021, 12:774846. doi: 10.3389/fgene.2021.774846

@@ -129,7 +129,7 @@ slf_presences_geocoded_tidy <- read_csv(
 
 Will plot SLF presences, globally important viticultural regions, TOH points. Will plot combined plots for SLF and IVRs
 
-# SLF- 1981-2010 predictions
+# 1981-2010 predictions
 
 In the previous vignette, I extracted point-wise suitability values for all SLF presences used to train the model. I will now plot them as a scatter plot to infer the stage of invasion for each population. Gallien et.al 2012 developed this method for making more rigorous predictions for presence-only models in non-equilibrium situations, such as for invasive species. 
 
@@ -163,8 +163,10 @@ scatter_style_global_invaded <- list(
   # aesthetics
    labs(title ="Suitability for SLF establishment at locations with known SLF populations",
          subtitle = "'global' vs 'regional_invaded' models | 1981-2010",
-         caption = "thresholds: twodash = 10_percentile, dashed = MTSS"
+         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
          ),
+   xlab("'global' model suitability"),
+   theme_bw(),
   # MTP threshold
   geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
   geom_hline(yintercept = as.numeric(summary_regional_invaded[30, 2]), linetype = "dotted", alpha = 0.5),
@@ -173,9 +175,7 @@ scatter_style_global_invaded <- list(
   geom_hline(yintercept = as.numeric(summary_regional_invaded[34, 2]), linetype = "twodash", alpha = 0.5),
   # MTSS threshold
   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
-  geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5),
-  theme_bw(),
-  xlab("'global' model suitability")
+  geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5)
 )
 
 ```
@@ -355,6 +355,13 @@ ggsave(
 ```{r slf_global_native plot style}
 
 scatter_style_global_native <- list(
+  # aesthetics
+   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
+         subtitle = "'global' vs 'regional_native' models | 1981-2010",
+         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         ),
+   xlab("'global' model suitability"),
+   theme_bw(),
   # MTP threshold
   geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
   geom_hline(yintercept = as.numeric(summary_regional_native[30, 2]), linetype = "dotted", alpha = 0.5),
@@ -363,9 +370,8 @@ scatter_style_global_native <- list(
   geom_hline(yintercept = as.numeric(summary_regional_native[34, 2]), linetype = "twodash", alpha = 0.5),
   # MTSS threshold
   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
-  geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed", alpha = 0.5),
-  theme_bw(),
-  xlab("'global' model suitability")
+  geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed", alpha = 0.5)
+  
 )
 
 ```
@@ -393,11 +399,6 @@ First, I will plot and save the xy suitability on a 0-1 scale for the axes.
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist), 
                color = "darkorange", size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: dotted = MTP, twodash = 10_percentile, dashed = MTSS"
-         ) +
    scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
    scale_y_continuous(name = "'regional_native' model suitability", limits = c(0, 1), breaks = breaks) +
    scatter_style_global_native 
@@ -430,11 +431,6 @@ Now, I will re-scale the plot to have the MTSS threshold as the center line (cur
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist), 
                color = "darkorange", size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
-         ) +
    # scaling for axes
    scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
    ylab("'regional_native' model suitability") +
@@ -473,11 +469,6 @@ if (FALSE) {
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist), 
                color = "darkorange", size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
-         ) +
    # scaling for axes
    scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25) + 
    ylab("'regional_native' model suitability") +
@@ -577,11 +568,6 @@ slf_native_global_countries <- slf_native_global_joined %>%
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist, color = CountryCode), 
                size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
-         ) +
    # scaling for axes
    scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25) + 
    ylab("'regional_native' model suitability") +
@@ -620,11 +606,6 @@ if (FALSE) {
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist, color = CountryCode), 
                size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: twodash = 10_percentile, dashed = MTSS, dotted = MTP"
-         ) +
    # scaling for axes
    scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
    ylab("'regional_native' model suitability") +
@@ -733,11 +714,6 @@ slf_native_global_range$range[slf_native_global_range$range == "USA"] <- "invade
      aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist, color = range), 
      size = 1
      ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: twodash = 10_percentile, dashed = MTSS, dotted = MTP"
-         ) +
    # scaling for axes
    scale_x_cut(breaks = as.numeric(summary_global[42, ncol(summary_global)] * 2), which = 2, scales = 0.25, space = 0.25) +
    ylab("'regional_native' model suitability") +
@@ -776,11 +752,6 @@ if (FALSE) {
                aes(x = slf_suit_global_hist, y = slf_suit_regional_native_hist, color = range), 
                size = 1
                ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "'global' vs 'regional_native' models | 1981-2010",
-         caption = "thresholds: twodash = 10_percentile, dashed = MTSS, dotted = MTP"
-         ) +
    # scaling for axes
    scale_y_cut(breaks = as.numeric(summary_regional_native[42, 2] * 2), which = 1, scales = 0.25, space = 0.25) +
    ylab("'regional_native' model suitability") +
@@ -866,212 +837,11 @@ ggsave(
 
 
 
-### CMIP6 predictions
+# 2041-2070 predictions- GFDL SSP3-70
 
 ```{r read in datasets}
 
-# pathing
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models")
 
-# suitability values
-# regional
-slf_suit_regional_CMIP6 <- read_csv(
-  file = file.path(mypath, "slf_invaded_regional_ch1", "invaded_regional_slf_all_coords_2041-2070_GFDL_ssp370_xy_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("invaded_regional_suitability" = "cloglog_suitability")
-# global
-slf_suit_global_CMIP6 <- read_csv(
-  file = file.path(mypath, "slf_global_ch1", "global_slf_all_coords_2041-2070_GFDL_ssp370_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("global_suitability" = "cloglog_suitability")
-
-# join datasets for plotting
-slf_suitability_CMIP6 <- full_join(slf_suit_regional_CMIP6, slf_suit_global_CMIP6, by = c("Species", "x", "y"))
-
-
-# the summary files are the same, so no need to load these in again
-
-```
-
-```{r plot SLF suitability values}
-
-(slf_suit_scatter_CMIP6 <- ggplot() +
-   # midpoint line
-   geom_vline(xintercept = 0.5) + 
-   geom_hline(yintercept = 0.5) +
-   # MTP threshold
-   geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional[30, ncol(summary_regional)]), linetype = "dotted", alpha = 0.5) +
-   # 10 percentile threshold
-   geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional[34, ncol(summary_regional)]), linetype = "twodash", alpha = 0.5) +
-   # MTSS threshold
-   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional[42, ncol(summary_regional)]), linetype = "dashed", alpha = 0.5) +
-   # data
-   geom_point(data = slf_suitability_CMIP6, 
-               aes(x = global_suitability, y = invaded_regional_suitability), 
-               color = "darkorange", size = 1
-               ) +
-   # aesthetics
-   labs(title ="Suitability for SLF establishment at locations with known SLF populations",
-         subtitle = "MODELS: global vs invaded_regional; CMIP6 model GFDL, 2041-2070, ssp370",
-         caption = "thresholds: dotted = MTP, twodash = 10_percentile, dashed = MTSS"
-         ) +
-   scatter_style
-)
-
-```
-
-```{r save scatterplot}
-
-ggsave(slf_suit_scatter_CMIP6, filename = file.path(here(), "vignette-outputs", "figures", "slf_suitability_CMIP6_models_ch1.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
-
-```
-
-
-
-
-
-
-
-## IVRs
-
-### Historical
-
-```{r read in datasets}
-
-# pathing
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models")
-
-# suitability values
-# regional
-IVR_suit_regional <- read_csv(
-  file = file.path(mypath, "slf_invaded_regional_ch1", "invaded_regional_wineries_1981-2010_xy_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("regional_suitability" = "cloglog_suitability")
-# global
-IVR_suit_global <- read_csv(
-  file = file.path(mypath, "slf_global_ch1", "global_wineries_1981-2010_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("global_suitability" = "cloglog_suitability")
-
-# join datasets for plotting
-IVR_suitability <- full_join(IVR_suit_regional, IVR_suit_global, by = c("x", "y"))
-
-```
-
-Now that the values have been extracted, lets plot them.
-
-```{r plot IVR suitability values}
-
-(IVR_suit_scatter <- ggplot() +
-    # midpoint line
-    geom_vline(xintercept = 0.5) + 
-    geom_hline(yintercept = 0.5) +
-    # MTP threshold
-    geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[30, ncol(summary_regional)]), linetype = "dotted", alpha = 0.5) +
-    # 10 percentile threshold
-    geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[34, ncol(summary_regional)]), linetype = "twodash", alpha = 0.5) +
-    # MTSS threshold
-    geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[42, ncol(summary_regional)]), linetype = "dashed", alpha = 0.5) +
-    # data
-    geom_point(data = IVR_suitability, 
-               aes(x = global_suitability, y = regional_suitability), 
-               color = "darkviolet", size = 1) +
-    labs(title ="Suitability for SLF establishment at locations of important IVR regions",
-         subtitle = "global vs regional historical models",
-         caption = "thresholds: dotted = MTP, twodash = 10_percentile, dashed = MTSS"
-         ) +
-    scatter_style
-)
-
-```
-
-```{r save scatterplot}
-
-ggsave(IVR_suit_scatter, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_historical_models_ch1.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
-
-```
-
-### CMIP6
-
-```{r read in datasets}
-
-# pathing
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models")
-
-# suitability values
-# regional
-IVR_suit_regional_CMIP6 <- read_csv(
-  file = file.path(mypath, "slf_invaded_regional_ch1", "invaded_regional_wineries_2041-2070_GFDL_ssp370_xy_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("regional_suitability" = "cloglog_suitability")
-# global
-IVR_suit_global_CMIP6 <- read_csv(
-  file = file.path(mypath, "slf_global_ch1", "global_wineries_2041-2070_GFDL_ssp370_predicted_suitability_mean.csv")
-  ) %>%
-  dplyr::rename("global_suitability" = "cloglog_suitability")
-
-# join datasets for plotting
-IVR_suitability_CMIP6 <- full_join(IVR_suit_regional_CMIP6, IVR_suit_global_CMIP6, by = c("x", "y"))
-
-```
-
-Now that the values have been extracted, lets plot them.
-
-```{r plot IVR suitability values}
-
-(IVR_suit_scatter_CMIP6 <- ggplot() +
-    # midpoint line
-    geom_vline(xintercept = 0.5) + 
-    geom_hline(yintercept = 0.5) +
-    # MTP threshold
-    geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[30, ncol(summary_regional)]), linetype = "dotted", alpha = 0.5) +
-    # 10 percentile threshold
-    geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[34, ncol(summary_regional)]), linetype = "twodash", alpha = 0.5) +
-    # MTSS threshold
-    geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5) +
-    geom_hline(yintercept = as.numeric(summary_regional[42, ncol(summary_regional)]), linetype = "dashed", alpha = 0.5) +
-    # data
-    geom_point(data = IVR_suitability_CMIP6, 
-               aes(x = global_suitability, y = regional_suitability), 
-               color = "darkviolet", size = 1) +
-    labs(title ="Suitability for SLF establishment at locations of important IVR regions",
-         subtitle = "MODELS: global vs invaded_regional; CMIP6 model GFDL, 2041-2070, ssp370",
-         caption = "thresholds: dotted = MTP, twodash = 10_percentile, dashed = MTSS"
-         ) +
-    scatter_style
-)
-
-```
-
-```{r save scatterplot}
-
-ggsave(IVR_suit_scatter_CMIP6, filename = file.path(here(), "vignette-outputs", "figures", "IVR_suitability_CMIP6_models_ch1.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
 
 ```
 
@@ -1143,141 +913,6 @@ Why?
   scale_x_continuous(breaks = seq(0, 1, by = 0.1)) +
    theme_bw()
 )
-
-```
-
-### Scatter plots 
-
-```{r distribution of suitability values by longitude}
-
-# scatter of global suitability vs longitude
-(global_suit_longitude <- ggplot(data = slf_suitability) +
-   geom_point(aes(x = x, y = global_suitability), size = 1) +
-   xlab("longitude") +
-   theme_bw()
-)
-
-# scatter of regional suitability vs longitude
-(regional_suit_longitude <- ggplot(data = slf_suitability) +
-    geom_point(aes(x = x, y = regional_suitability), size = 1) +
-    xlab("longitude") +
-   theme_bw()
-)
-
-```
-
-```{r distribution of suitability values by longitude}
-
-# scatter of global suitability vs longitude
-(ggplot(data = IVR_suitability) +
-   geom_point(aes(x = x, y = global_suitability), size = 1) +
-   xlab("longitude") +
-   theme_bw()
-)
-
-# scatter of regional suitability vs longitude
-(ggplot(data = IVR_suitability) +
-    geom_point(aes(x = x, y = regional_suitability), size = 1) +
-    xlab("longitude") +
-   theme_bw()
-)
-
-# scatter of global suitability vs longitude
-(ggplot(data = IVR_suitability) +
-   geom_point(aes(x = global_suitability, y = y), size = 1) +
-   ylab("latitude") +
-   theme_bw()
-)
-
-# scatter of regional suitability vs longitude
-(ggplot(data = IVR_suitability) +
-   geom_point(aes(x = regional_suitability, y = y), size = 1) +
-   ylab("latitude") +
-   theme_bw()
-)
-
-```
-
-```{r ggplot object for MTSS plot style}
-
-# custom function
-trans <- function(x) {
-  ifelse(
-    test = x > 0.06806,
-    yes = x - (x * 0.75), 
-    no = x
-      )
-}
-
-inv <- function(x) {
-  
-  diff_x <- x - 0.06806 
-  
-  ifelse(
-    test = x > 0.06806 - (0.06806 * 0.75),
-    yes = x + ((0.06806 + diff_x) * 0.75), 
-    no = x
-      )
-}
-
-compress_end <- trans_new(
-  name = "compress_end", 
-  transform = trans, 
-  inverse = inv
-  )
-
-y <- runif(50, 0.01, 0.5)
-
-identical(y, trans(inv(y)))
-
-
-
-(summary_global[42, ncol(summary_global)] * 2)
-0.06806
-
-```
-
-```{r}
-
-squash_axis <- function(from, to, factor) { 
-    # A transformation function that squashes the range of [from, to] by factor on a given axis 
-
-    # Args:
-    #   from: left end of the axis
-    #   to: right end of the axis
-    #   factor: the compression factor of the range [from, to]
-    #
-    # Returns:
-    #   A transformation called "squash_axis", which is capsulated by trans_new() function
-
-  trans <- function(x) {    
-      # get indices for the relevant regions
-      isq <- x > from & x < to
-      ito <- x >= to
-
-      # apply transformation
-      x[isq] <- from + (x[isq] - from)/factor
-      x[ito] <- from + (to - from)/factor + (x[ito] - to)
-
-      return(x)
-  }
-
-  inv <- function(x) {
-
-      # get indices for the relevant regions
-      isq <- x > from & x < from + (to - from)/factor
-      ito <- x >= from + (to - from)/factor
-
-      # apply transformation
-      x[isq] <- from + (x[isq] - from) * factor
-      x[ito] <- to + (x[ito] - (from + (to - from)/factor))
-
-      return(x)
-  }
-
-# return the transformation
-  return(trans_new("squash_axis", trans, inv))
-}
 
 ```
 

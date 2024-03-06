@@ -8,7 +8,7 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 
 ########## FILES ########## 
 
-----------_ch1_run_global_MaxEnt_model_ .Rmd----------
+----------_ch1_run_global_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -36,7 +36,7 @@ v2- reverted to eastern USA test area instead of 355km buffer
 
 
 
-----------_ch1_run_invaded_regional_MaxEnt_model_ .Rmd----------
+----------_ch1_run_invaded_regional_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -52,7 +52,7 @@ v4- creates the v4 of the regional_invaded model in maxent/models. reverted to r
 
 
 
-----------_ch1_run_native_regional_MaxEnt_model_ .Rmd----------
+----------_ch1_run_native_regional_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -68,13 +68,25 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 
 
 
-----------_create_suitability_xy_plots_ .Rmd----------
+----------_create_suitability_xy_plots_SLF.Rmd----------
 
 ## About
 
-This vignette begins data analysis for the historical versions of our MaxEnt models. It creates suitability scatterplots and binary suitability maps
+This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for SLF point datasets.
 
 ## Changelog
 
 v0- initial version
 
+
+
+
+----------_create_suitability_xy_plots_viticulture.Rmd----------
+
+## About
+
+This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for locations of viticultural regions.
+
+## Changelog
+
+v0- initial version
