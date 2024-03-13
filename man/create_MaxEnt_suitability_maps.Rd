@@ -72,8 +72,8 @@ See details for a list of preset options and other usages.}
 \code{map.thresh = FALSE}. Should be a .csv file or data frame that contains the
 summary statistics output created by
 \code{\link[=compute_MaxEnt_summary_statistics]{compute_MaxEnt_summary_statistics()}} (filename ending in
-"summary_all_iterations.csv"). If an import, file path should be in the format
-produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
+"_summary.csv"). If an import, file path should be in the format produced
+by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
 
 \item{map.style}{List, default is NA. This is used to apply
 ggplot aesthetics to the plot outputs. If specified, the given value should be

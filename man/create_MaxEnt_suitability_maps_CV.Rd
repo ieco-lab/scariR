@@ -78,7 +78,7 @@ See details for a list of preset options and other usages.}
 \item{summary.file}{Data import. Does not need to be defined if
 \code{map.thresh = FALSE}. Should be a .csv file or data frame that contains the
 summary statistics output created by
-\code{\link[=compute_MaxEnt_summary_statistics]{compute_MaxEnt_summary_statistics()}} (filename ending in
+\code{\link[=compute_MaxEnt_summary_statistics_CV]{compute_MaxEnt_summary_statistics_CV()}} (filename ending in
 "summary_all_iterations.csv"). If an import, file path should be in the format
 produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
 

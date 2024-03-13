@@ -155,6 +155,18 @@ slf_suit_regional_native_hist <- read_csv(
 
 ```
 
+```{r function}
+
+slfSpread::rescale_cloglog_suit(
+  xy.predicted = slf_suit_global_hist,
+  rescale.name = "slf_suit_global_hist",
+  thresh = "MTSS",
+  summary.file = summary_global
+)
+
+```
+
+
 ## regional_invaded vs global
 
 ```{r slf_global_invaded plot style}

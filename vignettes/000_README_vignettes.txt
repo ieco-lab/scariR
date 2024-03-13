@@ -68,7 +68,7 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 
 
 
-----------_create_suitability_xy_plots_SLF.Rmd----------
+----------_ch1_create_suitability_xy_plots_SLF.Rmd----------
 
 ## About
 
@@ -76,12 +76,13 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 
 ## Changelog
 
-v0- initial version
+v0- initial version- in sandbox/vignettes_old
+v1
 
 
 
 
-----------_create_suitability_xy_plots_viticulture.Rmd----------
+----------_ch1_create_suitability_xy_plots_viticulture.Rmd----------
 
 ## About
 
@@ -89,4 +90,5 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 
 ## Changelog
 
-v0- initial version
+v0- initial version- in sandbox/vignettes_old
+v1
