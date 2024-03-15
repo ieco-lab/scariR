@@ -77,7 +77,7 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 ## Changelog
 
 v0- initial version- in sandbox/vignettes_old
-v1
+v1- using function to transform scatter plot axes
 
 
 
@@ -91,4 +91,4 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 ## Changelog
 
 v0- initial version- in sandbox/vignettes_old
-v1
+v1- using function to transform scatter plot axes

@@ -145,17 +145,15 @@ rescale_cloglog_suitability_1to1 <- function(xy.predicted, thresh, summary.file,
 
     }
 
-    # function
-    # scale thresh value
-    scaled_thresh_value <- thresh_val_internal / max(suit_column_internal)
+    # Rescale thresh_val_internal to 0
+    scaled_thresh_val <- (thresh_val_internal - min_val_internal) / (max_val_internal - min_val_internal) * 2 - 1
 
-    # Re-scale suit_column_internal relative to thresh_val_internal and to a range from -1 to 1
-    scaled_suit_column <- ((suit_column_internal - thresh_val_internal) / max(abs(min(suit_column_internal - thresh_val_internal), max(suit_column_internal - thresh_val_internal)))) * 2
-
-    # return the scaled vector of values
-    return(scaled_suit_column)
+    # Rescale suit_column_internal to range [-1, 1] with scaled_thresh_val as median
+    scaled_vector <- 2 * (suit_column_internal - thresh_val_internal) / (max_val_internal - min_val_internal)
 
   }
+
+
 
   # select data column and apply function---------------------------------------
 
