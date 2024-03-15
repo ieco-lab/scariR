@@ -1,0 +1,243 @@
+---
+title: "test"
+author: "Samuel M. Owens"
+date: "2024-03-15"
+output: html_document
+---
+
+```{r load necesssary packages, echo = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here() # here() starts at the root folder of this package.
+library(devtools)
+
+# SDMtune and dependencies
+library(SDMtune) # main package used to run SDMs
+library(dismo) # package underneath SDMtune
+library(rJava) # for running MaxEnt
+library(plotROC) # plots ROCs
+
+# spatial data handling
+library(raster) 
+library(terra)
+library(tidygeocoder)
+
+# plot aesthetics
+library(scales)
+#install.packages("ggbreak")
+library(ggbreak)
+library(patchwork)
+
+```
+
+```{r set wd}
+
+mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+```
+
+Load in summary files for thresholds.
+
+```{r load in summary files}
+# summary file to extract thresholds from
+
+# global
+summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
+
+
+# regional_native
+summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_summary.csv"))
+
+
+# regional_native
+summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v1", "regional_native_summary.csv"))
+
+
+```
+
+```{r read in geocoded data}
+
+slf_presences_geocoded_tidy <- read_csv(
+  file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01_withCountries.csv")
+  ) %>%
+   dplyr::filter(., !is.na(CountryCode), !CountryCode %in% c("", "NA")) 
+
+```
+
+
+Will plot SLF presences, globally important viticultural regions, TOH points. Will plot combined plots for SLF and slfs
+
+# 1981-2010 predictions
+
+In the previous vignette, I extracted point-wise suitability values for all SLF presences used to train the model. I will now plot them as a scatter plot to infer the stage of invasion for each population. Gallien et.al 2012 developed this method for making more rigorous predictions for presence-only models in non-equilibrium situations, such as for invasive species. 
+
+```{r load in xy suitability}
+
+# global
+slf_suit_global_hist <- read_csv(
+  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) %>%
+  dplyr::rename("slf_suit_global_hist" = "cloglog_suitability")
+
+# regional_invaded
+slf_suit_regional_invaded_hist <- read_csv(
+  file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  ) %>%
+  dplyr::rename("slf_suit_regional_invaded_hist" = "cloglog_suitability")
+
+# regional_native
+slf_suit_regional_native_hist <- read_csv(
+  file = file.path(mypath, "slf_regional_native_v1", "regional_native_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  ) %>%
+  dplyr::rename("slf_suit_regional_native_hist" = "cloglog_suitability")
+
+```
+
+Blurb about this function
+
+```{r re-scale based on MTSS thresh for visualization}
+
+
+
+# global
+slf_suit_global_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_global_hist,
+  thresh = "MTSS",
+  summary.file = summary_global,
+  rescale.name = "slf_suit_global_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_global_hist_rescaled_thresholds <- slf_suit_global_hist_rescaled[[2]]
+slf_suit_global_hist_rescaled <- slf_suit_global_hist_rescaled[[1]]
+
+
+# global
+slf_suit_global_hist_rescaled2 <- slfSpread::rescale_cloglog_suitability_1to1(
+  xy.predicted = slf_suit_global_hist,
+  thresh = "MTSS",
+  summary.file = summary_global,
+  rescale.name = "slf_suit_global_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_global_hist_rescaled2_thresholds <- slf_suit_global_hist_rescaled2[[2]]
+slf_suit_global_hist_rescaled2 <- slf_suit_global_hist_rescaled2[[1]]
+
+
+# regional_invaded
+# regional_native
+slf_suit_regional_invaded_hist_rescaled <- slfSpread::rescale_cloglog_suitability_1to1(
+  xy.predicted = slf_suit_regional_invaded_hist,
+  thresh = "MTSS",
+  summary.file = summary_regional_invaded,
+  rescale.name = "slf_suit_regional_invaded_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_invaded_hist_rescaled_thresholds <- slf_suit_regional_invaded_hist_rescaled[[2]]
+slf_suit_regional_invaded_hist_rescaled <- slf_suit_regional_invaded_hist_rescaled[[1]]
+
+
+
+# regional_native
+slf_suit_regional_native_hist_rescaled <- slfSpread::rescale_cloglog_suitability_1to1(
+  xy.predicted = slf_suit_regional_native_hist,
+  thresh = "MTSS",
+  summary.file = summary_regional_native,
+  rescale.name = "slf_suit_regional_native_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_native_hist_rescaled_thresholds <- slf_suit_regional_native_hist_rescaled[[2]]
+slf_suit_regional_native_hist_rescaled <- slf_suit_regional_native_hist_rescaled[[1]]
+
+```
+
+
+```{r}
+slf_suit_global_hist_rescaled <- scales::rescale_mid(
+  x = slf_suit_global_hist$slf_suit_global_hist,
+  to = c(-1, 1),
+  from = range(slf_suit_global_hist$slf_suit_global_hist),
+  mid = as.numeric(summary_global[42, ncol(summary_global)])
+) %>%
+  as.data.frame() %>%
+  rename("slf_suit_global_hist_rescaled" = ".")
+
+slf_suit_global_hist_rescaled <- cbind(slf_suit_global_hist, slf_suit_global_hist_rescaled) %>%
+  dplyr::select(-slf_suit_global_hist)
+
+
+
+
+
+slf_suit_regional_native_hist_rescaled <- scales::rescale_mid(
+  x = slf_suit_regional_native_hist$slf_suit_regional_native_hist,
+  to = c(-1, 1),
+  from = range(slf_suit_regional_native_hist$slf_suit_regional_native_hist),
+  mid = as.numeric(summary_regional_native[42, ncol(summary_regional_native)])
+) %>%
+  as.data.frame() %>%
+  rename("slf_suit_regional_native_hist_rescaled" = ".")
+
+slf_suit_regional_native_hist_rescaled <- cbind(slf_suit_regional_native_hist, slf_suit_regional_native_hist_rescaled) %>%
+  dplyr::select(-slf_suit_regional_native_hist)
+
+```
+
+
+
+```{r function}
+
+# join datasets for plotting
+slf_invaded_global_rescaled_joined <- full_join(slf_suit_regional_native_hist_rescaled, slf_suit_global_hist_rescaled2, by = c("Species", "x", "y"))
+
+# plot
+(ggplot() +
+   # plot style
+   scatter_style_global_invaded +
+   # MTSS thresh
+   geom_vline(xintercept = 0, linetype = "dashed") + 
+   geom_hline(yintercept = 0, linetype = "dashed") +
+   # MTP threshold
+   geom_vline(xintercept = as.numeric(slf_suit_global_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   geom_hline(yintercept = as.numeric(slf_suit_regional_native_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   # data
+   geom_point(data = slf_invaded_global_rescaled_joined, 
+               aes(x = slf_suit_global_hist_rescaled, y = slf_suit_regional_native_hist_rescaled), 
+               color = "darkorange", size = 1
+               ) #+
+   #scale_x_continuous(name = "'global' model risk factor", limits = c(0, 1), breaks = breaks) + 
+  # scale_y_continuous(name = "'regional_native' risk factor", limits = c(0, 1), breaks = breaks) 
+)
+
+
+```
+
+
+## regional_invaded vs global
+
+```{r slf_global_invaded plot style}
+
+scatter_style_global_invaded <- list(
+  # aesthetics
+   labs(title = "Current suitability for SLF establishment at locations with known SLF populations",
+         subtitle = "'global' vs 'regional_invaded' models | 1981-2010",
+         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         ),
+   xlab("'global' model suitability"),
+   theme_bw()#,
+  # MTP threshold
+  #geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
+  #geom_hline(yintercept = as.numeric(summary_regional_invaded[30, 2]), linetype = "dotted", alpha = 0.5),
+  # MTSS threshold
+  #geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
+  #geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5)
+)
+
+```

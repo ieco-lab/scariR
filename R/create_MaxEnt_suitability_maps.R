@@ -341,7 +341,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       }
 
 
-      # Criteria for selecting thresh value-----------------------------------
+      # Criteria for selecting thresh value-------------------------------------
 
       # if numeric, import
       if(is.numeric(k)) {
@@ -357,7 +357,10 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
 
       }
 
-      # print messages--------------------------------------------------------
+      # include all decimal places
+      thresh_value <- as.double(format(thresh_value, digits = 10))
+
+      # print messages----------------------------------------------------------
 
       # loop start
       print(paste0("begin threshold raster and map: ", thresh_name))

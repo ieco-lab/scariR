@@ -375,6 +375,9 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
         }
 
+        # include all decimal places
+        thresh_value <- as.double(format(thresh_value, digits = 10))
+
         # print messages--------------------------------------------------------
 
         # loop start

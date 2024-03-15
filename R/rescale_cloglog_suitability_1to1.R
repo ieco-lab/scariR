@@ -2,25 +2,31 @@
 #'
 #'
 #'@param xy.predicted Data import. The predicted cloglog suitability output
-#'taken from one of the internal functions:
+#'taken from one of the internal package functions:
 #'[slfSpread::predict_xy_suitability()] or
 #'[slfSpread::predict_xy_suitability_CV()]. Should be a data.frame or .csv
 #'file. If an import, file path should be in the format produced by the
 #'[file.path()] function (i.e. with '/' instead of '\\').
 #'
-#'@param rescale.name Character. Descriptive name to be given to column of
-#'rescaled values and the output object name. Exclude unnecessary phrases.
-#'
-#'@param thresh thresh Numeric or Character. This may be imported manually
+#'@param thresh Numeric or Character. This may be imported manually
 #'(numeric), or may be selected from one of the thresholds for the model
 #'(character). See details for a list of preset options and other usages.
 #'
-#'@param summary.file Data import. Contains preset values for thresh. Should be
-#'a .csv file or data frame that contains the summary statistics output created by
+#'@param summary.file Data import. Contains preset values for thresh and summary
+#'statistics and is created by the internal package funcions:
 #'[slfSpread::compute_MaxEnt_summary_statistics()] or
 #'[slfSpread::compute_MaxEnt_summary_statistics_CV()] The filename should end in
-#'"summary_all_iterations.csv"). If an import, file path should be in the format
-#'produced by the [file.path()] function (i.e. with '/' instead of '\\').
+#'"summary_all_iterations.csv"). Should be a .csv file or data frame. If an
+#'import, file path should be in the format produced by the [file.path()]
+#'function (i.e. with '/' instead of '\\').
+#'
+#'@param rescale.name Character. Descriptive name to be given to column of
+#'rescaled values.
+#'
+#'@param rescale.thresholds Logical. If true, the function will also rescale
+#'the list of thesholds given in the thresh presets list. All other thresholds
+#'are rescaled with reference to the threshold specified by `thresh`. This is
+#'advised if visualizing with multiple thresholds.
 #'
 #'@details
 #'
@@ -42,17 +48,21 @@
 #'Returns the input data frame, with the column of cloglog suitability values
 #'replaced by the re-scaled exponential values.
 #'
+#'If rescale.thresholds = TRUE, will return a list of data frames. The first
+#'object in the list will be the rescaled suitability values, and the second
+#'object in the list will be the rescaled thresholds.
+#'
 #'@examples
 #'
 #'example
 #'
 #'@export
-rescale_cloglog_suit <- function(xy.predicted, rescale.name, thresh, summary.file) {
+rescale_cloglog_suitability_1to1 <- function(xy.predicted, thresh, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
 
   # Error checks----------------------------------------------------------------
 
   # ensure objects are character type
-  if (is.character(rescale.name) == FALSE) {
+  if (!is.na(rescale.name) & is.character(rescale.name) == FALSE) {
     cli::cli_alert_danger("Parameter 'rescale.name' must be of type 'character'")
     stop()
   }
@@ -96,7 +106,6 @@ rescale_cloglog_suit <- function(xy.predicted, rescale.name, thresh, summary.fil
   )
 
 
-
   # thresh import
   if(is.numeric(thresh)) {
     thresh_value <- thresh
@@ -111,51 +120,89 @@ rescale_cloglog_suit <- function(xy.predicted, rescale.name, thresh, summary.fil
 
   }
 
+  # include all decimal places
+  thresh_value <- as.double(format(thresh_value, digits = 10))
+
 
 
   # internal function for transformation----------------------------------------
 
   # function to rescale vector to exponent
-  rescale_vector <- function(suit_column_internal, thresh_value_internal) {
+  rescale_vector <- function(suit_column_internal, thresh_val_internal, min_val = NA, max_val = NA) {
 
-    # define min and max
-    min_val <- min(suit_column_internal)
-    max_val <- max(suit_column_internal)
+    # conditional min and max settings
+    # if specified, import
+    if(!is.na(min_val) & !is.na(max_val)) {
 
-    # apply log transformation to thresh_value_internal that makes it scale to 0.5
-    base_val <- exp(log(0.5) / (thresh_value_internal - min_val))
-    # Apply exponential scaling
-    scaled_vector <- (base_val ^ (vector - min_val) - 1) / (base_val ^ (max_val - min_val) - 1)
+      min_val_internal <- min_val
+      max_val_internal <- max_val
+
+      # otherwise, use the range of the suitability dataset
+    } else {
+
+      min_val_internal <- min(suit_column_internal)
+      max_val_internal <- max(suit_column_internal)
+
+    }
+
+    # function
+    # scale thresh value
+    scaled_thresh_value <- thresh_val_internal / max(suit_column_internal)
+
+    # Re-scale suit_column_internal relative to thresh_val_internal and to a range from -1 to 1
+    scaled_suit_column <- ((suit_column_internal - thresh_val_internal) / max(abs(min(suit_column_internal - thresh_val_internal), max(suit_column_internal - thresh_val_internal)))) * 2
 
     # return the scaled vector of values
-    return(scaled_vector)
+    return(scaled_suit_column)
 
   }
-
-
 
   # select data column and apply function---------------------------------------
 
   # import suit column
-  suit_column <- dplyr::select(xy_import[, 4])
+  suit_column <- dplyr::select(xy_import, 4)
 
   # apply internal function
   rescale_vector_output <- rescale_vector(suit_column, thresh_value)
 
-
   # create output
-  xy_output <- dplyr::select(xy_import[, 1:3])
+  xy_output <- dplyr::select(xy_import, 1:3)
   # append new column
-  xy_output <- cbind(xy_output, rescale_vector_output) |>
-    # rename column
-    rename(rescale.name = colnames(xy_output[, 4]))
+  xy_output <- cbind(xy_output, rescale_vector_output)
+  # rename column
+  colnames(xy_output)[4] <- ifelse(!is.na(rescale.name), paste0(rescale.name, "_rescaled"), "cloglog_suitability_rescaled")
 
 
+  # conditional output----------------------------------------------------------
 
-  # return object and assign name-----------------------------------------------
-  return(xy_output)
+  if(rescale.thresholds == TRUE) {
 
-  assign(xy_output, value = paste0(rescale.name, "_rescaled"))
+    # convert to df
+    thresh_presets_tmp <- as.data.frame(thresh_presets)
 
+    # rescale
+    thresh_output <- rescale_vector(
+      thresh_presets_tmp,
+      thresh_value,
+      # use the range from the suitability dataset instead of the thresholds dataset
+      min_val = min(suit_column),
+      max_val = max(suit_column)
+      )
+
+    # convert rownames to column
+    thresh_output <- rownames_to_column(thresh_output, var = "threshold") |>
+      rename("value" = "thresh_presets")
+
+    # output
+    xy_thresh_output <- list(xy_output, thresh_output)
+
+    return(xy_thresh_output)
+
+  # otherwise, just return the regular output
+    } else {
+
+       return(xy_output)
+
+    }
 
 }

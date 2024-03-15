@@ -155,17 +155,6 @@ slf_suit_regional_native_hist <- read_csv(
 
 ```
 
-```{r function}
-
-slfSpread::rescale_cloglog_suit(
-  xy.predicted = slf_suit_global_hist,
-  rescale.name = "slf_suit_global_hist",
-  thresh = "MTSS",
-  summary.file = summary_global
-)
-
-```
-
 
 ## regional_invaded vs global
 
@@ -182,9 +171,6 @@ scatter_style_global_invaded <- list(
   # MTP threshold
   geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
   geom_hline(yintercept = as.numeric(summary_regional_invaded[30, 2]), linetype = "dotted", alpha = 0.5),
-  # 10 percentile threshold
-  geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5),
-  geom_hline(yintercept = as.numeric(summary_regional_invaded[34, 2]), linetype = "twodash", alpha = 0.5),
   # MTSS threshold
   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5)
