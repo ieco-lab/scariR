@@ -145,16 +145,64 @@ slf_suit_global_hist <- read_csv(
 slf_suit_regional_invaded_hist <- read_csv(
   file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
-  dplyr::rename("slf_suit_regional_invaded_hist" = "cloglog_suitability")
+  dplyr::rename("slf_suit_regional_invaded_hist" = "cloglog_suitability") 
 
 # regional_native
 slf_suit_regional_native_hist <- read_csv(
   file = file.path(mypath, "slf_regional_native_v1", "regional_native_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
-  dplyr::rename("slf_suit_regional_native_hist" = "cloglog_suitability")
+  dplyr::rename("slf_suit_regional_native_hist" = "cloglog_suitability") 
 
 ```
 
+I will also re-scale these suitability values based on the MTSS threshold.
+
+```{r re-scale based on MTSS thresh for visualization}
+
+
+# global
+slf_suit_global_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_global_hist,
+  thresh = "MTSS",
+  summary.file = summary_global,
+  rescale.name = "slf_suit_global_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_global_hist_rescaled_thresholds <- slf_suit_global_hist_rescaled[[2]]
+slf_suit_global_hist_rescaled <- slf_suit_global_hist_rescaled[[1]]
+
+
+
+# regional_invaded
+slf_suit_regional_invaded_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_regional_invaded_hist,
+  thresh = "MTSS",
+  summary.file = summary_regional_invaded,
+  rescale.name = "slf_suit_regional_invaded_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_invaded_hist_rescaled_thresholds <- slf_suit_regional_invaded_hist_rescaled[[2]]
+slf_suit_regional_invaded_hist_rescaled <- slf_suit_regional_invaded_hist_rescaled[[1]]
+
+
+
+
+# regional_native
+slf_suit_regional_native_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_regional_native_hist,
+  thresh = "MTSS",
+  summary.file = summary_regional_native,
+  rescale.name = "slf_suit_regional_native_hist",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_native_hist_rescaled_thresholds <- slf_suit_regional_native_hist_rescaled[[2]]
+slf_suit_regional_native_hist_rescaled <- slf_suit_regional_native_hist_rescaled[[1]]
+
+
+```
 
 ## regional_invaded vs global
 
@@ -181,7 +229,12 @@ scatter_style_global_invaded <- list(
 ```{r join datasets}
 
 # join datasets for plotting
-slf_invaded_global_joined <- full_join(slf_suit_regional_invaded_hist, slf_suit_global_hist, by = c("Species", "x", "y"))
+# default output
+slf_invaded_global_joined <- full_join(slf_suit_regional_invaded_hist, slf_suit_global_hist, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
+# rescaled output
+slf_invaded_global_joined_rescaled <- full_join(slf_suit_regional_invaded_hist_rescaled, slf_suit_global_hist_rescaled, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
 
 ```
 
@@ -253,7 +306,12 @@ scatter_style_global_native <- list(
 ```{r join datasets}
 
 # join datasets for plotting
-slf_native_global_joined <- full_join(slf_suit_regional_native_hist, slf_suit_global_hist, by = c("Species", "x", "y"))
+# default output
+slf_native_global_joined <- full_join(slf_suit_regional_native_hist, slf_suit_global_hist, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
+# rescaled output
+slf_native_global_joined_rescaled <- full_join(slf_suit_regional_native_hist_rescaled, slf_suit_global_hist_rescaled, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
 
 ```
 
@@ -779,6 +837,53 @@ slf_suit_regional_native_GFDL_ssp370 <- read_csv(
 
 ```
 
+```{r re-scale based on MTSS thresh for visualization}
+
+
+# global
+slf_suit_global_GFDL_ssp370_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_global_GFDL_ssp370,
+  thresh = "MTSS",
+  summary.file = summary_global,
+  rescale.name = "slf_suit_global_GFDL_ssp370",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_global_GFDL_ssp370_rescaled_thresholds <- slf_suit_global_GFDL_ssp370_rescaled[[2]]
+slf_suit_global_GFDL_ssp370_rescaled <- slf_suit_global_GFDL_ssp370_rescaled[[1]]
+
+
+
+# regional_invaded
+slf_suit_regional_invaded_GFDL_ssp370_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_regional_invaded_GFDL_ssp370,
+  thresh = "MTSS",
+  summary.file = summary_regional_invaded,
+  rescale.name = "slf_suit_regional_invaded_GFDL_ssp370",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_invaded_GFDL_ssp370_rescaled_thresholds <- slf_suit_regional_invaded_GFDL_ssp370_rescaled[[2]]
+slf_suit_regional_invaded_GFDL_ssp370_rescaled <- slf_suit_regional_invaded_GFDL_ssp370_rescaled[[1]]
+
+
+
+
+# regional_native
+slf_suit_regional_native_GFDL_ssp370_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = slf_suit_regional_native_GFDL_ssp370,
+  thresh = "MTSS",
+  summary.file = summary_regional_native,
+  rescale.name = "slf_suit_regional_native_GFDL_ssp370",
+  rescale.thresholds = TRUE
+)
+# extract rescaled values and thresholds
+slf_suit_regional_native_GFDL_ssp370_rescaled_thresholds <- slf_suit_regional_native_GFDL_ssp370_rescaled[[2]]
+slf_suit_regional_native_GFDL_ssp370_rescaled <- slf_suit_regional_native_GFDL_ssp370_rescaled[[1]]
+
+
+```
+
 ## regional_invaded vs global- GFDL ssp370
 
 ```{r slf_global_invaded plot style}
@@ -807,7 +912,13 @@ scatter_style_global_invaded_GFDL_ssp370 <- list(
 ```{r join datasets}
 
 # join datasets for plotting
-slf_invaded_global_joined_GFDL_ssp370 <- full_join(slf_suit_regional_invaded_GFDL_ssp370, slf_suit_global_GFDL_ssp370, by = c("x", "y")) 
+# default output
+slf_invaded_global_joined_GFDL_ssp370 <- full_join(slf_suit_regional_invaded_GFDL_ssp370, slf_suit_global_GFDL_ssp370, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
+# rescaled output
+slf_invaded_global_joined_GFDL_ssp370_rescaled <- full_join(slf_suit_regional_invaded_GFDL_ssp370_rescaled, slf_suit_global_GFDL_ssp370_rescaled, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
+
 
 ```
 
@@ -882,7 +993,11 @@ scatter_style_global_native_GFDL_ssp370 <- list(
 ```{r join datasets}
 
 # join datasets for plotting
+# default output
 slf_native_global_joined_GFDL_ssp370 <- full_join(slf_suit_regional_native_GFDL_ssp370, slf_suit_global_GFDL_ssp370, by = c("Species", "x", "y")) %>%
+  dplyr::select(-Species)
+# rescaled output
+slf_native_global_joined_GFDL_ssp370_rescaled <- full_join(slf_suit_regional_native_GFDL_ssp370_rescaled, slf_suit_global_GFDL_ssp370_rescaled, by = c("Species", "x", "y")) %>%
   dplyr::select(-Species)
   
 ```
@@ -1395,19 +1510,13 @@ slf_invaded_global_joined_change <- full_join(slf_invaded_global_joined, slf_inv
 
 # plot
 (slf_invaded_global_01scale_change_plot <- ggplot(data = slf_invaded_global_joined_change) +
-   # midpoint line
-   geom_vline(xintercept = 0.5) + 
-   geom_hline(yintercept = 0.5) +
    # threshold lines
    # MTP threshold
    geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5) +
    geom_hline(yintercept = as.numeric(summary_regional_invaded[30, 2]), linetype = "dotted", alpha = 0.5) +
-   # 10 percentile threshold
-   geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional_invaded[34, 2]), linetype = "twodash", alpha = 0.5) +
    # MTSS threshold
-   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed", alpha = 0.5) +
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_invaded[42, 2]), linetype = "dashed") +
    # arrows indicating change
    geom_segment(
      aes(
@@ -1430,11 +1539,11 @@ slf_invaded_global_joined_change <- full_join(slf_invaded_global_joined, slf_inv
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
-   scale_y_continuous(name = "'invaded_regional' model suitability", limits = c(0, 1), breaks = breaks) +
+   scale_y_continuous(name = "'regional_invaded' model suitability", limits = c(0, 1), breaks = breaks) +
    # scales style
    labs(title = "Climate change effects on suitability for SLF establishment at locations with known SLF populations",
          subtitle = "'global' vs 'regional_invaded' models",
-         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         caption = "thresholds: dashed = MTSS, dotted = MTP"
          ) +
    # aesthetics
    scale_color_manual(name = "Time period", values = c("darkorange", "orangered3")) +
@@ -1460,6 +1569,78 @@ ggsave(
 
 ```
 
+## regional_invaded vs global- MTSS rescaled plot
+
+```{r join datasets}
+
+# join datasets for plotting
+slf_invaded_global_joined_rescale_change <- full_join(slf_invaded_global_joined_rescaled, slf_invaded_global_joined_GFDL_ssp370_rescaled, by = c("x", "y")) 
+
+```
+
+```{r plot SLF suitability values}
+
+# plot
+(slf_invaded_global_MTSS_rescaled_change_plot <- ggplot(data = slf_invaded_global_joined_rescale_change) +
+   # threshold lines
+   # MTP threshold
+   geom_vline(xintercept = as.numeric(slf_suit_global_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   geom_hline(yintercept = as.numeric(slf_suit_regional_invaded_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   # MTSS threshold
+   geom_vline(xintercept = as.numeric(slf_suit_global_hist_rescaled_thresholds[5, 2]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(slf_suit_regional_invaded_hist_rescaled_thresholds[5, 2]), linetype = "dashed") +
+   # arrows indicating change
+   geom_segment(
+     aes(
+       x = slf_suit_global_hist_rescaled,
+       xend = slf_suit_global_GFDL_ssp370_rescaled,
+       y = slf_suit_regional_invaded_hist_rescaled,
+       yend = slf_suit_regional_invaded_GFDL_ssp370_rescaled
+     ), 
+     arrow = arrow(angle = 8, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.7
+   ) +
+   # historical data
+   geom_point(
+     aes(x = slf_suit_global_hist_rescaled, y = slf_suit_regional_invaded_hist_rescaled, color = "1981-2010"), 
+     size = 1
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = slf_suit_global_GFDL_ssp370_rescaled, y = slf_suit_regional_invaded_GFDL_ssp370_rescaled, color = "2041-2070\nGFDL ssp370"), 
+     size = 1
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "risk according to 'global' model", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name = "risk according to 'regional_invaded' model", limits = c(0, 1), breaks = breaks) +
+   # scales style
+   labs(title = "Risk of known SLF populations persisting under climate change",
+         subtitle = "'global' vs 'regional_invaded' models | suitability transformed based on MTSS threshold",
+         caption = "thresholds: dotted = MTP"
+         ) +
+   # aesthetics
+   scale_color_manual(name = "Time period", values = c("darkorange", "orangered3")) +
+   guides(color = guide_legend(nrow = 1, override.aes = list(size = 2))) +
+   theme_bw() +
+   theme(legend.position = "bottom") 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  slf_invaded_global_MTSS_rescaled_change_plot, 
+  filename = file.path(
+    here(), "vignette-outputs", "figures", "xy_suitability_slf_CC_shift_global_invaded_regional_rescaled.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
 ## regional_native vs global- 0-1 scaled plot
 
 ```{r join datasets}
@@ -1474,18 +1655,12 @@ slf_native_global_joined_change <- full_join(slf_native_global_joined, slf_nativ
 # plot
 (slf_native_global_01scale_change_plot <- ggplot(data = slf_native_global_joined_change) +
    # threshold lines
-   # midpoint line
-   geom_vline(xintercept = 0.5) + 
-   geom_hline(yintercept = 0.5) +
    # MTP threshold
    geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5) +
    geom_hline(yintercept = as.numeric(summary_regional_native[30, 2]), linetype = "dotted", alpha = 0.5) +
-   # 10 percentile threshold
-   geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional_native[34, 2]), linetype = "twodash", alpha = 0.5) +
    # MTSS threshold
-   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5) +
-   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed", alpha = 0.5) +
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed") +
    # arrows indicating change
    geom_segment(
      aes(
@@ -1508,11 +1683,11 @@ slf_native_global_joined_change <- full_join(slf_native_global_joined, slf_nativ
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
-   scale_y_continuous(name = "'invaded_native' model suitability", limits = c(0, 1), breaks = breaks) +
+   scale_y_continuous(name = "'regional_native' model suitability", limits = c(0, 1), breaks = breaks) +
    # scales style
    labs(title = "Climate change effects on suitability for SLF establishment at locations with known SLF populations",
          subtitle = "'global' vs 'regional_native' models",
-         caption = "thresholds: dashed = MTSS, twodash = 10_percentile, dotted = MTP"
+         caption = "thresholds: dashed = MTSS, dotted = MTP"
          ) +
    # aesthetics
    scale_color_manual(name = "Time period", values = c("darkorange", "orangered3")) +
@@ -1538,12 +1713,78 @@ ggsave(
 
 ```
 
+## regional_native vs global- MTSS rescaled plot
+
 ```{r join datasets}
 
 # join datasets for plotting
-slf_native_global_joined_change <- full_join(slf_native_global_joined, slf_native_global_joined_GFDL_ssp370, by = c("x", "y")) 
+slf_native_global_joined_rescale_change <- full_join(slf_native_global_joined_rescaled, slf_native_global_joined_GFDL_ssp370_rescaled, by = c("x", "y")) 
 
 ```
+
+```{r plot SLF suitability values}
+
+# plot
+(slf_native_global_MTSS_rescaled_change_plot <- ggplot(data = slf_native_global_joined_rescale_change) +
+   # threshold lines
+   # MTP threshold
+   geom_vline(xintercept = as.numeric(slf_suit_global_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   geom_hline(yintercept = as.numeric(slf_suit_regional_native_hist_rescaled_thresholds[1, 2]), linetype = "dotted", alpha = 0.5) +
+   # MTSS threshold
+   geom_vline(xintercept = as.numeric(slf_suit_global_hist_rescaled_thresholds[5, 2]), linetype = "dashed") +
+   geom_hline(yintercept = as.numeric(slf_suit_regional_native_hist_rescaled_thresholds[5, 2]), linetype = "dashed") +
+   # arrows indicating change
+   geom_segment(
+     aes(
+       x = slf_suit_global_hist_rescaled,
+       xend = slf_suit_global_GFDL_ssp370_rescaled,
+       y = slf_suit_regional_native_hist_rescaled,
+       yend = slf_suit_regional_native_GFDL_ssp370_rescaled
+     ), 
+     arrow = arrow(angle = 8, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.7
+   ) +
+   # historical data
+   geom_point(
+     aes(x = slf_suit_global_hist_rescaled, y = slf_suit_regional_native_hist_rescaled, color = "1981-2010"), 
+     size = 1
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = slf_suit_global_GFDL_ssp370_rescaled, y = slf_suit_regional_native_GFDL_ssp370_rescaled, color = "2041-2070\nGFDL ssp370"), 
+     size = 1
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "risk according to 'global' model", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name = "risk according to 'regional_native' model", limits = c(0, 1), breaks = breaks) +
+   # scales style
+   labs(title = "Risk of known SLF populations persisting under climate change",
+         subtitle = "'global' vs 'regional_native' models | suitability transformed based on MTSS threshold",
+         caption = "thresholds: dotted = MTP"
+         ) +
+   # aesthetics
+   scale_color_manual(name = "Time period", values = c("darkorange", "orangered3")) +
+   guides(color = guide_legend(nrow = 1, override.aes = list(size = 2))) +
+   theme_bw() +
+   theme(legend.position = "bottom") 
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  slf_native_global_MTSS_rescaled_change_plot, 
+  filename = file.path(
+    here(), "vignette-outputs", "figures", "xy_suitability_slf_CC_shift_global_native_regional_rescaled.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
 
 ## regional_native vs global- x-scaled plot
 

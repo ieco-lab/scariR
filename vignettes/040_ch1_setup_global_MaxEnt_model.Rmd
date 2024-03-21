@@ -359,8 +359,8 @@ global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tab
 
 global_points_plot <- ggplot() +
     geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
-    geom_point(data = global_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
-    ggtitle("Global Background Points") +
+    geom_point(data = global_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
+    ggtitle("'global' model background points") +
     map_style +
     theme(legend.position = "none") 
 
@@ -371,11 +371,49 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(global_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "global_background_points_v3.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
        dpi = "retina")
+
+```
+
+# 3. Plot SLF presences 
+
+Finally, I will create a plot of all SLF presence locations for reference.
+
+```{r plot model presences}
+
+global_slf_plot <- ggplot() +
+  geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
+  labs(
+    title = "'global' model SLF presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal()
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  global_slf_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "global_model_presence_points.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
 
 ```
 

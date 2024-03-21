@@ -49,7 +49,7 @@ object in the list will be the rescaled suitability values, and the second
 object in the list will be the rescaled thresholds.
 }
 \description{
-Rescales cloglog suitability output from MaxEnt model as an exponential.
+This function will not work if the threshold is 0.
 }
 \details{
 Requires the following packages: 'tidyverse', 'cli'.

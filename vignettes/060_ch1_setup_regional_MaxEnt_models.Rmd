@@ -566,6 +566,8 @@ easternUSA <- terra::rast(
 # also convert to df
 easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
 
+regional_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+
 ```
 
 ```{r plot}
@@ -574,7 +576,7 @@ easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
 (regional_points_plot <- ggplot() +
    geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
    geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_points, aes(x = x, y = y), color = "darkorange", size = 0.001) +
+   geom_point(data = regional_points, aes(x = x, y = y), color = "firebrick2", size = 0.001) +
    ggtitle("'regional_invaded' model background points") +
    labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
    map_style +
@@ -588,7 +590,7 @@ We can see that the background points are isolated to the eastern half of the Un
 ```{r save plot}
 
 ggsave(regional_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_background_points_v3.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v3.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -664,8 +666,8 @@ regional_native_points <- read_csv(file = file.path(here(), "vignette-outputs", 
 native_points_plot <- ggplot() +
   geom_polygon(data = map_data('world', region = "China"), aes(x = long, y = lat, group = group), fill = "azure4") +
   geom_raster(data = China_bio2_df, aes(x = x, y = y), fill = "azure1") +
-  geom_point(data = regional_native_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
-  ggtitle("Regional Native model Background Points") +
+  geom_point(data = regional_native_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
+  ggtitle("'regional_native' model background points") +
   map_style +
   theme(legend.position = "none") 
 
@@ -676,11 +678,140 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(native_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_native_background_points_v0.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_native_model_background_points_v0.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
        dpi = "retina")
+
+```
+
+# 3. Plot SLF presences 
+
+## Invaded Regional
+
+Finally, I will create a plot of all SLF presence locations for reference.
+
+```{r filter presences from invaded range}
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
+
+# convert to vector
+slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+slf_points_invaded <- terra::as.data.frame(slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole))
+
+# will not need this object again
+rm(slf_points_vect)
+
+```
+
+```{r plot model presences}
+
+# load in raster
+easternUSA <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_easternUSA.asc")
+  )
+# also convert to df
+easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
+
+# plot
+regional_invaded_slf_plot <- ggplot() +
+  geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points_invaded, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+  labs(
+    title = "'regional_invaded' model SLF presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal()
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  regional_invaded_slf_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## Native Regional
+
+```{r filter presences from native range}
+
+# native range extent shapefile used to select slf presences
+mask_layer <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+
+# convert to vector
+slf_points_masked <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+# crop by extent area of interest
+terra::mask(., mask = mask_layer) %>%
+# convert to geom, which gets coordinates of a spatVector
+terra::geom() 
+
+# convert back to data frame
+slf_points_native <- terra::as.data.frame(slf_points_masked) %>%
+  dplyr::select(-c(geom, part, hole))
+  
+# will not need this object again
+rm(slf_points_masked)
+rm(mask_layer)
+
+```
+
+```{r plot model presences}
+
+regional_native_slf_plot <- ggplot() +
+  geom_polygon(data = map_data('world', region = "China"), aes(x = long, y = lat, group = group), fill = "azure4") +
+  geom_raster(data = China_bio2_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points_native, aes(x = x, y = y), color = "darkorange", size = 0.5) +
+  labs(
+    title = "'regional_native' model SLF presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal()
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  regional_native_slf_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_native_model_presence_points.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
 
 ```
 

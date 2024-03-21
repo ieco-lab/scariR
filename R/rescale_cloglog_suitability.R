@@ -1,5 +1,6 @@
 #'Rescales cloglog suitability output from MaxEnt model as an exponential.
 #'
+#'This function will not work if the threshold is 0.
 #'
 #'@param xy.predicted Data import. The predicted cloglog suitability output
 #'taken from one of the internal package functions:
@@ -64,6 +65,12 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # ensure objects are character type
   if (!is.na(rescale.name) & is.character(rescale.name) == FALSE) {
     cli::cli_alert_danger("Parameter 'rescale.name' must be of type 'character'")
+    stop()
+  }
+
+  # ensure objects are logical type
+  if (is.logical(rescale.thresholds) == FALSE) {
+    cli::cli_alert_danger("Parameter 'rescale.thresholds' must be of type 'logical'")
     stop()
   }
 
@@ -140,15 +147,15 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
       # otherwise, use the range of the suitability dataset
     } else {
 
-      min_val_internal <- min(suit_column_internal)
-      max_val_internal <- max(suit_column_internal)
+      min_val_internal <- min(suit_column_internal) # make 0
+      max_val_internal <- max(suit_column_internal) # make 1
 
     }
 
     # function
 
     # apply log transformation to thresh_val_internal that makes it scale to 0.5
-    base_val <- exp(log(0.5) / (thresh_val_internal - min_val_internal))
+    base_val <- exp(log(0.5) / (0.00000000000001 + thresh_val_internal - min_val_internal))
     # Apply exponential scaling
     scaled_vector <- (base_val ^ (suit_column_internal - min_val_internal) - 1) / (base_val ^ (max_val_internal - min_val_internal) - 1)
 
@@ -163,7 +170,9 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   suit_column <- dplyr::select(xy_import, 4)
 
   # apply internal function
-  rescale_vector_output <- rescale_vector(suit_column, thresh_value)
+  rescale_vector_output <- rescale_vector(
+    suit_column_internal = suit_column,
+    thresh_val_internal = thresh_value)
 
   # create output
   xy_output <- dplyr::select(xy_import, 1:3)
@@ -175,6 +184,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
 
   # conditional output----------------------------------------------------------
 
+  # if this is true, also re-scale the thresholds from the summary.file and return with the suitability output
   if(rescale.thresholds == TRUE) {
 
     # convert to df
@@ -182,8 +192,8 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
 
     # rescale
     thresh_output <- rescale_vector(
-      thresh_presets_tmp,
-      thresh_value,
+      suit_column_internal = thresh_presets_tmp,
+      thresh_val_internal = thresh_value,
       # use the range from the suitability dataset instead of the thresholds dataset
       min_val = min(suit_column),
       max_val = max(suit_column)
@@ -194,11 +204,11 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
       rename("value" = "thresh_presets")
 
     # output
-    xy_thresh_output <- list(xy_output, thresh_output)
+    xy_thresh_output <- list("cloglog_suitability" = xy_output, "thresholds" = thresh_output)
 
     return(xy_thresh_output)
 
-  # otherwise, just return the regular output
+  # otherwise, just return the re-scaled suitability output output
     } else {
 
        return(xy_output)

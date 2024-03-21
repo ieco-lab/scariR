@@ -419,7 +419,7 @@ write_rds(regional_invaded_asian_points, file = file.path(here(), "data", "regio
 
 Now lets visualize the result.
 
-```{r load in raster for plotting}
+```{r load in data for plotting}
 
 invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_invaded_asian.asc")
@@ -428,15 +428,16 @@ invaded_asian <- terra::rast(
 # also convert to df
 invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
 
+regional_invaded_asian_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v0.csv"))
+
 ```
 
 ```{r plot}
 
-# plot at the continental scale
 (regional_invaded_asian_points_plot <- ggplot() +
    geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
    geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
+   geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
    ggtitle("'regional_invaded_asian' model background points") +
    labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
    map_style +
@@ -451,7 +452,7 @@ We can see that the background points are isolated to the eastern half of the Un
 ```{r save plot}
 
 ggsave(regional_invaded_asian_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_background_points_v0.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_v0.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -460,6 +461,44 @@ ggsave(regional_invaded_asian_points_plot,
 
 ```
 
+# 3. Plot SLF presences 
+
+Finally, I will create a plot of all SLF presence locations for reference.
+
+```{r plot model presences}
+
+regional_invaded_asian_slf_plot <- ggplot() +
+  geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points, aes(x = x, y = y), color = "darkorange", size = 0.25) +
+  labs(
+    title = "'regional_invaded_asian' model SLF presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  regional_invaded_asian_slf_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
 ### MODEL TRAINING #####
 
