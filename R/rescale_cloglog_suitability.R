@@ -1,6 +1,15 @@
 #'Rescales cloglog suitability output from MaxEnt model as an exponential.
 #'
-#'This function will not work if the threshold is 0.
+#'This function will take the cloglog suitability output from MaxEnt, which is
+#'on a 0-1 scale, and re-scale it to have a set median value. The range of the
+#'values will still be 0-1, but the median will now be the value of the `thresh`
+#'parameter. The scaling function is applied as an exponential, for the purposes
+#'of visualizing suitability change around a critical threshold (at the scale of
+#'0-1, it can often be hard to see changes across the suitability threshold if
+#'its value is very small). Note that this function will not work if the value
+#'of thresh is 0.
+#'
+#'This function was co-authored by Jacob Woods.
 #'
 #'@param xy.predicted Data import. The predicted cloglog suitability output
 #'taken from one of the internal package functions:
@@ -130,6 +139,12 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # include all decimal places
   thresh_value <- as.double(format(thresh_value, digits = 10))
 
+
+  # ensure thresh isnt 0
+  if (thresh_value == 0) {
+    cli::cli_alert_danger("The value of parameter 'thresh' must be greater than 0")
+    stop()
+  }
 
 
   # internal function for transformation----------------------------------------

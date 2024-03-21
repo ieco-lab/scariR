@@ -70,6 +70,23 @@ It will optionally create thresholded versions of these maps using thresholds gi
 - 2024-02-13- this version created to deal with maxent models without cross validation (no _CV)
 
 
+----------rescale_cloglog_suitability.R----------
+
+## About
+
+This function will take the cloglog suitability output from MaxEnt, which is on a 0-1 scale, and re-scale it to have a set median value. 
+The range of the values will still be 0-1, but the median will now be the value of the `thresh` parameter. 
+The scaling function is applied as an exponential, for the purposes of visualizing suitability change around a critical threshold 
+(at the scale of 0-1, it can often be hard to see changes across the suitability threshold if its value is very small). 
+Note that this function will not work if the value of thresh is 0.
+
+## Changelog
+
+- v0- initial version
+
+
+
+
 
 
 ----------predict_xy_suitability_CV.R----------

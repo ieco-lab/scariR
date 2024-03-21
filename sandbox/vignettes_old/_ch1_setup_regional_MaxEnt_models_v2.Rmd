@@ -1,5 +1,5 @@
 ---
-title: "Setup for regional MaxEnt Models (chapter 1)"
+title: "Setup for invaded regional MaxEnt Models (chapter 1)"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-01-05"
@@ -426,6 +426,91 @@ We will need to select background points for both the native and invaded regiona
 
 ## Invaded Regional (eastern USA)
 
+Gallien et.al found that their regional model of the invaded range performed better when the background point were weighted by the output of the global model. As stated earlier, this also accounts for the fact that SLF has not had an adequate change to reach all potentially suitable areas. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
+
+Gallien et.al provided the following inverse logarithmic weighting formula:
+
+$$
+weight = \frac{1}{1 + (\frac{suitG}{suitG-1})^2}
+$$
+
+"suitG" indicates the suitability value in the global model. I will apply this formula to the mean suitability output from the global model.
+
+To do that, I will use the `terra::app` function to convert the global mean raster to a list of suitability values at the cell value level. Then I will use the `dismo::randomPoints()` function again, but will give it the raster of weighted suitability values so that it chooses values according to the weight. 
+
+First I will load in the global raster output. I will also load in the slf_points dataset for sampling
+
+```{r set wd}
+
+# path to directory
+mypath <- file.path(here() %>% 
+                     dirname(),
+                   "maxent")
+
+```
+
+```{r load in global model predictions}
+
+# load in averaged global output
+global_mean <- terra::rast(x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean.asc"))
+# also convert to df
+global_mean_df <- terra::as.data.frame(global_mean, xy = TRUE)
+
+# slf points
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+   dplyr::select(-species) 
+
+# mask layer I will use
+mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc"))
+
+```
+
+Now I need to transform each raster cell according to the weighting formula. I wrote a function to do this called `slfSpread::weight_model_output`.
+
+```{r apply weighting function}
+
+global_mean_weighted <- terra::app(
+  x = global_mean,
+  fun = slfSpread::weight_model_output
+)
+
+# get name
+names(global_mean_weighted)
+# change layer name
+names(global_mean_weighted) <- "weight"
+
+```
+
+```{r save}
+
+# write to file
+terra::writeRaster(
+  x = global_mean_weighted, 
+  filename = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  )
+
+```
+
+The function will also work on numbers, so I can just give it a range of decimals from 0-1. It should nearly reverse the values if it is working properly. The minmax of each raster should be about 0-1. 
+
+```{r validation}
+
+# this function acts like a math formula, so it should work on numbers. It should work to reverse the order of values from 0 - 1. A 1 suitability should be a 0 weighted suitability
+weight_model_output(1)
+weight_model_output(0.6)
+weight_model_output(0.4)
+weight_model_output(0)
+
+# the minmax should also be 0 - 1 in both cases
+minmax(global_mean)
+minmax(global_mean_weighted)
+
+```
+
+Now, I will sample the raster. I will still correct for the latitudinal stretching of the grid cells and exclude cells containing presences, as before. First, I will need to load in the rasters using the `raster` package for `dismo` compatibility.
+
 ```{r load weighted raster and crop}
  
 # ext object for eastern USA
@@ -444,7 +529,7 @@ global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE
 
 ```
 
-Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. 
+Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. However, these points will be selected based on a probability (that we created above), unlike the global background points.
 
 ```{r random points}
 
@@ -457,6 +542,7 @@ regional_points <- dismo::randomPoints(
   n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
+  prob = TRUE,  # the raster contains probability weights
   lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
   warn = 2 # higher number gives most warnings, including if sample size not reached
   ) %>%
@@ -512,8 +598,6 @@ ggsave(regional_points_plot,
        )
 
 ```
-
-### Plot presences
 
 ## Native regional (China)
 
@@ -736,181 +820,169 @@ Now we are ready to run both regional models!
 
 # Appendix
 
-## Use weighting technique to choose background points
+## Trim bioclim layers to Invaded regional (eastern USA entire)
 
-Gallien et.al found that their regional model of the invaded range performed better when the background point were weighted by the output of the global model. As stated earlier, this also accounts for the fact that SLF has not had an adequate change to reach all potentially suitable areas. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
-
-Gallien et.al provided the following inverse logarithmic weighting formula:
-
-$$
-weight = \frac{1}{1 + (\frac{suitG}{suitG-1})^2}
-$$
-
-"suitG" indicates the suitability value in the global model. I will apply this formula to the mean suitability output from the global model.
-
-To do that, I will use the `terra::app` function to convert the global mean raster to a list of suitability values at the cell value level. Then I will use the `dismo::randomPoints()` function again, but will give it the raster of weighted suitability values so that it chooses values according to the weight. 
-
-First I will load in the global raster output. I will also load in the slf_points dataset for sampling
+First, I will need to create a few copies of the bioclim layers that I tidied in vignette 030. I will create a set that have been cropped only to the eastern USA, which will be used to rasterize the SLF points. These rasters will be used for model training. In this chunk, I will extract the names and file paths for the desired rasters and set the extent. I am also cropping "access to cities" because some future models may include it.
 
 ```{r set wd}
 
 # path to directory
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent")
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
 
-```{r load in global model predictions}
+```{r setup for cropping bioclim layers}
 
-# load in averaged global output
-global_mean <- terra::rast(x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean.asc"))
-# also convert to df
-global_mean_df <- terra::as.data.frame(global_mean, xy = TRUE)
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the 10km .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
-# slf points
-slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
-   dplyr::select(-species) 
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
 
-# mask layer I will use
-mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_NAmerica.asc"))
-
-```
-
-Now I need to transform each raster cell according to the weighting formula. I wrote a function to do this called `slfSpread::weight_model_output`.
-
-```{r apply weighting function}
-
-global_mean_weighted <- terra::app(
-  x = global_mean,
-  fun = slfSpread::weight_model_output
-)
-
-# get name
-names(global_mean_weighted)
-# change layer name
-names(global_mean_weighted) <- "weight"
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
 ```
 
-```{r save}
+These rasters need to be cropped and converted to the .ascii format for MaxEnt.
 
-# write to file
-terra::writeRaster(
-  x = global_mean_weighted, 
-  filename = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc"),
-  filetype = "AAIGrid",
-  overwrite = FALSE
-  )
+```{r loop to crop bioclim layers to easternUSA}
 
-```
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
 
-The function will also work on numbers, so I can just give it a range of decimals from 0-1. It should nearly reverse the values if it is working properly. The minmax of each raster should be about 0-1. 
-
-```{r validation}
-
-# this function acts like a math formula, so it should work on numbers. It should work to reverse the order of values from 0 - 1. A 1 suitability should be a 0 weighted suitability
-weight_model_output(1)
-weight_model_output(0.6)
-weight_model_output(0.4)
-weight_model_output(0)
-
-# the minmax should also be 0 - 1 in both cases
-minmax(global_mean)
-minmax(global_mean_weighted)
-
-```
-
-Now, I will sample the raster. I will still correct for the latitudinal stretching of the grid cells and exclude cells containing presences, as before. First, I will need to load in the rasters using the `raster` package for `dismo` compatibility.
-
-```{r load weighted raster and crop}
- 
-# ext object for eastern USA
-ext.obj <- raster::extent(-96.503906, -59.589844, 23.5, 47.457809)
-
-# I will load in the raster and crop it to the training area extent.
-global_mean_weighted <- raster::raster(
-  x = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc")
-  ) %>%
-  raster::mask(x = ., mask = mask_layer) %>%
-  raster::crop(x = ., y = ext.obj) # crop to EasternUSA
-
+if(FALSE) {
   
-# also conver to df
-global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
 
 ```
 
-Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. However, these points will be selected based on a probability (that we created above), unlike the global background points.
+Lets plot one of the new layers to make sure the cropping worked.
 
-```{r random points}
+```{r plot main_layer to ensure cropping worked}
 
-# set seed
-set.seed(5)
+bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
-# generate random points 
-regional_points <- dismo::randomPoints(
-  mask = global_mean_weighted, # cropped to eastern USA
-  n = 10000, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  prob = TRUE,  # the raster contains probability weights
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
-
-# save as csv
-write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
-# save as rds file
-write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v3.rds"))
-
-```
-
-Now lets visualize the result.
-
-```{r load in raster for plotting}
-
-easternUSA <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_easternUSA.asc")
-  )
-
-# also convert to df
-easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
-
-regional_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
-
-```
-
-```{r plot}
-
-# plot at the continental scale
-(regional_points_plot <- ggplot() +
-   geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_points, aes(x = x, y = y), color = "firebrick2", size = 0.001) +
-   ggtitle("'regional_invaded' model background points") +
-   labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
-   map_style +
-   theme(legend.position = "none") 
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
 )
+# the cropping worked
 
 ```
 
-We can see that the background points are isolated to the eastern half of the United States and some of Canada. This is what we want because the model will be trained on this area. We can also see that points were selected from areas where the model did not predict high suitability (most highly suitable areas were near PA and NJ). For comparison, this figure is roughly opposite of the figure depicting the suitability values for the mean output from the global model.  
+### Trim CMIP6 rasters to Eastern USA
 
-```{r save plot}
+```{r setup for cropping bioclim layers}
 
-ggsave(regional_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v3.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-       )
+# path to directory
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the 10km .asc files
+env.files <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_370_global.asc|bio11_2041-2070_gfdl_370_global.asc|bio12_2041-2070_gfdl_370_global.asc|bio15_2041-2070_gfdl_370_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "easternUSA")
+
+# extent object for eastern USA
+ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
 ```
 
+```{r loop to crop bioclim layers to eastern N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_10km", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+# I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
+
+```
+
+Lets plot one of the new layers to make sure the cropping worked.
+
+```{r plot main_layer to ensure cropping worked}
+
+bio11 <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_2041-2070_gfdl_370_easternUSA.asc")) 
+# convert to df
+bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_2041-2070_gfdl-esm4_ssp370_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
 
 
 # References

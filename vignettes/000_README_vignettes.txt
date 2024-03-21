@@ -33,6 +33,7 @@ This vignette creates rasters and background point datasets needed for both regi
 v0- initial version- in sandbox/vignettes_old- trained the invaded model on the entire easternUSA
 v1- updated invaded model weighting to use new global model output, updated invaded model background selection to 355km buffer around presences- generated invaded background points v2 and regional_invaded_buffer layers
 v2- reverted to eastern USA test area instead of 355km buffer
+v3- did not weight easternUSA model. Moved section on weighting to appendix.
 
 
 

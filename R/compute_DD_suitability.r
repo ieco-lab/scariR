@@ -6,6 +6,8 @@
 #'of populations of *Lycorma delicatula* living on *Ailanthus altissima* at
 #'different DD accumulations.
 #'
+#'This function was co-authored by Stephanie Lewkiewicz.
+#'
 #'@param x Data import. Should be a .csv file or data frame that contains
 #'input temperature data. If a .csv file, file path should be in the format
 #'produced by the [file.path()] function (i.e. with '/' instead of '\\').
