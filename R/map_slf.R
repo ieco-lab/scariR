@@ -1,5 +1,6 @@
 #'Create a [leaflet] map of SLF occurrences
 #'
+#'@description
 #'This function is designed to map a set of coordinates of interest using the
 #'leaflet package.
 #'

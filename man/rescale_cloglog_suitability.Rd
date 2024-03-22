@@ -49,9 +49,18 @@ object in the list will be the rescaled suitability values, and the second
 object in the list will be the rescaled thresholds.
 }
 \description{
-This function will not work if the threshold is 0.
+This function will take the cloglog suitability output from MaxEnt, which is
+on a 0-1 scale, and re-scale it to have a set median value. The range of the
+values will still be 0-1, but the median will now be the value of the \code{thresh}
+parameter. The scaling function is applied as an exponential, for the purposes
+of visualizing suitability change around a critical threshold (at the scale of
+0-1, it can often be hard to see changes across the suitability threshold if
+its value is very small). Note that this function will not work if the value
+of thresh is 0.
 }
 \details{
+This function was co-authored by Jacob Woods.
+
 Requires the following packages: 'tidyverse', 'cli'.
 \subsection{thresh:}{
 

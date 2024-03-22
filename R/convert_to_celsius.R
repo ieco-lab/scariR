@@ -1,5 +1,6 @@
 #'Converts units from tenths of a Kelvin to Celsius
 #'
+#'@description
 #'This function was specifically written because some temperature data retrieved
 #'from CHELSA were formatted in Kelvin/10. This was made to be applied to a
 #'raster.

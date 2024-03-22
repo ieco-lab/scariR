@@ -1,6 +1,8 @@
 #'Weight model output
 #'
+#'@description
 #'
+#'DESCRIBE
 #'
 #'@param x Data import. Should be applied on across the cells of a raster, so x
 #'can be thought of as the imported value of a single cell.

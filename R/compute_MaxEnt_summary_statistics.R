@@ -1,5 +1,6 @@
 #'Output summary statistics for a MaxEnt model without cross-validation ('Maxent' object)
 #'
+#'@description
 #'This function will create a directory for and save a MaxEnt model that was run
 #'using the `SDMtune` R package. It will use the model to calculate a list of
 #'summary statistics based on the test data and covariates given. See 'return'

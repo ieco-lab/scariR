@@ -1,5 +1,6 @@
 #'Predicts maps of establishment suitability based on a MaxEnt model without cross-validation ('Maxent' object)
 #'
+#'@description
 #'This function will create a map of establishment suitability based on a MaxEnt
 #'model trained using the `SDMtune` R package. It will optionally create
 #'thresholded versions of these maps using thresholds given by the MaxEnt

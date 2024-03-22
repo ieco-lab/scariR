@@ -1,5 +1,6 @@
 #'Predicts suitability for xy coordinates according to a trained MaxEnt model ('SDMmodelCV' object)
 #'
+#'@description
 #'This function predicts establishment suitability based on a trained
 #'MaxEnt model for a set of xy coordinates. These coordinates do not need to be
 #'within the training area for the model.

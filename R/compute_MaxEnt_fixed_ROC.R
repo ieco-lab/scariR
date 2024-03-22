@@ -1,7 +1,9 @@
 #'Create a model output
 #'
+#'@description
 #'
-#'The function requires the packages 'tidyverse', 'here', 'devtools', 'viridis', 'pROC', 'SDMtune', and 'patchwork'
+#'DESCRIPTION
+#'
 #'
 #'@param model.obj A model object created by the package 'SDMtune', should be of
 #'class `SDMmodelCV`.
@@ -30,15 +32,17 @@
 #'
 #'@details
 #'
+#'The function requires the packages 'tidyverse', 'here', 'devtools', 'viridis', 'pROC', 'SDMtune', and 'patchwork'
+#'
 #'## fixed.area.points:
 #'The fixed area points dataset should be be in the following format: 3 columns,
 #'with x as longitude, y as latitude and cell as the cell number from the
 #'raster, in that order. Original dataset was generated using
 #'`dismo::randomPoints()`
 #'
-#'@return blarg
+#'@return
 #'
-#'
+#'blarg
 #'
 #'
 #'@examples

@@ -1,5 +1,6 @@
 #' Compile data from different files exported by Web Scraping
 #'
+#'@description
 #'This function is used to compile data exported from Web Scraping as CSV files into a single data frame that holds
 #'locations for pest dispersion hubs
 #'

@@ -1,5 +1,6 @@
 #'Compute annual degree day accumulation at listed x,y coordinate locations
 #'
+#'@description
 #'A function that computes the total annual degree day accumulation for
 #'*Lycorma delicatula* development, based on monthly mean temperature data.
 #'This function was developed from the work of Dennis Calvin on the development

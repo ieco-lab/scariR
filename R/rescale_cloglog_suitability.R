@@ -1,5 +1,6 @@
 #'Rescales cloglog suitability output from MaxEnt model as an exponential.
 #'
+#'@description
 #'This function will take the cloglog suitability output from MaxEnt, which is
 #'on a 0-1 scale, and re-scale it to have a set median value. The range of the
 #'values will still be 0-1, but the median will now be the value of the `thresh`

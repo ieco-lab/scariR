@@ -78,6 +78,8 @@ A function that computes the total annual degree day accumulation for
 This function was developed from the work of Dennis Calvin on the development
 of populations of \emph{Lycorma delicatula} living on \emph{Ailanthus altissima} at
 different DD accumulations.
+
+This function was co-authored by Stephanie Lewkiewicz.
 }
 \details{
 The function requires the packages 'tidyverse', 'here', and 'terra'
