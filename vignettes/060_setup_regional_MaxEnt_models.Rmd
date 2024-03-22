@@ -1,5 +1,5 @@
 ---
-title: "Setup for regional MaxEnt Models (chapter 1)"
+title: "Setup for regional MaxEnt Models"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-01-05"
@@ -350,14 +350,6 @@ Our native range map included three additional provinces, two in the far south (
 
 I will use the above env.files and output.files objects to load in the bioclim rasters. I will then mask them using the shapefile I created in the last step.
 
-```{r set wd}
-
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
-
 ```{r load in data}
 
 # load in shapefile as spatVector for compatibility
@@ -424,23 +416,25 @@ We will need to select background points for both the native and invaded regiona
 
 # 2. Background point choice
 
+```{r set wd}
+
+  mypath <- file.path(here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+```
+
 ## Invaded Regional (eastern USA)
 
-```{r load weighted raster and crop}
- 
-# ext object for eastern USA
-ext.obj <- raster::extent(-96.503906, -59.589844, 23.5, 47.457809)
+```{r load datasets}
 
-# I will load in the raster and crop it to the training area extent.
-global_mean_weighted <- raster::raster(
-  x = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_NAmerica_1981-2010_mean_weighted.asc")
-  ) %>%
-  raster::mask(x = ., mask = mask_layer) %>%
-  raster::crop(x = ., y = ext.obj) # crop to EasternUSA
+# load in raster to choose points from
+easternUSA_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
 
-  
-# also conver to df
-global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
+# load in slf points to intersect
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+  dplyr::select(-species) %>%
+  as.data.frame()
 
 ```
 
@@ -452,8 +446,8 @@ Now, select random points. These will be corrected for the latitudinal stretchin
 set.seed(5)
 
 # generate random points 
-regional_points <- dismo::randomPoints(
-  mask = global_mean_weighted, # cropped to eastern USA
+regional_invaded_background <- dismo::randomPoints(
+  mask = easternUSA_bio11, # cropped to eastern USA
   n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
@@ -463,38 +457,59 @@ regional_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = regional_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+write_csv(
+  x = regional_invaded_background, 
+  file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted.csv")
+  )
 # save as rds file
-write_rds(regional_points, file = file.path(here(), "data", "regional_invaded_background_points_v3.rds"))
+write_rds(
+  regional_invaded_background, 
+  file = file.path(here(), "data", "regional_invaded_background_points_unweighted.rds")
+  )
 
 ```
 
 Now lets visualize the result.
 
-```{r load in raster for plotting}
+```{r plotting datasets}
 
-easternUSA <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_easternUSA.asc")
-  )
+easternUSA_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
 
-# also convert to df
-easternUSA_df <- terra::as.data.frame(easternUSA, xy = TRUE)
+# extent object for eastern USA
+ext.obj <- terra::ext( -140.976563, -51.064453, 15.182421, 60.586967)
 
-regional_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+# load in raster for visualization
+global_atc <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
+  # crop to easternUSA
+  terra::crop(., y = ext.obj)
+# convert to df
+global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 
 ```
+
 
 ```{r plot}
 
 # plot at the continental scale
-(regional_points_plot <- ggplot() +
-   geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = easternUSA_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_points, aes(x = x, y = y), color = "firebrick2", size = 0.001) +
-   ggtitle("'regional_invaded' model background points") +
-   labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
-   map_style +
-   theme(legend.position = "none") 
+(regional_invaded_background_plot <- ggplot() +
+   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+   geom_raster(data = easternUSA_bio11_df, aes(x = x, y = y), fill = "azure1") +
+   geom_point(data = regional_invaded_background, aes(x = x, y = y), color = "firebrick2", size = 0.001) +
+   scale_x_continuous(expand = c(0, 0)) +
+   scale_y_continuous(expand = c(0, 0)) +
+   labs(
+     title = "'regional_invaded' model background points", 
+     x = "longitude",
+     y = "latitude"
+     ) +
+   theme_classic() +
+   theme(
+     legend.position = "none",
+     panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+     ) + 
+   coord_equal() 
 )
 
 ```
@@ -503,17 +518,16 @@ We can see that the background points are isolated to the eastern half of the Un
 
 ```{r save plot}
 
-ggsave(regional_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v3.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-       )
+ggsave(
+  regional_invaded_background_plot, 
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_unweighted.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
 
 ```
-
-### Plot presences
 
 ## Native regional (China)
 
