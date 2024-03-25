@@ -81,7 +81,7 @@ I will prepare for this vignette by loading the necessary packages to run this s
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here() # here() starts at the root folder of this package.
+here() # here() starts at the root folder of this package.
 library(devtools)
 
 library(dismo) # generate random background points
@@ -95,7 +95,6 @@ library(sf)
 library(rnaturalearth)
 # remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
-library(kgc) # koppen climate rasters
 
 # aesthetics
 # devtools::install_github("slowkow/ggrepel")
@@ -127,9 +126,9 @@ map_style <- list(
 ```{r set wd}
 
 # path to directory
-  mypath <- file.path(here::here() %>% 
+  mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent")
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
 
@@ -137,117 +136,13 @@ map_style <- list(
 
 # lists of target files in the directory
 # load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
 # extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
   grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
 
 ```
 
-I will also download the Koppen climate zones, which I will use to clip the bioclim layers.
-
-```{r download koppen climate data}
- 
-# get data
-kmz_data <- kgc::kmz
-
-# generate coordinates
-kmz_lat <- kgc::genCoords(latlon = "lat", full = TRUE)
-kmz_lon <- kgc::genCoords(latlon = "lon", full = TRUE)
-
-# join
-kmz_data <- cbind(kmz_lat, kmz_lon) %>%
-  cbind(., kmz_data) %>%
-  as.data.frame() %>%
-  # relocate column
-  dplyr::select(kmz_lon, everything()) 
-
-
-
-# convert to raster
-kmz_data_rast <- rast(
-  x = kmz_data,
-  type = "xyz",
-  crs = "EPSG:4326"
-  )
-# change name of layer
-names(kmz_data_rast) <- "Koppen_climate_zone"
-
-# validity- minmax should range between 0-32
-minmax(kmz_data_rast)
-
-```
-
-I will need to tidy these data by aggregating them to spatial scale I use for the bioclim variables. I will do this using the mode, because this variable is a set of numbers representing a categorical, so I do not want to average or take the median.
-
-```{r tidy and resample new raster}
-
-# layer used to aggregate raster
-agg_layer <- rast(env.files[[1]])
-# raster stats
-origin(agg_layer)
-crs(agg_layer)
-
-# resample
-koppen_zones_rast <- terra::resample(
-  x = kmz_data_rast,
-  y = agg_layer, # aggregate to this origin and resoluion
-  method = "mode",
-  threads = TRUE,
-  filename = file.path(mypath, "models", "working_dir", "koppen_climate_zones.asc"),
-  filetype = "AAIGrid", 
-  overwrite = FALSE
-    )
-
-```
-
-```{r visualize}
-
-koppen_zones_rast <- rast(x = file.path(mypath, "models", "working_dir", "koppen_climate_zones.asc"))
-# origin
-origin(koppen_zones_rast)
-# convert to df
-koppen_zones_rast_df <- terra::as.data.frame(koppen_zones_rast, xy = TRUE)
-
-# plot main layer as example
-(KG_climate_map <- ggplot() +
-  # change scale of plots to be standard across figures
-  geom_raster(data = koppen_zones_rast_df, 
-            aes(x = x, y = y, fill = as.factor(`Koppen_climate_zone`))) +
-    labs(
-      title = "Koeppen-Geiger Climate Zones", 
-      x = "longitude",
-      y = "latitude",
-      fill = "K-G climate zone number"
-    ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  viridis::scale_fill_viridis(
-    discrete = TRUE,
-    aesthetics = "fill",
-    option = "H",
-    direction = -1
-    ) +
-  guides(fill = guide_legend(nrow = 3)) +
-  theme_classic() +
-  theme(legend.position = "bottom") +
-  coord_equal()
-)
-
-
-```
-
-```{r save plot}
-
-ggsave(KG_climate_map, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "koeppen_climate_zones.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-)
-
-```
 
 ## Invaded regional (eastern USA)
 
@@ -323,7 +218,7 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```{r set wd}
 
-  mypath <- file.path(here::here() %>% 
+  mypath <- file.path(here() %>% 
                        dirname(),
                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
@@ -352,7 +247,7 @@ invaded_asian <- rnaturalearth::ne_download(
   scale = 10, # highest resolution
   type = "admin_0_countries", # states and provinces
   category = "cultural",
-  destdir = file.path(here::here(), "data-raw", "ne_countries"),
+  destdir = file.path(here(), "data-raw", "ne_countries"),
   load = TRUE, # load into environment
   returnclass = "sf" #terra spatvector
 )
@@ -362,7 +257,7 @@ invaded_asian <- rnaturalearth::ne_download(
 ```{r ready data for intersect}
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   sf::st_as_sf(coords = c("x", "y")) # convert to sf object
 
@@ -392,7 +287,7 @@ sf::st_drivers()
 # write to file
 sf::st_write(
   obj = invaded_asia_withSLF, 
-  dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"),
+  dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"),
   driver = "ESRI Shapefile"
   )
 
@@ -401,7 +296,7 @@ sf::st_write(
 
 ```{r re-load shapefile as needed}
 
-invaded_asia_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
+invaded_asia_withSLF <- sf::read_sf(dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
 
 ```
 
@@ -425,7 +320,7 @@ Now lets plot it for a sanity check.
 ```{r save plot}
 
 ggsave(invaded_asian_map, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_regional_invaded_asian_extent.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "SLF_regional_invaded_asian_extent.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -437,7 +332,7 @@ ggsave(invaded_asian_map,
 ```{r load in data}
 
 # load in shapefile as spatVector for compatibility
-invaded_asian_withSLF <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
+invaded_asian_withSLF <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
 
 # rasters were loaded in above
 
@@ -523,7 +418,7 @@ china_provinces <- rnaturalearth::ne_download(
   scale = 10, # highest resolution
   type = "admin_1_states_provinces", # states and provinces
   category = "cultural",
-  #destdir = file.path(here::here(), "data-raw", "ne_states_provinces"),
+  #destdir = file.path(here(), "data-raw", "ne_states_provinces"),
   #load = TRUE, # load into environment
   returnclass = "sf" #terra spatvector
 )
@@ -535,7 +430,7 @@ Now that we have the data, we can cut out the parts we want. We can treat the sh
 ```{r ready data for intersect}
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   sf::st_as_sf(coords = c("x", "y")) # convert to sf object
 
@@ -573,7 +468,7 @@ sf::st_drivers()
 # write to file
 sf::st_write(
   obj = china_provinces_withSLF, 
-  dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"),
+  dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"),
   driver = "ESRI Shapefile"
   )
 
@@ -582,7 +477,7 @@ sf::st_write(
 
 ```{r re-load shapefile as needed}
 
-china_provinces_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+china_provinces_withSLF <- sf::read_sf(dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
 
 ```
 
@@ -615,7 +510,7 @@ Now lets plot it for a sanity check.
 ```{r save plot}
 
 ggsave(native_map, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_native_range_extent_v1.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "SLF_native_range_extent_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -639,7 +534,7 @@ I will use the above env.files and output.files objects to load in the bioclim r
 ```{r load in data}
 
 # load in shapefile as spatVector for compatibility
-china_provinces_withSLF <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+china_provinces_withSLF <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
 
 # rasters were loaded in above
 
@@ -704,7 +599,7 @@ We will need to select background points for both the native and invaded regiona
 
 ```{r set wd}
 
-  mypath <- file.path(here::here() %>% 
+  mypath <- file.path(here() %>% 
                        dirname(),
                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
@@ -718,7 +613,7 @@ We will need to select background points for both the native and invaded regiona
 easternUSA_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -745,12 +640,12 @@ regional_invaded_background <- dismo::randomPoints(
 # save as csv
 write_csv(
   x = regional_invaded_background, 
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted.csv")
+  file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted.csv")
   )
 # save as rds file
 write_rds(
   regional_invaded_background, 
-  file = file.path(here::here(), "data", "regional_invaded_background_points_unweighted.rds")
+  file = file.path(here(), "data", "regional_invaded_background_points_unweighted.rds")
   )
 
 ```
@@ -806,7 +701,7 @@ We can see that the background points are isolated to the eastern half of the Un
 
 ggsave(
   regional_invaded_background_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_unweighted.jpg"),
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_unweighted.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -824,7 +719,7 @@ ggsave(
 invaded_asian_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_invaded_asian.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -847,9 +742,9 @@ regional_invaded_asian_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted.csv"))
+write_csv(x = regional_invaded_asian_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted.csv"))
 # save as rds file
-write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_unweighted.rds"))
+write_rds(regional_invaded_asian_points, file = file.path(here(), "data", "regional_invaded_asian_background_points_unweighted.rds"))
 
 ```
 
@@ -865,7 +760,7 @@ invaded_asian_df <- terra::rast(
 global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted.csv"))
+regional_invaded_asian_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted.csv"))
 
 ```
 
@@ -888,7 +783,7 @@ We can see that the background points are isolated to the eastern half of the Un
 ```{r save plot}
 
 ggsave(regional_invaded_asian_points_plot, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_unweighted.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_unweighted.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -905,7 +800,7 @@ I need to select points for China as well, but I do not need to weight these. Th
 ```{r set wd}
 
 # path to directory
-mypath <- file.path(here::here() %>% 
+mypath <- file.path(here() %>% 
                      dirname(),
                    "maxent")
 
@@ -914,7 +809,7 @@ mypath <- file.path(here::here() %>%
 ```{r load in datasets}
 
 # slf points
-slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
    dplyr::select(-species) 
 
 # mask layer I will use
@@ -938,9 +833,9 @@ China_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = China_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
+write_csv(x = China_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
 # save as rds file
-write_rds(China_points, file = file.path(here::here(), "data", "regional_native_background_points_v0.rds"))
+write_rds(China_points, file = file.path(here(), "data", "regional_native_background_points_v0.rds"))
   
   
 ```
@@ -949,14 +844,14 @@ Now, I will plot these points for visualization purposes.
 
 ```{r load in files for plotting}
 
-mypath <- file.path(here::here() %>% 
+mypath <- file.path(here() %>% 
                      dirname(),
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 China_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_China.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
+regional_native_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
 
 ```
 
@@ -977,7 +872,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(native_points_plot, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v0.jpg"),
+       filename = file.path(here(), "vignette-outputs", "figures", "regional_native_model_background_points_v0.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -990,7 +885,7 @@ ggsave(native_points_plot,
 ```{r read in SLF presences}
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) 
 
 ```
@@ -1054,7 +949,7 @@ regional_invaded_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points.jpg"),
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1068,7 +963,7 @@ ggsave(
 ```{r filter presences from invaded_asian range}
 
 # native range extent shapefile used to select slf presences
-mask_layer <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
+mask_layer <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
 
 # convert to vector
 slf_points_masked <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
@@ -1112,7 +1007,7 @@ regional_invaded_asian_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_asian_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points.jpg"),
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1126,7 +1021,7 @@ ggsave(
 ```{r filter presences from native range}
 
 # native range extent shapefile used to select slf presences
-mask_layer <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+mask_layer <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
 
 # convert to vector
 slf_points_masked <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
@@ -1171,7 +1066,7 @@ regional_native_slf_plot <- ggplot() +
 
 ggsave(
   regional_native_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_presence_points.jpg"),
+  filename = file.path(here(), "vignette-outputs", "figures", "regional_native_model_presence_points.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",

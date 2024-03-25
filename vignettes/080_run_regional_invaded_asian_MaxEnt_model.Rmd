@@ -1,14 +1,17 @@
 ---
-title: "Setup for invaded regional MaxEnt Models (chapter 1)"
+title: "Run 'regional_invaded_asian' maxent model based on SLF range in Japan and South Korea"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-01-05"
+date: "2024-03-25"
 output: html_document
 ---
+# Overview
+
+In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional model based on the invaded range.
+
+(THEORY)
 
 # Setup
-
-I will prepare for this vignette by loading the necessary packages to run this script. I will also be creating maps during this analysis, so I will create a list object containing a standardized map style that I will continue to use.
 
 ```{r load necesssary packages, echo = FALSE}
 
@@ -18,490 +21,19 @@ library(here) #making directory pathways easier on different instances
 here() # here() starts at the root folder of this package.
 library(devtools)
 
-library(dismo) # generate random background points
-
-# spatial data handling
-library(raster) 
-library(terra)
-library(sf)
-
-# spatial data sources
-library(rnaturalearth)
-# remotes::install_github("ropensci/rnaturalearthhires")
-library(rnaturalearthhires)
-
 # SDMtune and dependencies
 library(SDMtune) # main package used to run SDMs
 library(dismo) # package underneath SDMtune
 library(rJava) # for running MaxEnt
 library(plotROC) # plots ROCs
 
+# spatial data handling
+library(raster) 
+library(terra) 
+
+library(viridis)
 
 ```
-
-```{r ggplot object for map style}
-
-map_style <- list(
-  xlab("longitude"),
-  ylab("latitude"),
-  theme_classic(),
-  theme(legend.position = "bottom",
-        panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-  ),
-  scale_x_continuous(expand = c(0, 0)),
-  scale_y_continuous(expand = c(0, 0)),
-  labs(fill = "Suitability for SLF"),
-  viridis::scale_fill_viridis(option = "D"),
-  coord_equal()
-)
-
-```
-
-# 1. Trim Bioclim layers
-
-```{r set wd}
-
-# path to directory
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
-
-```{r setup for cropping bioclim layers}
-
-# lists of target files in the directory
-# load in bioclim layers to be cropped- the 10km .asc files
-env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
-  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
-
-
-```
-
-## Native regional (China)
-
-The native range for China will be defined as any Chinese province that contains known SLF populations. We will exclude Vietnam, Thailand India and Bangaladesh due to a lack of data (discussed later). For now, we will need to find a shapefile of the Chinese provinces to use for the regional_native model.
-
-### Get shapefile for native range
-
-```{r rnaturalearth download}
-
-# check which types of data are available
-data(df_layers_cultural) 
-# I will use states_provinces
-
-# get metadata
-ne_metadata <- ne_find_vector_data(
-  scale = 10,
-  category = "cultural",
-  getmeta = TRUE
-) %>%
-  dplyr::filter(layer == "admin_0_countries")
-# URL to open metadata
-utils::browseURL(ne_metadata[, 3])
-
-
-# download data
-invaded_asian <- rnaturalearth::ne_download(
-  scale = 10, # highest resolution
-  type = "admin_0_countries", # states and provinces
-  category = "cultural",
-  destdir = file.path(here(), "data-raw", "ne_countries"),
-  load = TRUE, # load into environment
-  returnclass = "sf" #terra spatvector
-)
-
-```
-
-Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply cut out the Chinese provinces. 
-
-```{r ready data for intersect}
-
-# load in slf points to intersect
-slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
-  dplyr::select(-species) %>%
-  sf::st_as_sf(coords = c("x", "y")) # convert to sf object
-
-# set crs
-sf::st_crs(slf_points) <- "EPSG:4326"
-  
-
-
-# china shapefile  
-invaded_asian <- invaded_asian %>%
-  dplyr::filter(NAME %in% c("Japan", "South Korea")) %>%
-  # set crs
-  sf::st_transform(x = ., dst = "EPSG:4326") 
-
-```
-
-We will keep only the provinces of China that contain SLF points (plus Guangxi, which is explained later). We will perform an intersect between the vectorized SLF points and the provinces shapefiles.
-
-```{r intersect and save}
-
-# intersect
-invaded_asia_withSLF <- sf::st_filter(x = invaded_asian, y = slf_points) 
-
-# also retrieve bounding box for records
-sf::st_bbox(invaded_asia_withSLF)
-
-# list of writing drivers for sf
-sf::st_drivers()
-# write to file
-sf::st_write(
-  obj = invaded_asia_withSLF, 
-  dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"),
-  driver = "ESRI Shapefile"
-  )
-
-
-```
-
-```{r re-load shapefile as needed}
-
-invaded_asia_withSLF <- sf::read_sf(dsn = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
-
-```
-
-Now lets plot it for a sanity check.
-
-```{r plot china}
-
-(invaded_asian_map <- ggplot() +
-   # world map
-   geom_polygon(data = map_data('world', region = c("Japan", "South Korea")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # slf native range shapefile
-   geom_sf(data = invaded_asia_withSLF, fill = "darkorange", color = "black") +
-   # scales
-   xlab("longitude") +
-   ylab("latitude") +
-   labs(title = "SLF invaded range in Asia") +
-   theme_classic()
-)
-```
-
-```{r save plot}
-
-ggsave(invaded_asian_map, 
-       filename = file.path(here(), "vignette-outputs", "figures", "SLF_regional_invaded_asian_extent.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-)
-
-```
-
-This plotted range roughly corresponds to surveys of SLF performed in the literature. Xin et al performed a rigorous survey of SLF populations across China for biocontrol purposes (Xin et al, 2020). [Here](https://academic.oup.com/view-large/figure/228296055/nvaa137_fig1.jpg) is a figure of the study sites where they retrieved SLF populations. They also mapped the population density to a map of the Chinese provinces [here](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). Our map roughly corresponds to the native extent of SLF, as surveyed by this study. 
-
-Another study by Du et al surveyed SLF populations to explain the phylogenetic origins of invasive SLF populations (Du et al, 2021). Du et al took measures to ensure that SLF populations surveyed for their study represented established populations and they specifically surveyed egg masses (Du et al, 2021). Our range map also corresponds to the map of surveyed populations in [figure 1](https://academic.oup.com/view-large/figure/228296047/nvaa137_fig6.jpg?itm_medium=graphical+abstract+image&itm_content=open+image&itm_source=http://academic.oup.com/ee/article/50/1/36/6029751&itm_campaign=graphical+abstract). 
-
-Our native range map included three additional provinces, two in the far south (Guangdong and Guangxi) and one at the western edge (Qinghai). Guangxi was added manually based on expert opinion of SLF presence (Matthew Helmus, PhD). The other two provinces (Guangdong and Quighai) were added due to due to additional SLF records that we retrieved, likely from our literature search outlined in vignette 020. This range map will represent the native range training area for our native regional model. Background points will be chosen specifically from this region of China. Other countries have been named as part of the SLF native range (India, Vietnam, Taiwan, Bangaladesh), but no data exists to support these claims, so we chose to be conservative with our consideration of the SLF native range (SOURCE). Our consideration of the SLF native range also corresponds with the above mentioned surveys for SLF. 
-
-* *NOTE* inaturalist contains a single SLF presence in Taiwan, but this data point was not licensed for re-use and so we chose not to include it. Otherwise, no SLF presence data could be found in any data repository (GBIF, inaturalist) or the literature for the countries we chose to exclude from the SLF native range.*
-
-### Use shapefile to create rasters for SLF native range
-
-I will use the above env.files and output.files objects to load in the bioclim rasters. I will then mask them using the shapefile I created in the last step.
-
-```{r set wd}
-
-  mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
-
-```{r load in data}
-
-# load in shapefile as spatVector for compatibility
-invaded_asian_withSLF <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
-
-# rasters were loaded in above
-
-# set naming for rasters
-output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "invaded_asian")
-
-```
-
-```{r mask}
-
-if(TRUE) {
-  
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
-
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # crop new rasters to extent
-    rast.hold <- terra::mask(x = rast.hold, mask = invaded_asian_withSLF)
-    
-    # write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
-  
-}
-
-```
-
-```{r plot for check}
-
-bio11_invaded_asian <- terra::rast(x = file.path(mypath, "bio11_1981-2010_invaded_asian.asc")) 
-# convert to df
-bio11_invaded_asian_df <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
-
-# plot main layer as example
-(ggplot() +
-  # change scale of plots to be standard across figures
-  geom_raster(data = bio11_invaded_asian_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  coord_equal()
-)
-# the cropping worked
-
-```
-
-Now we have the input bioclim rasters for the regional_invaded model cropped and masked to the proper extent. This concludes our raster work. 
-
-We will need to select background points for both the native and invaded regional models, which we will do next.
-
-# 2. Background point choice
-
-## Invaded Regional (invaded_asian)
-
-Gallien et.al found that their regional model of the invaded range performed better when the background point were weighted by the output of the global model. As stated earlier, this also accounts for the fact that SLF has not had an adequate change to reach all potentially suitable areas. So, as part of the preparation for creating the regional model, we need to create a background dataset (just like we did for the global model), but we also need to weight those points by the cloglog suitability output from the global model. However, the SDMtune package does not allow weights to be attributed to pseudo-absences in the MaxEnt algorithm (nor do any packages I have seen, Gallien was performing other types of models that may integrate this function.). So, my work-around is to apply a weighting formula to the entire suitability raster from the global model and choose the background points based on this weight. The end result should be that there are more points selected where suitability for SLF is lower. 
-
-Gallien et.al provided the following inverse logarithmic weighting formula:
-
-$$
-weight = \frac{1}{1 + (\frac{suitG}{suitG-1})^2}
-$$
-
-"suitG" indicates the suitability value in the global model. I will apply this formula to the mean suitability output from the global model.
-
-To do that, I will use the `terra::app` function to convert the global mean raster to a list of suitability values at the cell value level. Then I will use the `dismo::randomPoints()` function again, but will give it the raster of weighted suitability values so that it chooses values according to the weight. 
-
-First I will load in the global raster output. I will also load in the slf_points dataset for sampling
-
-```{r set wd}
-
-# path to directory
-mypath <- file.path(here() %>% 
-                     dirname(),
-                   "maxent")
-
-```
-
-This portion, where I weight the global predictions, only needs to be done once.
-
-```{r load in global model predictions}
-
-# load in averaged global output
-global_mean <- terra::rast(x = file.path(mypath, "models", "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
-# also convert to df
-global_mean_df <- terra::as.data.frame(global_mean, xy = TRUE)
-
-# slf points
-slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
-   dplyr::select(-species) 
-
-# mask layer I will use
-mask_layer <- raster::raster(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_invaded_asian.asc"))
-
-```
-
-Now I need to transform each raster cell according to the weighting formula. I wrote a function to do this called `slfSpread::weight_model_output`.
-
-```{r apply weighting function}
-
-global_mean_weighted <- terra::app(
-  x = global_mean,
-  fun = slfSpread::weight_model_output
-)
-
-# get name
-names(global_mean_weighted)
-# change layer name
-names(global_mean_weighted) <- "weight"
-
-```
-
-```{r save}
-
-if(FALSE) {
-
-  # write to file
-  terra::writeRaster(
-    x = global_mean_weighted, 
-    filename = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_globe_1981-2010_mean_weighted.asc"),
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    )
-
-}
-
-```
-
-The function will also work on numbers, so I can just give it a range of decimals from 0-1. It should nearly reverse the values if it is working properly. The minmax of each raster should be about 0-1. 
-
-```{r validation}
-
-# this function acts like a math formula, so it should work on numbers. It should work to reverse the order of values from 0 - 1. A 1 suitability should be a 0 weighted suitability
-slfSpread::weight_model_output(1)
-slfSpread::weight_model_output(0.6)
-slfSpread::weight_model_output(0.4)
-slfSpread::weight_model_output(0)
-
-# the minmax should also be 0 - 1 in both cases
-minmax(global_mean)
-minmax(global_mean_weighted)
-
-```
-
-Now, I will sample the raster. I will still correct for the latitudinal stretching of the grid cells and exclude cells containing presences, as before. First, I will need to load in the rasters using the `raster` package for `dismo` compatibility.
-
-```{r load weighted raster and crop}
- 
-# east asia extent
-ext.obj <- raster::extent(122.93816, 153.98561,  24.21210, 45.52041)
-
-# I will load in the raster and crop it to the training area extent.
-global_mean_weighted <- raster::raster(
-  x = file.path(mypath, "models", "working_dir", "global_v2_pred_suit_clamped_cloglog_globe_1981-2010_mean_weighted.asc")
-  ) 
-# mask
-global_mean_weighted <- raster::mask(x = global_mean_weighted, mask = mask_layer, maskvalue = NA) 
-
-  
-# also conver to df
-global_mean_weighted_df <- raster::as.data.frame(global_mean_weighted, xy = TRUE)
-
-```
-
-Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. However, these points will be selected based on a probability (that we created above), unlike the global background points.
-
-```{r random points}
-
-# set seed
-set.seed(100)
-
-# generate random points 
-regional_invaded_asian_points <- dismo::randomPoints(
-  mask = global_mean_weighted, # cropped to regional_invaded_asian range
-  n = 7500, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  prob = FALSE,  # the raster contains probability weights
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
-
-# save as csv
-write_csv(x = regional_invaded_asian_points, file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v0.csv"))
-# save as rds file
-write_rds(regional_invaded_asian_points, file = file.path(here(), "data", "regional_invaded_asian_background_points_v0.rds"))
-
-```
-
-Now lets visualize the result.
-
-```{r load in data for plotting}
-
-invaded_asian <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_invaded_asian.asc")
-  )
-
-# also convert to df
-invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
-
-regional_invaded_asian_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v0.csv"))
-
-```
-
-```{r plot}
-
-(regional_invaded_asian_points_plot <- ggplot() +
-   geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-   ggtitle("'regional_invaded_asian' model background points") +
-   labs(caption = "point selection was weighted by the 'global_model' suitability predictions") +
-   map_style +
-   theme(legend.position = "none") +
-   coord_equal(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
-)
-
-```
-
-We can see that the background points are isolated to the eastern half of the United States and some of Canada. This is what we want because the model will be trained on this area. We can also see that points were selected from areas where the model did not predict high suitability (most highly suitable areas were near PA and NJ). For comparison, this figure is roughly opposite of the figure depicting the suitability values for the mean output from the global model.  
-
-```{r save plot}
-
-ggsave(regional_invaded_asian_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_v0.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-       )
-
-```
-
-# 3. Plot SLF presences 
-
-Finally, I will create a plot of all SLF presence locations for reference.
-
-```{r plot model presences}
-
-regional_invaded_asian_slf_plot <- ggplot() +
-  geom_raster(data = global_mean_df, aes(x = x, y = y), fill = "azure4") +
-  geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
-  geom_point(data = slf_points, aes(x = x, y = y), color = "darkorange", size = 0.25) +
-  labs(
-    title = "'regional_invaded_asian' model SLF presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
-  
-
-```
-
-```{r save plot}
-
-ggsave(
-  regional_invaded_asian_slf_plot, 
-  filename = file.path(here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points.jpg"),
-  height = 8, 
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-### MODEL TRAINING #####
-
 
 `SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
@@ -1016,21 +548,26 @@ slfSpread::predict_xy_suitability(
 We have the regional_invaded model trained, so now we will move on to train the regional_native model
 
 
-
-
 # References
 
-Calvin, D. D., J. Rost, J. Keller, S. Crawford, B. Walsh, M. Bosold, and J. Urban. 2023. Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology 52:1108–1125.
+Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
 
-Du, Z., Y. Wu, Z. Chen, L. Cao, T. Ishikawa, S. Kamitani, T. Sota, F. Song, L. Tian, W. Cai, and H. Li. 2021. Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications.
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
 
 Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
 
-Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
+Maryam Bordkhani. (n.d.). threshold rule.
 
-Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
+Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
 
-Xin, B., Y. Zhang, X. Wang, L. Cao, K. A. Hoelmer, H. J. Broadley, and J. R. Gould. 2020. Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology 50:36–45.
+Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
 
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
+
+Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+
+VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
 
 

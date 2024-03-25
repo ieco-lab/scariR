@@ -215,7 +215,7 @@ p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tabl
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v3.csv"))
+a_regional_invaded_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted.csv"))
 
 ```
 
@@ -248,7 +248,7 @@ Now I will create the "samples with data" object that SDMtune requires.
 
 ```{r prepare SWD data object}
 
-if (TRUE) {
+if (FALSE) {
 
   regional_invaded_train <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_easternUSA_env_covariates,
@@ -279,8 +279,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v4.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v4.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v5.csv"),
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v5.csv")
   ))
 
 ```
@@ -312,7 +312,7 @@ rm(p_slf_points_masked)
 
 ```{r prepare SWD data object}
 
-if (TRUE) {
+if (FALSE) {
 
   regional_invaded_test <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_global_hist_env_covariates, # need the global covariates for China
@@ -332,7 +332,7 @@ if (TRUE) {
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v4.csv")
+  file.path(here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v5.csv")
   ))
 
 ```
@@ -371,7 +371,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v5")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_model, 
@@ -402,7 +402,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v5")
 
 ```
 
@@ -464,7 +464,7 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v5")
 
 # slf presence data
 slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
@@ -512,7 +512,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v4")
+                     "maxent/models/slf_regional_invaded_v5")
 
 # load in all IVR points
 load(file = file.path(here(), "data", "wineries.rda")) 
