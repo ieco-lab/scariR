@@ -171,7 +171,7 @@ kmz_data_rast <- rast(
   crs = "EPSG:4326"
   )
 # change name of layer
-names(kmz_data_rast) <- "Koppen_climate_zone"
+names(kmz_data_rast) <- "Koeppen_climate_zone"
 
 # validity- minmax should range between 0-32
 minmax(kmz_data_rast)
@@ -183,10 +183,10 @@ I will need to tidy these data by aggregating them to spatial scale I use for th
 ```{r tidy and resample new raster}
 
 # layer used to aggregate raster
-agg_layer <- rast(env.files[[1]])
+agg_layer <- terra::rast(file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc"))
 # raster stats
-origin(agg_layer)
-crs(agg_layer)
+terra::origin(agg_layer)
+terra::crs(agg_layer)
 
 # resample
 koppen_zones_rast <- terra::resample(
@@ -194,7 +194,7 @@ koppen_zones_rast <- terra::resample(
   y = agg_layer, # aggregate to this origin and resoluion
   method = "mode",
   threads = TRUE,
-  filename = file.path(mypath, "models", "working_dir", "koppen_climate_zones.asc"),
+  filename = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"),
   filetype = "AAIGrid", 
   overwrite = FALSE
     )
@@ -203,17 +203,17 @@ koppen_zones_rast <- terra::resample(
 
 ```{r visualize}
 
-koppen_zones_rast <- rast(x = file.path(mypath, "models", "working_dir", "koppen_climate_zones.asc"))
+koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"))
 # origin
-origin(koppen_zones_rast)
+terra::origin(koeppen_zones_rast)
 # convert to df
-koppen_zones_rast_df <- terra::as.data.frame(koppen_zones_rast, xy = TRUE)
+koeppen_zones_rast_df <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
 
 # plot main layer as example
 (KG_climate_map <- ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = koppen_zones_rast_df, 
-            aes(x = x, y = y, fill = as.factor(`Koppen_climate_zone`))) +
+  geom_raster(data = koeppen_zones_rast_df, 
+            aes(x = x, y = y, fill = as.factor(koeppen_climate_zones))) +
     labs(
       title = "Koeppen-Geiger Climate Zones", 
       x = "longitude",
@@ -249,26 +249,151 @@ ggsave(KG_climate_map,
 
 ```
 
-## Invaded regional (eastern USA)
+I will also write this raster to a shapefile for easy selection of climate zones.
 
-```{r setup for cropping bioclim layers}
+```{r write to shapefile}
 
-# output file names
-output.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = FALSE) %>%
-  grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", ., value = TRUE) %>%
-  gsub(pattern = "global", replacement = "easternUSA")
+# next, convert raster to polygon
+KG_zones_invaded_poly <- terra::as.polygons(
+  x = koeppen_zones_rast,
+  aggregate = TRUE,
+  values = TRUE,
+  crs = "EPSG:4326"
+) 
 
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
+gdal(drivers=TRUE)
+
+# write to shapefile
+terra::writeVector(
+  x = KG_zones_invaded_poly,
+  filename = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp"),
+  filetype = "ESRI Shapefile",
+  overwrite = TRUE
+)
 
 ```
 
-These rasters need to be cropped and converted to the .ascii format for MaxEnt.
+## Invaded regional (eastern USA)
 
-```{r loop to crop bioclim layers to easternUSA}
+First, I will overlay SLF presence points and use these to select which climate regions to keep. I will use these to create a reference layer. Then, I will use this layer to mask the layers that have already been cropped to N America.
 
-# view list of filetypes for terra, use .ascii
-View(terra::gdal(drivers = TRUE))
+### Select K-G climate regions
+
+```{r import datasets}
+
+koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
+
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+  dplyr::select(-species) 
+
+```
+
+I just want the presences from the invaded range
+
+```{r filter presences from invaded range}
+
+# extent object for North America
+ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
+
+# convert to vector
+slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+slf_points_invaded <- terra::as.data.frame(slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole)) %>%
+  sf::st_as_sf(coords = c("x", "y"), crs = "EPSG:4326")
+
+# will not need this object again
+rm(slf_points_vect)
+
+```
+
+Now we will intersect the points with the shapefile. I need to crop the shapefile to the the same extent as the presences and then intersect them to keep the climate zones that contain presences. The resulting shapefile will be used to crop the bioclim data and choose background points for that specific model.
+
+```{r intersect slf points with shapefile}
+
+# load in shapefile again
+KG_zones_invaded_poly <- sf::read_sf(dsn = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp")) %>%
+  dplyr::rename("koeppen_climate_zones" = "koeppen_cl")
+
+# bounding box for cropping
+ext.obj.vect <- c(xmin = -140.976563, ymin = 15.182421, xmax = -51.064453, ymax = 60.586967)
+# first, crop K-G raster to N America
+KG_zones_invaded_poly <- st_crop(KG_zones_invaded_poly, y = ext.obj.vect) %>%
+  # also get rid of ocean
+  dplyr::filter(koeppen_climate_zones != 32)
+
+
+
+
+# intersect
+regional_invaded_withSLF <- sf::st_filter(x = KG_zones_invaded_poly, y = slf_points_invaded)
+
+# write to file
+sf::st_write(
+  obj = regional_invaded_withSLF, 
+  dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp"),
+  driver = "ESRI Shapefile",
+  append = FALSE
+  )
+
+```
+
+```{r re-load}
+
+regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) %>%
+  dplyr::rename("koeppen_climate_zones" = "kppn_c_")
+
+```
+
+Now lets plot it for a sanity check.
+
+```{r plot invaded_asian range}
+
+(regional_invaded_withSLF_plot <- ggplot() +
+   # world map
+   geom_polygon(data = map_data('world', region = c("Canada", "USA", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
+   # slf native range shapefile
+   geom_sf(data = regional_invaded_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
+   # scales
+   labs(
+     title = "SLF invaded range in NAmerica",
+     x = "longitude",
+     y = "latitude",
+     fill = "Koeppen climate zone"
+     ) +
+   theme_classic() +
+   theme(legend.position = "bottom") +
+   coord_sf(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+)
+
+```
+
+So when we mask the bioclim layers, we should see something similar to this.
+
+### Mask bioclim layers
+
+```{r setup for cropping bioclim layers}
+
+# import layers
+env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) 
+
+# output file names
+output.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = FALSE) %>%
+  gsub(pattern = "NAmerica", replacement = "regional_invaded_KG")
+
+# also load shapefile again
+regional_invaded_withSLF <- terra::vect(file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) 
+
+```
+
+I will now mask these rasters using the shapefile created above
+
+```{r loop to crop bioclim layers to NAmerica invaded range}
 
 if(FALSE) {
   
@@ -278,11 +403,16 @@ if(FALSE) {
     #ensure that the CRS is consistent
     rast.hold <- terra::rast(env.files[a])
     
-    # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    # mask new rasters using shapefile
+    rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_withSLF, overwrite = FALSE)
     
     #write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    terra::writeRaster(
+      x = rast.hold, 
+      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
+      filetype = "AAIGrid", 
+      overwrite = FALSE
+      )
     
     # remove object once its done
     rm(rast.hold)
@@ -299,7 +429,7 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot main_layer to ensure cropping worked}
 
-bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_easternUSA.asc")) 
+bio11 <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) 
 # convert to df
 bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
@@ -318,16 +448,198 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
+```{r remove objects}
+
+rm(ext.obj)
+rm(ext.obj.vect)
+
+```
 
 ## Invaded regional (South Korea and Japan)
 
-```{r set wd}
+I need to find a way to clip the climate zones by native vs invaded region, because the same climate zones are likely present in Japan and Korea as in the native range. However, I want to segment the data by region. I would normally use the country administrative borders, but there are many contested islands that would be left out. So, I will obtain the bounding box for Japan and south korea and use that to geographically segment the KG climate zones before masking.
 
-  mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+### Select K-G climate regions
+
+```{r import datasets}
+
+koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
+
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+  dplyr::select(-species) 
 
 ```
+
+I just want the presences from the invaded range
+
+```{r filter presences from invaded range}
+
+# extent object for Japan and SK
+ext.obj <- terra::ext(122.93816, 153.98561, 24.21210, 45.52041)
+
+# convert to vector
+slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
+  # crop by extent area of interest
+  terra::crop(., y = ext.obj) %>%
+  # convert to geom, which gets coordinates of a spatVector
+  terra::geom() 
+
+# convert back to data frame
+slf_points_invaded_asian <- terra::as.data.frame(slf_points_vect) %>%
+  dplyr::select(-c(geom, part, hole)) %>%
+  sf::st_as_sf(coords = c("x", "y"), crs = "EPSG:4326")
+
+# will not need this object again
+rm(slf_points_vect)
+
+```
+
+Now we will intersect the points with the shapefile. I need to crop the shapefile to the the same extent as the presences and then intersect them to keep the climate zones that contain presences. The resulting shapefile will be used to crop the bioclim data and choose background points for that specific model.
+
+```{r intersect slf points with shapefile}
+
+# load in shapefile again
+KG_zones_invaded_asian_poly <- sf::read_sf(dsn = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp")) %>%
+  dplyr::rename("koeppen_climate_zones" = "koeppen_cl")
+
+# bounding box for cropping
+ext.obj.vect <- c(xmin = 122.93816, ymin = 24.21210, xmax = 153.98561, ymax = 45.52041)
+# first, crop K-G raster to SK and Japan
+KG_zones_invaded_asian_poly <- st_crop(KG_zones_invaded_asian_poly, y = ext.obj.vect) %>%
+  # also get rid of ocean
+  dplyr::filter(koeppen_climate_zones != 32)
+
+
+
+
+# intersect
+regional_invaded_asian_withSLF <- sf::st_filter(x = KG_zones_invaded_asian_poly, y = slf_points_invaded_asian)
+
+# write to file
+sf::st_write(
+  obj = regional_invaded_asian_withSLF, 
+  dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"),
+  driver = "ESRI Shapefile",
+  append = FALSE
+  )
+
+```
+
+```{r re-load}
+
+regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp")) %>%
+  dplyr::rename("koeppen_climate_zones" = "kppn_c_")
+
+```
+
+Now lets plot it for a sanity check.
+
+```{r plot invaded_asian range}
+
+(regional_invaded_asian_withSLF_plot <- ggplot() +
+   # world map
+   geom_polygon(data = map_data('world', region = c("Japan", "North Korea", "China", "South Korea", "Russia", "Mongolia")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
+   # slf native range shapefile
+   geom_sf(data = regional_invaded_asian_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
+   # scales
+   labs(
+     title = "SLF invaded range within east Asia",
+     x = "longitude",
+     y = "latitude",
+     fill = "Koeppen climate zone"
+     ) +
+   theme_classic() +
+   theme(legend.position = "bottom") +
+   coord_sf(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
+)
+
+```
+
+```{r remove objects}
+
+rm(ext.obj)
+rm(ext.obj.vect)
+
+```
+
+### Mask bioclim layers
+
+```{r load in data}
+
+# bioclim layers
+env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) 
+
+# set naming for rasters
+output.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = FALSE) %>%
+  gsub(pattern = "global", replacement = "regional_invaded_asian_KG")
+
+
+
+# load in shapefile as spatVector 
+regional_invaded_asian_withSLF <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
+
+```
+
+```{r mask}
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_asian_withSLF)
+    
+    # write out the new resampled rasters!
+    terra::writeRaster(
+      x = rast.hold, 
+      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
+      filetype = "AAIGrid", 
+      overwrite = FALSE
+      )
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+```
+
+```{r plot for check}
+
+bio11_invaded_asian <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc")
+  ) 
+# convert to df
+bio11_invaded_asian_df <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
+
+# plot main layer as example
+(ggplot() +
+  # change scale of plots to be standard across figures
+  geom_raster(data = bio11_invaded_asian_df, 
+            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  xlab("longitude") +
+  ylab("latitude") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  coord_equal()
+)
+# the cropping worked
+
+```
+
+Looks good!
+
+## Native regional (China)
+
+The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
+
+### Get shapefile for native range
 
 ```{r rnaturalearth download}
 
@@ -348,7 +660,7 @@ utils::browseURL(ne_metadata[, 3])
 
 
 # download data
-invaded_asian <- rnaturalearth::ne_download(
+southeast_asia <- rnaturalearth::ne_download(
   scale = 10, # highest resolution
   type = "admin_0_countries", # states and provinces
   category = "cultural",
@@ -359,200 +671,22 @@ invaded_asian <- rnaturalearth::ne_download(
 
 ```
 
-```{r ready data for intersect}
-
-# load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
-  dplyr::select(-species) %>%
-  sf::st_as_sf(coords = c("x", "y")) # convert to sf object
-
-# set crs
-sf::st_crs(slf_points) <- "EPSG:4326"
-  
-
-
-# china shapefile  
-invaded_asian <- invaded_asian %>%
-  dplyr::filter(NAME %in% c("Japan", "South Korea")) %>%
-  # set crs
-  sf::st_transform(x = ., dst = "EPSG:4326") 
-
-```
-
-```{r intersect and save}
-
-# intersect
-invaded_asia_withSLF <- sf::st_filter(x = invaded_asian, y = slf_points) 
-
-# also retrieve bounding box for records
-sf::st_bbox(invaded_asia_withSLF)
-
-# list of writing drivers for sf
-sf::st_drivers()
-# write to file
-sf::st_write(
-  obj = invaded_asia_withSLF, 
-  dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"),
-  driver = "ESRI Shapefile"
-  )
-
-
-```
-
-```{r re-load shapefile as needed}
-
-invaded_asia_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
-
-```
-
-Now lets plot it for a sanity check.
-
-```{r plot invaded_asian range}
-
-(invaded_asian_map <- ggplot() +
-   # world map
-   geom_polygon(data = map_data('world', region = c("Japan", "South Korea")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # slf native range shapefile
-   geom_sf(data = invaded_asia_withSLF, fill = "darkorange", color = "black") +
-   # scales
-   xlab("longitude") +
-   ylab("latitude") +
-   labs(title = "SLF invaded range in Asia") +
-   theme_classic()
-)
-```
-
-```{r save plot}
-
-ggsave(invaded_asian_map, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_regional_invaded_asian_extent.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina"
-)
-
-```
-
-```{r load in data}
-
-# load in shapefile as spatVector for compatibility
-invaded_asian_withSLF <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
-
-# rasters were loaded in above
-
-# set naming for rasters
-output.files <- list.files(path = file.path(mypath), pattern = "\\_global.asc$", full.names = FALSE) %>%
-  gsub(pattern = "global", replacement = "invaded_asian")
-
-```
-
-```{r mask}
-
-if(FALSE) {
-  
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
-
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # crop new rasters to extent
-    rast.hold <- terra::mask(x = rast.hold, mask = invaded_asian_withSLF)
-    
-    # write out the new resampled rasters!
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
-  
-}
-
-```
-
-```{r plot for check}
-
-bio11_invaded_asian <- terra::rast(x = file.path(mypath, "bio11_1981-2010_invaded_asian.asc")) 
-# convert to df
-bio11_invaded_asian_df <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
-
-# plot main layer as example
-(ggplot() +
-  # change scale of plots to be standard across figures
-  geom_raster(data = bio11_invaded_asian_df, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  coord_equal()
-)
-# the cropping worked
-
-```
-
-
-
-## Native regional (China)
-
-The native range for China will be defined as any Chinese province that contains known SLF populations. We will exclude Vietnam, Thailand India and Bangaladesh due to a lack of data (discussed later). For now, we will need to find a shapefile of the Chinese provinces to use for the regional_native model.
-
-### Get shapefile for native range
-
-```{r rnaturalearth download}
-
-# check which types of data are available
-data(df_layers_cultural) 
-# I will use states_provinces
-
-# get metadata
-ne_metadata <- ne_find_vector_data(
-  scale = 10,
-  category = "cultural",
-  getmeta = TRUE
-) %>%
-  dplyr::filter(layer == "admin_1_states_provinces")
-# URL to open metadata
-utils::browseURL(ne_metadata[, 3])
-
-
-# download data
-china_provinces <- rnaturalearth::ne_download(
-  scale = 10, # highest resolution
-  type = "admin_1_states_provinces", # states and provinces
-  category = "cultural",
-  #destdir = file.path(here::here(), "data-raw", "ne_states_provinces"),
-  #load = TRUE, # load into environment
-  returnclass = "sf" #terra spatvector
-)
-
-```
-
 Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply cut out the Chinese provinces. 
 
 ```{r ready data for intersect}
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+slf_points_native <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
-  sf::st_as_sf(coords = c("x", "y")) # convert to sf object
-
-# set crs
-sf::st_crs(slf_points) <- "EPSG:4326"
+  sf::st_as_sf(coords = c("x", "y"), crs = "EPSG:4326") # convert to sf object
   
+STOPPED HERE
 
-
-# china shapefile  
-china_provinces <- china_provinces %>%
-  dplyr::filter(geonunit == "China") %>%
+# southeast asia shapefile
+southeast_asia <- southeast_asia %>%
+  dplyr::filter(NAME == c("China", "Mongolia")) %>%
   # set crs
   sf::st_transform(x = ., dst = "EPSG:4326") 
-
-# copy of china shapefile with extra province selected (for later)
-china_guangxi <- china_provinces %>%
-  dplyr::filter(name == "Guangxi")
 
 ```
 

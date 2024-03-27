@@ -34,11 +34,11 @@ v0- initial version- in sandbox/vignettes_old- trained the invaded model on the 
 v1- updated invaded model weighting to use new global model output, updated invaded model background selection to 355km buffer around presences- generated invaded background points v2 and regional_invaded_buffer layers
 v2- reverted to eastern USA test area instead of 355km buffer
 v3- did not weight easternUSA model. Moved section on weighting to supp materials
-v4- added koppen climate download and use for selecting background points
+v4- added koeppen climate download and use for selecting background points
 
 
 
-----------_ch1_run_invaded_regional_MaxEnt_model.Rmd----------
+----------_ch1_run_regional_invaded_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -51,10 +51,24 @@ v1- in sandbox/vignettes_old
 v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridSearch and used model settings from global instead.
 v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vignettes_old
 v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
+v5- creates the v5 of the regional_invaded model in maxent/models. Using Koeppen-Geiger climate zones intersection with SLF presences to choose background area.
 
 
 
-----------_ch1_run_native_regional_MaxEnt_model.Rmd----------
+----------_ch1_run_regional_invaded_asian_MaxEnt_model.Rmd----------
+
+## About
+
+This vignette creates all data objects needed to run the regional_invaded_asian model. It trains the model and uses various functions to create suitability maps, summary statistics, etc.
+
+## Changelog
+
+v0- 
+
+
+
+
+----------_ch1_run_regional_native_MaxEnt_model.Rmd----------
 
 ## About
 
