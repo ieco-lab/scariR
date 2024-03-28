@@ -51,7 +51,6 @@ v1- in sandbox/vignettes_old
 v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridSearch and used model settings from global instead.
 v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vignettes_old
 v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
-v5- creates the v5 of the regional_invaded model in maxent/models. Using Koeppen-Geiger climate zones intersection with SLF presences to choose background area.
 
 
 
@@ -63,7 +62,7 @@ This vignette creates all data objects needed to run the regional_invaded_asian 
 
 ## Changelog
 
-v0- 
+v0- initial version
 
 
 

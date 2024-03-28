@@ -212,11 +212,11 @@ I need to also load in the SLF presence dataset created in vignette 030 and the 
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_regional_native_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
+a_regional_native_background_points <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v0.csv"))
 
 ```
 
@@ -227,7 +227,7 @@ I will need to combine the above covariates, presence and background point datas
 ```{r filter presences from native range}
 
 # native range extent shapefile used to select slf presences
-mask_layer <- terra::vect(x = file.path(here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
+mask_layer <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_native_range_extent.shp"))
 
 # convert to vector
 p_slf_points_masked <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
