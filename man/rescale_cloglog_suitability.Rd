@@ -57,10 +57,10 @@ of visualizing suitability change around a critical threshold (at the scale of
 0-1, it can often be hard to see changes across the suitability threshold if
 its value is very small). Note that this function will not work if the value
 of thresh is 0.
+
+This function was co-authored by Jacob Woods.
 }
 \details{
-This function was co-authored by Jacob Woods.
-
 Requires the following packages: 'tidyverse', 'cli'.
 \subsection{thresh:}{
 

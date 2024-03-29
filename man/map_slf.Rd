@@ -23,8 +23,7 @@ A logical value (\code{TRUE} or \code{FALSE}) that answers the question
 \description{
 This function is designed to map a set of coordinates of interest using the
 leaflet package.
-}
-\details{
+
 using the leaflet package
 and in this package, it is used to map new SLF jump locations. It is designed
 to show the point with a specified latitude and longitude margin on all sides
@@ -32,7 +31,8 @@ of the point (zoom level). It is suggested that this function be used to
 append mapping data to a pre-existing data frame or tibble.
 
 #'The function requires the packages 'tidyverse' and 'leaflet'.
-
+}
+\details{
 This function was previously called map_jumps_v2. Major changes from v1:
 Specified all variables as arguments- allows this function to be used in
 context of a single point, rather than just a data frame or tibble.

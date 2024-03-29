@@ -14,7 +14,7 @@ can be thought of as the imported value of a single cell.}
 returns weight
 }
 \description{
-Weight model output
+DESCRIBE
 }
 \details{
 details

@@ -43,9 +43,10 @@ test the model after training. Should be a SWD object, created using the
 blarg
 }
 \description{
-The function requires the packages 'tidyverse', 'here', 'devtools', 'viridis', 'pROC', 'SDMtune', and 'patchwork'
+DESCRIPTION
 }
 \details{
+The function requires the packages 'tidyverse', 'here', 'devtools', 'viridis', 'pROC', 'SDMtune', and 'patchwork'
 \subsection{fixed.area.points:}{
 
 The fixed area points dataset should be be in the following format: 3 columns,

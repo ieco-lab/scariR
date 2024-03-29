@@ -178,6 +178,20 @@ minmax(kmz_data_rast)
 
 ```
 
+```{r retrieve names for codes and make factor}
+
+# retrieve names
+kmz_names <- kgc::getZone(1:32)
+# make facor levels
+kmz_names_factor <- factor(
+  x = kmz_names,
+  levels = unique(kmz_names),
+  ordered = TRUE
+)
+
+```
+
+
 I will need to tidy these data by aggregating them to spatial scale I use for the bioclim variables. I will do this using the mode, because this variable is a set of numbers representing a categorical, so I do not want to average or take the median.
 
 ```{r tidy and resample new raster}
@@ -226,7 +240,8 @@ koeppen_zones_rast_df <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
     discrete = TRUE,
     aesthetics = "fill",
     option = "H",
-    direction = -1
+    direction = -1,
+    labels = kmz_names_factor
     ) +
   guides(fill = guide_legend(nrow = 3)) +
   theme_classic() +
@@ -360,7 +375,7 @@ Now lets plot it for a sanity check.
 
 (regional_invaded_withSLF_plot <- ggplot() +
    # world map
-   geom_polygon(data = map_data('world', region = c("Canada", "USA", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
+   geom_polygon(data = map_data('world', region = c("Canada", "USA", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Bahamas", "Cuba", "Costa Rica", "Haiti", "Dominican Republic", "Jamaica", "Bermuda")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
    # slf native range shapefile
    geom_sf(data = regional_invaded_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
@@ -371,7 +386,7 @@ Now lets plot it for a sanity check.
      y = "latitude",
      fill = "Koeppen climate zone"
      ) +
-   scale_fill_brewer(palette = "Paired") +
+   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
    theme(legend.position = "right") +
    coord_sf(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
@@ -495,7 +510,7 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 ```
 
-I just want the presences from the invaded range
+I just want the presences from the invaded range. I will manually filter out some points that accidentally got into both the native and regional_invaded_asian models.
 
 ```{r filter presences from invaded range}
 
@@ -509,10 +524,13 @@ slf_points_vect <- terra::vect(x = slf_points, geom = c("x", "y"), crs = "EPSG:4
   # convert to geom, which gets coordinates of a spatVector
   terra::geom() 
 
-# convert back to data frame
+# convert to sf object
 slf_points_invaded_asian <- terra::as.data.frame(slf_points_vect) %>%
   dplyr::select(-c(geom, part, hole)) %>%
-  sf::st_as_sf(coords = c("x", "y"), crs = "EPSG:4326")
+  # filter out specific points that were showing up in both native and invaded_regional model
+  dplyr::filter(x > 125) %>%
+  # convert to sf object
+  sf::st_as_sf(coords = c("x", "y"), crs = "EPSG:4326") 
 
 # will not need this object again
 rm(slf_points_vect)
@@ -577,7 +595,7 @@ Now lets plot it for a sanity check.
      y = "latitude",
      fill = "Koeppen climate zone"
      ) +
-   scale_fill_brewer(palette = "Paired") +
+   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
    theme(legend.position = "right") +
    coord_sf(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
@@ -868,7 +886,7 @@ Now lets plot it for a sanity check.
      y = "latitude",
      fill = "Koeppen climate zone"
      ) +
-   scale_fill_brewer(palette = "Paired") +
+   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
    theme(legend.position = "right") +
    coord_sf()
@@ -1033,8 +1051,12 @@ Now lets visualize the result.
 
 ```{r plotting datasets}
 
+# plotting raster
 regional_invaded_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
+
+# re-read background points 
+regional_invaded_background <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted_v6.csv"))
 
 # extent object for N America
 ext.obj <- terra::ext( -140.976563, -51.064453, 15.182421, 60.586967)
@@ -1055,7 +1077,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 (regional_invaded_background_plot <- ggplot() +
    geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
    geom_raster(data = regional_invaded_bio11_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_invaded_background, aes(x = x, y = y), color = "firebrick2", size = 0.001) +
+   geom_point(data = regional_invaded_background, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
    scale_x_continuous(expand = c(0, 0)) +
    scale_y_continuous(expand = c(0, 0)) +
    labs(
@@ -1112,7 +1134,7 @@ set.seed(7)
 # generate random points 
 regional_invaded_asian_points <- dismo::randomPoints(
   mask = invaded_asian_bio11, # cropped to regional_invaded_asian range
-  n = 5000, # default number used by maxent
+  n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
   lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
@@ -1272,7 +1294,7 @@ ggsave(native_points_plot,
 
 ```
 
-# 3. Plot SLF presences 
+# 3. Choose and plot presence points
 
 ```{r set wd}
 
@@ -1320,6 +1342,15 @@ rm(slf_points_vect)
 
 ```
 
+```{r save presences}
+
+write_csv(
+  x = slf_points_invaded,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_model_presence_points_v6.csv")
+)
+
+```
+
 ```{r plot model presences}
 
 # load in raster
@@ -1356,7 +1387,7 @@ ggsave(
   regional_invaded_slf_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points_v6.jpg"),
   height = 8, 
-  width = 10,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1379,10 +1410,20 @@ terra::geom()
 
 # convert back to data frame
 slf_points_invaded_asian <- terra::as.data.frame(slf_points_masked) %>%
-  dplyr::select(-c(geom, part, hole))
+  dplyr::select(-c(geom, part, hole)) %>%
+    dplyr::filter(x > 125)
   
 # will not need this object again
 rm(slf_points_masked)
+
+```
+
+```{r save presences}
+
+write_csv(
+  x = slf_points_invaded_asian,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_model_presence_points_v1.csv")
+)
 
 ```
 
@@ -1448,6 +1489,15 @@ slf_points_native <- terra::as.data.frame(slf_points_masked) %>%
 # will not need this object again
 rm(slf_points_masked)
 rm(mask_layer)
+
+```
+
+```{r save presences}
+
+write_csv(
+  x = slf_points_native,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_model_presence_points_v2.csv")
+)
 
 ```
 

@@ -1,5 +1,5 @@
 ---
-title: "Run global MaxEnt model (chapter 1)"
+title: "Run 'global' MaxEnt model"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-01-09"
@@ -17,12 +17,14 @@ This vignette has 3 subvignettes (051-053) that each outline and comment the bas
 
 # Setup
 
+*CURRENT MODEL VERSION: v2*
+
 ```{r load necesssary packages, echo = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
-library(here) #making directory pathways easier on different instances
-here() # here() starts at the root folder of this package.
+library(here::here) #making directory pathways easier on different instances
+here::here() # here::here() starts at the root folder of this package.
 library(devtools)
 
 # SDMtune and dependencies
@@ -70,7 +72,7 @@ I will load in the datasets I will need for the MaxEnt models. These are labeled
 ```{r load in historical covariates}
 
 # path to directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
@@ -88,7 +90,7 @@ x_NAmerica_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_m
 ```{r load in CMIP6 covariates}
 
 # path to directory
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
@@ -109,11 +111,11 @@ In this chunk, I will load in the SLF presence dataset created in vignette 030 a
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read_rds(file = file.path(here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+p_slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_global_background_points <- read_rds(file = file.path(here(), "data", "global_background_points_v3.rds"))
+a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds"))
 
 ```
 
@@ -204,7 +206,7 @@ I will need to combine the above covariate, presence and background point datase
 
 ```{r prepare SWD data object}
 
-if (FALSE) {
+if (TRUE) {
 
   global_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_global_hist_env_covariates,
@@ -226,8 +228,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = global_SWD, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
   ))
 
 ```
@@ -371,7 +373,7 @@ This function produces all summary statistics for this model. This list includes
 ```{r compute summary statistics using custom function}
 
 # output directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models/slf_global_v2")
 
@@ -416,7 +418,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 ```{r set wd}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models/slf_global_v2")
 
@@ -497,12 +499,12 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 ```{r data import}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models/slf_global_v2")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species)
 
 ``` 
@@ -547,12 +549,12 @@ I will perform the same action as above, but for the locations of over 1,000 imp
 
 ```{r data import}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models/slf_global_v2")
 
 # load in all IVR points
-load(file = file.path(here(), "data", "wineries.rda")) 
+load(file = file.path(here::here(), "data", "wineries.rda")) 
 
 IVR_regions <- wineries %>%
   dplyr::select(x, y)
@@ -608,14 +610,14 @@ I attempted this method because of the body of literature that says blocked cros
 
 #presences
 global_presences_with_data <- read_csv(
-  file.path(here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
   ) %>%
   # add presence/absence column
   mutate(pa = 1)
 
 # background points
 global_background_with_data <-  read_csv(
-  file.path(here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
   ) %>%
   mutate(pa = 0)
 

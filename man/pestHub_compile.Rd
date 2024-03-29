@@ -31,8 +31,7 @@ If \code{error.return = TRUE}, a list is returned with data in the first element
 \description{
 This function is used to compile data exported from Web Scraping as CSV files into a single data frame that holds
 locations for pest dispersion hubs
-}
-\details{
+
 The function requires the package 'readr'
 }
 \examples{

@@ -1,6 +1,6 @@
 #'Output summary statistics for a MaxEnt model ('SDMmodelCV' object)
 #'
-#'@descritpion
+#'@description
 #'This function will create a directory for and save a MaxEnt model that was run
 #'using the `SDMtune` R package. It will use the model to calculate a list of
 #'summary statistics based on the test data and covariates given. See 'return'
@@ -485,7 +485,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
 
     # create empty table with threshold labels
     conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
-      rename("hold_type" = "conf.matr.data[, 1]")
+      dplyr::rename("hold_type" = "conf.matr.data[, 1]")
 
     for (a in seq(length(model.obj@models))) {
 
@@ -498,7 +498,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
 
       # bind threshold names
       conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
-        rename("hold_type" = "conf.matr.data[, 1]") %>%
+        dplyr::rename("hold_type" = "conf.matr.data[, 1]") %>%
         dplyr::select(hold_type, everything())
 
       # write individual run results to file

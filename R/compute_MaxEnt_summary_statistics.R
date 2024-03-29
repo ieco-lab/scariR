@@ -422,7 +422,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     # create empty table with threshold labels
     conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
-      rename("hold_type" = "conf.matr.data[, 1]")
+      dplyr::rename("hold_type" = "conf.matr.data[, 1]")
 
 
     # calculate confusion matrix using SDMtune
@@ -435,7 +435,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     # bind threshold names
     conf.matr.hold <- cbind(conf.matr.hold, conf.matr.data[, 1]) %>%
-      rename("hold_type" = "conf.matr.data[, 1]") %>%
+      dplyr::rename("hold_type" = "conf.matr.data[, 1]") %>%
       dplyr::select(hold_type, everything())
 
     # write individual run results to file

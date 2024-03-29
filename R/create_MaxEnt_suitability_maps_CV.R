@@ -288,7 +288,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
       ggsave(model_suit_plot,
              filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", a, ".jpg")),
              height = 8,
-             width = 10,
+             width = 12,
              device = "jpeg",
              dpi = "retina")
 
@@ -460,7 +460,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         ggsave(model_threshold_plot,
                filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
                height = 8,
-               width = 10,
+               width = 12,
                device = "jpeg",
                dpi = "retina")
 
