@@ -429,11 +429,30 @@ slfSpread::create_MaxEnt_suitability_maps(
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
+  env.covar.obj = x_global_hist_env_covariates, 
+  describe.proj = "globe_1981-2010", # name of area or time period describe.proj to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
+)
+
+```
+
+```{r predict mean and thresholded suitability maps for historical data}
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
+  mypath = mypath, 
+  create.dir = FALSE, 
   env.covar.obj = x_NAmerica_hist_env_covariates, 
   describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
   clamp.pred = TRUE,
-  map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
 )
 
@@ -448,11 +467,30 @@ slfSpread::create_MaxEnt_suitability_maps(
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
+  env.covar.obj = x_global_CMIP6_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "regional_invaded_summary.csv")
+)
+
+```
+
+```{r predict normal and thresholded suitability maps for CMIP6 data}
+
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = regional_invaded_model,
+  model.name = "regional_invaded", 
+  mypath = mypath, 
+  create.dir = FALSE, 
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
   describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
-  map.thresh = TRUE, # whether thresholded versions of these maps should be created
   thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
 )
 

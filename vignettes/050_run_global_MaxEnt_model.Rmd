@@ -434,6 +434,26 @@ if (FALSE) {
 
 ```
 
+I will also create global raster predictions.
+
+```{r predict mean and thresholded suitability maps for historical data}
+
+slfSpread::create_MaxEnt_suitability_maps_CV(
+  model.obj = global_model,
+  model.name = "global", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_global_hist_env_covariates, 
+  describe.proj = "globe_1981-2010", # name of area or time period projected to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+)
+
+```
+
 ```{r predict mean and thresholded suitability maps for historical data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
@@ -444,33 +464,34 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
   env.covar.obj = x_NAmerica_hist_env_covariates, 
   describe.proj = "NAmerica_1981-2010", # name of area or time period projected to
   clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 )
 
 ```
 
-I will also create global raster predictions.
 
-```{r predict maps for globe}
+Lastly, I will create a suitability map for the projected 2041-2070 climate data for N. America.
+
+```{r predict normal and thresholded suitability maps for CMIP6 data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_global_hist_env_covariates, 
-  describe.proj = "globe_1981-2010", # name of area or time period projected to
+  env.covar.obj = x_global_CMIP6_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 )
 
 ```
-
-Lastly, I will create a suitability map for the projected 2041-2070 climate data for N. America.
 
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 
@@ -482,8 +503,9 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
   env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
   describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 )
 
