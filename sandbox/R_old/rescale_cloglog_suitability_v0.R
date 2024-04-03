@@ -68,7 +68,7 @@
 #'example
 #'
 #'@export
-rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
+rescale_cloglog_suitability_v0 <- function(xy.predicted, thresh, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
 
   # Error checks----------------------------------------------------------------
 
@@ -151,23 +151,29 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # internal function for transformation----------------------------------------
 
   # function to rescale vector to exponent
-  # the range is always 0-1
-  rescale_vector <- function(suit_column_internal, thresh_val_internal) {
+  rescale_vector <- function(suit_column_internal, thresh_val_internal, min_val = NA, max_val = NA) {
 
-    # setup values
+    # conditional min and max settings
+    # if specified, import
+    if(!is.na(min_val) & !is.na(max_val)) {
 
-    # set range min and max
-    min_val <- 0
-    max_val <- 1
-    # transform a and c to exponential scale
-    a <- 1 / (exp(thresh_val_internal) - 1)
-    c <- -a
+      min_val_internal <- min_val
+      max_val_internal <- max_val
 
-    # transform b
+      # otherwise, use the range of the suitability dataset
+    } else {
 
+      min_val_internal <- min(suit_column_internal) # make 0
+      max_val_internal <- max(suit_column_internal) # make 1
 
-    # apply function
-    scaled_vector <- a * exp(b * suit_column_internal) + c
+    }
+
+    # function
+
+    # apply log transformation to thresh_val_internal that makes it scale to 0.5
+    base_val <- exp(log(0.5) / (0.00000000000001 + thresh_val_internal - min_val_internal))
+    # Apply exponential scaling
+    scaled_vector <- (base_val ^ (suit_column_internal - min_val_internal) - 1) / (base_val ^ (max_val_internal - min_val_internal) - 1)
 
     # return the scaled vector of values
     return(scaled_vector)
@@ -203,7 +209,10 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
     # rescale
     thresh_output <- rescale_vector(
       suit_column_internal = thresh_presets_tmp,
-      thresh_val_internal = thresh_value
+      thresh_val_internal = thresh_value,
+      # use the range from the suitability dataset instead of the thresholds dataset
+      min_val = min(suit_column),
+      max_val = max(suit_column)
       )
 
     # convert rownames to column

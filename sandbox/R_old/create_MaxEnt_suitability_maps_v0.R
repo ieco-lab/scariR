@@ -41,12 +41,6 @@
 #'
 #'@param clamp.pred Logical. Default is TRUE. Should clamping be performed?
 #'
-#'@param thresh Numeric or Character. Does not need to be defined if
-#'`map.thresh = FALSE` This may be imported manually (numeric), or may be
-#'selected from one of the thresholds for the model (character). If a preset,
-#'the specified mean threshold value for all iterations of the model is chosen.
-#'See details for a list of preset options and other usages.
-#'
 #'@param map.thresh Logical, TRUE by default. This function determines if a
 #'thresholded suitability map will be created. If not, output will only consist
 #'of suitability maps of the type specified in `predict.fun`. **Note** threshold
@@ -54,18 +48,11 @@
 #'values for `predict.type` are specified, the function will still only produce
 #'a threshold map based on the cloglog output
 #'
-#'@param map.thresh.extra Character, default is NA. This argument will plot an
-#'extra threshold underneath the main threshold layer. It must be one of the
-#'thresholds specified in `thresh` and must be less than or equal to the value
-#'of the other values of thresh. For example, I use this to plot the MTP
-#'threshold under the other thresholds being plotted (because MTP is usually the
-#'smallest thresh value). However, plotting the 10_percentile thresh under the
-#' MTP threshold would not function properly and the map would not render.
-#'
-#'@param map.style List, default is NA. This is used to apply
-#'ggplot aesthetics to the plot outputs. If specified, the given value should be
-#'a list of ggplot aesthetic options. If not, the built-in default list will be
-#'used (see details). See examples for usage.
+#'@param thresh Numeric or Character. Does not need to be defined if
+#'`map.thresh = FALSE` This may be imported manually (numeric), or may be
+#'selected from one of the thresholds for the model (character). If a preset,
+#'the specified mean threshold value for all iterations of the model is chosen.
+#'See details for a list of preset options and other usages.
 #'
 #'@param summary.file Data import. Does not need to be defined if
 #'`map.thresh = FALSE`. Should be a .csv file or data frame that contains the
@@ -74,10 +61,14 @@
 #'"_summary.csv"). If an import, file path should be in the format produced
 #'by the [file.path()] function (i.e. with '/' instead of '\\').
 #'
+#'@param map.style List, default is NA. This is used to apply
+#'ggplot aesthetics to the plot outputs. If specified, the given value should be
+#'a list of ggplot aesthetic options. If not, the built-in default list will be
+#'used (see details). See examples for usage.
 #'
 #'@details
 #'
-#'The function requires the packages 'cli', 'ggnewscale', 'tidyverse', 'devtools', 'SDMtune', and 'terra'
+#'The function requires the packages 'cli', 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
 #'
 #'The thresholding feature of this function will limit what is considered
 #'suitable using one of a list of commonly applied thresholds. These threshold
@@ -120,11 +111,11 @@
 #'* `labs(fill = "Suitability for SLF")`
 #'* `theme_classic()`
 #'* `theme(legend_position = "bottom")`
-#'* `theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"), legend.title = element_text(face = "bold"))`
+#'* `theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"))`
 #'* `scale_x_continuous(expand = c(0, 0))`
 #'* `scale_y_continuous(expand = c(0, 0))`
 #'* `coord_equal()`
-#'* `scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(barwidth = 20))`
+#'* `viridis::scale_fill_viridis(option = "D")`
 #'
 #'@return
 #'A raster of suitability values projected to the same spatial extent as the
@@ -146,7 +137,7 @@
 #'
 #'
 #'@export
-create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.type = "cloglog", clamp.pred = TRUE, thresh = NA, map.thresh = FALSE, map.thresh.extra = NA, map.style = NA, summary.file = NA) {
+create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.type = "cloglog", clamp.pred = TRUE, map.thresh = FALSE, thresh = NA, summary.file = NA, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -220,18 +211,12 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       theme_classic(),
       theme(legend.position = "bottom",
             panel.background = element_rect(fill = "lightblue2",
-                                            colour = "lightblue2"),
-            legend.title = element_text(face = "bold")
+                                            colour = "lightblue2")
       ),
       scale_x_continuous(expand = c(0, 0)),
       scale_y_continuous(expand = c(0, 0)),
       labs(fill = "Suitability for SLF"),
-      scale_fill_viridis_c(
-        option = "D",
-        limits = c(0, 1.0),
-        breaks = c(0, 0.25, 0.5, 0.75, 1.00),
-        guide = guide_colorbar(barwidth = 20)
-        ),
+      viridis::scale_fill_viridis(option = "D"),
       coord_equal()
     )
 
@@ -432,8 +417,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       print(paste0(thresh_name, " mask layer raster created and saved at: ", mypath))
 
 
-      # Create thresholded suitability map--------------------------------------
-      ## Load in default layers-------------------------------------------------
+      # Create thresholded suitability map------------------------------------
 
       # convert imported raster to df
       model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
@@ -442,103 +426,30 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
       model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))) %>%
         terra::as.data.frame(., xy = TRUE)
 
+      # plot suitability raster first
+      model_threshold_plot <- ggplot() +
+        # plot regular raster of values first
+        geom_raster(data = model_suit_raster_df,
+                    aes(x = x, y = y, fill = model_suit_raster_df[, 3])) +
+        # plot binary threshold on top
+        geom_raster(data = model_mask_layer_df,
+                    aes(x = x, y = y), fill = "azure4") +
+        labs(title = paste0("suitability for SLF: cloglog | ", thresh_name, " threshold"),
+             subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
+        map_style
 
-
-      ## map conditionally based on whether map.thresh.extra is defined---------
-
-      # if it isnt NA and is a preset value in thresh, import
-      if(!is.na(map.thresh.extra) & is.element(map.thresh.extra, thresh)) {
-
-        ## load in extra layers-------------------------------------------------
-
-        # naming
-        map.thresh.extra_name <- as.character(map.thresh.extra)
-        # load in extra layer and convert to df
-        model_mask_layer_extra_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", map.thresh.extra_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))) %>%
-          terra::as.data.frame(., xy = TRUE)
-
-
-        ## plot-----------------------------------------------------------------
-
-        # plot suitability raster first
-        model_threshold_plot <- ggplot() +
-
-          # plot regular raster of values first
-          geom_raster(data = model_suit_raster_df, aes(x = x, y = y, fill = model_suit_raster_df[, 3])) +
-          # map style for suit raster
-          map_style +
-
-          # start new scale
-          ggnewscale::new_scale_fill() +
-          # mask layers
-          # plot original threshold on top
-          geom_raster(data = model_mask_layer_df, aes(x = x, y = y, fill = "azure2")) +
-          # extra layer
-          geom_raster(data = model_mask_layer_extra_df, aes(x = x, y = y, fill = "azure4")) +
-          # fill style for new rasters
-          scale_fill_manual(
-            values = c("azure2", "azure4"),
-            labels = c("minimally suitable", "unsuitable") # names for bins
-          ) +
-          theme(
-            legend.key = element_rect(color = "black"),
-            legend.position = "bottom"
-            ) +
-
-          # aesthetics
-          labs(title = paste0("suitability for SLF: cloglog | ", thresh_name, " threshold"),
-               subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj))),
-               fill = ""
-          )
-
-
-        # save plot output
-        ggsave(model_threshold_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog", "_thresholded_", thresh_name, "_", map.thresh.extra_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
-               height = 8,
-               width = 12,
-               device = "jpeg",
-               dpi = "retina")
-
-
-        # message of completion
-        print(paste0("Figure created for raster: ", thresh_name, "\nExtra threshold layer: ", map.thresh.extra_name))
-
-
-        # otherwise, plot as normal and without that extra threshold in the map
-      } else {
-
-
-        cli::cli_alert_danger("Extra threshold not mapped. If additional threshold desired, parameter 'map.thresh.extra' must be defined and an element present in argument 'thresh'.")
-
-        ## plot-----------------------------------------------------------------
-
-        # plot suitability raster first
-        model_threshold_plot <- ggplot() +
-          # plot regular raster of values first
-          geom_raster(data = model_suit_raster_df,
-                      aes(x = x, y = y, fill = model_suit_raster_df[, 3])) +
-          # plot binary threshold on top
-          geom_raster(data = model_mask_layer_df,
-                      aes(x = x, y = y), fill = "azure4") +
-          labs(title = paste0("suitability for SLF: cloglog | ", thresh_name, " threshold"),
-               subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj)))) +
-          map_style
-
-        # save plot output
-        ggsave(model_threshold_plot,
-               filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog", "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
-               height = 8,
-               width = 12,
-               device = "jpeg",
-               dpi = "retina")
-
-        # message of completion
-        print(paste0("figure created for raster: ", thresh_name))
-
-      }
+      # save plot output
+      ggsave(model_threshold_plot,
+             filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog", "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
+             height = 8,
+             width = 12,
+             device = "jpeg",
+             dpi = "retina")
 
       # end of loop operations------------------------------------------------
+
+      # message of completion
+      print(paste0("figure created for raster: ", thresh_name))
 
       # remove temp objects
       rm(thresh_name)

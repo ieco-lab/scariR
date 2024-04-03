@@ -62,11 +62,11 @@ summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_sum
 
 
 # regional_native
-summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_summary.csv"))
+summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_summary.csv"))
 
 
 # regional_native
-summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v1", "regional_native_summary.csv"))
+summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_summary.csv"))
 
 
 ```
@@ -143,13 +143,13 @@ slf_suit_global_hist <- read_csv(
 
 # regional_invaded
 slf_suit_regional_invaded_hist <- read_csv(
-  file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
   dplyr::rename("slf_suit_regional_invaded_hist" = "cloglog_suitability") 
 
 # regional_native
 slf_suit_regional_native_hist <- read_csv(
-  file = file.path(mypath, "slf_regional_native_v1", "regional_native_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  file = file.path(mypath, "slf_regional_native_v2", "regional_native_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
   dplyr::rename("slf_suit_regional_native_hist" = "cloglog_suitability") 
 
@@ -161,7 +161,7 @@ I will also re-scale these suitability values based on the MTSS threshold.
 
 
 # global
-slf_suit_global_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+slf_suit_global_hist_rescaled <- slfSpread::rescale_cloglog_suitability_v0(
   xy.predicted = slf_suit_global_hist,
   thresh = "MTSS",
   summary.file = summary_global,
@@ -175,7 +175,7 @@ slf_suit_global_hist_rescaled <- slf_suit_global_hist_rescaled[[1]]
 
 
 # regional_invaded
-slf_suit_regional_invaded_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+slf_suit_regional_invaded_hist_rescaled <- slfSpread::rescale_cloglog_suitability_v0(
   xy.predicted = slf_suit_regional_invaded_hist,
   thresh = "MTSS",
   summary.file = summary_regional_invaded,
@@ -190,7 +190,7 @@ slf_suit_regional_invaded_hist_rescaled <- slf_suit_regional_invaded_hist_rescal
 
 
 # regional_native
-slf_suit_regional_native_hist_rescaled <- slfSpread::rescale_cloglog_suitability(
+slf_suit_regional_native_hist_rescaled <- slfSpread::rescale_cloglog_suitability_v0(
   xy.predicted = slf_suit_regional_native_hist,
   thresh = "MTSS",
   summary.file = summary_regional_native,

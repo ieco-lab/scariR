@@ -14,10 +14,11 @@ create_MaxEnt_suitability_maps_CV(
   predict.fun = "mean",
   predict.type = "cloglog",
   clamp.pred = TRUE,
-  map.thresh = FALSE,
   thresh = NA,
-  summary.file = NA,
-  map.style = NA
+  map.thresh = FALSE,
+  map.thresh.extra = NA,
+  map.style = NA,
+  summary.file = NA
 )
 }
 \arguments{
@@ -62,6 +63,12 @@ to be created from the trained model. Can be either \code{cloglog} or
 
 \item{clamp.pred}{Logical. Default is TRUE. Should clamping be performed?}
 
+\item{thresh}{Numeric or Character. Does not need to be defined if
+\code{map.thresh = FALSE} This may be imported manually (numeric), or may be
+selected from one of the thresholds for the model (character). If a preset,
+the specified mean threshold value for all iterations of the model is chosen.
+See details for a list of preset options and other usages.}
+
 \item{map.thresh}{Logical, TRUE by default. This function determines if a
 thresholded suitability map will be created. If not, output will only consist
 of suitability maps of the type specified in \code{predict.fun}. \strong{Note} threshold
@@ -69,11 +76,18 @@ maps can only be created for the cloglog output from the model. If multiple
 values for \code{predict.type} are specified, the function will still only produce
 a threshold map based on the cloglog output}
 
-\item{thresh}{Numeric or Character. Does not need to be defined if
-\code{map.thresh = FALSE} This may be imported manually (numeric), or may be
-selected from one of the thresholds for the model (character). If a preset,
-the specified mean threshold value for all iterations of the model is chosen.
-See details for a list of preset options and other usages.}
+\item{map.thresh.extra}{Character, default is NA. This argument will plot an
+extra threshold underneath the main threshold layer. It must be one of the
+thresholds specified in \code{thresh} and must be less than or equal to the value
+of the other values of thresh. For example, I use this to plot the MTP
+threshold under the other thresholds being plotted (because MTP is usually the
+smallest thresh value). However, plotting the 10_percentile thresh under the
+MTP threshold would not function properly and the map would not render.}
+
+\item{map.style}{List, default is NA. This is used to apply
+ggplot aesthetics to the plot outputs. If specified, the given value should be
+a list of ggplot aesthetic options. If not, the built-in default list will be
+used (see details). See examples for usage.}
 
 \item{summary.file}{Data import. Does not need to be defined if
 \code{map.thresh = FALSE}. Should be a .csv file or data frame that contains the
@@ -81,11 +95,6 @@ summary statistics output created by
 \code{\link[=compute_MaxEnt_summary_statistics_CV]{compute_MaxEnt_summary_statistics_CV()}} (filename ending in
 "summary_all_iterations.csv"). If an import, file path should be in the format
 produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
-
-\item{map.style}{List, default is NA. This is used to apply
-ggplot aesthetics to the plot outputs. If specified, the given value should be
-a list of ggplot aesthetic options. If not, the built-in default list will be
-used (see details). See examples for usage.}
 }
 \value{
 A raster of suitability values projected to the same spatial extent as the
@@ -105,7 +114,7 @@ thresholded versions of these maps using thresholds given by the MaxEnt
 algorithm.
 }
 \details{
-The function requires the packages 'cli', 'tidyverse', 'here', 'devtools', 'SDMtune', 'terra' and 'viridis'.
+The function requires the packages 'cli', 'ggnewscale', 'tidyverse', 'devtools', 'SDMtune', and 'terra'
 
 The thresholding feature of this function will limit what is considered
 suitable using one of a list of commonly applied thresholds. These threshold
@@ -152,11 +161,11 @@ Map style default options:
 \item \code{labs(fill = "Suitability for SLF")}
 \item \code{theme_classic()}
 \item \code{theme(legend_position = "bottom")}
-\item \code{theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"))}
+\item \code{theme(panel.background = element_rect(fill = "lightblue2", color = "lightblue2"), legend.title = element_text(face = "bold"))}
 \item \code{scale_x_continuous(expand = c(0, 0))}
 \item \code{scale_y_continuous(expand = c(0, 0))}
 \item \code{coord_equal()}
-\item \code{viridis::scale_fill_viridis(option = "D")}
+\item \code{scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(barwidth = 20))}
 }
 }
 }
