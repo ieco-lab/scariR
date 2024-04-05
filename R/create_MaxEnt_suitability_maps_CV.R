@@ -277,9 +277,8 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         filename = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc")),
         # the function automatically adds the function name on the end
         filetype = "AAIGrid",
-        overwrite = TRUE,
-        wopt = list(NAflag = NA)
-
+        wopt = list(NAflag = NA),
+        overwrite = TRUE
       )
 
       # message of completion
@@ -289,6 +288,8 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
       # load in predictions
       model_suit <- terra::rast(x = file.path(mypath, paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", a, ".asc"))) %>%
         terra::as.data.frame(., xy = TRUE)
+
+
 
       # plot
       model_suit_plot <- ggplot() +
@@ -456,7 +457,9 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         model_suit_raster_df <- terra::as.data.frame(model_suit_raster, xy = TRUE)
 
         # load in mask layer and convert to df for plotting
-        model_mask_layer_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))) %>%
+        model_mask_layer_df <- terra::rast(
+          x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))
+          ) %>%
           terra::as.data.frame(., xy = TRUE)
 
 
@@ -471,7 +474,9 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
           # naming
           map.thresh.extra_name <- as.character(map.thresh.extra)
           # load in extra layer and convert to df
-          model_mask_layer_extra_df <- terra::rast(x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", map.thresh.extra_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))) %>%
+          model_mask_layer_extra_df <- terra::rast(
+            x = file.path(mypath, paste0(model.name, "_mask_layer", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_", map.thresh.extra_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".asc"))
+            ) %>%
             terra::as.data.frame(., xy = TRUE)
 
 
@@ -482,19 +487,20 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
             # plot regular raster of values first
             geom_raster(data = model_suit_raster_df, aes(x = x, y = y, fill = model_suit_raster_df[, 3])) +
+            # default style
             map_style +
 
             # start new scale
             ggnewscale::new_scale_fill() +
             # mask layers
             # plot original threshold on top
-            geom_raster(data = model_mask_layer_df,aes(x = x, y = y), fill = "azure2") +
+            geom_raster(data = model_mask_layer_df,aes(x = x, y = y, fill = "azure2")) +
             # extra layer
             geom_raster(data = model_mask_layer_extra_df, aes(x = x, y = y, fill = "azure4")) +
             # fill style for new rasters
             scale_fill_manual(
               values = c("azure2", "azure4"),
-              labels = c("minimally suitable", "unsuitable") # names for bins
+              labels = c(paste0("minimally suitable\n(above '", map.thresh.extra_name, "' thresh)"), "unsuitable") # names for bins
             ) +
             theme(
               legend.key = element_rect(color = "black"),
@@ -506,7 +512,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
               title = paste0("suitability for SLF: ", toupper(i), " | cloglog | ", thresh_name, " threshold"),
               subtitle = paste0("Model: '", model.name, "'", ifelse(clamp.pred == TRUE, ", clamped", ""), ifelse(is.na(describe.proj), "", paste0(", projected to ", describe.proj))),
               fill = ""
-              ) +
+              )
 
 
 

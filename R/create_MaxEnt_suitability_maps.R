@@ -478,7 +478,7 @@ create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create
           # fill style for new rasters
           scale_fill_manual(
             values = c("azure2", "azure4"),
-            labels = c("minimally suitable", "unsuitable") # names for bins
+            labels = c(paste0("minimally suitable\n(above '", map.thresh.extra_name, "' thresh)"), "unsuitable") # names for bins
           ) +
           theme(
             legend.key = element_rect(color = "black"),

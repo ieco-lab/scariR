@@ -436,6 +436,8 @@ if (FALSE) {
 
 I will also create global raster predictions.
 
+Global predictions
+
 ```{r predict mean and thresholded suitability maps for historical data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
@@ -453,6 +455,8 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 )
 
 ```
+
+N America predictions
 
 ```{r predict mean and thresholded suitability maps for historical data}
 
@@ -475,6 +479,8 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 Lastly, I will create a suitability map for the projected 2041-2070 climate data for N. America.
 
+Global
+
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
@@ -492,6 +498,8 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 )
 
 ```
+
+N America
 
 ```{r predict normal and thresholded suitability maps for CMIP6 data}
 

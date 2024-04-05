@@ -1,0 +1,392 @@
+---
+title: "Workflow for calculating Extrapolation Detection (ExDet) and most important covariate (MIC) metrics"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-03-22"
+output: html_document
+---
+
+Essentially, we want to calculate the amount of uncertainty when extrapolating to novel environments and time periods. We will do so using the Extrapolation detection metric (ExDet) outlined in Mesgaran et.al, 2014. This metric accounts for novel univariate relationships (NT1 or type 1) in the same way that the Elith et.al MESS (Multi-Environmental Similarity Surfaces) analysis would. In this case, a value for a single covariate that is outside the normal range would be flagged as "novel". This metric has the added benefit of also highlighting novel climates that are a result of the relationship between multiple covariates (NT2 or type 2 relationships). 
+
+We will use the ExDet metric to weight each model output. The weights from each model will then be averaged into an ensemble model. The ExDet will allow us to infer the level of confidence we have in each model's predictions and allow us to quantitatively weight that confidence as we ensemble.
+
+Finally, we will perform an analysis of the "Most Influential Covariate" or MIC. This metric shows which covariate is responsible for the largest departure from the training environment and can be mapped onto an area (aka, the one that is most influential in differing from the training environment. It is similar to MaxEnt's MoD (most dissimilar variable), in that is shows this extreme NT1 relationship, but also represents an improvement to this method in that it accounts for correlation between covariates (NT2). 
+
+This vignette will outline the workflow of this analysis. The ExDet and MIC analyses will then be wrapped into functions that can be applied to our overall workflow. Much of this vignette workflow was adapted from [this article](https://plantarum.ca/2023/12/19/exdet/).
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here::here() # here() starts at the root folder of this package.
+library(devtools)
+
+# spatial data handling
+library(terra)
+library(raster)
+
+# statistical
+library(stats)
+
+# aesthetics
+
+```
+
+```{r map style object}
+
+map_style_exdet <- list(
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "azure3",
+                                        colour = "azure3")
+  ),
+  scale_fill_gradientn(
+    name = "ExDet Score",
+    colors = c("#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "white", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061"),
+    guide = guide_colorbar(barwidth = 20)
+  ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  labs(
+    x = "longitude",
+    y = "latitude"
+  ),
+  coord_equal()
+)
+
+# color scheme taken from: https://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
+
+```
+
+## Load necessary datasets
+
+I will load in the training and projection region rasters
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent")
+
+```
+
+```{r load in hist covariate layers}
+
+# training region
+x_regional_native_env_covariates_list <- list.files(
+  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), 
+  pattern = "\\_regional_native_KG.asc$", 
+  full.names = TRUE
+  ) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+# projection region
+# the scale used to make xy predictions
+x_global_hist_env_covariates_list <- list.files(
+  path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"),
+  pattern = "\\_global.asc$", 
+  full.names = TRUE
+  ) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+```
+
+```{r load in CMIP6 covariates}
+
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+
+# the env covariates for performing xy predictions for global slf and IVR points
+x_global_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+```
+
+```{r naming object}
+
+# layer name object. Check order of layers first
+env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
+
+```
+
+```{r stack historical covariates and make naming consistent}
+
+# stack env covariates
+x_regional_native_env_covariates <- terra::rast(x = x_regional_native_env_covariates_list)
+
+# attributes
+nlyr(x_regional_native_env_covariates)
+names(x_regional_native_env_covariates)
+minmax(x_regional_native_env_covariates)
+# ext(x_regional_native_env_covariates)
+# crs(x_regional_native_env_covariates)
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_regional_native_env_covariates) <- env_layer_names
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+# stack env covariates
+x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_list)
+
+# attributes
+nlyr(x_global_hist_env_covariates)
+names(x_global_hist_env_covariates)
+minmax(x_global_hist_env_covariates)
+# ext(x_global_hist_env_covariates)
+# crs(x_global_hist_env_covariates)
+
+# I will change the name of the variables because they are throwing errors in SDMtune
+names(x_global_hist_env_covariates) <- env_layer_names
+# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
+
+```
+
+```{r stack CMIP6 covariates and make naming consistent}
+
+# stack env covariates
+x_global_CMIP6_env_covariates <- terra::rast(x = x_global_CMIP6_env_covariates_list)
+
+# attributes
+nlyr(x_global_CMIP6_env_covariates)
+names(x_global_CMIP6_env_covariates)
+minmax(x_global_CMIP6_env_covariates)
+# ext(x_global_CMIP6_env_covariates)
+# crs(x_global_CMIP6_env_covariates)
+
+names(x_global_CMIP6_env_covariates) <- env_layer_names
+
+```
+
+```{r remove lists}
+
+rm(x_regional_native_env_covariates_list)
+rm(x_global_hist_env_covariates_list)
+rm(x_global_CMIP6_env_covariates_list)
+
+```
+
+I will also load the background points dataset used to train the model and that will be used to train the ExDet analysis. I have extracted the climate dataset from 1981-2010 for these points, but not for our projected time period. I will extract these values as well. I will not actually perform analyses for climate change in this vignette, but I will give an example of how to extract these values for my future analyses. 
+
+```{r load training point set}
+
+training_set <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_with_data_v2.csv"))
+
+# extract values from 2060 projected raster
+training_set_2060 <- training_set %>%
+  dplyr::select("X", "Y") %>%
+  # extract new values
+  terra::extract(x_global_CMIP6_env_covariates, y = ., method = "simple", ID = FALSE)
+
+# get rid of extra columns
+training_set <- dplyr::select(training_set, 4:7)
+
+```
+
+I will be projecting the ExDet and MIC analyses for the globe, so I will extract the 1981-2010 raster values now.
+
+```{r extract projection raster values}
+
+projection_set <- values(x_global_hist_env_covariates)
+
+```
+
+
+# 2. ExDet Analysis
+
+## calculate mahalanobis distance in training range
+
+The ExDet should be trained on whatever climate data was used to train the model. In this case for our MaxEnt models, we used a defined set of points to sample the climate data and to train our model (the background points), so these should be used for the training portion of our ExDet analysis. We will start by taking the mean, variance and Mahalanobis distances for that training set.
+
+```{r stats}
+
+# variable means
+training_set_mean <- colMeans(training_set, na.rm = TRUE)
+# variable variance
+training_set_variance <- var(training_set, na.rm = TRUE)
+# mahalanobis distance
+training_set_mah <- mahalanobis(
+  x = training_set, 
+  # the mean
+  center = training_set_mean, 
+  # the variance
+  cov = training_set_variance,
+  na.rm = TRUE
+  )
+
+```
+
+We will plot it to ensure there are not outliers.
+
+```{r graph for sanity}
+
+ggplot(data = as.data.frame(training_set_mah)) +
+  geom_histogram(aes(x = training_set_mah), binwidth = 1) +
+  labs(
+    title = "Mahalanobis distances for the training set of the 'regional_native' model",
+    x = "Mahalanobis distance"
+  )
+
+```
+
+There are lots of outliers, so we will select only the data points that fall in the 95th percentile.
+
+```{r calculate mah distance from max}
+
+# threshold for outliers outside 95th percentile 
+training_set_95th_quant <- quantile(training_set_mah, probs = 0.95, na.rm = TRUE)
+# remove outliers
+training_set_mah[which(training_set_mah > training_set_95th_quant)] <- NA
+# get max
+training_set_max <- max(training_set_mah, na.rm = TRUE)
+
+
+# transform distances into distance from the max
+training_set_mah_from_max <- training_set_mah / training_set_max
+
+```
+
+```{r plot again to see if quantile worked}
+
+ggplot(data = as.data.frame(training_set_mah_from_max)) +
+  geom_histogram(aes(x = training_set_mah_from_max), binwidth = 0.1) +
+  labs(
+    title = "Trimmed Mahalanobis distances", 
+    subtitle = paste0("training set | 'regional_native' model | ", count(is.na(training_set_mah_from_max) == TRUE)[2, 2], " records removed from count"),
+    x = "Mahalanobis distance"
+  )
+
+```
+
+This looks much better, because now the distance values range from 0-1. This should be the case for the training set, because distance values of 0-1 for the 
+
+## calculate NT2
+
+Now we will take the mahalanobis distance of the projected region (in this case, a global raster) from the training region and then divide that by the maximum distance in the training range. 
+
+```{r calculate NT2}
+
+# mah for projected range
+projection_mah <- mahalanobis(
+  x = projection_set, # the values from the projected raster
+  center = training_set_mean,
+  cov = training_set_variance,
+  na.rm = TRUE
+)
+
+# distance from max in training set
+NT2 <- projection_mah / training_set_max
+
+```
+
+```{r import NT2 onto raster}
+
+# new raster
+ExDet_raster <- x_global_hist_env_covariates[[1]]
+
+# import values
+terra::values(ExDet_raster) <- NT2
+# edit raster
+names(ExDet_raster) <- "NT2_index"
+varnames(ExDet_raster) <- "NT2_index"
+
+```
+
+Now lets plot it
+
+```{r plot exdet}
+
+ExDet_raster_df <- terra::as.data.frame(ExDet_raster, xy = TRUE)
+
+ExDet_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = ExDet_raster_df, aes(x = x, y = y, fill = NT2_index)) +
+  labs(
+       fill = "ExDet Index Score"
+       ) +
+  map_style_exdet
+
+```
+
+
+
+# Appendix
+
+```{r}
+# remotes::install_github("densitymodelling/dsmextra")
+library(dsmextra)
+
+```
+
+```{r other package}
+
+training_set <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_with_data_v2.csv")) %>%
+  dplyr::select(-Species)
+
+projection_set_df <- terra::as.data.frame(x_global_hist_env_covariates, xy = TRUE)
+
+regional_invaded_exdet <- compute_extrapolation(
+  samples = training_set,
+  covariate.names = env_layer_names,
+  prediction.grid = projection_set_df,
+  coordinate.system = "EPSG:4326",
+  verbose = TRUE
+)
+
+```
+
+```{r get rasters}
+
+# MIC
+mic <- regional_invaded_exdet[["rasters"]][["mic"]][["all"]]
+
+df <- regional_invaded_exdet[["data"]][["all"]]
+
+
+
+```
+
+
+
+```{r plot rasters}
+
+mic_df <- raster::as.data.frame(mic, xy = TRUE)
+
+mic_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = mic_df, aes(x = x, y = y, fill = mic)) +
+  labs(
+       fill = "ExDet Index Score"
+       ) +
+  map_style_exdet
+
+
+
+exdet_plot <- ggplot() +
+  # plot regular raster of values first
+  geom_raster(data = df, aes(x = x, y = y, fill = ExDet)) +
+  labs(
+    title = "regional_native ExDet",   
+    fill = "ExDet Index Score"
+       ) +
+  map_style_exdet
+
+```
+
+# References
+
+Elith, J., M. Kearney, and S. Phillips. 2010. The art of modelling range-shifting species. Methods in Ecology and Evolution 1:330–342.
+
+Extrapolation Detection (exDet) for SDMs - plantarum.ca. (n.d.). . https://plantarum.ca/2023/12/19/exdet/.
+
+Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.
+
+
