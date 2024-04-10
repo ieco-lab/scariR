@@ -1,0 +1,25 @@
+---
+title: "Ensemble regional models into a single prediction"
+author: "Samuel M. Owens"
+date: "2024-04-10"
+output: html_document
+---
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)
+
+library(here) 
+# here() is set at the root folder of this package
+
+# spatial data handling
+library(terra)
+library(raster)
+# remotes::install_github("densitymodelling/dsmextra")
+library(dsmextra) # ExDet and MIC
+
+library(viridis)
+
+```
