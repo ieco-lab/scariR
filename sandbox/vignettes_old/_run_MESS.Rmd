@@ -1,14 +1,20 @@
 ---
-title: "Run a MESS analysis and map covariate differences"
+title: "Run a MESS analysis"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-03-21"
+date: "2024-04-09"
 output: html_document
 ---
 
 EXPLANATION
 
-In this vignette, I will run a MESS analysis for each model and calculate a covariate difference metric. I will specifically use the background points that were used to train the model to perform the MESS. By doing this, I am effectively testing whether the covariates in other locations are significantly different from those used to train the model.
+In this vignette, I will run a MESS analysis for each regional-scale model and calculate the most important covariate based on each model. The MESS will be used for two main purposes:
+
+1. This metric will allow us to quantify the level of extrapolation that is happening with our models as they are being projected to new locations and time periods. An ExDet value below 0 or above 1 indicates extrapolation. Below 0 indicates a type 1 extrapolation within a single covariates, while a value above 1 indicates a type 2 extrapolation between multiple covariates.
+
+2. We will weight each regional model using the ExDet measurement in preparation for an ensemble model. This way, our predictions are weighted by our level of confidence and the level of climate analogy.
+
+I will specifically use the background points that were used to train each model to perform the ExDet analysis. By doing this, I am effectively testing whether the covariates in other locations are significantly different from our model. This analysis will be performed for both the historical and climate change versions of the rasters. 
 
 # Setup
 
@@ -21,6 +27,10 @@ library(here)
 
 # spatial data handling
 library(terra)
+library(raster)
+# remotes::install_github("densitymodelling/dsmextra")
+library(dsmextra) # ExDet and MIC
+
 library(predicts) # MESS
 
 ```
@@ -415,3 +425,10 @@ ggsave(
 
 ```
 
+# References
+
+Elith, J., M. Kearney, and S. Phillips. 2010. The art of modelling range-shifting species. Methods in Ecology and Evolution 1:330–342.
+
+Extrapolation Detection (exDet) for SDMs - plantarum.ca. (n.d.). . https://plantarum.ca/2023/12/19/exdet/.
+
+Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.

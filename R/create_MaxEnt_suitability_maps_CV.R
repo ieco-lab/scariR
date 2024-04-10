@@ -129,7 +129,7 @@
 #'* `scale_x_continuous(expand = c(0, 0))`
 #'* `scale_y_continuous(expand = c(0, 0))`
 #'* `coord_equal()`
-#'* `scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(barwidth = 20))`
+#'* `scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20))`
 #'
 #'@return
 #'A raster of suitability values projected to the same spatial extent as the
@@ -239,7 +239,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         option = "D",
         limits = c(0, 1.0),
         breaks = c(0, 0.25, 0.5, 0.75, 1.00),
-        guide = guide_colorbar(barwidth = 20)
+        guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
       ),
       coord_equal()
     )
