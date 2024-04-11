@@ -1,0 +1,170 @@
+---
+title: "Ensemble regional models into a single prediction"
+author: "Samuel M. Owens"
+date: "2024-04-10"
+output: html_document
+---
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)
+
+library(here) 
+# here() is set at the root folder of this package
+
+# spatial data handling
+library(terra)
+library(raster)
+
+
+```
+
+```{r map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2"),
+        legend.title = element_text(face = "bold")
+  ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  labs(fill = "Suitability for SLF"),
+  scale_fill_viridis_c(
+    option = "D",
+    limits = c(0, 1.0),
+    breaks = c(0, 0.25, 0.5, 0.75, 1.00),
+    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  ),
+  coord_equal()
+)
+
+```
+
+```{r set wd}
+
+# output directory
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent")
+
+```
+
+# Import datasets
+
+## MaxEnt Predictions
+
+First, I need to load in the rasters containing the predictions from each model. I will load in both the historical and climate change versions of these predictions.
+
+```{r regional model predictions historical}
+
+pred_regional_native <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_pred_suit_clamped_cloglog_globe_1981-2010.asc")
+)
+
+pred_regional_invaded <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_pred_suit_clamped_cloglog_globe_1981-2010.asc")
+)
+
+pred_regional_invaded_asian <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_1981-2010.asc")
+)
+
+
+```
+
+```{r regional model predictions 2041-2070}
+
+pred_regional_native_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+pred_regional_invaded_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+pred_regional_invaded_asian_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+
+```
+
+## AUC values
+
+Next, I will load in the AUC value from each model, which will be used to weight each model's predictions, specifically based on its test AUC value. 
+
+```{r test AUC values}
+
+AUC_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_AUC_TSS.csv")) %>%
+  dplyr::select(AUC) %>%
+  dplyr::slice(2) %>%
+  as.numeric()
+
+AUC_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_AUC_TSS.csv")) %>%
+  dplyr::select(AUC) %>%
+  dplyr::slice(2) %>%
+  as.numeric()
+
+AUC_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_AUC_TSS.csv")) %>%
+  dplyr::select(AUC) %>%
+  dplyr::slice(2) %>%
+  as.numeric()
+
+```
+
+## ExDet rasters
+
+Finally, I will load in the results from the ExDet analysis to weight the ensemble.
+
+```{r regional model predictions historical}
+
+exdet_regional_native <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_native_v2_background_projGlobe.tif")
+)
+
+exdet_regional_invaded <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_invaded_v6_background_projGlobe.tif")
+)
+
+exdet_regional_invaded_asian <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe.tif")
+)
+
+
+```
+
+```{r regional model predictions 2041-2070}
+
+exdet_regional_native_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_native_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+
+exdet_regional_invaded_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_invaded_v6_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+
+exdet_regional_invaded_asian_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+
+```
+
+# take ABS value of Exdet rasters
+
+
+
+# Weight Models using Test AUC
+
+
+
+# Weight models using confidence metric (ExDet)
+
+use weighted.mean in terra package
+- stack together predictions and exdet, separately
+- use weighted.mean in terra pkg
