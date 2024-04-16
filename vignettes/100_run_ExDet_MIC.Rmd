@@ -243,7 +243,6 @@ regional_invaded_asian_background <- dplyr::select(regional_invaded_asian_backgr
 
 ```
 
-
 # Run ExDet / MIC Function
 
 First, I will run the function that calculates the ExDet and MIC indices. I will use the background points datasets to train each analysis and will project to the entire global raster. This will be done for each of the historical and climate change time periods. This function outputs rasters and data frames that can be used for plotting.

@@ -1,6 +1,7 @@
 ---
 title: "Ensemble regional models into a single prediction"
 author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
 date: "2024-04-10"
 output: html_document
 ---
@@ -54,6 +55,13 @@ mypath <- file.path(here::here() %>%
                      "maxent")
 
 ```
+
+```{r create directory for ensemble product}
+
+dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v0", "plots"))
+
+```
+
 
 # Import datasets
 
@@ -118,6 +126,15 @@ AUC_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_r
 
 ```
 
+```{r table of AUC values}
+
+AUC_values <- tibble(
+  model = c("AUC_regional_native", "AUC_regional_invaded", "AUC_regional_invaded_asian"),
+  AUC_value = c(AUC_regional_native, AUC_regional_invaded, AUC_regional_invaded_asian)
+)
+
+```
+
 ## ExDet rasters
 
 Finally, I will load in the results from the ExDet analysis to weight the ensemble.
@@ -155,16 +172,282 @@ exdet_regional_invaded_asian_CMIP6 <- terra::rast(
 
 ```
 
+## Stack rasters
+
+I will need to stack the predicted and ExDet rasters to perform this analysis.
+
+```{r pred suitability}
+
+pred_hist_stack <- c(pred_regional_native, pred_regional_invaded, pred_regional_invaded_asian)
+
+pred_CMIP6_stack <- c(pred_regional_native_CMIP6, pred_regional_invaded_CMIP6, pred_regional_invaded_asian_CMIP6)
+
+```
+
+```{r ExDet rasters}
+
+exdet_hist_stack <- c(exdet_regional_native, exdet_regional_invaded, exdet_regional_invaded_asian)
+
+exdet_CMIP6_stack <- c(exdet_regional_native_CMIP6, exdet_regional_invaded_CMIP6, exdet_regional_invaded_asian_CMIP6)
+
+```
+
+## Preparatory raster edits
+
+The pred rasters need to be cropped slightly because the function used to create the ExDet rasters cropped them slightly. These raster sets need to share the same extent for downstream manipulations.
+
+```{r crop pred rasters}
+
+terra::ext(pred_hist_stack)
+terra::ext(pred_CMIP6_stack)
+terra::ext(exdet_hist_stack)
+terra::ext(exdet_CMIP6_stack)
+
+# I will trim the rasters to the extent of the exdet rasters
+ext.obj <- terra::ext(-180.00013888885, 178.999859675084, -58.5001390148238, 82.99986041915)
+
+# crop rasters
+# hist
+pred_hist_stack <- terra::crop(pred_hist_stack, ext.obj)
+# CMIP6
+pred_CMIP6_stack <- terra::crop(pred_CMIP6_stack, ext.obj)
+
+```
+
+Now, I need to prepare to weight the predicted distribution rasters using their respective ExDet raster. 
+
+
 # take ABS value of Exdet rasters
 
+First, I will need to manipulate the ExDet rasters so they can be used for weighting. I will begin by adding 1 to any negative ExDet value and then taking the absolute value of each cell. This way, the weighting is performed on a positive scale. The ExDet metric works such that anything between 0 and 1 is not extrapolated, while anything below 0 or above 1 is extrapolated. Next, I will convert any ExDet value below 0 to 1, so that cells without extrapolation are simply not weighted. 
 
+1. Add 1 to any negative ExDet values
+2. Take abs value of ExDet values
+3. Convert any ExDet value below 1 to 1
+4. Take reciprocal of ExDet raster values
+
+```{r exdet historical stack}
+
+# 1. add 1 to negatives
+
+# take minmax before
+minmax(exdet_hist_stack)
+
+# the min values of each layer should be -1.4, -2.79 and -2.5 respectively after ifelse
+# the max values should be unchanged at 1.4, 1.22 and 2.2
+
+exdet_hist_stack <- terra::ifel(
+  exdet_hist_stack < 0, # if the value is < 0
+  exdet_hist_stack - 1, # subtract 1
+  exdet_hist_stack # else, keep the same
+  )
+
+# minmax after
+minmax(exdet_hist_stack)
+
+
+# 2. take abs
+
+exdet_hist_stack <- abs(exdet_hist_stack)
+
+minmax(exdet_hist_stack)
+
+
+# 3. convert values below 1 to 1
+
+exdet_hist_stack <- terra::ifel(
+  exdet_hist_stack < 1, # if the value is < 1 or == 0
+  1, # make 1
+  exdet_hist_stack # else, keep the same
+  )
+
+minmax(exdet_hist_stack)
+
+
+# 4. take reciprocals
+
+exdet_hist_stack <- terra::app(exdet_hist_stack, fun = (function(i) 1 / i))
+
+minmax(exdet_hist_stack)
+
+
+```
+
+I will do the same for the CMIP6 exdet rasters
+
+```{r exdet CMIP6 stack}
+
+# 1. add 1 to negatives
+
+# take minmax before
+minmax(exdet_CMIP6_stack)
+
+
+exdet_CMIP6_stack <- terra::ifel(
+  exdet_CMIP6_stack < 0, # if the value is < 0
+  exdet_CMIP6_stack - 1, # subtract 1
+  exdet_CMIP6_stack # else, keep the same
+  )
+
+# minmax after
+minmax(exdet_CMIP6_stack)
+
+
+# 2. take abs
+
+exdet_CMIP6_stack <- abs(exdet_CMIP6_stack)
+
+minmax(exdet_CMIP6_stack)
+
+
+# 3. convert values below 1 to 1
+
+exdet_CMIP6_stack <- terra::ifel(
+  exdet_CMIP6_stack < 1 | exdet_CMIP6_stack == 0, # if the value is < 1 or == 0
+  1, # make 1
+  exdet_CMIP6_stack # else, keep the same
+  )
+
+minmax(exdet_CMIP6_stack)
+
+
+# 4. take reciprocals
+
+exdet_CMIP6_stack <- terra::app(exdet_CMIP6_stack, fun = (function(i) 1 / i))
+
+minmax(exdet_CMIP6_stack)
+
+
+```
 
 # Weight Models using Test AUC
 
+The second step in this weighting process is to also weight each model by its goodness-of-fit. We will use the AUC value for each model and integrate this into the weighting formula so that each model contributes based on this goodness of fit. AUC already ranges from 0-1, so if AUC is 1 then the weight will remain unchanged for that model. However, if AUC is less than 1, it will lessen the weight of that model in the overall ensemble. I will multiply each raster by its AUC value and then save these rasters as ensemble weights.
+
+```{r weight hist pred rasters using AUC}
+
+minmax(exdet_hist_stack)
+
+# layer 1
+exdet_hist_stack[[1]] <-terra::app(
+  x = exdet_hist_stack[[1]],
+  fun = function(x) x * as.numeric(AUC_values[[1, 2]])
+)
+
+# layer 2
+exdet_hist_stack[[2]] <-terra::app(
+  x = exdet_hist_stack[[2]],
+  fun = function(y) y * as.numeric(AUC_values[[2, 2]])
+)
+
+# layer 3
+exdet_hist_stack[[3]] <-terra::app(
+  x = exdet_hist_stack[[3]],
+  fun = function(z) z * as.numeric(AUC_values[[3, 2]])
+)
+
+
+# other operations
+minmax(exdet_hist_stack)
+# add names
+names(exdet_hist_stack) <- c("regional_native", "regional_invaded", "regional_invaded_asian")
+
+
+```
+
+```{r save raster}
+
+terra::writeRaster(
+  x = exdet_hist_stack, 
+  filename = c(
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1.tif")
+  ),
+  filetype = "GTiff",
+  overwrite = FALSE
+  )
+
+```
+
+Now, I will perform the same operation to the CMIP6 rasters.
+
+```{r weight hist pred rasters using AUC}
+
+minmax(exdet_CMIP6_stack)
+
+# layer 1
+exdet_CMIP6_stack[[1]] <-terra::app(
+  x = exdet_CMIP6_stack[[1]],
+  fun = function(x) x * as.numeric(AUC_values[[1, 2]])
+)
+
+# layer 2
+exdet_CMIP6_stack[[2]] <-terra::app(
+  x = exdet_CMIP6_stack[[2]],
+  fun = function(y) y * as.numeric(AUC_values[[2, 2]])
+)
+
+# layer 3
+exdet_CMIP6_stack[[3]] <-terra::app(
+  x = exdet_CMIP6_stack[[3]],
+  fun = function(z) z * as.numeric(AUC_values[[3, 2]])
+)
+
+
+# other operations
+minmax(exdet_CMIP6_stack)
+# add names
+names(exdet_CMIP6_stack) <- c("regional_native_2041-2070", "regional_invaded_2041-2070", "regional_invaded_asian_2041-2070")
+
+
+```
+
+```{r save raster}
+
+terra::writeRaster(
+  x = exdet_CMIP6_stack, 
+  filename = c(
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1_2041-2070_ssp370_GFDL.tif")
+  ),
+  filetype = "GTiff",
+  overwrite = FALSE
+  )
+
+```
 
 
 # Weight models using confidence metric (ExDet)
 
-use weighted.mean in terra package
-- stack together predictions and exdet, separately
-- use weighted.mean in terra pkg
+Finally, I will apply these weights to the predicted raster layers from each model. The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
+
+```{r weight hist pred rasters}
+
+# historical
+pred_hist_mean <- terra::weighted.mean(
+  x = pred_hist_stack,
+  w = exdet_hist_stack,
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# CMIP6
+pred_CMIP6_mean <- terra::weighted.mean(
+  x = pred_CMIP6_stack,
+  w = exdet_CMIP6_stack,
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+```
+
+We now have a weighted mean raster for each of the historical and CMIP rasters!
+
+# References
+
+Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.
+
