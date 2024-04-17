@@ -17,8 +17,6 @@ library(here)
 
 # spatial data handling
 library(terra)
-library(raster)
-
 
 ```
 
@@ -421,9 +419,9 @@ terra::writeRaster(
 
 # Weight models using confidence metric (ExDet)
 
-Finally, I will apply these weights to the predicted raster layers from each model. The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
+Finally, I will apply these weights to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
 
-```{r weight hist pred rasters}
+```{r weighted mean pred rasters}
 
 # historical
 pred_hist_mean <- terra::weighted.mean(
@@ -447,7 +445,37 @@ pred_CMIP6_mean <- terra::weighted.mean(
 
 We now have a weighted mean raster for each of the historical and CMIP rasters!
 
+# Appendix
+
+## Unweighted mean ensemble
+
+The weighted mean ensemble is more rigorous because it considers climatic extrapolation and goodness of fit in how it combines the models. However, I will also include the code to create an unweighted ensemble, in the event that someone preferred that over the weighted ensemble.
+
+```{r unweighted mean pred rasters}
+
+# historical
+pred_hist_mean <- terra::app(
+  x = pred_hist_stack,
+  fun = "mean",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_1981-2010.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# CMIP6
+pred_CMIP6_mean <- terra::app(
+  x = pred_CMIP6_stack,
+  fun = "mean",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+```
+
 # References
+
+Araújo, M. B., and M. New. 2007. Ensemble forecasting of species distributions. Trends in Ecology & Evolution 22:42–47.
 
 Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.
 
