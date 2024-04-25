@@ -62,11 +62,11 @@ summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_sum
 
 
 # regional_native
-summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_summary.csv"))
+summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_summary.csv"))
 
 
 # regional_native
-summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v1", "regional_native_summary.csv"))
+summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_summary.csv"))
 
 ```
 
@@ -116,7 +116,7 @@ IVR_suit_global_hist <- read_csv(
 
 # regional_invaded
 IVR_suit_regional_invaded_hist <- read_csv(
-  file = file.path(mypath, "slf_regional_invaded_v4", "regional_invaded_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
   dplyr::rename("IVR_suit_regional_invaded_hist" = "cloglog_suitability") %>%
   # de-duplicate
@@ -127,7 +127,7 @@ IVR_suit_regional_invaded_hist <- read_csv(
 
 # regional_native
 IVR_suit_regional_native_hist <- read_csv(
-  file = file.path(mypath, "slf_regional_native_v1", "regional_native_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
+  file = file.path(mypath, "slf_regional_native_v2", "regional_native_wineries_1981-2010_xy_pred_suit_clamped_cloglog.csv")
   ) %>%
   dplyr::rename("IVR_suit_regional_native_hist" = "cloglog_suitability") %>%
   # de-duplicate
@@ -275,12 +275,6 @@ scatter_style_global_native <- list(
          ),
    xlab("'global' model suitability"),
    theme_bw(),
-  # MTP threshold
-  geom_vline(xintercept = as.numeric(summary_global[30, ncol(summary_global)]), linetype = "dotted", alpha = 0.5),
-  geom_hline(yintercept = as.numeric(summary_regional_native[30, 2]), linetype = "dotted", alpha = 0.5),
-  # 10 percentile threshold
-  geom_vline(xintercept = as.numeric(summary_global[34, ncol(summary_global)]), linetype = "twodash", alpha = 0.5),
-  geom_hline(yintercept = as.numeric(summary_regional_native[34, 2]), linetype = "twodash", alpha = 0.5),
   # MTSS threshold
   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", alpha = 0.5),
   geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed", alpha = 0.5)
