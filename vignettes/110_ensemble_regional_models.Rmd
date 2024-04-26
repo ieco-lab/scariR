@@ -499,7 +499,7 @@ Per projected time period (historical and CC) and threshold value:
 
 ### ExDet rasters
 
-Finally, I will load in the results from the ExDet analysis to weight the ensemble.
+I will load in the results from the ExDet analysis to weight the ensemble.
 
 ```{r converted exdet values historical}
 
@@ -612,17 +612,17 @@ First, I will perform these operations for the historical rasters.
 
 # 1. Extract all values from pred rasters that match the respective model threshold value.
 
-MTSS_regional_native_coords <- pred_hist_stack_df %>%
+MTSS_regional_native_hist_coords <- pred_hist_stack_df %>%
   # filter out values with a tolerance
-  dplyr::filter(near(pred_regional_native, MTSS_regional_native, tol = 0.005)) %>%
+  dplyr::filter(near(dplyr::select(., 3), MTSS_all[[1]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTSS_regional_invaded_coords <- pred_hist_stack_df %>%
-  dplyr::filter(near(pred_regional_invaded, MTSS_regional_invaded, tol = 0.005)) %>%
+MTSS_regional_invaded_hist_coords <- pred_hist_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTSS_all[[2]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTSS_regional_invaded_asian_coords <- pred_hist_stack_df %>%
-  dplyr::filter(near(pred_regional_invaded_asian, MTSS_regional_invaded_asian, tol = 0.005)) %>%
+MTSS_regional_invaded_asian_hist_coords <- pred_hist_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTSS_all[[3]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
 
@@ -631,32 +631,28 @@ MTSS_regional_invaded_asian_coords <- pred_hist_stack_df %>%
 
 # 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
 
-MTSS_regional_native_exdet_weight <- 
-  # extract values of exdet raster that are at those coordinates
-  terra::extract(exdet_weight_hist_stack, y = MTSS_regional_native_coords) %>%
-  # tidy
-  terra::as.data.frame(.) %>%
-  dplyr::select(ExDet_slf_regional_native_v2_background_projGlobe) %>%
+# extract values of exdet raster that are at those coordinates
+MTSS_regional_native_exdet_weight <- terra::extract(exdet_weight_hist_stack, y = MTSS_regional_native_hist_coords)
+# tidy
+MTSS_regional_native_exdet_weight <- MTSS_regional_native_exdet_weight %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTSS_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_hist_stack, y = MTSS_regional_invaded_hist_coords)
+# tidy
+MTSS_regional_invaded_exdet_weight <- MTSS_regional_invaded_exdet_weight %>%
+  dplyr::select(., 3) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean()
 
-MTSS_regional_invaded_exdet_weight <- 
-  # extract values of exdet raster that are at those coordinates
-  terra::extract(exdet_weight_hist_stack, y = MTSS_regional_invaded_coords) %>%
-  # tidy
-  terra::as.data.frame(.) %>%
-  dplyr::select(ExDet_slf_regional_invaded_v6_background_projGlobe) %>%
-  # convert to matrix and take mean
-  as.matrix() %>%
-  mean()
-
-MTSS_regional_invaded_asian_exdet_weight <- 
-  # extract values of exdet raster that are at those coordinates
-  terra::extract(exdet_weight_hist_stack, y = MTSS_regional_invaded_asian_coords) %>%
-  # tidy
-  terra::as.data.frame(.) %>%
-  dplyr::select(ExDet_slf_regional_invaded_asian_v1_background_projGlobe) %>%
+MTSS_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_hist_stack, y = MTSS_regional_invaded_asian_hist_coords) 
+# tidy
+MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_weight %>%
+  dplyr::select(., 4) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean()
@@ -691,19 +687,256 @@ MTSS_hist_thresh <- stats::weighted.mean(
 
 ```
 
+Next, I will perform this operation for the CMIP6 rasters
+
+```{r weights for CMIP6 rasters}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTSS_regional_native_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTSS_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTSS_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTSS_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
 
 
 
 
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTSS_regional_native_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_native_CMIP6_coords)
+# tidy
+MTSS_regional_native_exdet_weight <- MTSS_regional_native_exdet_weight %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTSS_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_invaded_CMIP6_coords)
+# tidy
+MTSS_regional_invaded_exdet_weight <- MTSS_regional_invaded_exdet_weight %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTSS_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_invaded_asian_CMIP6_coords) 
+# tidy
+MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_weight %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTSS_regional_native_exdet_weight <- MTSS_regional_native_exdet_weight * as.numeric(AUC_values[1, 2])
+
+MTSS_regional_invaded_exdet_weight <- MTSS_regional_invaded_exdet_weight * as.numeric(AUC_values[2, 2])
+
+MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_weight * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTSS_CMIP6_weights <- c(MTSS_regional_native_exdet_weight, MTSS_regional_invaded_exdet_weight, MTSS_regional_invaded_asian_exdet_weight)
+
+
+```
+
+Now, I will take the weighted mean
+
+```{r weighted mean of CMIP6 thresh values}
+
+MTSS_CMIP6_thresh <- stats::weighted.mean(
+  x = MTSS_all,
+  w = MTSS_CMIP6_weights
+)
+
+```
+
+I need to repeat the above operations for the MTP thresholds as well. I will then put all of these thresholds into a table and save it in the ensemble folder.
+
+### MTP
+
+```{r weights for hist rasters- MTP}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTP_regional_native_hist_coords <- pred_hist_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTP_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_hist_coords <- pred_hist_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTP_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_asian_hist_coords <- pred_hist_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTP_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTP_regional_native_exdet_weight <- terra::extract(exdet_weight_hist_stack, y = MTP_regional_native_hist_coords)
+# tidy
+MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTP_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_hist_stack, y = MTP_regional_invaded_hist_coords)
+# tidy
+MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTP_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_hist_stack, y = MTP_regional_invaded_asian_hist_coords) 
+# tidy
+MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight * as.numeric(AUC_values[1, 2])
+
+MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight * as.numeric(AUC_values[2, 2])
+
+MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTP_hist_weights <- c(MTP_regional_native_exdet_weight, MTP_regional_invaded_exdet_weight, MTP_regional_invaded_asian_exdet_weight)
+
+
+```
+
+```{r weighted mean of hist thresh values- MTP}
+
+MTP_hist_thresh <- stats::weighted.mean(
+  x = MTP_all,
+  w = MTP_hist_weights
+)
+
+```
+
+```{r weights for CMIP6 rasters- MTP}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTP_regional_native_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTP_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTP_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTP_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTP_regional_native_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_native_CMIP6_coords)
+# tidy
+MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTP_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_invaded_CMIP6_coords)
+# tidy
+MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTP_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_invaded_asian_CMIP6_coords) 
+# tidy
+MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight * as.numeric(AUC_values[1, 2])
+
+MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight * as.numeric(AUC_values[2, 2])
+
+MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTP_CMIP6_weights <- c(MTP_regional_native_exdet_weight, MTP_regional_invaded_exdet_weight, MTP_regional_invaded_asian_exdet_weight)
+
+
+```
+
+```{r weighted mean of CMIP6 thresh values- MTP}
+
+MTP_CMIP6_thresh <- stats::weighted.mean(
+  x = MTP_all,
+  w = MTP_CMIP6_weights
+)
+
+```
 
 ## Combine in table and export
+
+Now, I can create a table for these thresholds and export these data.
 
 ```{r table of ensemble threshold values}
 
 ensemble_thresh_values <- tibble(
-  time_period = c(`1981-2010`, `2041-2070`),
-  MTP = c(),
-  MTSS = c(MTSS_hist_thresh, )
+  time_period = c("1981-2010", "2041-2070"),
+  CMIP6_model = c("NONE", "ssp370_GFDL"),
+  MTP = c(MTP_hist_thresh, MTP_CMIP6_thresh),
+  MTSS = c(MTSS_hist_thresh, MTSS_CMIP6_thresh)
 )
 
 ```
@@ -714,6 +947,7 @@ write_csv(ensemble_thresh_values, file = file.path(mypath, "models", "slf_region
 
 ```
 
+Now that I have the suitability values and thresholds ensembled, I can begin to analyze the differences between the global and regional ensemble predictions. I will begin by creating suitability maps in the next vignette.
 
 # Appendix
 
