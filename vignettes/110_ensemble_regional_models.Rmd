@@ -20,31 +20,6 @@ library(terra)
 
 ```
 
-```{r map style}
-
-map_style <- list(
-  xlab("longitude"),
-  ylab("latitude"),
-  theme_classic(),
-  theme(legend.position = "bottom",
-        panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2"),
-        legend.title = element_text(face = "bold")
-  ),
-  scale_x_continuous(expand = c(0, 0)),
-  scale_y_continuous(expand = c(0, 0)),
-  labs(fill = "Suitability for SLF"),
-  scale_fill_viridis_c(
-    option = "D",
-    limits = c(0, 1.0),
-    breaks = c(0, 0.25, 0.5, 0.75, 1.00),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
-  ),
-  coord_equal()
-)
-
-```
-
 ```{r set wd}
 
 # output directory
