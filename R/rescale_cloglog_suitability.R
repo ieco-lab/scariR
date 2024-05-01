@@ -2,34 +2,43 @@
 #'
 #'@description
 #'This function will take the cloglog suitability output from MaxEnt, which is
-#'on a 0-1 scale, and re-scale it to have a set median value. The range of the
+#'on a 0-1 scale, and re-scale it around a set median value. The range of the
 #'values will still be 0-1, but the median will now be the value of the `thresh`
 #'parameter. The scaling function is applied as an exponential, for the purposes
 #'of visualizing suitability change around a critical threshold (at the scale of
 #'0-1, it can often be hard to see changes across the suitability threshold if
-#'its value is very small). Note that this function will not work if the value
-#'of thresh is 0.
+#'its value is very small). THis function will not work correctly if the desired
+#'threshold value is 0.
 #'
-#'This function was co-authored by Jacob Woods.
+#'This function and some of its inputs were co-authored by Jacob Woods.
 #'
 #'@param xy.predicted Data import. The predicted cloglog suitability output
 #'taken from one of the internal package functions:
 #'[slfSpread::predict_xy_suitability()] or
-#'[slfSpread::predict_xy_suitability_CV()]. Should be a data.frame or .csv
-#'file. If an import, file path should be in the format produced by the
-#'[file.path()] function (i.e. with '/' instead of '\\').
+#'[slfSpread::predict_xy_suitability_CV()]. See details for specifics of formatting.
 #'
 #'@param thresh Numeric or Character. This may be imported manually
 #'(numeric), or may be selected from one of the thresholds for the model
 #'(character). See details for a list of preset options and other usages.
 #'
-#'@param summary.file Data import. Contains preset values for thresh and summary
-#'statistics and is created by the internal package funcions:
-#'[slfSpread::compute_MaxEnt_summary_statistics()] or
-#'[slfSpread::compute_MaxEnt_summary_statistics_CV()] The filename should end in
-#'"summary_all_iterations.csv"). Should be a .csv file or data frame. If an
-#'import, file path should be in the format produced by the [file.path()]
-#'function (i.e. with '/' instead of '\\').
+#'@param exponential.file Data import. Should be a .csv file or data frame. Contains
+#'a comprehensive list of possible threshold values and the corresponding c1, c2
+#'ans c3 values. Where x is equal to the original suitability value and y is
+#'equal to the transformed version of that suitability value, these values are
+#'used in the exponential function "y = c1 * c2^x + c3".
+#'
+#'@param summary.file Data import. Should be a .csv file or data frame.
+#'Contains preset values for thresholds. If an import, file path should be in
+#'the format produced by the [file.path()] function (i.e. with '/' instead of '\\').
+#'
+#'For a global or regional model, this will be a file containing summary
+#'statistics that is created by one of the following internal package functions:
+#'[slfSpread::compute_MaxEnt_summary_statistics()], with a filename ending in
+#'"_summary.csv", or
+#'[slfSpread::compute_MaxEnt_summary_statistics_CV()], with a filename ending in
+#'"_summary_all_iterations.csv".
+#'
+#'For the regional_ensemble model, this file should end in "_threshold_values.csv"
 #'
 #'@param rescale.name Character. Descriptive name to be given to column of
 #'rescaled values.
@@ -43,21 +52,25 @@
 #'
 #'Requires the following packages: 'tidyverse', 'cli'.
 #'
+#'## xy.predicted
+#'
+#'Fromatting: Should be a data.frame or .csv file. If an import, file path
+#'should be in the format produced by the [file.path()] function
+#'(i.e. with '/' instead of '\\'). The column containing the suitability values
+#'should be placed as the last column.
+#'
 #'## thresh:
 #'
 #'Thresh presets list:
-#'* `BTO` = Balance training omission predicted area and threshold value
-#'* `EE` = Equate entropy of thresholded and original distributions
-#'* `ETSS` = Equal training sensitivity and specificity
 #'* `MTP` = Minimum Training Presence
+#'* `MTP.CC` = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions. Should be the second row in the data frame
 #'* `MTSS` = Maximum training sensitivity plus specificity
-#'* `ten_percentile` or `10_percentile` = Ten percentile training presence
-#'
+#'* `MTSS.CC` = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.  Should be the second row in the data frame
 #'
 #'@return
 #'
-#'Returns the input data frame, with the column of cloglog suitability values
-#'replaced by the re-scaled exponential values.
+#'Returns the input data frame with an additional column containing the re-scaled
+#'exponential values for the cloglog suitability.
 #'
 #'If rescale.thresholds = TRUE, will return a list of data frames. The first
 #'object in the list will be the rescaled suitability values, and the second
@@ -68,7 +81,7 @@
 #'example
 #'
 #'@export
-rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
+rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
 
   # Error checks----------------------------------------------------------------
 
@@ -85,45 +98,71 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   }
 
 
-  # import for xy.predicted-----------------------------------------------------
+  # import settings for files---------------------------------------------------
 
-  # import settings
+  # xy.predicted
   if (is.character(xy.predicted)) {
     xy_import <- read.csv(xy.predicted) # read as csv
 
   } else {
     xy_import <- as.data.frame(xy.predicted) # make data frame
-
   }
 
 
-
-  # import for summary.file-----------------------------------------------------
-
+  # summary.file
   if (is.character(summary.file)) {
     thresh_preset_import <- read.csv(summary.file) # read as csv
 
   } else {
     thresh_preset_import <- as.data.frame(summary.file) # make data frame
-
   }
 
 
+  # exponential.file
+  if (is.character(exponential.file)) {
+    exponential_import <- read.csv(exponential.file) # read as csv
 
-  # thresh presets and import---------------------------------------------------
+  } else {
+    exponential_import <- as.data.frame(exponential.file) # make data frame
+  }
 
-  thresh_presets <- c(
-    "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
-    "ten_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
-    "10_percentile" = as.numeric(thresh_preset_import[34, ncol(thresh_preset_import)]), # 10.percentile.training.presence.Cloglog.threshold
-    "ETSS" = as.numeric(thresh_preset_import[38, ncol(thresh_preset_import)]), # Equal.training.sensitivity.and.specificity.Cloglog.threshold
-    "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-    "BTO" = as.numeric(thresh_preset_import[46, ncol(thresh_preset_import)]), # Balance.training.omission..predicted.area.and.threshold.value.Cloglog.threshold
-    "EE" = as.numeric(thresh_preset_import[50, ncol(thresh_preset_import)]) # Equate.entropy.of.thresholded.and.original.distributions.Cloglog.threshold
-  )
+  # thresh presets--------------------------------------------------------------
+  # conditional import to ensure proper thresh preset is used
+  if (thresh == "MTP.CC" && str_detect(summary.file, "_summary.csv") == TRUE) {
+    cli::cli_alert_danger("MTP.CC can only be used with a thresh imported for the 'regional_ensemble' model")
+    stop()
 
+  } else if (thresh == "MTSS.CC" && str_detect(summary.file, "_iteration") == TRUE) {
+    cli::cli_alert_danger("MTSS.CC can only be used with a thresh imported for the 'regional_ensemble' model")
+    stop()
+  }
 
-  # thresh import
+  # conditional for presets import.
+  # if the thresh import fits the specification of the global model output, import these values
+  if(nrow(thresh_preset_import) == 52 && colnames(thresh_preset_import)[1] == "statistic") {
+    thresh_presets <- c(
+      "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
+      "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]) # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+    )
+
+    # else if the thresh import fits the specifications of the regional_ensemble output, import these values
+  } else if (nrow(thresh_preset_import) < 52 && ncol(thresh_preset_import) < 7) {
+    thresh_presets <- c(
+      "MTP" = as.numeric(thresh_preset_import[1, 3]), # Minimum.training.presence.Cloglog.threshold
+      "MTSS" = as.numeric(thresh_preset_import[1, 4]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+      # only used for format of thresh file from regional_ensemble model
+      "MTP.CC" = as.numeric(thresh_preset_import[2, 3]), # MTP transformed for climate change
+      "MTSS.CC" = as.numeric(thresh_preset_import[2, 4]) # MTP transformed for climate change
+    )
+    # else, print a warning message
+  } else {
+    cli::cli_alert_danger("'summary.file' import does not fit the expected parameters. A summary.file output from slfSpread::compute_MaxEnt_summary_statistics() should be length == 52.")
+    stop()
+
+  }
+
+  # thresh import---------------------------------------------------------------
+
   if(is.numeric(thresh)) {
     thresh_value <- thresh
 
@@ -140,7 +179,6 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # include all decimal places
   thresh_value <- as.double(format(thresh_value, digits = 10))
 
-
   # ensure thresh isnt 0
   if (thresh_value == 0) {
     cli::cli_alert_danger("The value of parameter 'thresh' must be greater than 0")
@@ -154,20 +192,25 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # the range is always 0-1
   rescale_vector <- function(suit_column_internal, thresh_val_internal) {
 
-    # setup values
+    # first, find the thresh value in exponential_import that is closest to thresh_val_internal
+    # throwaway function to calculate the closest value, which returns the row number of the value that is closest to the s_val specified value
+    find_closest <- function(x_val, s_val) {
 
-    # set range min and max
-    min_val <- 0
-    max_val <- 1
-    # transform a and c to exponential scale
-    a <- 1 / (exp(thresh_val_internal) - 1)
-    c <- -a
+      which.min(abs(x_val - s_val))
 
-    # transform b
+      }
 
+    # apply function to the 1st column of the exponential_import table
+    thresh_val_closest <- find_closest(
+      x_val = exponential_import[, 1],
+      s_val = thresh_val_internal
+    )
 
-    # apply function
-    scaled_vector <- a * exp(b * suit_column_internal) + c
+    # isolate row containing proper c values
+    c_values <- dplyr::slice(exponential_import, thresh_val_closest)
+
+    # apply exponential to vector
+    scaled_vector <- as.numeric(c_values$c1.value) * (as.numeric(c_values$c2.value)^suit_column_internal) + as.numeric(c_values$c3.value)
 
     # return the scaled vector of values
     return(scaled_vector)
@@ -177,7 +220,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
   # select data column and apply function---------------------------------------
 
   # import suit column
-  suit_column <- dplyr::select(xy_import, 4)
+  suit_column <- dplyr::select(xy_import, last_col())
 
   # apply internal function
   rescale_vector_output <- rescale_vector(
@@ -185,11 +228,11 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, summary.file, resc
     thresh_val_internal = thresh_value)
 
   # create output
-  xy_output <- dplyr::select(xy_import, 1:3)
+  xy_output <- xy_import
   # append new column
   xy_output <- cbind(xy_output, rescale_vector_output)
-  # rename column
-  colnames(xy_output)[4] <- ifelse(!is.na(rescale.name), paste0(rescale.name, "_rescaled"), "cloglog_suitability_rescaled")
+  # rename final column
+  names(xy_output)[length(names(xy_output))] <- ifelse(!is.na(rescale.name), paste0(rescale.name, "_rescaled"), "cloglog_suitability_rescaled")
 
 
   # conditional output----------------------------------------------------------

@@ -1,8 +1,8 @@
 ---
-title: "Create suitability scatter plots and binarized maps (chapter 1)"
+title: "Plot suitability for SLF in important grape growing regions and climate change effects"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-03-06"
+date: "2024-04-30"
 output: html_document
 ---
 # Overview
@@ -22,7 +22,7 @@ In step 1, I tested the best fit background data using SLF occurrences and clima
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here() # here() starts at the root folder of this package.
+here::here() # here() starts at the root folder of this package.
 library(devtools)
 
 # spatial data handling
@@ -43,7 +43,53 @@ mypath <- file.path(here() %>%
 
 ```
 
-Load in summary files for thresholds.
+I will load in some aesthetic objects, including for breaks and plot styles. I will have separate style lists for both current and climate change scatters, due to different axis labels and threshold lines
+
+```{r plot style 1995}
+
+scatter_style_1995 <- list(
+  # aesthetics
+   labs(title = "Risk of SLF establishment in globally important viticultural areas",
+        subtitle = "1981-2010 | 'global' vs 'regional_ensemble' models",
+        caption = "suitability measured using MTSS threshold (dashed)",
+        x = "'global' model suitability",
+        y = "'regional_ensemble' model suitability"
+        ),
+   theme_bw(),
+  # MTSS threshold
+  geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed"),
+  geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed")
+  
+)
+
+```
+
+```{r plot style 2055}
+
+scatter_style_1995 <- list(
+  # aesthetics
+   labs(title = "Risk of SLF establishment in globally important viticultural areas",
+        subtitle = "2041-2070 | ssp3-70 | GFDL | 'global' vs 'regional_ensemble' models",
+        caption = "suitability measured using MTSS threshold (dashed)",
+        x = "'global' model suitability",
+        y = "'regional_ensemble' model suitability"
+        ),
+   theme_bw(),
+  # MTSS threshold
+  geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed"),
+  geom_hline(yintercept = as.numeric(summary_regional_native[42, 2]), linetype = "dashed")
+  
+)
+
+```
+
+```{r axis breaks}
+
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+```
+
+Load in summary files for the global and regional ensemble models, which contain the thresholds.
 
 ```{r load in summary files}
 # summary file to extract thresholds from
@@ -51,21 +97,16 @@ Load in summary files for thresholds.
 # global
 summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
 
+summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
 
-# regional_native
-summary_regional_invaded <- read_csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_summary.csv"))
-
-
-# regional_native
-summary_regional_native <- read_csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_summary.csv"))
 
 ```
 
-Load in dataset containing locations of globally important viticultural regions.
+I will load in dataset containing locations of globally important viticultural regions. I will also de-duplicate the records because there were "many-to-many" joining matches downstream. De-duplicating removed about 17 records. I also remove the species column, which is automatically created by `SDMtune::predict()` upstream.
 
 ```{r load in wineries dataset}
 
-load(file.path(here(), "data", "wineries.rda"))
+load(file.path(here::here(), "data", "wineries.rda"))
 
 IVR_locations <- wineries %>%
   # tidy
@@ -82,23 +123,105 @@ rm(wineries)
 
 ```
 
-```{r axis breaks}
+Finally, I will load in the global and regional ensemble suitability maps. These will be used both for extracting the new xy suitability values and for plotting.
 
-breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+```{r load in suitability rasters}
+
+# global
+global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
+
+global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc"))
+
+
+# regional_ensemble
+regional_ensemble_1995 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
+  )
+
+regional_ensemble_2055 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  )
 
 ```
 
-# 1981-2010 predictions
+# Retrieve/Import xy suitability
 
-I will also de-duplicate the records because there were "many-to-many" joining matches downstream. De-duplicating removed about 17 records. I also remove the species column, which is automatically created by the predict function upstream.
+These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `slfSpread::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
 
-```{r retrieve xy suitability}
+```{r import global suitability}
+
+global_xy_suit_1995 <- read_csv(
+  file = file.path(mypath, "slf_global_v2", "global_wineries_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) %>%
+  dplyr::select(-Species)
+
+global_xy_suit_2055 <- read_csv(
+  file = file.path(mypath, "slf_global_v2", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) %>%
+  dplyr::select(-Species)
+
+```
+
+```{r retrieve xy suitability for regional_ensemble}
+
+# 1995
+regional_ensemble_xy_suit_1995 <- terra::extract(
+  x = regional_ensemble_1995,
+  y = dplyr::select(IVR_locations, x, y), # points
+  method = "simple",
+  xy = TRUE, # return coordinates
+  ID = FALSE
+) %>%
+  # tidy
+  dplyr::rename("cloglog_suitability" = "sum") %>%
+  dplyr::relocate(x, y)
+
+
+# 2055
+regional_ensemble_xy_suit_2055 <- terra::extract(
+  x = regional_ensemble_2055,
+  y = dplyr::select(IVR_locations, x, y), # points
+  method = "simple",
+  xy = TRUE, # return coordinates
+  ID = FALSE
+) %>%
+  dplyr::rename("cloglog_suitability" = "sum") %>%
+  dplyr::relocate(x, y)
+
+```
+
+```{r save predicted suitability}
 
 
 
 ```
 
 
+# Transform xy suitability
+
+I will plot the suitability values in two different ways- I will plot the raw xy suitability and I will transform the data so that the MTSS threshold is the center of the scatter plot. This way, movement across the minimum suitability threshold is more easily visualized. 
+
+```{r}
+
+slfSpread::rescale_cloglog_suitability(
+  xy.predicted = global_xy_suit_1995,
+  thresh = "MTP",
+  exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+  summary.file = summary_global,
+  rescale.name = "global_1995",
+  rescale.thresholds = TRUE
+)
+
+slfSpread::rescale_cloglog_suitability(
+  xy.predicted = regional_ensemble_xy_suit_1995,
+  thresh = "MTSS",
+  exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+  summary.file = summary_regional_ensemble,
+  rescale.name = "regional_ensemble_1995",
+  rescale.thresholds = TRUE
+)
+
+```
 
 
 

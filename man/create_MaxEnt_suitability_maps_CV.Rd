@@ -165,7 +165,7 @@ Map style default options:
 \item \code{scale_x_continuous(expand = c(0, 0))}
 \item \code{scale_y_continuous(expand = c(0, 0))}
 \item \code{coord_equal()}
-\item \code{scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(barwidth = 20))}
+\item \code{scale_fill_viridis_c(option = "D", limits = c(0, 1.00), breaks = c(0, 0.25, 0.5, 0.75, 1.00), guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20))}
 }
 }
 }

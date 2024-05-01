@@ -7,6 +7,7 @@
 rescale_cloglog_suitability(
   xy.predicted,
   thresh,
+  exponential.file,
   summary.file,
   rescale.name = NA,
   rescale.thresholds = FALSE
@@ -16,21 +17,30 @@ rescale_cloglog_suitability(
 \item{xy.predicted}{Data import. The predicted cloglog suitability output
 taken from one of the internal package functions:
 \code{\link[=predict_xy_suitability]{predict_xy_suitability()}} or
-\code{\link[=predict_xy_suitability_CV]{predict_xy_suitability_CV()}}. Should be a data.frame or .csv
-file. If an import, file path should be in the format produced by the
-\code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').}
+\code{\link[=predict_xy_suitability_CV]{predict_xy_suitability_CV()}}. See details for specifics of formatting.}
 
 \item{thresh}{Numeric or Character. This may be imported manually
 (numeric), or may be selected from one of the thresholds for the model
 (character). See details for a list of preset options and other usages.}
 
-\item{summary.file}{Data import. Contains preset values for thresh and summary
-statistics and is created by the internal package funcions:
-\code{\link[=compute_MaxEnt_summary_statistics]{compute_MaxEnt_summary_statistics()}} or
-\code{\link[=compute_MaxEnt_summary_statistics_CV]{compute_MaxEnt_summary_statistics_CV()}} The filename should end in
-"summary_all_iterations.csv"). Should be a .csv file or data frame. If an
-import, file path should be in the format produced by the \code{\link[=file.path]{file.path()}}
-function (i.e. with '/' instead of '\\').}
+\item{exponential.file}{Data import. Should be a .csv file or data frame. Contains
+a comprehensive list of possible threshold values and the corresponding c1, c2
+ans c3 values. Where x is equal to the original suitability value and y is
+equal to the transformed version of that suitability value, these values are
+used in the exponential function "y = c1 * c2^x + c3".}
+
+\item{summary.file}{Data import. Should be a .csv file or data frame.
+Contains preset values for thresholds. If an import, file path should be in
+the format produced by the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').
+
+For a global or regional model, this will be a file containing summary
+statistics that is created by one of the following internal package functions:
+\code{\link[=compute_MaxEnt_summary_statistics]{compute_MaxEnt_summary_statistics()}}, with a filename ending in
+"_summary.csv", or
+\code{\link[=compute_MaxEnt_summary_statistics_CV]{compute_MaxEnt_summary_statistics_CV()}}, with a filename ending in
+"_summary_all_iterations.csv".
+
+For the regional_ensemble model, this file should end in "_threshold_values.csv"}
 
 \item{rescale.name}{Character. Descriptive name to be given to column of
 rescaled values.}
@@ -41,8 +51,8 @@ are rescaled with reference to the threshold specified by \code{thresh}. This is
 advised if visualizing with multiple thresholds.}
 }
 \value{
-Returns the input data frame, with the column of cloglog suitability values
-replaced by the re-scaled exponential values.
+Returns the input data frame with an additional column containing the re-scaled
+exponential values for the cloglog suitability.
 
 If rescale.thresholds = TRUE, will return a list of data frames. The first
 object in the list will be the rescaled suitability values, and the second
@@ -50,28 +60,34 @@ object in the list will be the rescaled thresholds.
 }
 \description{
 This function will take the cloglog suitability output from MaxEnt, which is
-on a 0-1 scale, and re-scale it to have a set median value. The range of the
+on a 0-1 scale, and re-scale it around a set median value. The range of the
 values will still be 0-1, but the median will now be the value of the \code{thresh}
 parameter. The scaling function is applied as an exponential, for the purposes
 of visualizing suitability change around a critical threshold (at the scale of
 0-1, it can often be hard to see changes across the suitability threshold if
-its value is very small). Note that this function will not work if the value
-of thresh is 0.
+its value is very small). THis function will not work correctly if the desired
+threshold value is 0.
 
-This function was co-authored by Jacob Woods.
+This function and some of its inputs were co-authored by Jacob Woods.
 }
 \details{
 Requires the following packages: 'tidyverse', 'cli'.
+\subsection{xy.predicted}{
+
+Fromatting: Should be a data.frame or .csv file. If an import, file path
+should be in the format produced by the \code{\link[=file.path]{file.path()}} function
+(i.e. with '/' instead of '\\'). The column containing the suitability values
+should be placed as the last column.
+}
+
 \subsection{thresh:}{
 
 Thresh presets list:
 \itemize{
-\item \code{BTO} = Balance training omission predicted area and threshold value
-\item \code{EE} = Equate entropy of thresholded and original distributions
-\item \code{ETSS} = Equal training sensitivity and specificity
 \item \code{MTP} = Minimum Training Presence
+\item \code{MTP.CC} = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions. Should be the second row in the data frame
 \item \code{MTSS} = Maximum training sensitivity plus specificity
-\item \code{ten_percentile} or \verb{10_percentile} = Ten percentile training presence
+\item \code{MTSS.CC} = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.  Should be the second row in the data frame
 }
 }
 }
