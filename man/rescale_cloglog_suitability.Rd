@@ -14,9 +14,9 @@ rescale_cloglog_suitability(
 )
 }
 \arguments{
-\item{xy.predicted}{Data import. The predicted cloglog suitability output
-taken from one of the internal package functions:
-\code{\link[=predict_xy_suitability]{predict_xy_suitability()}} or
+\item{xy.predicted}{Data import. A predicted cloglog suitability with
+longitude and latitude data. This output should be taken from one of the
+internal package functions: \code{\link[=predict_xy_suitability]{predict_xy_suitability()}} or
 \code{\link[=predict_xy_suitability_CV]{predict_xy_suitability_CV()}}. See details for specifics of formatting.}
 
 \item{thresh}{Numeric or Character. This may be imported manually
@@ -74,10 +74,10 @@ This function and some of its inputs were co-authored by Jacob Woods.
 Requires the following packages: 'tidyverse', 'cli'.
 \subsection{xy.predicted}{
 
-Fromatting: Should be a data.frame or .csv file. If an import, file path
-should be in the format produced by the \code{\link[=file.path]{file.path()}} function
-(i.e. with '/' instead of '\\'). The column containing the suitability values
-should be placed as the last column.
+Fromatting: Should be a data.frame or .csv file. The columns should be in the
+order: descriptive columns, x (longitude), y (latitude), cloglog suitability
+(last column). If an import, file path should be in the format produced by the
+\code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').
 }
 
 \subsection{thresh:}{

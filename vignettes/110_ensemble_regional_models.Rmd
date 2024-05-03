@@ -433,7 +433,7 @@ terra::writeRaster(
 
 ## Weight models using confidence metric (ExDet)
 
-Finally, I will apply these weights to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
+Finally, I will apply these weighting factors to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
 
 ```{r weighted mean pred rasters}
 
@@ -457,6 +457,9 @@ pred_CMIP6_mean <- terra::weighted.mean(
 
 ```
 
+
+
+
 We now have a weighted mean raster for each of the historical and CMIP rasters!
 
 # Ensemble thresholds
@@ -467,7 +470,7 @@ Per projected time period (historical and CC) and threshold value:
 1. Extract all values from `pred` rasters that match the respective model threshold value.
 2. Extract all values from the converted `exdet` rasters at those locations
 3. Take mean of the exdet values at those locations.
-4. Multiply this mean or median by the AUC value for that model. 
+4. Multiply this mean by the AUC value for that model. 
 5. Take the weighted mean of the three threshold values using these created weights.
 
 ## Import data 
@@ -908,10 +911,10 @@ Now, I can create a table for these thresholds and export these data.
 ```{r table of ensemble threshold values}
 
 ensemble_thresh_values <- tibble(
-  time_period = c("1981-2010", "2041-2070"),
-  CMIP6_model = c("NONE", "ssp370_GFDL"),
-  MTP = c(MTP_hist_thresh, MTP_CMIP6_thresh),
-  MTSS = c(MTSS_hist_thresh, MTSS_CMIP6_thresh)
+  thresh = c("MTP", "MTP", "MTSS", "MTSS"),
+  time_period = c("1981-2010", "2041-2070", "1981-2010", "2041-2070"),
+  CMIP6_model = c(NA, "ssp370_GFDL", NA, "ssp370_GFDL"),
+  value = c(MTP_hist_thresh, MTP_CMIP6_thresh, MTSS_hist_thresh, MTSS_CMIP6_thresh)
 )
 
 ```
@@ -951,6 +954,84 @@ pred_CMIP6_mean <- terra::app(
 )
 
 ```
+
+I will also take the mean of the MTSS and MTP thresholds
+
+```{r unweighted mean of thresholds}
+
+#take means
+MTSS_mean_unweighted <- mean(MTSS_all)
+MTP_mean_unweighted <- mean(MTP_all)
+
+# put into table
+ensemble_thresh_values_unweighted <- tibble(
+  thresh = c("MTP", "MTSS"),
+  value = c(MTP_mean_unweighted, MTSS_mean_unweighted)
+)
+
+```
+
+```{r export table}
+
+write_csv(ensemble_thresh_values_unweighted, file = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_threshold_values_unweighted.csv"))
+
+```
+
+## test
+
+I wanted to test if the weighted.mean function normalizes weights to 1. My weights sum to above 1 so I wanted to make sure they normalize.
+
+```{r test to ensure weights worked}
+
+test_raster <- exdet_hist_stack
+values(test_raster) <- 2
+
+minmax(pred_hist_stack)
+
+# weighted mean
+test_weighted <- terra::weighted.mean(
+  x = pred_hist_stack,
+  w = test_raster # all cell weights are 2
+)
+
+minmax(test_weighted)
+
+# just take the mean
+test_unweighted <- terra::app(
+  x = pred_hist_stack,
+  fun = "mean" 
+)
+
+minmax(test_unweighted)
+
+
+
+
+
+# also try with different weights
+values(test_raster[[1]]) <- 0.33
+values(test_raster[[2]]) <- 0.52
+values(test_raster[[3]]) <- 0.15
+
+# weighted mean
+test_weighted <- terra::weighted.mean(
+  x = pred_hist_stack,
+  w = test_raster # all cell weights are 2
+)
+
+minmax(test_weighted)
+
+# just take the mean
+test_unweighted <- terra::app(
+  x = pred_hist_stack,
+  fun = "mean" 
+)
+
+minmax(test_unweighted)
+
+```
+
+I think they do because the weighted.mean was the same as the mean when the weights were kept equal proportionally to each other, but summed to over 1.
 
 # References
 
