@@ -2,7 +2,7 @@
 % Please edit documentation in R/calculate_risk_quadrant.R
 \name{calculate_risk_quadrant}
 \alias{calculate_risk_quadrant}
-\title{Calculate risk quadrant}
+\title{Calculate placement on risk quadrant plot}
 \usage{
 calculate_risk_quadrant(suit.x, suit.y, thresh.x, thresh.y)
 }
@@ -26,7 +26,11 @@ interpretation of the risk quadrant plots we have created:
 }
 }
 \description{
-description
+This function calculates the risk of establishment by Lycorma
+delicatula according to our risk quadrant framework (which quadrant a suitability
+value will fall into on an xy-scatter). It requires the input of a matrix of
+suitability values and a corresponding suitability threshold for each of the x
+and y axes for this plot.
 }
 \details{
 details

@@ -35,7 +35,6 @@ dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v0", "plots
 
 ```
 
-
 # Import datasets
 
 ## MaxEnt Predictions
@@ -78,7 +77,7 @@ pred_regional_invaded_asian_CMIP6 <- terra::rast(
 
 ## AUC values
 
-Next, I will load in the AUC value from each model, which will be used to weight each model's predictions, specifically based on its test AUC value. 
+Next, I will load in the AUC value from each model, which will be used to weight each model's predictions, specifically based on its test AUC value.
 
 ```{r test AUC values}
 
@@ -195,18 +194,18 @@ names(pred_CMIP6_stack) <- c("pred_regional_native_CMIP6", "pred_regional_invade
 
 ```
 
-Now, I need to prepare to weight the predicted distribution rasters using their respective ExDet raster. 
+Now, I need to prepare to weight the predicted distribution rasters using their respective ExDet raster.
 
 # Ensemble rasters
 
 ## take ABS value of Exdet rasters
 
-First, I will need to manipulate the ExDet rasters so they can be used for weighting. I will begin by adding 1 to any negative ExDet value and then taking the absolute value of each cell. This way, the weighting is performed on a positive scale. The ExDet metric works such that anything between 0 and 1 is not extrapolated, while anything below 0 or above 1 is extrapolated. Next, I will convert any ExDet value below 0 to 1, so that cells without extrapolation are simply not weighted. 
+First, I will need to manipulate the ExDet rasters so they can be used for weighting. I will begin by adding 1 to any negative ExDet value and then taking the absolute value of each cell. This way, the weighting is performed on a positive scale. The ExDet metric works such that anything between 0 and 1 is not extrapolated, while anything below 0 or above 1 is extrapolated. Next, I will convert any ExDet value below 0 to 1, so that cells without extrapolation are simply not weighted.
 
-1. Add 1 to any negative ExDet values
-2. Take abs value of ExDet values
-3. Convert any ExDet value below 1 to 1
-4. Take reciprocal of ExDet raster values
+1.  Add 1 to any negative ExDet values
+2.  Take abs value of ExDet values
+3.  Convert any ExDet value below 1 to 1
+4.  Take reciprocal of ExDet raster values
 
 ```{r exdet historical stack}
 
@@ -430,7 +429,6 @@ terra::writeRaster(
 
 ```
 
-
 ## Weight models using confidence metric (ExDet)
 
 Finally, I will apply these weighting factors to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
@@ -457,23 +455,15 @@ pred_CMIP6_mean <- terra::weighted.mean(
 
 ```
 
-
-
-
 We now have a weighted mean raster for each of the historical and CMIP rasters!
 
 # Ensemble thresholds
 
 I also need to ensemble the thresholds that I will be using to create scatter plots and thresholded maps downstream. The ensemble will be performed using the same method as above, but slightly altered. I will use the pred rasters to extract the coordinates of locations that have the same suitability value as the threshold. Next, I will take these coordinates and extract the ExDet values from those same locations. I will take the mean or median of those values. Then, I will multiply the threshold by this value and the AUC for that model. Finally, I will take the weighted mean of the three modified thresh values. This will be repeated for the MTP threshold as well. Finally, this process will also be completed for the CC version of these models.
 
-Per projected time period (historical and CC) and threshold value:
-1. Extract all values from `pred` rasters that match the respective model threshold value.
-2. Extract all values from the converted `exdet` rasters at those locations
-3. Take mean of the exdet values at those locations.
-4. Multiply this mean by the AUC value for that model. 
-5. Take the weighted mean of the three threshold values using these created weights.
+Per projected time period (historical and CC) and threshold value: 1. Extract all values from `pred` rasters that match the respective model threshold value. 2. Extract all values from the converted `exdet` rasters at those locations 3. Take mean of the exdet values at those locations. 4. Multiply this mean by the AUC value for that model. 5. Take the weighted mean of the three threshold values using these created weights.
 
-## Import data 
+## Import data
 
 ### ExDet rasters
 
@@ -1038,4 +1028,3 @@ I think they do because the weighted.mean was the same as the mean when the weig
 Araújo, M. B., and M. New. 2007. Ensemble forecasting of species distributions. Trends in Ecology & Evolution 22:42–47.
 
 Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.
-

@@ -72,6 +72,18 @@ This function and some of its inputs were co-authored by Jacob Woods.
 }
 \details{
 Requires the following packages: 'tidyverse', 'cli'.
+
+This function is based on an exponential equation of the form:
+
+f(x) = c_1 * c_2^x + c_3
+
+where x is the input suitability value and f(x) is the transformed value of x
+with respect to \code{thresh} as the median of the range. The function calls a
+reference table to transform the thresh (z) into its respective value f(z) = 0.5
+on the exponential scale. The values for the exponential equation were found
+using the equation:
+
+log((0.5 - c_3) / c1) / log(c_2)
 \subsection{xy.predicted}{
 
 Fromatting: Should be a data.frame or .csv file. The columns should be in the

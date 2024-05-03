@@ -1,6 +1,10 @@
-#'Calculate risk quadrant
+#'Calculate placement on risk quadrant plot
 #'
-#'@description description
+#'@description This function calculates the risk of establishment by Lycorma
+#'delicatula according to our risk quadrant framework (which quadrant a suitability
+#'value will fall into on an xy-scatter). It requires the input of a matrix of
+#'suitability values and a corresponding suitability threshold for each of the x
+#'and y axes for this plot.
 #'
 #'@param suit.x Suitability values comprising the x-axis.
 #'
