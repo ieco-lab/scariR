@@ -56,8 +56,13 @@ ensemble_colors <- c(
 )
 
 marginal_plots_style <- list(
+  theme_bw(),
   # labs
-  labs(title = "Marginal response of regional models"),
+  labs(
+    title = "Marginal response of 'regional_ensemble' models",
+    color = "Model",
+    caption = "rug plots indicate presences"
+    ),
   ylab("cloglog_output"),
   # aes
   scale_color_manual(
@@ -65,9 +70,9 @@ marginal_plots_style <- list(
     values = ensemble_colors,
     aesthetics = "color"
   ),
+  scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1), limits = c(0, 1)),
   theme(legend.position = "bottom"),
-  theme_bw(),
-  coord_cartesian(clip = "off")
+  geom_hline(aes(yintercept = 0), color = "black", linewidth = 0.5) 
 )
 
 ```
@@ -84,6 +89,8 @@ regional_invaded_asian_model <- read_rds(file = file.path(mypath, "slf_regional_
 ```
 
 ## create plots
+
+### Bio 11
 
 ```{r extract marginal plots per model- bio 11}
 
@@ -126,8 +133,6 @@ regional_invaded_asian_marginal_bio11 <- SDMtune::plotResponse(
 
 ```{r plotting elements}
 
-
-
 # peak y trendline object 
 bio11_max_activity_values <- c(
   native_bio_11 = regional_native_marginal_bio11$data[[1]][which.max(regional_native_marginal_bio11$data[[1]]$y), ]$x,
@@ -142,55 +147,363 @@ bio11_max_activity_values <- c(
 
 bio11_marginal_combined <- ggplot() +
   # native model data
-  geom_smooth(data = regional_native_marginal_bio11$data[[1]], aes(x = x, y = y), se = FALSE, color = "native") +
+  geom_smooth(data = regional_native_marginal_bio11$data[[1]], aes(x = x, y = y, color = "native"), se = FALSE, method = "gam") +
   # invaded model data
-  geom_smooth(data = regional_invaded_marginal_bio11$data[[1]], aes(x = x, y = y), se = FALSE, color = "#e41a1c") +
+  geom_smooth(data = regional_invaded_marginal_bio11$data[[1]], aes(x = x, y = y, color = "invaded"), se = FALSE, method = "gam") +
   # invaded_asian model data
-  geom_smooth(data = regional_invaded_asian_marginal_bio11$data[[1]], aes(x = x, y = y), se = FALSE, color = "#377eb8") +
-  # plot peak trendline
+  geom_smooth(data = regional_invaded_asian_marginal_bio11$data[[1]], aes(x = x, y = y, color = "invaded_asian"), se = FALSE, method = "gam") +
+  # plot peak trendline and labels
   # native
-  geom_vline(aes(xintercept = bio11_max_activity_values[[1]]), color = "#4daf4a", linetype = "dashed", linewidth = 1) +
+  geom_vline(aes(xintercept = bio11_max_activity_values[[1]], color = "native"), linetype = "dashed", linewidth = 0.5) +
   # invaded
-  geom_vline(aes(xintercept = bio11_max_activity_values[[2]]), color = "#e41a1c", linetype = "dashed", linewidth = 1) +
+  geom_vline(aes(xintercept = bio11_max_activity_values[[2]], color = "invaded"), linetype = "dashed", linewidth = 0.5) +
   # invaded_asian
-  geom_vline(aes(xintercept = bio11_max_activity_values[[3]]), color = "#377eb8", linetype = "dashed", linewidth = 1) +
+  geom_vline(aes(xintercept = bio11_max_activity_values[[3]], color = "invaded_asian"), linetype = "dashed", linewidth = 0.5) +
   # plot rug plots
   # native
-  geom_rug(aes(x = regional_native_marginal_bio11$data[[2]]$x), color = "#4daf4a", outside = TRUE) +
+  geom_rug(aes(x = regional_native_marginal_bio11$data[[2]]$x, color = "native"), sides = "t") +
   # invaded
-  geom_rug(aes(x = regional_invaded_marginal_bio11$data[[2]]$x), color = "#e41a1c", outside = TRUE) +
+  geom_rug(aes(x = regional_invaded_marginal_bio11$data[[2]]$x, color = "invaded"), sides = "t", alpha = 0.8) +
   # invaded_asian
-  geom_rug(aes(x = regional_invaded_asian_marginal_bio11$data[[2]]$x), color = "#377eb8", outside = TRUE) +
+  geom_rug(aes(x = regional_invaded_asian_marginal_bio11$data[[2]]$x, color = "invaded_asian"), sides = "t", alpha = 0.6) +
+  # default style
+  marginal_plots_style +
   # labels
   labs(
-    subtitle = "bio 11 (mean temperature of the coldest quarter)",
+    subtitle = "Bio 11 (mean temperature of the coldest quarter)",
     x = "mean temperature of the coldest quarter (C)"
     ) +
   # aesthetics
-  xlim(-20, 20) +
+  xlim(-20, 20) 
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  bio11_marginal_combined, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "regional_ensemble_bio11_marginal_resp_curve_cloglog.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Bio 12
+
+```{r extract marginal plots per model- bio 12}
+
+regional_native_marginal_bio12 <- SDMtune::plotResponse(
+  model = regional_native_model,
+  var = "bio12",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+
+regional_invaded_marginal_bio12 <- SDMtune::plotResponse(
+  model = regional_invaded_model,
+  var = "bio12",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+regional_invaded_asian_marginal_bio12 <- SDMtune::plotResponse(
+  model = regional_invaded_asian_model,
+  var = "bio12",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+           
+
+```
+
+```{r plotting elements}
+
+# peak y trendline object 
+bio12_max_activity_values <- c(
+  native_bio_12 = regional_native_marginal_bio12$data[[1]][which.max(regional_native_marginal_bio12$data[[1]]$y), ]$x,
+  invaded_bio_12 = regional_invaded_marginal_bio12$data[[1]][which.max(regional_invaded_marginal_bio12$data[[1]]$y), ]$x,
+  invaded_asian_bio_12 = regional_invaded_asian_marginal_bio12$data[[1]][which.max(regional_invaded_asian_marginal_bio12$data[[1]]$y), ]$x
+)
+
+```
+
+
+```{r combine plots}
+
+bio12_marginal_combined <- ggplot() +
+  # native model data
+  geom_smooth(data = regional_native_marginal_bio12$data[[1]], aes(x = x, y = y, color = "native"), se = FALSE, method = "gam") +
+  # invaded model data
+  geom_smooth(data = regional_invaded_marginal_bio12$data[[1]], aes(x = x, y = y, color = "invaded"), se = FALSE, method = "gam") +
+  # invaded_asian model data
+  geom_smooth(data = regional_invaded_asian_marginal_bio12$data[[1]], aes(x = x, y = y, color = "invaded_asian"), se = FALSE, method = "gam") +
+  # plot peak trendline and labels
+  # native
+  geom_vline(aes(xintercept = bio12_max_activity_values[[1]], color = "native"), linetype = "dashed", linewidth = 0.5) +
+  # invaded
+  geom_vline(aes(xintercept = bio12_max_activity_values[[2]], color = "invaded"), linetype = "dashed", linewidth = 0.5) +
+  # invaded_asian
+  geom_vline(aes(xintercept = bio12_max_activity_values[[3]], color = "invaded_asian"), linetype = "dashed", linewidth = 0.5) +
+  # plot rug plots
+  # native
+  geom_rug(aes(x = regional_native_marginal_bio12$data[[2]]$x, color = "native"), sides = "t") +
+  # invaded
+  geom_rug(aes(x = regional_invaded_marginal_bio12$data[[2]]$x, color = "invaded"), sides = "t", alpha = 0.8) +
+  # invaded_asian
+  geom_rug(aes(x = regional_invaded_asian_marginal_bio12$data[[2]]$x, color = "invaded_asian"), sides = "t", alpha = 0.6) +
   # default style
-  marginal_plots_style 
+  marginal_plots_style +
+  # labels
+  labs(
+    subtitle = "Bio 12 (Annual Precipitation)",
+    x = "annual precipitation (mm)"
+    ) +
+  # aesthetics
+  xlim(0, 3000) 
+  
+
+```
+
+```{r save plot}
+
+ggsave(
+  bio12_marginal_combined, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "regional_ensemble_bio12_marginal_resp_curve_cloglog.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Bio 15
+
+```{r extract marginal plots per model- bio 15}
+
+regional_native_marginal_bio15 <- SDMtune::plotResponse(
+  model = regional_native_model,
+  var = "bio15",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+
+regional_invaded_marginal_bio15 <- SDMtune::plotResponse(
+  model = regional_invaded_model,
+  var = "bio15",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+regional_invaded_asian_marginal_bio15 <- SDMtune::plotResponse(
+  model = regional_invaded_asian_model,
+  var = "bio15",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+           
+
+```
+
+```{r plotting elements}
+
+# peak y trendline object 
+bio15_max_activity_values <- c(
+  native_bio_15 = regional_native_marginal_bio15$data[[1]][which.max(regional_native_marginal_bio15$data[[1]]$y), ]$x,
+  invaded_bio_15 = regional_invaded_marginal_bio15$data[[1]][which.max(regional_invaded_marginal_bio15$data[[1]]$y), ]$x,
+  invaded_asian_bio_15 = regional_invaded_asian_marginal_bio15$data[[1]][which.max(regional_invaded_asian_marginal_bio15$data[[1]]$y), ]$x
+)
 
 ```
 
 
-```{r}
+```{r combine plots}
 
- ggtitle(paste0("'", model.name, " model'- ", a, " marginal response curve: ", b, " | ", c)) +
-            labs(caption = "rug plots: top = presences, bottom = background/pseudoabsences")
+bio15_marginal_combined <- ggplot() +
+  # native model data
+  geom_smooth(data = regional_native_marginal_bio15$data[[1]], aes(x = x, y = y, color = "native"), se = FALSE, method = "gam") +
+  # invaded model data
+  geom_smooth(data = regional_invaded_marginal_bio15$data[[1]], aes(x = x, y = y, color = "invaded"), se = FALSE, method = "gam") +
+  # invaded_asian model data
+  geom_smooth(data = regional_invaded_asian_marginal_bio15$data[[1]], aes(x = x, y = y, color = "invaded_asian"), se = FALSE, method = "gam") +
+  # plot peak trendline and labels
+  # native
+  geom_vline(aes(xintercept = bio15_max_activity_values[[1]], color = "native"), linetype = "dashed", linewidth = 0.5) +
+  # invaded
+  geom_vline(aes(xintercept = bio15_max_activity_values[[2]], color = "invaded"), linetype = "dashed", linewidth = 0.5) +
+  # invaded_asian
+  geom_vline(aes(xintercept = bio15_max_activity_values[[3]], color = "invaded_asian"), linetype = "dashed", linewidth = 0.5) +
+  # plot rug plots
+  # native
+  geom_rug(aes(x = regional_native_marginal_bio15$data[[2]]$x, color = "native"), sides = "t") +
+  # invaded
+  geom_rug(aes(x = regional_invaded_marginal_bio15$data[[2]]$x, color = "invaded"), sides = "t", alpha = 0.8) +
+  # invaded_asian
+  geom_rug(aes(x = regional_invaded_asian_marginal_bio15$data[[2]]$x, color = "invaded_asian"), sides = "t", alpha = 0.6) +
+  # default style
+  marginal_plots_style +
+  # labels
+  labs(
+    subtitle = "Bio 15 (Precipitation Seasonality, CV)",
+    x = "precipitation seasonality (%)"
+    ) +
+  # aesthetics
+  xlim(0, 110) 
+  
 
-          # save output
-          ggsave(plot.response,
-                 filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_marg_resp_curve_", b, "_", c, ".jpg")),
-                 height = 8,
-                 width = 10,
-                 device = "jpeg",
-                 dpi = "retina")
+```
+
+```{r save plot}
+
+ggsave(
+  bio15_marginal_combined, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "regional_ensemble_bio15_marginal_resp_curve_cloglog.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Bio 2
+
+```{r extract marginal plots per model- bio 2}
+
+regional_native_marginal_bio2 <- SDMtune::plotResponse(
+  model = regional_native_model,
+  var = "bio2",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+
+regional_invaded_marginal_bio2 <- SDMtune::plotResponse(
+  model = regional_invaded_model,
+  var = "bio2",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+
+regional_invaded_asian_marginal_bio2 <- SDMtune::plotResponse(
+  model = regional_invaded_asian_model,
+  var = "bio2",
+  type = "cloglog",
+  fun = mean,
+  only_presence = TRUE,
+  marginal = TRUE,
+  rug = TRUE
+) %>%
+  ggplot_build()
+           
+
+```
+
+```{r plotting elements}
+
+# peak y trendline object 
+bio2_max_activity_values <- c(
+  native_bio_2 = regional_native_marginal_bio2$data[[1]][which.max(regional_native_marginal_bio2$data[[1]]$y), ]$x,
+  invaded_bio_2 = regional_invaded_marginal_bio2$data[[1]][which.max(regional_invaded_marginal_bio2$data[[1]]$y), ]$x,
+  invaded_asian_bio_2 = regional_invaded_asian_marginal_bio2$data[[1]][which.max(regional_invaded_asian_marginal_bio2$data[[1]]$y), ]$x
+)
 
 ```
 
 
+```{r combine plots}
 
+bio2_marginal_combined <- ggplot() +
+  # native model data
+  geom_smooth(data = regional_native_marginal_bio2$data[[1]], aes(x = x, y = y, color = "native"), se = FALSE, method = "gam") +
+  # invaded model data
+  geom_smooth(data = regional_invaded_marginal_bio2$data[[1]], aes(x = x, y = y, color = "invaded"), se = FALSE, method = "gam") +
+  # invaded_asian model data
+  geom_smooth(data = regional_invaded_asian_marginal_bio2$data[[1]], aes(x = x, y = y, color = "invaded_asian"), se = FALSE, method = "gam") +
+  # plot peak trendline and labels
+  # native
+  geom_vline(aes(xintercept = bio2_max_activity_values[[1]], color = "native"), linetype = "dashed", linewidth = 0.5) +
+  # invaded
+  geom_vline(aes(xintercept = bio2_max_activity_values[[2]], color = "invaded"), linetype = "dashed", linewidth = 0.5) +
+  # invaded_asian
+  geom_vline(aes(xintercept = bio2_max_activity_values[[3]], color = "invaded_asian"), linetype = "dashed", linewidth = 0.5) +
+  # plot rug plots
+  # native
+  geom_rug(aes(x = regional_native_marginal_bio2$data[[2]]$x, color = "native"), sides = "t") +
+  # invaded
+  geom_rug(aes(x = regional_invaded_marginal_bio2$data[[2]]$x, color = "invaded"), sides = "t", alpha = 0.8) +
+  # invaded_asian
+  geom_rug(aes(x = regional_invaded_asian_marginal_bio2$data[[2]]$x, color = "invaded_asian"), sides = "t", alpha = 0.6) +
+  # default style
+  marginal_plots_style +
+  # labels
+  labs(
+    subtitle = "Bio 2 (Mean Diurnal Range)",
+    x = "mean diurnal range (C)"
+    ) +
+  # aesthetics
+  xlim(0, 15) 
+  
 
+```
+
+```{r save plot}
+
+ggsave(
+  bio2_marginal_combined, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "regional_ensemble_bio2_marginal_resp_curve_cloglog.jpg"
+    ),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
 

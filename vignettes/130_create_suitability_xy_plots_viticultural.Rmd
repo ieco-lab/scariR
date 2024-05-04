@@ -376,7 +376,7 @@ ggsave(
   filename = file.path(
     here::here(), "vignette-outputs", "figures", "xy_suitability_CC_shift_IVR_regions_global_regional_ensemble.jpg"
     ),
-  height = 8, 
+  height = 10, 
   width = 10,
   device = "jpeg",
   dpi = "retina"
@@ -464,7 +464,7 @@ ggsave(
   filename = file.path(
     here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_IVR_regions_global_regional_ensemble.jpg"
     ),
-  height = 8, 
+  height = 10, 
   width = 10,
   device = "jpeg",
   dpi = "retina"
