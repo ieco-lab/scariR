@@ -2,7 +2,7 @@
 title: "Setup for regional MaxEnt Models"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-01-05"
+date: "2024-01-04"
 output: html_document
 ---
 # Overview
@@ -19,57 +19,36 @@ Here is the table summarizing the model structures:
 
 model_info <- data.frame(
   "model" = c(
-    "global",
     "regional_native",
-    "regional_invaded"
+    "regional_invaded",
+    "regional_invaded_asian"
     ),
-  "train_data" = c(
-    "80% of global presences, k-fold random cross validation",
-    "SLF presences in mainland China",
-    "SLF presences in North America"
+  "train_test_method" = c(
+    "trained on east asia / tested on N America",
+    "trained on N America / tested on east asia",
+    "trained on Korea & Japan / tested on N America"
   ),
-  "number_train_points" = c(
-    "619",
-    "237",
-    "328"
+  "train_presences" = c(
+    241,
+    328,
+    200
   ),
-  "test_data" = c(
-    "20% of global presences, k-fold random cross validation",
-    "SLF presences in North America",
-    "SLF presences in mainland China"
+  "test_presences" = c(
+    328,
+    241,
+    328
   ),
-  "number_test_points" = c(
-    "155",
-    "328",
-    "237"
-
-  ),
-  "projection" = "North America",
-  "number_background_points" = c(
-    "20,000",
+  "background_points" = c(
+    "10,000",
     "10,000",
     "10,000"
   )
 )
 
-model_info_kable <- knitr::kable(x = model_info)
-  
-```
+# convert to kable
+model_info_kable <- kableExtra::kbl(x = model_info) %>%
+  kableExtra::kable_styling()
 
-Here is a table that lists the extents I will use to trim the bioclim layers.
-
-```{r extents table}
-
-extents <- data.frame(
-  "spatial_extent" = c("global model training", "invaded_regional model training", "native_regional model training", "projection"),
-  "long_min" = c(-180, -96.504, 89.43514, -140.977),
-  "long_max" = c(179, -59.590, 126.05626, -51.064),
-  "lat_min" = c(-60, 23.5, 20.23827, 15.182),
-  "lat_max" = c(83, 47.458, 53.32406, 60.589)
-)
-
-extents_kable <- knitr::kable(x = extents)
-  
 ```
 
 # Setup
@@ -98,8 +77,38 @@ library(rnaturalearthhires)
 library(kgc) # koppen climate rasters
 
 # aesthetics
-# devtools::install_github("slowkow/ggrepel")
-library(ggrepel)
+library(webshot2)
+library(kableExtra)
+
+```
+
+```{r save tables from above, if desired}
+
+if(FALSE) {
+  
+  # model training dataset
+  # save as .csv
+  write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "regional_ensemble_models_info.csv"))
+  
+  # save as .html
+  kableExtra::save_kable(
+    model_info_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.pdf")
+  )
+  
+  # model extents
+    
+}
 
 ```
 

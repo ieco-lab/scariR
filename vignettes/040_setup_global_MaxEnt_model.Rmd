@@ -14,61 +14,21 @@ The goal is to produce three models for chapter 1: a global model, a regional_in
 ```{r model_info table}
 
 model_info <- data.frame(
-  "model" = c(
-    "global",
-    "regional_native",
-    "regional_invaded"
-    ),
-  "train_data" = c(
-    "80% of global presences, k-fold random cross validation",
-    "SLF presences in mainland China",
-    "SLF presences in North America"
-  ),
-  "number_train_points" = c(
-    "619",
-    "237",
-    "328"
-  ),
-  "test_data" = c(
-    "20% of global presences, k-fold random cross validation",
-    "SLF presences in North America",
-    "SLF presences in mainland China"
-  ),
-  "number_test_points" = c(
-    "155",
-    "328",
-    "237"
-
-  ),
-  "projection" = "North America",
-  "number_background_points" = c(
-    "20,000",
-    "10,000",
-    "7,500"
-  )
+  "model" = "global",
+  "train_test_method" = "10-fold random cross validation, 80% train / 20% test",
+  "train_presences" = "618",
+  "test_presences" = "155",
+  "background_points" = "20,000"
 )
 
-model_info_kable <- knitr::kable(x = model_info)
+model_info_kable <- kableExtra::kbl(x = model_info) %>%
+  kableExtra::kable_styling()
   
 ```
 
 In this vignette, I will set up to run the global model and project it for climate change. In the next vignette I will run this model, and in the following vignette I will set up for the invaded and native regional models.
 
 I will crop the rasters that were retrieved and tidied in the previous vignette to the relevant spatial scale. I will crop the historical and CMIP6 versions of these rasters to North America, which will only be used to produce map outputs of the model's predictions (projection). These rasters will also be used to project the regional model. Next, I will select the background point datasets for the global model. MaxEnt uses these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability (the model output).
-
-```{r extents table}
-
-extents <- data.frame(
-  "spatial_extent" = c("global model training", "invaded_regional model training", "native_regional model training", "projection"),
-  "long_min" = c(-180, -96.504, 89.43514, -140.977),
-  "long_max" = c(179, -59.590, 126.05626, -51.064),
-  "lat_min" = c(-60, 23.5, 20.23827, 15.182),
-  "lat_max" = c(83, 47.458, 53.32406, 60.589)
-)
-
-extents_kable <- knitr::kable(x = extents)
-  
-```
 
 # Setup
 
@@ -88,6 +48,11 @@ library(dismo) # generate random background points
 # spatial data handling
 library(raster) 
 library(terra)
+
+# aesthetics
+#install.packages("webshot2")
+library(webshot2)
+library(kableExtra)
 
 ```
 
@@ -126,6 +91,34 @@ These raster copies will be used to project all models. We are specifically inte
                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
+
+```{r save table from above, if desired}
+
+if(FALSE) {
+  
+  # save as .csv
+  write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "global_model_info.csv"))
+  
+  # save as .html
+  kableExtra::save_kable(
+    model_info_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.pdf")
+  )
+    
+}
+
+```
+
 
 ```{r setup for cropping bioclim layers}
 

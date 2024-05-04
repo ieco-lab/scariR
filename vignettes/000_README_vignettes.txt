@@ -1,14 +1,14 @@
-########## ABOUT ########## 
+########## ABOUT ##########
 
-# slfSpread 
+# slfSpread
 # folder: vignettes
 # descriptions and changelog
 
 This README is for the vignettes subfolder, which contains workflows for my package slfSpread. Outputs from these vignettes are stored in "data" or "vignette-outputs".
 
-########## FILES ########## 
+########## FILES ##########
 
-----------_ch1_run_global_MaxEnt_model.Rmd----------
+----------_run_global_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -18,11 +18,11 @@ This vignette creates all data objects needed to run the global model. It trains
 
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old. creates v1 of the global model
-v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates 
+v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
 
 
 
-----------_ch1_setup_regional_MaxEnt_models.Rmd----------
+----------_setup_regional_MaxEnt_models.Rmd----------
 
 ## About
 
@@ -35,10 +35,11 @@ v1- updated invaded model weighting to use new global model output, updated inva
 v2- reverted to eastern USA test area instead of 355km buffer
 v3- did not weight easternUSA model. Moved section on weighting to supp materials
 v4- added koeppen climate download and use for selecting background points
+v5- added table indicating number of training points per model
 
 
 
-----------_ch1_run_regional_invaded_MaxEnt_model.Rmd----------
+----------_run_regional_invaded_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -54,7 +55,7 @@ v4- creates the v4 of the regional_invaded model in maxent/models. reverted to r
 
 
 
-----------_ch1_run_regional_invaded_asian_MaxEnt_model.Rmd----------
+----------_run_regional_invaded_asian_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -67,7 +68,7 @@ v0- initial version
 
 
 
-----------_ch1_run_regional_native_MaxEnt_model.Rmd----------
+----------_run_regional_native_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -83,7 +84,7 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 
 
 
-----------_ch1_create_suitability_xy_plots_SLF.Rmd----------
+----------_create_suitability_xy_plots_SLF.Rmd----------
 
 ## About
 
@@ -97,7 +98,7 @@ v1- using function to transform scatter plot axes
 
 
 
-----------_ch1_create_suitability_xy_plots_viticulture.Rmd----------
+----------_create_suitability_xy_plots_viticulture.Rmd----------
 
 ## About
 
