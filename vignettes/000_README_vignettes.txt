@@ -8,7 +8,7 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 
 ########## FILES ##########
 
-----------_run_global_MaxEnt_model.Rmd----------
+----------050_run_global_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -22,7 +22,7 @@ v2- creates v2 of the global model- changed procedure for global model cross-val
 
 
 
-----------_setup_regional_MaxEnt_models.Rmd----------
+----------060_setup_regional_MaxEnt_models.Rmd----------
 
 ## About
 
@@ -39,7 +39,7 @@ v5- added table indicating number of training points per model
 
 
 
-----------_run_regional_invaded_MaxEnt_model.Rmd----------
+----------070_run_regional_invaded_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -55,7 +55,7 @@ v4- creates the v4 of the regional_invaded model in maxent/models. reverted to r
 
 
 
-----------_run_regional_invaded_asian_MaxEnt_model.Rmd----------
+----------080_run_regional_invaded_asian_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -68,7 +68,7 @@ v0- initial version
 
 
 
-----------_run_regional_native_MaxEnt_model.Rmd----------
+----------090_run_regional_native_MaxEnt_model.Rmd----------
 
 ## About
 
@@ -81,14 +81,42 @@ v1- in sandbox/vignettes_old
 v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.
 
 
-
-
-
-----------_create_suitability_xy_plots_SLF.Rmd----------
+----------100_run_ExDet_MIC.Rmd----------
 
 ## About
 
-This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for SLF point datasets.
+
+
+## Changelog
+
+v0- initial version- in sandbox/vignettes_old
+v1- added ExDet and MIC for global model
+
+
+
+
+----------110_ensemble_regional_models.Rmd----------
+
+## About
+
+
+
+## Changelog
+
+v0- initial version- in sandbox/vignettes_old
+v1-
+v2- added section to ensemble ExDet and MIC rasters, bar chart showing % cont to regional ensemble
+
+
+
+
+
+
+----------130_create_suitability_xy_plots_viticulture.Rmd----------
+
+## About
+
+This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for locations of viticultural regions.
 
 ## Changelog
 
@@ -98,11 +126,11 @@ v1- using function to transform scatter plot axes
 
 
 
-----------_create_suitability_xy_plots_viticulture.Rmd----------
+----------131_create_suitability_xy_plots_SLF.Rmd----------
 
 ## About
 
-This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for locations of viticultural regions.
+This vignette begins data analysis for our MaxEnt by creating suitability scatter plots for SLF point datasets.
 
 ## Changelog
 

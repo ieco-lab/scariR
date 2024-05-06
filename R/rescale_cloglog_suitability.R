@@ -237,7 +237,8 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
   # apply internal function
   rescale_vector_output <- rescale_vector(
     suit_column_internal = suit_column,
-    thresh_val_internal = thresh_value)
+    thresh_val_internal = thresh_value
+    )
 
   # create output
   xy_output <- xy_import
@@ -263,7 +264,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
 
     # convert rownames to column
     thresh_output <- rownames_to_column(thresh_output, var = "threshold") |>
-      rename("value" = "thresh_presets")
+      dplyr::rename("value" = "thresh_presets")
 
     # output
     xy_thresh_output <- list("cloglog_suitability" = xy_output, "thresholds" = thresh_output)

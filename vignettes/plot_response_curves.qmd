@@ -73,7 +73,6 @@ marginal_plots_style <- list(
 
 ```
 
-
 ```{r load model objects}
 
 regional_native_model <- read_rds(file = file.path(mypath, "slf_regional_native_v2", "regional_native_model.rds"))
@@ -86,7 +85,7 @@ regional_invaded_asian_model <- read_rds(file = file.path(mypath, "slf_regional_
 
 # create marginal response plots
 
-I will smooth these plots using a GAM formula, after the methods of Elith et al, 2011. 
+I will smooth these plots using a GAM formula, after the methods of Elith et al, 2011.
 
 A note that these curves were created using a Beta multiplier of 1.5.
 
@@ -141,7 +140,6 @@ bio11_max_activity_values <- c(
 )
 
 ```
-
 
 ```{r combine plots}
 
@@ -246,7 +244,6 @@ bio12_max_activity_values <- c(
 
 ```
 
-
 ```{r combine plots}
 
 bio12_marginal_combined <- ggplot() +
@@ -349,7 +346,6 @@ bio15_max_activity_values <- c(
 )
 
 ```
-
 
 ```{r combine plots}
 
@@ -454,7 +450,6 @@ bio2_max_activity_values <- c(
 
 ```
 
-
 ```{r combine plots}
 
 bio2_marginal_combined <- ggplot() +
@@ -538,7 +533,6 @@ univar_plots_style <- list(
 
 ```
 
-
 ## Bio 11
 
 ```{r extract univar plots per model- bio 11}
@@ -590,7 +584,6 @@ bio11_univar_max_activity_values <- c(
 )
 
 ```
-
 
 ```{r combine plots}
 
@@ -695,7 +688,6 @@ bio12_univar_max_activity_values <- c(
 
 ```
 
-
 ```{r combine plots}
 
 bio12_univar_combined <- ggplot() +
@@ -798,7 +790,6 @@ bio15_univar_max_activity_values <- c(
 )
 
 ```
-
 
 ```{r combine plots}
 
@@ -903,7 +894,6 @@ bio2_univar_max_activity_values <- c(
 
 ```
 
-
 ```{r combine plots}
 
 bio2_univar_combined <- ggplot() +
@@ -992,7 +982,6 @@ univar_plots_style_global <- list(
 )
 
 ```
-
 
 ```{r load model objects}
 
@@ -1421,5 +1410,3 @@ ggsave(
 # References
 
 Elith, J., M. Kearney, and S. Phillips. 2010. The art of modelling range-shifting species. Methods in Ecology and Evolution 1:330–342.
-
-
