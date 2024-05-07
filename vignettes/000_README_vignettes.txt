@@ -136,3 +136,5 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 
 v0- initial version- in sandbox/vignettes_old
 v1- using function to transform scatter plot axes
+v2
+v3- re-created workflow according to vig 130_v2

@@ -758,3 +758,184 @@ ggsave(easternUSA_entire_NAmerica_predict_plot,
 
 ```
 
+# vignette 130
+
+## Add quadrant trendlines
+
+I subtracted 0.1 from each 1995 point and added 0.1 to each 2055 point so the arrows would be more visible
+
+```{r table of arrow points}
+
+global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
+
+
+
+ quad_counts <- tibble(
+   # the axis value of this 
+   axis = c("x", "y"),
+   model = c("global", "regional_ensemble"),
+   # mean values of each of the x and y axes according to the threshold
+   # top right quadrant
+   extreme_risk_quad4_1995 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled, regional_ensemble_MTSS_1995) %>% dplyr::filter(xy_global_1995_rescaled >= global_MTSS & xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995) %>% dplyr::select(xy_global_1995_rescaled) %>% colMeans() - 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995) %>% colMeans() - 0.1
+   ),
+   # top left quadrant
+   high_risk_quad3_1995 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled < global_MTSS) %>% colMeans() - 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995) %>% colMeans() - 0.1
+   ),
+   # bottom right quadrant
+   moderate_risk_quad2_1995 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled >= global_MTSS) %>% colMeans() - 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_1995) %>% colMeans() - 0.1
+   ),
+   # bottom right quadrant
+   low_risk_quad1_1995 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled < global_MTSS) %>% colMeans() - 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_1995) %>% colMeans() - 0.1
+   ),
+   
+   ## BEGINNING of CC thresholds
+   
+   # top right quadrant
+   extreme_risk_quad4_2055 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled >= global_MTSS) %>% colMeans() + 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled >= regional_ensemble_MTSS_2055) %>% colMeans() + 0.1
+   ),
+   # top left quadrant
+   high_risk_quad3_2055 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled < global_MTSS) %>% colMeans() + 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled >= regional_ensemble_MTSS_2055) %>% colMeans() + 0.1
+   ),
+   # bottom right quadrant
+   moderate_risk_quad2_2055 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled >= global_MTSS) %>% colMeans() + 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055) %>% colMeans() + 0.1
+   ),
+   # bottom right quadrant
+   low_risk_quad1_2055 = c(
+     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled < global_MTSS) %>% colMeans() + 0.1,
+     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055) %>% colMeans() + 0.1
+   )
+ ) %>%
+   dplyr::relocate(axis, model, contains("extreme"), contains("high"), contains("moderate"))
+
+# this code was inspired by Smith 2021
+
+```
+
+```{r plot SLF suitability values with mean trendlines, fig.asp = 1}
+
+# figure annotation title
+# "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
+
+# plot
+(xy_joined_rescaled_plot <- ggplot() +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = as.numeric(xy_global_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # global
+   geom_hline(yintercept = as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # historical data
+   geom_point(
+     data = xy_joined_rescaled,
+     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
+     size = 1.5, color = "black", fill = "azure4", stroke = 0.5
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     data = xy_joined_rescaled,
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     size = 1.5, color = "black", fill = "azure4", stroke = 0.5
+     ) +
+   # arrows indicating change
+   # these arrows will only include the mean of each quadrant
+   # quad4, extreme suit, top right
+   geom_segment(
+      aes(
+        x = as.numeric(quad_counts[1, 3]),
+        xend = as.numeric(quad_counts[1, 4]),
+        y = as.numeric(quad_counts[2, 3]),
+        yend = as.numeric(quad_counts[2, 4])
+      ), 
+     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 2, color = "darkred"
+   ) +
+    # quad3, high suitability, top left
+   geom_segment(
+     aes(
+       x = as.numeric(quad_counts[1, 5]),
+       xend = as.numeric(quad_counts[1, 6]),
+       y = as.numeric(quad_counts[2, 5]),
+       yend = as.numeric(quad_counts[2, 6])
+     ), 
+     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 2, color = "darkorange"
+   ) +
+   # quad2, moderate suitability, bottom right
+   geom_segment(
+     aes(
+       x = as.numeric(quad_counts[1, 7]),
+       xend = as.numeric(quad_counts[1, 8]),
+       y = as.numeric(quad_counts[2, 7]),
+       yend = as.numeric(quad_counts[2, 8])
+     ), 
+     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 2, color = "gold"
+   ) +
+   # quad1, low suitability, bottom left
+   geom_segment(
+     aes(
+       x = as.numeric(quad_counts[1, 9]),
+       xend = as.numeric(quad_counts[1, 10]),
+       y = as.numeric(quad_counts[2, 9]),
+       yend = as.numeric(quad_counts[2, 10])
+     ), 
+     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 2, color = "azure4"
+   ) +
+   # axes scaling
+    # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 1, hjust = "right", vjust = "top", label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.3, y = 1, hjust = "left", vjust = "top", label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0, hjust = "right", vjust = "bottom", label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.3, y = 0, hjust = "left", vjust = "bottom", label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   #scale_fill_manual(name = "Time period", values = c("azure4", "gray27")) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
+)
+
+```
+
+
+
+```{r save scatterplot}
+
+ggsave(
+  xy_joined_rescaled_plot, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_IVR_regions_global_regional_ensemble.jpg"
+    ),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r export table}
+
+write_csv(quad_counts, file = file.path(here::here(), "vignette-outputs", "data-tables", "ensemble_threshold_values.csv"))
+
+```
+

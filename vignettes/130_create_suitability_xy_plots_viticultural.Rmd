@@ -323,48 +323,36 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 
 ```
 
-```{r plot SLF suitability values}
+```{r plot SLF suitability values, fig.asp = 1}
+
+# figure annotation title
+# "suitability for Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
 
 # plot
 (xy_joined_plot <- ggplot(data = xy_joined) +
    # threshold lines
    # MTSS thresholds
-   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed") + # global
-   geom_hline(yintercept = as.numeric(summary_regional_ensemble[1, 4]), linetype = "dashed") + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
-   # arrows indicating change
-   geom_segment(
-     aes(
-       x = xy_global_1995,
-       xend = xy_global_2055,
-       y = xy_regional_ensemble_1995,
-       yend = xy_regional_ensemble_2055
-     ), 
-     #arrow = grid::arrow(angle = 0, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.6
-     alpha = 0.8, linewidth = 0.3, color = "azure4"
-   ) +
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = as.numeric(summary_regional_ensemble[3, 4]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
    # historical data
    geom_point(
-     aes(x = xy_global_1995, y = xy_regional_ensemble_1995, fill = "1981-2010"), 
-     size = 1.5, shape = 21, stroke = 0.3
+     aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
+     size = 2, stroke = 0.5, color = "black", fill = "azure4"
      ) +
    # GFDL ssp370 data
    geom_point(
-     aes(x = xy_global_2055, y = xy_regional_ensemble_2055, fill = "2041-2070\nGFDL ssp370"), 
-     size = 1.5, shape = 21, stroke = 0.3
+     aes(x = xy_global_2055, y = xy_regional_ensemble_2055, shape = "2041-2070\nGFDL ssp370"), 
+     size = 2, stroke = 0.5, color = "black", fill = "azure4"
      ) +
    # axes scaling
-   scale_x_continuous(name = "'global' model suitability", limits = c(0, 1), breaks = breaks) + 
-   scale_y_continuous(name = "'regional_ensemble' model suitability", limits = c(0, 1), breaks = breaks) +
-   # scales style
-   labs(title = "Climate change effects on predicted suitability for SLF establishment in globally important viticultural areas",
-        subtitle = "'global' vs 'regional_ensemble' models",
-        caption = "suitability measured using MTSS threshold (dashed)"
-         ) +
+   scale_x_continuous(name =  "'global' model cloglog suitability", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name =  "'regional_ensemble' model cloglog suitability", limits = c(0, 1), breaks = breaks) +
    # aesthetics
-   scale_fill_manual(name = "Time period", values = c("purple3", "orchid1")) +
-   guides(fill = guide_legend(nrow = 1, override.aes = list(size = 2))) +
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
-   theme(legend.position = "bottom") 
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
 )
 
 ```
@@ -374,10 +362,10 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 ggsave(
   xy_joined_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_CC_shift_IVR_regions_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "xy_suitability_IVR_regions_global_regional_ensemble.jpg"
     ),
-  height = 10, 
-  width = 10,
+  height = 8, 
+  width = 8,
   device = "jpeg",
   dpi = "retina"
   )
@@ -402,6 +390,47 @@ xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_19
 
 ```
 
+I will need to create a second dataset for the arrow segments indicating change. I will filter out only the segments that cross either threshold and then plot these arrows.
+
+First, I need to isolate the MTSS threshold values.
+
+```{r retrieve threshold values}
+
+# global
+global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
+# regional ensemble
+regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
+
+```
+
+```{r filter segments that cross thresholds}
+
+xy_joined_rescaled_intersects <- xy_joined_rescaled %>%
+  mutate(
+    crosses_threshold = case_when(
+      # conditional for starting and ending points that overlap a the threshold
+      # x-axis
+      xy_global_1995_rescaled > global_MTSS & xy_global_2055_rescaled < global_MTSS ~ "crosses",
+      xy_global_1995_rescaled < global_MTSS & xy_global_2055_rescaled > global_MTSS ~ "crosses",
+      # y-axis
+      xy_regional_ensemble_1995_rescaled > regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055 ~ "crosses",
+       xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled > regional_ensemble_MTSS_2055 ~ "crosses",
+      # else
+      .default = "does not cross"
+    )
+  )
+
+# filter out the crosses
+xy_joined_rescaled_intersects <- dplyr::filter(
+  xy_joined_rescaled_intersects,
+  crosses_threshold == "crosses"
+)
+
+```
+
+Now lets plot the data.
+
 ```{r plot SLF suitability values, fig.asp = 1}
 
 # figure annotation title
@@ -411,44 +440,43 @@ xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_19
 (xy_joined_rescaled_plot <- ggplot(data = xy_joined_rescaled) +
    # threshold lines
    # MTSS thresholds
-   geom_vline(xintercept = as.numeric(xy_global_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # global
-   geom_hline(yintercept = as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
    # arrows indicating change
-   #geom_segment(
-  #   aes(
-  #     x = xy_global_1995_rescaled,
-  #     xend = xy_global_2055_rescaled,
-   #    y = xy_regional_ensemble_1995_rescaled,
-  #     yend = xy_regional_ensemble_2055_rescaled
-  #   ), 
-  #   arrow = grid::arrow(angle = 4.5, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.6
-     #alpha = 0.8, linewidth = 0.3, color = "azure4"
- #  ) +
+   geom_segment(
+     data = xy_joined_rescaled_intersects,
+     aes(
+       x = xy_global_1995_rescaled,
+       xend = xy_global_2055_rescaled,
+       y = xy_regional_ensemble_1995_rescaled,
+       yend = xy_regional_ensemble_2055_rescaled
+     ), 
+     arrow = grid::arrow(angle = 4.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+   ) +
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 1.5, color = "black"#, stroke = 0.3
+     size = 2, color = "black", fill = "azure4", stroke = 0.5
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 1.5, color = "gray27"#, stroke = 0.3
+     size = 2, color = "black", fill = "azure4", stroke = 0.5
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
    scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
    # quadrant labels
    # extreme risk, top right, quad4
-   geom_label(aes(x = 0.75, y = 1, hjust = "right", vjust = "top", label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
    # high risk, top left, quad3
-   geom_label(aes(x = 0.3, y = 1, hjust = "left", vjust = "top", label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
    # moderate risk, bottom right, quad2
-   geom_label(aes(x = 0.75, y = 0, hjust = "right", vjust = "bottom", label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
    # low risk, bottom left, quad1
-   geom_label(aes(x = 0.3, y = 0, hjust = "left", vjust = "bottom", label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(21, 16)) +
-   scale_color_manual(name = "Time period", values = c("black", "gray27")) +
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
    theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -462,7 +490,7 @@ xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_19
 ggsave(
   xy_joined_rescaled_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_IVR_regions_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "SLF_risk_IVR_regions_global_regional_ensemble.jpg"
     ),
   height = 8, 
   width = 8,
@@ -471,198 +499,13 @@ ggsave(
   )
 
 ```
-
-## Add quadrant trendlines
-
-```{r table of arrow points}
-
-global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
-regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
-regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
-
-
-
- quad_counts <- tibble(
-   # the axis value of this 
-   axis = c("x", "y"),
-   model = c("global", "regional_ensemble"),
-   # mean values of each of the x and y axes according to the threshold
-   # top right quadrant
-   extreme_risk_quad4_1995 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled >= global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995) %>% colMeans()
-   ),
-   # top left quadrant
-   high_risk_quad3_1995 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled < global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995) %>% colMeans()
-   ),
-   # bottom right quadrant
-   moderate_risk_quad2_1995 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled >= global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_1995) %>% colMeans()
-   ),
-   # bottom right quadrant
-   low_risk_quad1_1995 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_1995_rescaled) %>% dplyr::filter(xy_global_1995_rescaled < global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_1995_rescaled) %>% dplyr::filter(xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_1995) %>% colMeans()
-   ),
-   
-   ## BEGINNING of CC thresholds
-   
-   # top right quadrant
-   extreme_risk_quad4_2055 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled >= global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled >= regional_ensemble_MTSS_2055) %>% colMeans()
-   ),
-   # top left quadrant
-   high_risk_quad3_2055 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled < global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled >= regional_ensemble_MTSS_2055) %>% colMeans()
-   ),
-   # bottom right quadrant
-   moderate_risk_quad2_2055 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled >= global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055) %>% colMeans()
-   ),
-   # bottom right quadrant
-   low_risk_quad1_2055 = c(
-     xy_joined_rescaled %>% dplyr::select(xy_global_2055_rescaled) %>% dplyr::filter(xy_global_2055_rescaled < global_MTSS) %>% colMeans(),
-     xy_joined_rescaled %>% dplyr::select(xy_regional_ensemble_2055_rescaled) %>% dplyr::filter(xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055) %>% colMeans()
-   )
- ) %>%
-   dplyr::relocate(axis, model, contains("extreme"), contains("high"), contains("moderate"))
-
-# this code was inspired by Smith 2021
-
-```
-
-```{r plot SLF suitability values with mean trendlines, fig.asp = 1}
-
-# figure annotation title
-# "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
-
-# plot
-(xy_joined_rescaled_plot <- ggplot() +
-   # threshold lines
-   # MTSS thresholds
-   geom_vline(xintercept = as.numeric(xy_global_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # global
-   geom_hline(yintercept = as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2]), linetype = "dashed") + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
-   # historical data
-   geom_point(
-     data = xy_joined_rescaled,
-     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, fill = "Present"), 
-     size = 1.5, shape = 21, stroke = 0.3
-     ) +
-   # GFDL ssp370 data
-   geom_point(
-     data = xy_joined_rescaled,
-     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, fill = "2041-2070\nGFDL ssp370"), 
-     size = 1.5, shape = 21, stroke = 0.3
-     ) +
-   # arrows indicating change
-   # these arrows will only include the mean of each quadrant
-   # quad4, extreme suit, top right
-   geom_segment(
-      data = quad_counts,
-      aes(
-        x = as.numeric(quad_counts[1, 3]),
-        xend = as.numeric(quad_counts[1, 4]),
-        y = as.numeric(quad_counts[2, 3]),
-        yend = as.numeric(quad_counts[2, 4])
-      ), 
-     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 1, color = "darkred"
-   ) +
-    # quad3, high suitability, top left
-   geom_segment(
-     data = quad_counts,
-     aes(
-       x = as.numeric(quad_counts[1, 5]),
-       xend = as.numeric(quad_counts[1, 6]),
-       y = as.numeric(quad_counts[2, 5]),
-       yend = as.numeric(quad_counts[2, 6])
-     ), 
-     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 1, color = "darkorange"
-   ) +
-   # quad2, moderate suitability, bottom right
-   geom_segment(
-     data = quad_counts,
-     aes(
-       x = as.numeric(quad_counts[1, 7]),
-       xend = as.numeric(quad_counts[1, 8]),
-       y = as.numeric(quad_counts[2, 7]),
-       yend = as.numeric(quad_counts[2, 8])
-     ), 
-     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 1, color = "gold"
-   ) +
-   # quad1, low suitability, bottom left
-   geom_segment(
-     data = quad_counts,
-     aes(
-       x = as.numeric(quad_counts[1, 9]),
-       xend = as.numeric(quad_counts[1, 10]),
-       y = as.numeric(quad_counts[2, 9]),
-       yend = as.numeric(quad_counts[2, 10])
-     ), 
-     arrow = grid::arrow(angle = 25, type = "closed"), linewidth = 1, color = "azure4"
-   ) +
-   # axes scaling
-   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
-   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
-   # quadrant labels
-   # extreme risk, top right, quad4
-   geom_label(aes(x = 0.75, y = 1, hjust = "right", vjust = "top", label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
-   # high risk, top left, quad3
-   geom_label(aes(x = 0.3, y = 1, hjust = "left", vjust = "top", label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
-   # moderate risk, bottom right, quad2
-   geom_label(aes(x = 0.75, y = 0, hjust = "right", vjust = "bottom", label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
-   # low risk, bottom left, quad1
-   geom_label(aes(x = 0.3, y = 0, hjust = "left", vjust = "bottom", label = "low risk"), fill = "azure4", color = "azure", size = 5) +
-   # aesthetics
-   scale_fill_manual(name = "Time period", values = c("purple3", "plum1")) +
-   guides(fill = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
-   theme_bw() +
-   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-   coord_fixed(ratio = 1)
-)
-
-```
-
-
-
-```{r save scatterplot}
-
-ggsave(
-  xy_joined_rescaled_plot, 
-  filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_IVR_regions_global_regional_ensemble.jpg"
-    ),
-  height = 8, 
-  width = 8,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-
-
-
-
-
-
-```{r export table}
-
-write_csv(quad_counts, file = file.path(here::here(), "vignette-outputs", "data-tables", "ensemble_threshold_values.csv"))
-
-```
-
-
 
 
 5.  Create summary table of transformed plot
 
-I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `slfSpread::calculate_risk_quadrant()`.
+I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `slfSpread::calculate_risk_quadrant()`. 
+
+I will create a summary table of the quadrant placement (and thus the level of risk) for each point in the IVR_locations dataset. I will use `calculate_risk_quadrant()` to accomplish this.
 
 ```{r summary IVRs}
 
@@ -676,14 +519,14 @@ IVR_locations_joined <- left_join(IVR_locations, xy_joined_rescaled, by = c("x",
 IVR_locations_risk <- IVR_locations_joined %>%
   mutate(
     risk_1995 = slfSpread::calculate_risk_quadrant(
-      suit.x = IVR_locations_risk$xy_global_1995_rescaled,
-      suit.y = IVR_locations_risk$xy_regional_ensemble_1995_rescaled,
+      suit.x = IVR_locations_joined$xy_global_1995_rescaled,
+      suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
       thresh.x = global_MTSS, # this threshold remains the same
       thresh.y = regional_ensemble_MTSS_1995
     ),
     risk_2055 = slfSpread::calculate_risk_quadrant(
-      suit.x = IVR_locations_risk$xy_global_2055_rescaled,
-      suit.y = IVR_locations_risk$xy_regional_ensemble_2055_rescaled,
+      suit.x = IVR_locations_joined$xy_global_2055_rescaled,
+      suit.y = IVR_locations_joined$xy_regional_ensemble_2055_rescaled,
       thresh.x = global_MTSS,
       thresh.y = regional_ensemble_MTSS_2055
     ),
@@ -706,16 +549,421 @@ IVR_risk_table <- IVR_locations_risk %>%
   summarize(count = n()) %>%
   pivot_wider(names_from = risk_2055, values_from = count) %>%
   # tidy
-  rename("down_1995_across_2055" = "risk_1995") %>%
+  dplyr::rename("down_1995_across_2055" = "risk_1995") %>%
   relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
-  arrange(factor(.$down_1995_across_2055, levels = risk_levels))
-  
+  arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
+  # replace missing categories with 0
+  replace(is.na(.), 0)
 
 ```
 
 ```{r export table}
 
 write_csv(IVR_risk_table, file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table_global_regional_ensemble.csv"))
+
+```
+
+## make .html
+
+
+
+# 6. add percentage change to scatter plot
+
+I will add a percentage change for each quadrant that illustrates the total loss or gain per quadrant over time. I will use the IVR_risk_table created above
+
+```{r % change table}
+
+IVR_quad_percent_change <- tibble(
+  "risk_quadrant" = c("extreme", "high", "moderate", "low"),
+  "percent_change" = c(
+    # extreme
+    ((colSums(IVR_risk_table[, 2]) - rowSums(IVR_risk_table[1, 2:5])) / (rowSums(IVR_risk_table[1, 2:5]) + colSums(IVR_risk_table[, 2]))),
+    # high
+    ((colSums(IVR_risk_table[, 3]) - rowSums(IVR_risk_table[2, 2:5])) / (rowSums(IVR_risk_table[2, 2:5]) + colSums(IVR_risk_table[, 3]))),
+    # moderate
+    ((colSums(IVR_risk_table[, 4]) - rowSums(IVR_risk_table[3, 2:5])) / (rowSums(IVR_risk_table[3, 2:5]) + colSums(IVR_risk_table[, 4]))),
+    ((colSums(IVR_risk_table[, 5]) - rowSums(IVR_risk_table[4, 2:5])) / (rowSums(IVR_risk_table[4, 2:5]) + colSums(IVR_risk_table[, 5])))
+  )
+)
+
+```
+
+Now I will plot these percent changes over the risk quadrants.
+
+```{r plot SLF suitability values and % change, fig.asp = 1}
+
+# figure annotation title
+# "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
+
+# plot
+(xy_joined_rescaled_plot_percent_change <- ggplot(data = xy_joined_rescaled) +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.6) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.6) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # arrows indicating change
+   #geom_segment(
+  #   aes(
+  #     x = xy_global_1995_rescaled,
+  #     xend = xy_global_2055_rescaled,
+   #    y = xy_regional_ensemble_1995_rescaled,
+  #     yend = xy_regional_ensemble_2055_rescaled
+  #   ), 
+  #   arrow = grid::arrow(angle = 4.5, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.6
+     #alpha = 0.8, linewidth = 0.3, color = "azure4"
+ #  ) +
+   # historical data
+   geom_point(
+     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
+     size = 1.5, color = "black", fill = "azure4", stroke = 0.5, alpha = 0.1
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     size = 1.5, color = "black", fill = "azure4", stroke = 0.5, alpha = 0.1
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   # quadrant % changes
+   # extreme
+   geom_text(aes(x = 0.75, y = 0.8, label = scales::percent(as.numeric(IVR_quad_percent_change[1, 2]), accuracy = 0.1)), size = 12, color = "darkred") +
+   # high
+   geom_text(aes(x = 0.25, y = 0.8, label = scales::percent(as.numeric(IVR_quad_percent_change[2, 2]), accuracy = 0.1)), size = 12, color = "darkorange") +
+   # moderate
+   geom_text(aes(x = 0.75, y = 0.2, label = scales::percent(as.numeric(IVR_quad_percent_change[3, 2]), accuracy = 0.1)), size = 12, color = "gold") +
+   # low
+   geom_text(aes(x = 0.25, y = 0.2, label = scales::percent(as.numeric(IVR_quad_percent_change[4, 2]), accuracy = 0.1)), size = 12, color = "azure4") +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   #scale_fill_manual(name = "Time period", values = c("azure4", "gray27")) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  xy_joined_rescaled_plot_percent_change, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_IVR_regions_global_regional_ensemble_percentages.jpg"
+    ),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+# Appendix
+
+## plot unweighted mean versions of suitability plots
+
+This workflow follows steps 1-3, except that it plots based on the unweighted mean of the calculated regional ensemble (rather than an ensemble created based on AUC and ExDet weights).
+
+```{r load in summary files}
+# summary file to extract thresholds from
+
+summary_regional_ensemble_unweighted <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values_unweighted.csv"))
+
+
+```
+
+Finally, I will load in the global and regional ensemble suitability maps. These will be used both for extracting the new xy suitability values and for plotting.
+
+```{r load in suitability rasters}
+
+# regional_ensemble
+regional_ensemble_1995_unweighted <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_1981-2010.asc")
+  )
+
+regional_ensemble_2055_unweighted <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  )
+
+```
+
+### Retrieve/Import xy suitability
+
+These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `slfSpread::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
+
+The xy_suitabilities for the global models also contain a few less records than the IVR regions. To ensure that I am retrieving the suitability values for the exact same vineyards in the regional_ensemble, I will perform a filtering join. The IVR dataset should now contain the same records as the global suitability values do
+
+```{r de-duplicate and filter join}
+
+# de-duplicate just to make sure
+xy_global_1995 <- scrubr::dedup(xy_global_1995, how = "one", tolerance = 0.99) 
+xy_global_2055 <- scrubr::dedup(xy_global_2055, how = "one", tolerance = 0.99) 
+
+
+# edits to IVR dataset
+# filter join of IVRs
+IVR_locations <- semi_join(IVR_locations, xy_global_1995, by = c("x", "y")) 
+# add ID column
+IVR_locations <- IVR_locations %>%
+  dplyr::mutate(ID = row_number()) %>%
+  relocate(ID)
+
+```
+
+Now, I will retrieve the suitability values for the regional_ensemble. Instead of returning the coordinates from the map, I will join the coordinates from the original IVR_locations dataset so that the coordinates are exact for joining with other datasets.
+
+```{r retrieve xy suitability for regional_ensemble}
+
+# 1995
+xy_regional_ensemble_1995_unweighted <- terra::extract(
+  x = regional_ensemble_1995_unweighted,
+  y = dplyr::select(IVR_locations, x, y), # points
+  method = "simple",
+  xy = FALSE, # dont return coordinates
+  ID = TRUE
+)
+
+
+# 2055
+xy_regional_ensemble_2055_unweighted <- terra::extract(
+  x = regional_ensemble_2055_unweighted,
+  y = dplyr::select(IVR_locations, x, y), # points
+  method = "simple",
+  xy = FALSE, # dont return coordinates 
+  ID = TRUE
+) 
+
+```
+
+```{r join xy coordinates}
+
+# joining object
+IVR_coordinates <- dplyr::select(IVR_locations, ID, x, y)
+
+# perform join
+xy_regional_ensemble_1995_unweighted <- left_join(xy_regional_ensemble_1995_unweighted, IVR_coordinates, by = "ID") %>%
+  dplyr::select(-ID)
+
+xy_regional_ensemble_2055_unweighted <- left_join(xy_regional_ensemble_2055_unweighted, IVR_coordinates, by = "ID") %>%
+  dplyr::select(-ID)
+
+```
+
+Now, I will tidy and save the datasets
+
+```{r tidy datasets}
+
+# regional_ensemble datasets
+xy_regional_ensemble_1995_unweighted <- xy_regional_ensemble_1995_unweighted %>%
+  # rename the column for future joining
+  dplyr::rename("xy_regional_ensemble_1995_unweighted" = "mean") %>%
+  dplyr::filter(!is.na(xy_regional_ensemble_1995_unweighted)) %>%
+  dplyr::relocate(x, y)
+
+xy_regional_ensemble_2055_unweighted <- xy_regional_ensemble_2055_unweighted %>%
+  # rename the column for future joining
+  dplyr::rename("xy_regional_ensemble_2055_unweighted" = "mean") %>%
+  dplyr::filter(!is.na(xy_regional_ensemble_2055_unweighted)) %>%
+  dplyr::relocate(x, y)
+
+# we lost 1 record because of the NA removal, but that is OK
+
+```
+
+### Transform xy suitability
+
+I will plot the suitability values in two different ways- I will plot the raw xy suitability and I will transform the data so that the MTSS threshold is the center of the scatter plot. This way, movement across the minimum suitability threshold is more easily visualized. I will transform all 4 vectors of suitability values, 2 per model, in preparation for plotting. 
+
+I created the function `slfSpread::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
+
+```{r transform regional_ensemble xy data}
+
+xy_regional_ensemble_1995_unweighted_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = xy_regional_ensemble_1995_unweighted,
+  thresh = "MTSS",
+  exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+  summary.file = summary_regional_ensemble_unweighted,
+  rescale.name = "xy_regional_ensemble_1995_unweighted",
+  rescale.thresholds = TRUE
+)
+
+xy_regional_ensemble_1995_unweighted_rescaled_thresholds <- xy_regional_ensemble_1995_unweighted_rescaled[[2]]
+xy_regional_ensemble_1995_unweighted_rescaled <- xy_regional_ensemble_1995_unweighted_rescaled[[1]]
+
+
+
+xy_regional_ensemble_2055_unweighted_rescaled <- slfSpread::rescale_cloglog_suitability(
+  xy.predicted = xy_regional_ensemble_2055_unweighted,
+  thresh = "MTSS", # the way the thresholds are calculated for the regional_ensemble model means that the threshold will be slightly different for climate change
+  exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+  summary.file = summary_regional_ensemble_unweighted,
+  rescale.name = "xy_regional_ensemble_2055_unweighted",
+  rescale.thresholds = TRUE
+)
+
+xy_regional_ensemble_2055_unweighted_rescaled_thresholds <- xy_regional_ensemble_2055_unweighted_rescaled[[2]]
+xy_regional_ensemble_2055_unweighted_rescaled <- xy_regional_ensemble_2055_unweighted_rescaled[[1]]
+
+```
+
+### plot untransformed suitability
+
+```{r join datasets}
+
+# join datasets for plotting
+xy_joined_unweighted <- full_join(xy_global_1995, xy_regional_ensemble_1995_unweighted, by = c("x", "y")) %>%
+  # join CC datasets
+  full_join(., xy_global_2055, by = c("x", "y")) %>%
+  full_join(., xy_regional_ensemble_2055_unweighted, by = c("x", "y")) %>%
+  # order
+  dplyr::relocate(x, y, xy_global_1995, xy_global_2055)
+
+```
+
+```{r plot SLF suitability values, fig.asp = 1}
+
+# figure annotation title
+# "suitability for Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
+
+# plot
+xy_joined_unweighted_plot <- ggplot(data = xy_joined_unweighted) +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = as.numeric(summary_regional_ensemble_unweighted[2, 2]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # historical data
+   geom_point(
+     aes(x = xy_global_1995, y = xy_regional_ensemble_1995_unweighted, shape = "Present"), 
+     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = xy_global_2055, y = xy_regional_ensemble_2055_unweighted, shape = "2041-2070\nGFDL ssp370"), 
+     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     ) +
+   # axes scaling
+   scale_x_continuous(name =  "'global' model cloglog suitability", limits = c(0, 1), breaks = breaks) + 
+   scale_y_continuous(name =  "'regional_ensemble' model cloglog suitability", limits = c(0, 1), breaks = breaks) +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1) 
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  xy_joined_unweighted_plot, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "xy_suitability_IVR_regions_global_regional_ensemble_unweighted.jpg"
+    ),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### plot transformed suitability
+
+```{r join datasets}
+
+# join datasets for plotting
+xy_joined_unweighted_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_unweighted_rescaled, by = c("x", "y")) %>%
+  # join CC datasets
+  full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
+  full_join(., xy_regional_ensemble_2055_unweighted_rescaled, by = c("x", "y")) %>%
+  # order
+  dplyr::relocate(x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
+  dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995_unweighted, xy_regional_ensemble_2055_unweighted))
+
+
+```
+
+I will need to create a second dataset for the arrow segments indicating change. I will filter out only the segments that cross either threshold and then plot these arrows.
+
+First, I need to isolate the MTSS threshold values.
+
+```{r retrieve threshold values}
+
+# global
+global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
+# regional ensemble
+regional_ensemble_MTSS_1995_unweighted <- as.numeric(xy_regional_ensemble_1995_unweighted_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_2055_unweighted <- as.numeric(xy_regional_ensemble_1995_unweighted_rescaled_thresholds[4, 2])
+
+```
+
+```{r plot SLF suitability values, fig.asp = 1}
+
+# figure annotation title
+# "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
+
+# plot
+(xy_joined_unweighted_rescaled_plot <- ggplot(data = xy_joined_unweighted_rescaled) +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995_unweighted, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # historical data
+   geom_point(
+     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_unweighted_rescaled, shape = "Present"), 
+     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_unweighted_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
+)
+
+```
+
+```{r save scatterplot}
+
+ggsave(
+  xy_joined_unweighted_rescaled_plot, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "SLF_risk_IVR_regions_global_regional_ensemble_unweighted.jpg"
+    ),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
 
 ```
 

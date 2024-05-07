@@ -38,7 +38,7 @@ Next, I will need to infer the amount of range filling and invasion stage of SLF
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here() # here() starts at the root folder of this package.
+here::here() # here() starts at the root folder of this package.
 library(devtools)
 
 # spatial data handling
@@ -96,7 +96,7 @@ map_style_binarized <- list(
 
 ```{r set wd}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models")
 
@@ -163,7 +163,7 @@ summary_global <- read_csv(file.path(mypath, "slf_global_v2", "global_summary_al
 
 
 
-# Map regional ensemble
+# 1. Map regional ensemble
 
 First, I will create general suitability maps of the regional ensemble I created in the previous vignette. These maps will depict the weighted suitability values, but will also threshold the map using the calculated MTP and MTSS thresholds. Anything unsuitable will be depicted in dark grey, anything suitable above the MTP threshold in light grey, and the suitable above the MTSS threshold in a color ramp.
 
@@ -277,7 +277,7 @@ ggsave(
 
 ```
 
-# Create binary threshold maps to infer range filling
+# 2. Create binary threshold maps to infer range filling
 
 First, I will create matrix objects that will be used to reclassify the output rasters to a binary predictor of suitability. 0.5 will be the threshold: anything above 0.5 will be considered suitable, while anything below will not be. This threshold is essential for my invasion stage anaylsis further downstream.
 
@@ -307,7 +307,7 @@ I will also interpret these categories in terms of risk of SLF suitability. Thes
 
 Gallien et al, 2012 interprets these categories in terms of specific ecological mechanisms, but we prefer to interpret them in terms of the risk for SLF.
 
-## 1. convert output rasters to binary predictors
+## convert output rasters to binary predictors
 
 ### Time period: 1981-2010
 
@@ -351,7 +351,7 @@ Now I can reclassify the MaxEnt outputs. I will load in the averaged predictions
 
 ```{r reclassify maxent outputs}
 
-if(TRUE) {
+if(FALSE) {
   
   # regional
   # reclassify and write regional raster
@@ -575,7 +575,7 @@ ggplot() +
 
 ```
 
-## 2. Mosaic rasters and produce map
+## Mosaic rasters and produce map
 
 From the plots, we see that the binary conversion worked. Next, I will need to stack the reclassified global and regional rasters and add them into a single raster output. This should give me the a raster with 4 classes (Unsuitable Agreement = 5, Suitable Agreement = 10, unsuitable regional/suitable global = 9, Suitable regional/unsuitable global = 6). The mosaic function combines spatRasters that overlap in extent into a new raster, via the function specified (addition, in this case).
 
@@ -608,9 +608,9 @@ if(FALSE) {
 I will prepare to plot these points. These categories will be interpreted in terms of risk, as discussed above:
 
 *Unsuitable Agreement = low risk = 5
-*Suitable Agreement = high risk = 10
-*Suitable regional/unsuitable global = adaptive risk = 6
-*unsuitable regional/suitable global = imminent risk = 9
+*Suitable Agreement = extreme risk = 10
+*Suitable regional/unsuitable global = high risk = 6
+*unsuitable regional/suitable global = moderate risk = 9
 
 ```{r prepare data for mapping}
 
@@ -625,15 +625,13 @@ slf_binarized_1995_df <- terra::as.data.frame(slf_binarized_1995, xy = TRUE) #%>
 unique(slf_binarized_1995_df$global_regional_binarized)
 # it seems that the reclassification worked! Lets map it to be sure.
 
-
-
 # now, create vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order
-breaks.obj <- unique(slf_binarized_1995_df$global_regional_binarized)
+breaks.obj <- c(5, 9, 6, 10) # i manually ordered these
 # labels for the values
-labels.obj <- c("low risk", "adaptive risk", "high risk", "imminent risk")
+labels.obj <- c("low", "moderate", "high", "extreme")
 # vector of colors to classify scale
-values.obj <- c("azure4", "darkblue", "darkred", "darkorange")
+values.obj <- c("azure4", "gold", "darkorange", "darkred")
 
 ```
 
@@ -642,11 +640,11 @@ values.obj <- c("azure4", "darkblue", "darkred", "darkorange")
 slf_binarized_1995_plot <- ggplot() +
   geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
   labs(
-    title = "Predicted risk of SLF invasion globally",
+    title = "Projected risk of Lycorma delicatula invasion globally",
     subtitle = "1981-2010"
     ) +
   scale_discrete_manual(
-    name = "risk for SLF",
+    name = "projected risk",
     values = values.obj,
     breaks = breaks.obj,
     labels = labels.obj,
@@ -654,7 +652,7 @@ slf_binarized_1995_plot <- ggplot() +
     guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
   map_style_binarized +
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
   theme(legend.key = element_rect(color = "black"))
 
 ```
@@ -715,11 +713,11 @@ unique(slf_binarized_2055_df$global_regional_binarized)
 
 # now, create vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order
-breaks.obj <- unique(slf_binarized_2055_df$global_regional_binarized)
+breaks.obj <- c(5, 9, 6, 10) # i manually ordered these
 # labels for the values
-labels.obj <- c("low risk", "adaptive risk", "high risk", "imminent risk")
+labels.obj <- c("low", "moderate", "high", "extreme")
 # vector of colors to classify scale
-values.obj <- c("azure4", "darkblue", "darkred", "darkorange")
+values.obj <- c("azure4", "gold", "darkorange", "darkred")
 
 ```
 
@@ -728,11 +726,11 @@ values.obj <- c("azure4", "darkblue", "darkred", "darkorange")
 slf_binarized_2055_plot <- ggplot() +
   geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
   labs(
-    title = "Predicted risk of SLF invasion globally, projected for climate change",
+    title = "Projected risk of Lycorma delicatula invasion globally under climate change",
     subtitle = "2041-2070 | ssp370 | GFDL"
     ) +
   scale_discrete_manual(
-    name = "risk for SLF",
+    name = "projected risk",
     values = values.obj,
     breaks = breaks.obj,
     labels = labels.obj,
@@ -740,7 +738,7 @@ slf_binarized_2055_plot <- ggplot() +
     guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
   map_style_binarized +
-  guides(fill = guide_legend(nrow = 2, byrow = TRUE)) +
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
   theme(legend.key = element_rect(color = "black"))
 
 ```
@@ -758,7 +756,287 @@ ggsave(
 
 ```
 
-In the next vignette, I will create suitability maps to compliment these figures.
+# 3. Map range shifting areas
+
+Lastly, I want to create a map of areas where SLF range is expanding, contracting or remaining the same over time. I will binarize the rasters so that any point that is above the MTSS threshold on either model becomes one number and anything above the threshold becomes another. This will follow the methodology from step 2.
+
+For the historical rasters, I will classify the cells as the following:
+
+*1995 unsuitable = 5            -> 00000001 = 1
+*1995 suitable = 6, 9 or 10     -> 00000010 = 2
+
+For the 2055 rastes, I will encode the outputs into these values:
+
+*2055 unsuitable = 5            -> 00000100 = 4
+*2055 suitable = 6, 9 or 10     -> 00001000 = 8  
+
+*this is the same as in step 2*
+
+By encoding the rasters into base-2, I have created only 4 possible values of the raster layers, which can be translated into 4 categories:
+
+*Unsuitable Agreement = 5 (00000101)
+*Suitable Agreement = 10 (00001010)
+*unsuitable 1995/suitable 2055 = 9 (00001001)
+*Suitable 1995/unsuitable 2055 = 6 (00000110)
+
+I will also interpret these categories in terms of risk of SLF range expansion:
+
+*Unsuitable Agreement = area will stay unsuitable (no range shift)
+*Suitable Agreement = area will stay suitable (no range shift)
+*unsuitable 1995/suitable 2055 = area will become SUITABLE in the future (range expansion)
+*Suitable 1995/unsuitable 2055 = area will become UNSUITABLE in the future (range contraction)
+
+I will classify areas of unsuitability as gray, per usual. Areas where SLF remains the same will be white, areas where SLF is expanding will be green, and areas where SLF is contracting will be red.
+
+The first step is to classify the binarized rasters. 
+
+## Setup
+
+```{r load in rasters}
+
+# 1995
+slf_binarized_1995 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc")) 
+# rename values
+names(slf_binarized_1995) <- "global_regional_binarized_1995"
+# convert to df
+slf_binarized_1995_df <- terra::as.data.frame(slf_binarized_1995, xy = TRUE) 
+
+
+
+# 2055
+slf_binarized_2055 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp370_GFDL.asc")) 
+# rename values
+names(slf_binarized_2055) <- "global_regional_binarized_2055"
+# convert to df
+slf_binarized_2055_df <- terra::as.data.frame(slf_binarized_2055, xy = TRUE)
+
+
+```
+
+I will check for the unique values in the rasters.
+
+```{r unique rastes values}
+
+unique(values(slf_binarized_1995))
+
+unique(values(slf_binarized_2055))
+
+# all looks good
+
+```
+
+Now I will create the classes for `terra::classify()`
+
+```{r terra required classification matrices}
+
+# create historical suitability value matrix for terra
+classes_1995 <- data.frame(
+  is = c(5, 6, 9, 10),
+  becomes = c(strtoi(00000001, base = 2), strtoi(00000010, base = 2), strtoi(00000010, base = 2), strtoi(00000010, base = 2)) 
+  # the strtoi function converts to base-2, becomes 1 and 2
+)
+
+
+
+classes_2055 <- data.frame(
+  is = c(5, 6, 9, 10),
+  becomes = c(strtoi(00000100, base = 2), strtoi(00001000, base = 2), strtoi(00001000, base = 2), strtoi(00001000, base = 2)) 
+  # becomes 4 and 8
+)
+
+```
+
+Now I can reclassify the MaxEnt outputs. I will load in the averaged predictions for the global and regional models for the time period 1981-2010. I will reclassify their values based on the two matrices above. This chunk might take some time to run.
+
+```{r reclassify maxent outputs}
+
+if(FALSE) {
+  
+  # regional
+  # reclassify and write regional raster
+  slf_binarized_1995_classified <- terra::classify(
+    x = slf_binarized_1995, 
+    rcl = classes_1995,
+    others = strtoi(00000001, base = 2),
+    filename = file.path(mypath, "working_dir", "slf_range_shift_1981-2010.asc"), # also write to file
+    filetype = "AAIGrid",
+    overwrite = FALSE
+    ) 
+  
+  # global
+  # reclassify and write global raster
+  slf_binarized_2055_classified <- terra::classify(
+    x = slf_binarized_2055, 
+    rcl = classes_2055, 
+    others = strtoi(00000100, base = 2),
+    filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp370_GFDL.asc"), 
+    filetype = "AAIGrid",
+    overwrite = FALSE
+    ) 
+
+}
+
+```
+
+I will run a few error checks to ensure that the binarization process worked. 
+
+```{r error checks}
+
+# take minmax
+terra::minmax(slf_binarized_1995_classified) %>%
+  format(., scientific = FALSE)
+
+terra::minmax(slf_binarized_2055_classified) %>%
+  format(., scientific = FALSE)
+
+# all good
+
+# check unique values
+unique(values(slf_binarized_1995_classified))
+unique(values(slf_binarized_2055_classified))
+
+
+```
+
+
+Now that the rasters have been converted to binary, I will visualize 1 to ensure that the process worked. Since the same process was done to both the regional and global models, I will only plot the regional model.
+
+```{r prepare for plotting}
+
+# load in binary raster just created and convert to df
+slf_binarized_1995_classified_df <- terra::rast(
+  x = file.path(mypath, "working_dir", "slf_range_shift_1981-2010.asc")
+  ) %>%
+  terra::as.data.frame(., xy = TRUE) #%>%
+  #na.omit()
+
+# now, create vectors of values used to manually edit the scale of the plot
+# the possible values of the scale and their order
+breaks.obj <- unique(slf_binarized_1995_classified_df$global_regional_binarized_1995)
+# labels for the values
+labels.obj <- c("present UNsuitable", "present suitable")
+# vector of colors to classify scale
+values.obj <- c(
+  "azure4",
+  "azure"
+)
+
+```
+
+```{r plot binarized raster}
+
+# plot regional binary
+ggplot() +
+  geom_raster(data = slf_binarized_1995_classified_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized_1995))) +
+  labs(title = "current suitability for SLF") +
+  scale_fill_manual(
+    name = "suitability for SLF",
+    values = values.obj,
+    breaks = breaks.obj,
+    labels = labels.obj,
+    aesthetics = "fill",
+    ) +
+  map_style_binarized
+
+```
+
+great, the conversion worked.
+
+## Mosaic rasters
+
+From the plots, we see that the binary conversion worked. Next, I will need to stack the reclassified 1995 and 2055 rasters and add them into a single raster output. This should give me the a raster with 4 classes (Unsuitable Agreement = 5, Suitable Agreement = 10, unsuitable 1995/suitable 2055 = 9, Suitable 1995/unsuitable 2055 = 6). The mosaic function combines spatRasters that overlap in extent into a new raster, via the function specified (addition, in this case).
+
+### 1981-2010
+
+```{r re-import binarized rasters}
+
+slf_binarized_1995_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_range_shift_1981-2010.asc"))
+
+slf_binarized_2055_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp370_GFDL.asc"))
+
+```
+
+```{r mosaic rasters}
+
+if(FALSE) {
+  
+  # overlay and combine rasters by summing values
+  slf_binarized_1995 <- terra::mosaic(
+    slf_binarized_1995_classified, slf_binarized_2055_classified, # rasters
+    fun = "sum", 
+    filename = file.path(mypath, "working_dir", "slf_range_shift_summed.asc"),
+    overwrite = FALSE,
+    wopt = c(progress = 1)) # progress bar
+  
+}
+
+```
+
+## Plot
+
+I will prepare to plot these points. These categories will be interpreted in terms range shifts, as discussed above:
+
+*Unsuitable Agreement = 5 = area will stay unsuitable (no range shift)
+*Suitable Agreement = 10 = area will stay suitable (no range shift)
+*unsuitable 1995/suitable 2055 = 9 = area will become SUITABLE in the future (range expansion)
+*Suitable 1995/unsuitable 2055 = 6 = area will become UNSUITABLE in the future (range contraction)
+
+```{r prepare data for mapping}
+
+slf_range_shift <- terra::rast(x = file.path(mypath, "working_dir", "slf_range_shift_summed.asc")) 
+# rename values
+names(slf_range_shift) <- "range_shift_summed"
+# convert to df
+slf_range_shift_df <- terra::as.data.frame(slf_range_shift, xy = TRUE) #%>%
+ # na.omit()
+
+# check for the number of unique values in the raster values column
+unique(slf_range_shift_df$range_shift_summed)
+# it seems that the reclassification worked! Lets map it to be sure.
+
+# now, create vectors of values used to manually edit the scale of the plot
+# the possible values of the scale and their order
+breaks.obj <- c(5, 10, 6, 9) # i manually ordered these
+# labels for the values
+labels.obj <- c("unsuitable for\nL delicatula", "retained", "contraction", "expansion")
+# vector of colors to classify scale
+values.obj <- c("azure4", "azure", "darkred", "darkgreen")
+
+```
+
+```{r plot summed raster}
+
+slf_range_shift_plot <- ggplot() +
+  geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
+  labs(title = "Projected Lycorma delicatula range expansion by 2055") +
+  scale_discrete_manual(
+    name = "L delicatula\nrange shift",
+    values = values.obj,
+    breaks = breaks.obj,
+    labels = labels.obj,
+    aesthetics = "fill",
+    guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
+    ) +
+  map_style_binarized +
+  # aesthetics
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE)) +
+  theme(legend.key = element_rect(color = "black"), legend.title = element_text(hjust = 1))
+
+```
+
+```{r save summed raster}
+
+ggsave(
+  slf_range_shift_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
 
 # Appendix
 

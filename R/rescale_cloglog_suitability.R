@@ -158,13 +158,19 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
     )
 
     # else if the thresh import fits the specifications of the regional_ensemble output, import these values
-  } else if (nrow(thresh_preset_import) < 52 && ncol(thresh_preset_import) < 7) {
+  } else if (nrow(thresh_preset_import) > 2 & nrow(thresh_preset_import) < 52 && ncol(thresh_preset_import) < 7) {
     thresh_presets <- c(
       "MTP" = as.numeric(thresh_preset_import[1, 4]), # Minimum.training.presence.Cloglog.threshold
       "MTSS" = as.numeric(thresh_preset_import[3, 4]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
       # only used for format of thresh file from regional_ensemble model
       "MTP.CC" = as.numeric(thresh_preset_import[2, 4]), # MTP transformed for climate change
       "MTSS.CC" = as.numeric(thresh_preset_import[4, 4]) # MTP transformed for climate change
+    )
+    # else if the thresh import fits the specifications of the regional_ensemble output, import these values
+  } else if (nrow(thresh_preset_import) <= 2 && ncol(thresh_preset_import) < 7) {
+    thresh_presets <- c(
+      "MTP" = as.numeric(thresh_preset_import[1, 2]), # Minimum.training.presence.Cloglog.threshold
+      "MTSS" = as.numeric(thresh_preset_import[2, 2]) # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
     )
     # else, print a warning message
   } else {

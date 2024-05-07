@@ -71,7 +71,7 @@ calculate_risk_quadrant <- function(suit.x, suit.y, thresh.x, thresh.y) {
     suit_x >= thresh.x & suit_y >= thresh.y ~ "extreme",
     suit_x < thresh.x & suit_y >= thresh.y  ~ "high",
     suit_x >= thresh.x & suit_y < thresh.y  ~ "moderate",
-    suit_x < thresh.x & suit_y < thresh.y  ~ "low"
+    suit_x < thresh.x & suit_y < thresh.y   ~ "low"
   )
 
   # convert to df
