@@ -2,7 +2,7 @@
 title: "Plot suitability for SLF in important grape growing regions and climate change effects"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-04-30"
+date: "2024-05-06"
 output: html_document
 ---
 
@@ -501,7 +501,7 @@ ggsave(
 ```
 
 
-5.  Create summary table of transformed plot
+# 5. Create summary table of transformed plot
 
 I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `slfSpread::calculate_risk_quadrant()`. 
 
@@ -562,10 +562,6 @@ IVR_risk_table <- IVR_locations_risk %>%
 write_csv(IVR_risk_table, file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table_global_regional_ensemble.csv"))
 
 ```
-
-## make .html
-
-
 
 # 6. add percentage change to scatter plot
 

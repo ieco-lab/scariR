@@ -21,8 +21,8 @@ model_info <- data.frame(
   "background_points" = "20,000"
 )
 
-model_info_kable <- kableExtra::kbl(x = model_info) %>%
-  kableExtra::kable_styling()
+model_info_kable <- knitr::kable(x = model_info) %>%
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
   
 ```
 
@@ -112,7 +112,7 @@ if(FALSE) {
   # convert to pdf
   webshot::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.pdf")
+    file = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.png")
   )
     
 }

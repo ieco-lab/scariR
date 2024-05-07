@@ -45,7 +45,10 @@ library(devtools)
 library(terra) 
 library(scrubr)
 
+# aesthetics
 library(viridis)
+library(webshot2)
+library(kableExtra)
 
 ```
 
@@ -1037,6 +1040,64 @@ ggsave(
 
 ```
 
+## sum areas gained and lost
+
+```{r retrieve summary table}
+
+slf_range_shift_table <- terra::expanse(
+  x = slf_range_shift,
+  unit = "km",
+  byValue = TRUE
+) 
+
+# create list of range shift values
+ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
+
+# tidy
+slf_range_shift_table <- slf_range_shift_table %>%
+  dplyr::select(-layer) %>%
+  mutate("Ld_range_shift_type" = ranges.obj) %>%
+  rename("area (km)" = "area") %>%
+  dplyr::select(-value) %>%
+  relocate(Ld_range_shift_type)
+
+
+# convert to kable
+slf_range_shift_kable <- kable(x = slf_range_shift_table) %>%
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  
+
+```
+
+```{r save tables from above, if desired}
+
+if(FALSE) {
+  
+  # model training dataset
+  # save as .csv
+  write_csv(slf_range_shift_table, file.path(here::here(), "vignette-outputs", "data-tables", "slf_range_shift_summed_area_table.csv"))
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_range_shift_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.png")
+  )
+  
+  # model extents
+    
+}
+
+```
 
 # Appendix
 

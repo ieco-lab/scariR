@@ -138,3 +138,29 @@ v0- initial version- in sandbox/vignettes_old
 v1- using function to transform scatter plot axes
 v2
 v3- re-created workflow according to vig 130_v2
+
+
+
+
+----------140_format_risk_tables.Rmd----------
+
+## About
+
+This vignette formats risk tables from vignettes 130 and 131
+
+## changelog
+
+v0- initial version
+
+
+
+
+----------150_plot_response_curves.Rmd----------
+
+## About
+
+This vignette plots the response curve outputs from SDMtune as ggplots and adds all ensemble curves to the same plot.
+
+## changelog
+
+v0- initial version
