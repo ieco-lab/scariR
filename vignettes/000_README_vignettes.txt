@@ -8,6 +8,19 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 
 ########## FILES ##########
 
+----------010_initialize_pkg.R----------
+
+## About
+
+Initializes renv, saves data objects for internal use
+
+## Changelog
+
+v0-
+
+
+
+
 ----------050_run_global_MaxEnt_model.Rmd----------
 
 ## About

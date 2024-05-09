@@ -134,6 +134,9 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
   if (is.character(exponential.file)) {
     exponential_import <- read.csv(exponential.file) # read as csv
 
+ # } else if(exists("exponential.file")) { # if it is already in environment, import as is
+  #  exponential_import <- exponential.file
+
   } else {
     exponential_import <- as.data.frame(exponential.file) # make data frame
   }
@@ -214,7 +217,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
     # throwaway function to calculate the closest value, which returns the row number of the value that is closest to the s_val specified value
     find_closest <- function(x_val, s_val) {
 
-      which.min(abs(x_val - s_val))
+     which.min(abs(x_val - s_val))
 
       }
 

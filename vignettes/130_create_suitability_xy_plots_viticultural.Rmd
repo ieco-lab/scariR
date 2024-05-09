@@ -148,9 +148,16 @@ IVR_locations <- semi_join(IVR_locations, xy_global_1995, by = c("x", "y"))
 # add ID column
 IVR_locations <- IVR_locations %>%
   dplyr::mutate(ID = row_number()) %>%
-  relocate(ID)
+  relocate(ID, x, y)
 
 ```
+
+```{r save tidied data}
+
+readr::write_rds(IVR_locations, file.path(here::here(), "data", "wineries_tidied.rds"))
+
+```
+
 
 Now, I will retrieve the suitability values for the regional_ensemble. Instead of returning the coordinates from the map, I will join the coordinates from the original IVR_locations dataset so that the coordinates are exact for joining with other datasets.
 
@@ -226,7 +233,7 @@ xy_regional_ensemble_2055 <- xy_regional_ensemble_2055 %>%
 
 ```
 
-```{r save regional_ensemble predicted suitability}
+```{r save predicted suitability datasets}
 
 # 1995
 write_csv(
@@ -239,7 +246,32 @@ write_csv(
   file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
   )
 
+# also save to .rds
+readr::write_rds(
+  xy_regional_ensemble_1995,  
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit.rds")
+  )
+
+readr::write_rds(
+  xy_regional_ensemble_2055,  
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds")
+  )
+
+
+# finally, save global datasets
+readr::write_rds(
+  xy_global_1995,  
+  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds")
+  )
+
+readr::write_rds(
+  xy_global_2055,  
+  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds")
+  )
+
 ```
+
+
 
 # 2. Transform xy suitability
 
@@ -713,7 +745,7 @@ IVR_locations <- semi_join(IVR_locations, xy_global_1995, by = c("x", "y"))
 # add ID column
 IVR_locations <- IVR_locations %>%
   dplyr::mutate(ID = row_number()) %>%
-  relocate(ID)
+  relocate(ID, x, y)
 
 ```
 

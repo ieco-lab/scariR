@@ -917,6 +917,9 @@ ensemble_thresh_values <- tibble(
 
 write_csv(ensemble_thresh_values, file = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
 
+# also write to .rds
+readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
+
 ```
 
 Now that I have the suitability values and thresholds ensembled, I can begin to analyze the differences between the global and regional ensemble predictions. I will begin by creating suitability maps in the next vignette.

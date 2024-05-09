@@ -1001,7 +1001,7 @@ unique(slf_range_shift_df$range_shift_summed)
 # the possible values of the scale and their order
 breaks.obj <- c(5, 10, 6, 9) # i manually ordered these
 # labels for the values
-labels.obj <- c("unsuitable for\nL delicatula", "retained", "contraction", "expansion")
+labels.obj <- c("unsuitable area\nretained", "suitabile area\nretained", "contraction\nof suitable area", "expansion\nof suitable area")
 # vector of colors to classify scale
 values.obj <- c("azure4", "azure", "darkred", "darkgreen")
 
@@ -1011,9 +1011,9 @@ values.obj <- c("azure4", "azure", "darkred", "darkgreen")
 
 slf_range_shift_plot <- ggplot() +
   geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
-  labs(title = "Projected Lycorma delicatula range expansion by 2055") +
+  labs(title = "Projected areas suitable for Lycorma delicatula range expansion by 2055") +
   scale_discrete_manual(
-    name = "L delicatula\nrange shift",
+    name = "suitability for\nL delicatula",
     values = values.obj,
     breaks = breaks.obj,
     labels = labels.obj,
@@ -1050,6 +1050,10 @@ slf_range_shift_table <- terra::expanse(
   byValue = TRUE
 ) 
 
+```
+
+```{r format and convert to Kable}
+
 # create list of range shift values
 ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
 
@@ -1057,13 +1061,13 @@ ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suit
 slf_range_shift_table <- slf_range_shift_table %>%
   dplyr::select(-layer) %>%
   mutate("Ld_range_shift_type" = ranges.obj) %>%
-  rename("area (km)" = "area") %>%
+  rename("area_km" = "area") %>%
   dplyr::select(-value) %>%
   relocate(Ld_range_shift_type)
 
 
 # convert to kable
-slf_range_shift_kable <- kable(x = slf_range_shift_table) %>%
+slf_range_shift_kable <- kable(x = slf_range_shift_table, escape = TRUE) %>%
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
   
 

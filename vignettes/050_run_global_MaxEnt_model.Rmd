@@ -629,6 +629,13 @@ Now I have all of the outputs I need from the global model! These outputs will b
 
 In the next vignette, I will train the regional model needed for the spatial scale comparison and retrieve the data needed for the climate change comparison.
 
+```{r save global_summary to file}
+
+summary_global <- read_csv(file.path(mypath, "global_summary_all_iterations.csv"))
+
+readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v2.rds"))
+
+```
 
 # Appendix
 
