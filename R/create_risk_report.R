@@ -33,7 +33,7 @@
 #'
 #'@details
 #'
-#'Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'cartographer'.
+#'Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2'.
 #'
 #'Note that this function performs downloads from [naturalearthdata.com](https://www.naturalearthdata.com/).
 #'The function will automatically create subfolders in `root/data-raw`
@@ -79,6 +79,9 @@
 #'* viticultural_risk_table = a table quantifying the risk plot for viticultural areas
 #'* range_shift_map = a map of potential range expansion for L delicatula under climate change
 #'
+#'Some maps may be formatted strangely because of a country's outlying territories.
+#'You may need to further crop the plot using xlim and ylim (see examples).
+#'
 #'@examples
 #'
 #'The output is in list format, so it should be called using this notation:
@@ -89,6 +92,12 @@
 #'# alternatively, call elements by name:
 #'risk_map_2055 <- slf_risk_report[["risk_maps"]][["2055_risk_map"]]
 #'
+#'# sometimes a plot is off-center because the shapefile includes an outlying territory
+#'# you can edit this directly in the ggplot object and save over the report output
+#'
+#'map_current <- slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+#'xlim(-10, 5) +
+#'ylim(35, 44)
 #'
 #'@export
 create_risk_report <- function(locality, locality.type, save.report = FALSE, mypath, create.dir = FALSE, map.style = NA) {
@@ -97,6 +106,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
 
   if (is.character(locality) == FALSE) {
     cli::cli_alert_danger("Parameter 'locality' must be of type character")
+    stop()
+  }
+
+  if (is.character(locality.type) == FALSE) {
+    cli::cli_alert_danger("Parameter 'locality.type' must be of type character")
     stop()
   }
 
@@ -223,10 +237,6 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     load = TRUE, # load into environment
     returnclass = "sf" # shapefile
   )
-
-  # import bbox for cropping----------------------------------------------------
-
-  bbox_list <- cartographer::countries_bbox
 
   # tidy shapefiles-------------------------------------------------------------
 
@@ -360,40 +370,41 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
 
   # select correct iso conditionally
   if(locality.type == "country") {
-    iso_sf <- select(locality_sf, ABBREV) %>% # column name in country list
+
+    iso_sf <- select(locality_sf, ISO_A2_EH) %>% # column name in country list
       slice(1) %>% # 1st row
       as.character()
 
+    # filter bbox list by iso
+    bbox_list_locality <- filter(bbox_list, iso == iso_sf[1]) %>%
+      select(3:6)
+
+
+    # finally, crop
+    locality_sf <- sf::st_crop(
+      x = locality_sf,
+      xmin = as.numeric(bbox_list_locality[1, 1]),
+      xmax = as.numeric(bbox_list_locality[1, 2]),
+      ymin = as.numeric(bbox_list_locality[1, 3]),
+      ymax = as.numeric(bbox_list_locality[1, 4])
+    )
+
+    # also crop plot layer
+    locality_sf_plot_layer <- sf::st_crop(
+      x = locality_sf_plot_layer,
+      xmin = as.numeric(bbox_list_locality[1, 1]),
+      xmax = as.numeric(bbox_list_locality[1, 2]),
+      ymin = as.numeric(bbox_list_locality[1, 3]),
+      ymax = as.numeric(bbox_list_locality[1, 4])
+    )
+
+    # dont crop if state_province
   } else if(locality.type == "states_provinces") {
-    iso_sf <- select(locality_sf, iso_a2) %>% # column name in states_provinces
-      slice(1) %>% # 1st row
-      as.character()
+    locality_sf <- locality_sf
 
   }
 
-  # filter bbox list by iso
-  bbox_list_locality <- filter(bbox_list, iso == iso_sf[1]) %>%
-    select(3:6)
 
-
-  # finally, crop
-  locality_sf <- sf::st_crop(
-    x = locality_sf,
-    xmin = as.numeric(bbox_list_locality[1, 1]),
-    xmax = as.numeric(bbox_list_locality[1, 2]),
-    ymin = as.numeric(bbox_list_locality[1, 3]),
-    ymax = as.numeric(bbox_list_locality[1, 4])
-  )
-
-
-  # also crop ploy layer
-  locality_sf_plot_layer <- sf::st_crop(
-    x = locality_sf_plot_layer,
-    xmin = as.numeric(bbox_list_locality[1, 1]),
-    xmax = as.numeric(bbox_list_locality[1, 2]),
-    ymin = as.numeric(bbox_list_locality[1, 3]),
-    ymax = as.numeric(bbox_list_locality[1, 4])
-  )
 
 
 

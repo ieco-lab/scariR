@@ -54,12 +54,15 @@ object include:
 \item viticultural_risk_table = a table quantifying the risk plot for viticultural areas
 \item range_shift_map = a map of potential range expansion for L delicatula under climate change
 }
+
+Some maps may be formatted strangely because of a country's outlying territories.
+You may need to further crop the plot using xlim and ylim (see examples).
 }
 \description{
 blarg
 }
 \details{
-Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'cartographer'.
+Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2'.
 
 Note that this function performs downloads from \href{https://www.naturalearthdata.com/}{naturalearthdata.com}.
 The function will automatically create subfolders in \code{root/data-raw}
