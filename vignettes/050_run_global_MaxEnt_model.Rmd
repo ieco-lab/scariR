@@ -115,7 +115,7 @@ p_slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_c
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds"))
+a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v2.rds"))
 
 ```
 

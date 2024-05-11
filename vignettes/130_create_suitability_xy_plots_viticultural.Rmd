@@ -369,18 +369,18 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
-     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055, y = xy_regional_ensemble_2055, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "purple3"
      ) +
    # axes scaling
    scale_x_continuous(name =  "'global' model cloglog suitability", limits = c(0, 1), breaks = breaks) + 
    scale_y_continuous(name =  "'regional_ensemble' model cloglog suitability", limits = c(0, 1), breaks = breaks) +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
    theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -488,12 +488,12 @@ Now lets plot the data.
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     size = 2, stroke = 0.7, color = "black", fill = "purple3"
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
@@ -508,7 +508,7 @@ Now lets plot the data.
    # low risk, bottom left, quad1
    geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
    theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -627,28 +627,17 @@ Now I will plot these percent changes over the risk quadrants.
 (xy_joined_rescaled_plot_percent_change <- ggplot(data = xy_joined_rescaled) +
    # threshold lines
    # MTSS thresholds
-   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.6) + # global
-   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.6) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
-   # arrows indicating change
-   #geom_segment(
-  #   aes(
-  #     x = xy_global_1995_rescaled,
-  #     xend = xy_global_2055_rescaled,
-   #    y = xy_regional_ensemble_1995_rescaled,
-  #     yend = xy_regional_ensemble_2055_rescaled
-  #   ), 
-  #   arrow = grid::arrow(angle = 4.5, type = "closed"), linewidth = 0.25, color = "azure4", alpha = 0.6
-     #alpha = 0.8, linewidth = 0.3, color = "azure4"
- #  ) +
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 1.5, color = "black", fill = "azure4", stroke = 0.5, alpha = 0.1
+     size = 2, stroke = 0.7, color = "black", fill = "azure4", alpha = 0.1
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 1.5, color = "black", fill = "azure4", stroke = 0.5, alpha = 0.1
+     size = 2, stroke = 0.5, color = "black", fill = "purple3", alpha = 0.1
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
@@ -672,7 +661,7 @@ Now I will plot these percent changes over the risk quadrants.
    # low
    geom_text(aes(x = 0.25, y = 0.2, label = scales::percent(as.numeric(IVR_quad_percent_change[4, 2]), accuracy = 0.1)), size = 12, color = "azure4") +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
    #scale_fill_manual(name = "Time period", values = c("azure4", "gray27")) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
@@ -873,18 +862,18 @@ xy_joined_unweighted_plot <- ggplot(data = xy_joined_unweighted) +
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995_unweighted, shape = "Present"), 
-     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055, y = xy_regional_ensemble_2055_unweighted, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, stroke = 0.5, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "purple3"
      ) +
    # axes scaling
    scale_x_continuous(name =  "'global' model cloglog suitability", limits = c(0, 1), breaks = breaks) + 
    scale_y_continuous(name =  "'regional_ensemble' model cloglog suitability", limits = c(0, 1), breaks = breaks) +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
    theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
@@ -951,12 +940,12 @@ regional_ensemble_MTSS_2055_unweighted <- as.numeric(xy_regional_ensemble_1995_u
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_unweighted_rescaled, shape = "Present"), 
-     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_unweighted_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, color = "black", fill = "azure4", stroke = 0.5
+     size = 2,  stroke = 0.7, color = "black", fill = "purple3"
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
@@ -971,7 +960,7 @@ regional_ensemble_MTSS_2055_unweighted <- as.numeric(xy_regional_ensemble_1995_u
    # low risk, bottom left, quad1
    geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
    # aesthetics
-   scale_shape_manual(name = "Time period", values = c(23, 21)) +
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
    guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
    theme_bw() +
    theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +

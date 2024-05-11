@@ -60,7 +60,7 @@ slfSpread::create_risk_report(
   locality = "united states",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -86,7 +86,7 @@ slfSpread::create_risk_report(
   locality = "china",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -115,7 +115,7 @@ slfSpread::create_risk_report(
   locality = "france",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -124,7 +124,7 @@ slfSpread::create_risk_report(
   locality = "chile",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "chile"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -133,7 +133,7 @@ slfSpread::create_risk_report(
   locality = "australia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -142,7 +142,7 @@ slfSpread::create_risk_report(
   locality = "romania",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "romania"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -151,7 +151,7 @@ slfSpread::create_risk_report(
   locality = "spain",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "spain"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -160,6 +160,36 @@ slfSpread::create_risk_report(
   locality = "italy",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "italy"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+
+## CC shift areas of interest
+
+# united kingdom
+slfSpread::create_risk_report(
+  locality = "united kingdom",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "UK"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# michigan
+slfSpread::create_risk_report(
+  locality = "michigan",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# finland
+slfSpread::create_risk_report(
+  locality = "finland",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "finland"),
   create.dir = TRUE,
   save.report = TRUE
 )

@@ -40,10 +40,10 @@ IVR_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "d
 
 ```{r format table}
 
-IVR_risk_table[1, ] <- proportion_bar("darkred")(IVR_risk_table[1, ])
-IVR_risk_table[2, ] <- proportion_bar("darkorange")(IVR_risk_table[2, ])
-IVR_risk_table[3, ] <- proportion_bar("gold")(IVR_risk_table[3, ])
-IVR_risk_table[4, ] <- proportion_bar("gray")(IVR_risk_table[4, ])
+IVR_risk_table[1, ] <- formattable::proportion_bar("darkred")(IVR_risk_table[1, ])
+IVR_risk_table[2, ] <- formattable::proportion_bar("darkorange")(IVR_risk_table[2, ])
+IVR_risk_table[3, ] <- formattable::proportion_bar("gold")(IVR_risk_table[3, ])
+IVR_risk_table[4, ] <- formattable::proportion_bar("gray")(IVR_risk_table[4, ])
 
 # print table, e.g., in html format
 IVR_risk_table <- kable(IVR_risk_table, "html", escape = FALSE) %>% 
@@ -96,7 +96,7 @@ slf_risk_table[4, ] <- proportion_bar("gray")(slf_risk_table[4, ])
 slf_risk_table <- kable(slf_risk_table, "html", escape = FALSE) %>% 
   kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
   add_header_above(., header = c("(down) historical risk" = 1, "risk due to climate change (2055)" = 4), bold = TRUE) %>%
-  add_header_above(., header = c("    Risk of persistence of known L delicatula populations    " = 5), bold = TRUE)
+  add_header_above(., header = c("Risk of persistence for known L delicatula populations" = 5), bold = TRUE)
 
   
 ```

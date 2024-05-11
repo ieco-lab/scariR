@@ -492,7 +492,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # add province layer
     geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
     # IVRs
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+    # outline
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
     # other stuff
     labs(
       title = "Current projected risk of Lycorma delicatula invasion",
@@ -508,7 +510,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
     # color scale for points
-    scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+    scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
     guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
     map_style +
@@ -522,7 +524,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       # data layer
       geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
       # fill scale
       labs(
         title = "Current projected risk of Lycorma delicatula invasion",
@@ -537,7 +541,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # color scale for points
-      scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
       guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       map_style +
@@ -557,7 +561,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       # add province layer
       geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
       # aesthetics
       labs(
         title = "Projected risk of Lycorma delicatula invasion under climate change",
@@ -572,7 +578,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # color scale for points
-      scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
       guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       map_style +
@@ -586,7 +592,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       # data layer
       geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
       # aesthetics
       labs(
         title = "Projected risk of Lycorma delicatula invasion under climate change",
@@ -601,7 +609,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # color scale for points
-      scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
       guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       map_style +
@@ -660,7 +668,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # add province layer
     geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
     # IVR regions
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+    # outline
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
     labs(
       title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
       subtitle = stringr::str_to_title(locality)
@@ -676,7 +686,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     ) +
     map_style +
     # color scale for points
-    scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+    scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
     guides(color = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
     theme(legend.title = element_text(hjust = 1)) +
@@ -693,7 +703,9 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       # add province layer
       geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
       # IVR regions
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 1.2, shape = 20) +
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
       labs(
         title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
         subtitle = stringr::str_to_title(locality)
@@ -709,7 +721,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       ) +
       map_style +
       # color scale for points
-      scale_color_manual(name = "", values = c("viticultural\narea" = "black")) +
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
       guides(color = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
       theme(legend.title = element_text(hjust = 1)) +
@@ -884,12 +896,12 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
      # historical data
      geom_point(
        aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"),
-       size = 2, color = "black", fill = "azure4", stroke = 0.5
+       size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
      # GFDL ssp370 data
      geom_point(
        aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"),
-       size = 2, color = "black", fill = "azure4", stroke = 0.5
+       size = 2, stroke = 0.7, color = "black", fill = "purple3"
      ) +
      # axes scaling
      scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
@@ -904,7 +916,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
      # low risk, bottom left, quad1
      geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
      # aesthetics
-     scale_shape_manual(name = "Time period", values = c(23, 21)) +
+     scale_shape_manual(name = "Time period", values = c(21, 21)) +
      guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
      theme_bw() +
      theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +

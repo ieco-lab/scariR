@@ -107,5 +107,11 @@ viticultural_regions <- slf_risk_report[[2]]
 # alternatively, call elements by name:
 risk_map_2055 <- slf_risk_report[["risk_maps"]][["2055_risk_map"]]
 
+# sometimes a plot is off-center because the shapefile includes an outlying territory
+# you can edit this directly in the ggplot object and save over the report output
+
+map_current <- slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+xlim(-10, 5) +
+ylim(35, 44)
 
 }

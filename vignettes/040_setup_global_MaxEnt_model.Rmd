@@ -86,7 +86,7 @@ These raster copies will be used to project all models. We are specifically inte
 ```{r set wd}
 
 # path to directory
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
@@ -200,7 +200,7 @@ We will repeat the same process for the CMIP6 rasters. We only need versions cro
 ```{r set wd}
 
 # path to directory
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL/v1_maxent_10km")
 
@@ -286,7 +286,7 @@ First, I will load in known SLF presences so that background sampling does not o
 ```{r load in SLF presence}
 
 # dismo requires the base function (not tidyverse)
-slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
    dplyr::select(-species) 
 
 ```
@@ -294,7 +294,7 @@ slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables
 ```{r set wd}
 
 # file path to local directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                      dirname(),
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
@@ -337,14 +337,14 @@ Now, I will plot these points for visualization purposes.
 
 ```{r load in files for plotting}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                      dirname(),
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_points <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
 
 ```
 
@@ -364,7 +364,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(global_points_plot, 
-       filename = file.path(here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
+       filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -401,7 +401,7 @@ global_slf_plot <- ggplot() +
 
 ggsave(
   global_slf_plot, 
-  filename = file.path(here(), "vignette-outputs", "figures", "global_model_presence_points.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",

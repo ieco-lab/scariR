@@ -1,0 +1,91 @@
+---
+title: "Other assorted plots"
+author: "Samuel M. Owens"
+date: "2024-05-11"
+output: html_document
+---
+
+```{r load necesssary packages, echo = FALSE}
+
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here()
+# here() starts at the root folder of this package.
+library(devtools)
+
+
+# spatial data handling
+library(terra)
+
+```
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  viridis::scale_fill_viridis(option = "D"),
+  coord_equal()
+)
+
+```
+
+```{r load in files for plotting}
+
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+# background layer
+global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+
+# load wineries
+load(file.path(here::here(), "data", "wineries.rda"))
+
+IVR_locations <- wineries %>%
+  # tidy
+  dplyr::select(-c(Latitude, Longitude)) %>%
+  dplyr::filter(
+    !is.na(x),
+    !is.na(y)
+    ) %>%
+  # de-duplicate
+  scrubr::dedup(how = "one", tolerance = 0.7) 
+  # I chose the value of the tolerance that retrieved the number of records closest to the number of records in the xy_global_1995 (further down, 1064 records)
+
+# remove unnecessary obj
+rm(wineries)
+
+```
+
+```{r plot points}
+
+IVR_points_plot <- ggplot() +
+    geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = IVR_locations, aes(x = x, y = y), fill = "purple3", shape = 21, size = 1, stroke = 0.3) +
+    ggtitle("globally important viticultural regions") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+```{r save plot}
+
+ggsave(
+  IVR_points_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_viticultural_regions.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
