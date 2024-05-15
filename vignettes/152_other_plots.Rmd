@@ -16,6 +16,7 @@ library(devtools)
 
 # spatial data handling
 library(terra)
+library(scrubr)
 
 ```
 ```{r ggplot object for map style}

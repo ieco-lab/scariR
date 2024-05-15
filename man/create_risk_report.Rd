@@ -62,7 +62,7 @@ You may need to further crop the plot using xlim and ylim (see examples).
 blarg
 }
 \details{
-Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2'.
+Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale'.
 
 Note that this function performs downloads from \href{https://www.naturalearthdata.com/}{naturalearthdata.com}.
 The function will automatically create subfolders in \code{root/data-raw}
@@ -92,9 +92,6 @@ Additionally, 3 rasters are used to create maps. These rasters are located in
 \item slf_range_shift_summed.asc                                          | created in vignette 120
 }
 \subsection{locality}{
-
-\emph{Note} If you want results for Alaska or Hawaii, please use the settings
-\code{locality = 'akaska'} and \code{locality.type = 'states_provinces'}.
 }
 }
 \examples{

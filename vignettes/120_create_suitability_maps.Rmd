@@ -1060,14 +1060,21 @@ ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suit
 # tidy
 slf_range_shift_table <- slf_range_shift_table %>%
   dplyr::select(-layer) %>%
-  mutate("Ld_range_shift_type" = ranges.obj) %>%
-  rename("area_km" = "area") %>%
+  dplyr::mutate("Ld_range_shift_type" = ranges.obj) %>%
+  dplyr::rename("area_km" = "area") %>%
   dplyr::select(-value) %>%
-  relocate(Ld_range_shift_type)
+  dplyr::relocate(Ld_range_shift_type)
 
+# .html formatting
+slf_range_shift_table[, 2] <- formattable::proportion_bar("grey")(slf_range_shift_table[, 2])
+# format row colors
+slf_range_shift_table[1, 1] <- kableExtra::cell_spec(slf_range_shift_table[1, 1], format = "html", background = "azure4")
+slf_range_shift_table[2, 1] <- kableExtra::cell_spec(slf_range_shift_table[2, 1], format = "html", background = "darkred")
+slf_range_shift_table[3, 1] <- kableExtra::cell_spec(slf_range_shift_table[3, 1], format = "html", background = "darkgreen")
+slf_range_shift_table[4, 1] <- kableExtra::cell_spec(slf_range_shift_table[4, 1], format = "html", background = "azure")
 
 # convert to kable
-slf_range_shift_kable <- kable(x = slf_range_shift_table, escape = TRUE) %>%
+slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
   
 
@@ -1092,9 +1099,9 @@ if(FALSE) {
   # initialize webshot by 
  # webshot::install_phantomjs()
   # convert to pdf
-  webshot::webshot(
+  webshot2::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.png")
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table.jpg")
   )
   
   # model extents

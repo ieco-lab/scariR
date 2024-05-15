@@ -10,8 +10,7 @@ library(kableExtra)
 library(formattable)
 library(webshot2)
 library(terra)
-library(sf)
-library(cartographer)
+library(ggnewscale)
 
 # create internal dataset for create_risk_report.R------------------------------
 
@@ -28,25 +27,10 @@ xy_regional_ensemble_1995 <- readr::read_rds(file = file.path(here::here(), "dat
 xy_regional_ensemble_2055 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
 
 
-# I originally included package cargtographer in the dependencies, but decided
-# against it because it depends on some superceded packages. I only need the data object called
-# countries_bbox from the package, so I downloaded it from the
-# package and will include it in the import for my function.
-# info retrieved from: https://gist.github.com/graydon/11198540
-
-bbox_list <- countries_bbox
-
-# append france because that is absent for some reason
-# it was causing issues because of its territories
-# info from http://bboxfinder.com/#42.240307,-5.075684,51.171134,8.336426
-# xmin and ymin edited slightly for visualization
-bbox_list <- tibble::add_row(bbox_list, iso = "FR", name = "France", x_min = -5.000, x_max = 8.336426, y_min = 42.00, y_max = 51.171134)
-
-
 
 # transform all data frames to internal dataset
 usethis::use_data(
-  threshold_exponential_values, IVR_locations, summary_global, summary_regional_ensemble, xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055, bbox_list,
+  threshold_exponential_values, IVR_locations, summary_global, summary_regional_ensemble, xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055,
   internal = TRUE,
   overwrite = FALSE
 )
@@ -90,7 +74,7 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
-# this report should have 1 IVR point
+# this report should have 2 IVR points
 slfSpread::create_risk_report(
   locality = "shandong",
   locality.type = "states_provinces",
@@ -241,5 +225,81 @@ ggsave(
   device = "jpeg",
   dpi = "retina"
 )
+
+### USA
+# the USA map usually comes including Alaska and hawaii, which we do not want
+
+USA_current <- united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_future <- united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_shift <- united_states_slf_risk_report[["range_shift_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+
+#save
+ggsave(
+  USA_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states__risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  USA_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  USA_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states__shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+
+## create facets of maps--------------------------------------------------------
+
+
+
+
+
+
+
+
+## DEPRECATED--
+# inclusion of bbox cropping in function
+
+#library(sf)
+#library(cartographer)
+
+# I originally included package cargtographer in the dependencies, but decided
+# against it because it depends on some superceded packages. I only need the data object called
+# countries_bbox from the package, so I downloaded it from the
+# package and will include it in the import for my function.
+# info retrieved from: https://gist.github.com/graydon/11198540
+
+# bbox_list <- countries_bbox
+
+# append france because that is absent for some reason
+# it was causing issues because of its territories
+# info from http://bboxfinder.com/#42.240307,-5.075684,51.171134,8.336426
+# xmin and ymin edited slightly for visualization
+# bbox_list <- tibble::add_row(bbox_list, iso = "FR", name = "France", x_min = -5.000, x_max = 8.336426, y_min = 42.00, y_max = 51.171134)
+
+##--
 
 

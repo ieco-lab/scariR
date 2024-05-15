@@ -33,7 +33,7 @@
 #'
 #'@details
 #'
-#'Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale'.
+#'Requires the following packages: 'tidyverse', 'terra', 'sf', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2'.
 #'
 #'Note that this function performs downloads from [naturalearthdata.com](https://www.naturalearthdata.com/).
 #'The function will automatically create subfolders in `root/data-raw`
@@ -63,6 +63,9 @@
 #'* slf_range_shift_summed.asc                                          | created in vignette 120
 #'
 #'## locality
+#'
+#'*Note* If you want results for Alaska or Hawaii, please use the settings
+#'`locality = 'akaska'` and `locality.type = 'states_provinces'`.
 #'
 #'@return
 #'
@@ -290,7 +293,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       Region = gsub(Region, pattern = "–", replacement = "", fixed = TRUE)
     ) %>%
     # get rid of NA last line
-    dplyr::slice(-1064)
+    slice(-1064)
 
 
 
@@ -347,7 +350,13 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
 
     # if the locality is a country, I will also map the provinces on top
     locality_sf_plot_layer <- states_provinces_sf %>%
-      dplyr::filter(geonunit == locality_internal, na.rm = TRUE)
+      dplyr::filter(
+        geonunit == locality_internal,
+        # special requirement to plot USA cause alaska and hawaii succ
+        name != "alaska",
+        name != "hawaii",
+        na.rm = TRUE
+        )
 
     # if a state, import state sf
   } else if(locality.type == "states_provinces") {
@@ -357,11 +366,55 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   }
 
 
+  ## crop sf by bbox------------------------------------------------------------
+  # This section was designed to crop the sf of the ggplot output to a bbox from another source,
+  # but it was causing too many issues. The end user can use xlim and ylim to crop the output
+
+  # select correct iso conditionally
+ # if(locality.type == "country") {
+
+   # iso_sf <- select(locality_sf, ISO_A2_EH) %>% # column name in country list
+   #   slice(1) %>% # 1st row
+   #   as.character()
+
+    # filter bbox list by iso
+   # bbox_list_locality <- filter(bbox_list, iso == iso_sf[1]) %>%
+  #    select(3:6)
+
+
+    # finally, crop
+   # locality_sf <- sf::st_crop(
+   #   x = locality_sf,
+  #    xmin = as.numeric(bbox_list_locality[1, 1]),
+  #    xmax = as.numeric(bbox_list_locality[1, 2]),
+  #    ymin = as.numeric(bbox_list_locality[1, 3]),
+  #    ymax = as.numeric(bbox_list_locality[1, 4])
+  #  )
+
+    # also crop plot layer
+  #  locality_sf_plot_layer <- sf::st_crop(
+  #    x = locality_sf_plot_layer,
+   #   xmin = as.numeric(bbox_list_locality[1, 1]),
+  #    xmax = as.numeric(bbox_list_locality[1, 2]),
+   #   ymin = as.numeric(bbox_list_locality[1, 3]),
+  #    ymax = as.numeric(bbox_list_locality[1, 4])
+  # )
+
+    # dont crop if state_province
+  #} else if(locality.type == "states_provinces") {
+  #  locality_sf <- locality_sf
+
+ # }
+
+
+
+
+
   # begin function--------------------------------------------------------------
 
   ## isolate IVRs for locality
 
-  # create spatvector of locality_sf (this will be used to mask the maps as well)
+  # create spatvector of locality_sf
   locality_sv <- terra::vect(locality_sf)
 
   # convert to vector
@@ -376,22 +429,22 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     dplyr::select(-c(geom, part, hole))
 
   # will not need this object again
+  rm(locality_sv)
   rm(IVR_locations_masked)
 
 
   ## plot binarized rasters-----------------------------------------------------
 
   # first, I will mask these rasters using the locality_sf
-  # use the version locality_sv instead for masking
 
   slf_binarized_1995 <- terra::mask(
     x = slf_binarized_1995,
-    mask = locality_sv
+    mask = locality_sf
   )
 
   slf_binarized_2055 <- terra::mask(
     x = slf_binarized_2055,
-    mask = locality_sv
+    mask = locality_sf
   )
 
 
@@ -420,12 +473,20 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   if(locality.type == "country") {
 
   slf_binarized_1995_plot <- ggplot() +
-    map_style +
     # data layer
     geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
     # add province layer
     geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
-    # fill scale 1
+    # IVRs
+    # outline
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+    # other stuff
+    labs(
+      title = "Current projected risk of Lycorma delicatula invasion",
+      subtitle = stringr::str_to_title(locality)
+      ) +
+    # fill scale
     scale_discrete_manual(
       name = "projected risk",
       values = values.obj,
@@ -434,19 +495,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       aesthetics = "fill",
       guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
-    # new scale
-    ggnewscale::new_scale_fill() +
-    # IVRs
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-    # fill scale for points
-    scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+    # color scale for points
+    scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
-    guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
-    # other stuff
-    labs(
-      title = "Current projected risk of Lycorma delicatula invasion",
-      subtitle = stringr::str_to_title(locality)
-      ) +
+    guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
+    map_style +
     coord_sf()
 
 
@@ -454,10 +507,17 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   } else if(locality.type == "states_provinces") {
 
     slf_binarized_1995_plot <- ggplot() +
-      map_style +
       # data layer
       geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
-      # fill scale raster
+      # IVRs
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+      # fill scale
+      labs(
+        title = "Current projected risk of Lycorma delicatula invasion",
+        subtitle = stringr::str_to_title(locality)
+        ) +
       scale_discrete_manual(
         name = "projected risk",
         values = values.obj,
@@ -466,19 +526,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         aesthetics = "fill",
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
-      # new scale
-      ggnewscale::new_scale_fill() +
-      # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-      # fill scale for points
-      scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+      # color scale for points
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
-      guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
-      # other stuff
-      labs(
-        title = "Current projected risk of Lycorma delicatula invasion",
-        subtitle = stringr::str_to_title(locality)
-      ) +
+      guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
+      map_style +
       coord_equal()
 
   }
@@ -490,12 +542,19 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   if(locality.type == "country") {
 
     slf_binarized_2055_plot <- ggplot() +
-      map_style +
       # data layer
       geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
       # add province layer
       geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
-      # fill scale raster
+      # IVRs
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+      # aesthetics
+      labs(
+        title = "Projected risk of Lycorma delicatula invasion under climate change",
+        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
+      ) +
       scale_discrete_manual(
         name = "projected risk",
         values = values.obj,
@@ -504,19 +563,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         aesthetics = "fill",
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
-      # new scale
-      ggnewscale::new_scale_fill() +
-      # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-      # fill scale for points
-      scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+      # color scale for points
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
-      guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
-      # other stuff
-      labs(
-        title = "Projected risk of Lycorma delicatula invasion under climate change",
-        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
-      ) +
+      guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
+      map_style +
       coord_sf()
 
 
@@ -524,10 +575,17 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   } else if(locality.type == "states_provinces") {
 
     slf_binarized_2055_plot <- ggplot() +
-      map_style +
       # data layer
       geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
-      # fill scale raster
+      # IVRs
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+      # aesthetics
+      labs(
+        title = "Projected risk of Lycorma delicatula invasion under climate change",
+        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
+      ) +
       scale_discrete_manual(
         name = "projected risk",
         values = values.obj,
@@ -536,19 +594,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         aesthetics = "fill",
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
-      # new scale
-      ggnewscale::new_scale_fill() +
-      # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-      # fill scale for points
-      scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+      # color scale for points
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
-      guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
-      # other stuff
-      labs(
-        title = "Projected risk of Lycorma delicatula invasion under climate change",
-        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
-      ) +
+      guides(color = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
+      map_style +
       coord_equal()
 
   }
@@ -563,7 +613,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   # first, mask rasters
     slf_range_shift <- terra::mask(
       x = slf_range_shift,
-      mask = locality_sv
+      mask = locality_sf
     )
 
 
@@ -588,11 +638,18 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   if(locality.type == "country") {
 
   slf_range_shift_plot <- ggplot() +
-    map_style +
     # data layer
     geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
     # add province layer
     geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+    # IVR regions
+    # outline
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+    labs(
+      title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
+      subtitle = stringr::str_to_title(locality)
+      ) +
     # fill scale
     scale_discrete_manual(
       name = "suitability for\nL delicatula",
@@ -602,20 +659,13 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       aesthetics = "fill",
       guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
-    # new fill scale
-    ggnewscale::new_scale_fill() +
-    # IVR regions
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-    # fill scale for points
-    scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+    map_style +
+    # color scale for points
+    scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
-    guides(fill = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
-    # other stuff
-    labs(
-      title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
-      subtitle = stringr::str_to_title(locality)
-    ) +
+    guides(color = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
     theme(legend.title = element_text(hjust = 1)) +
+    map_style +
     coord_sf()
 
 
@@ -623,11 +673,18 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   } else if(locality.type == "states_provinces") {
 
     slf_range_shift_plot <- ggplot() +
-      map_style +
       # data layer
       geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
       # add province layer
       geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
+      # IVR regions
+      # outline
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y), color = "black", size = 2.5, shape = 20) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, color = "viticultural\narea"), size = 2, shape = 20) +
+      labs(
+        title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
+        subtitle = stringr::str_to_title(locality)
+      ) +
       # fill scale
       scale_discrete_manual(
         name = stringr::str_wrap("suitability for L delicatula"),
@@ -637,20 +694,13 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
         aesthetics = "fill",
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
-      # new fill scale
-      ggnewscale::new_scale_fill() +
-      # IVR regions
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
-      # fill scale for points
-      scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+      map_style +
+      # color scale for points
+      scale_color_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
-      guides(fill = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
-      # other stuff
-      labs(
-        title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
-        subtitle = stringr::str_to_title(locality)
-      ) +
+      guides(color = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
       theme(legend.title = element_text(hjust = 1)) +
+      map_style +
       coord_sf()
 
   }
@@ -663,7 +713,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   ## return IVR_locations selected for locality---------------------------------
 
   # filter out locations that match plot layer
-  IVR_locations_locality <-  dplyr::semi_join(IVR_locations, IVR_locations_plot_layer, by = c("x", "y"))
+  IVR_locations_locality <- semi_join(IVR_locations, IVR_locations_plot_layer, by = c("x", "y"))
 
 
 
@@ -740,17 +790,17 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   ### join datasets--------------------------------------------------------------
 
   # join datasets for plotting
-  xy_joined_rescaled <-  dplyr::full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
+  xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
     # join CC datasets
-    dplyr::full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
-    dplyr::full_join(., xy_regional_ensemble_2055_rescaled, by = c("x", "y")) %>%
+    full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
+    full_join(., xy_regional_ensemble_2055_rescaled, by = c("x", "y")) %>%
     # order
     dplyr::relocate(x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
     dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055))
 
 
   # filter out only records from locality
-  xy_joined_rescaled <-  dplyr::semi_join(xy_joined_rescaled, IVR_locations_locality, by = c("x", "y"))
+  xy_joined_rescaled <- semi_join(xy_joined_rescaled, IVR_locations_locality, by = c("x", "y"))
 
 
 
@@ -772,8 +822,8 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   ### find points that cross threshold------------------------------------------
 
   xy_joined_rescaled_intersects <- xy_joined_rescaled %>%
-    dplyr::mutate(
-      crosses_threshold =  dplyr::case_when(
+    mutate(
+      crosses_threshold = case_when(
         # conditional for starting and ending points that overlap a the threshold
         # x-axis
         xy_global_1995_rescaled > global_MTSS & xy_global_2055_rescaled < global_MTSS ~ "crosses",
@@ -859,13 +909,13 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   ## create IVR summary table---------------------------------------------------
 
   # join rescaled suitability values witu IVR locations
-  IVR_locations_joined <-  dplyr::left_join(IVR_locations_locality, xy_joined_rescaled, by = c("x", "y")) %>%
-    dplyr::relocate(ID, x, y)
+  IVR_locations_joined <- left_join(IVR_locations_locality, xy_joined_rescaled, by = c("x", "y")) %>%
+    relocate(ID, x, y)
 
 
   # calculate risk quadrants
   IVR_locations_risk <- IVR_locations_joined %>%
-    dplyr::mutate(
+    mutate(
       risk_1995 = slfSpread::calculate_risk_quadrant(
         suit.x = IVR_locations_joined$xy_global_1995_rescaled,
         suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
@@ -885,10 +935,10 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   # create risk table
   IVR_risk_table <- IVR_locations_risk %>%
     # create counts and make into acrostic table
-    dplyr::group_by(risk_1995, risk_2055) %>%
-    dplyr::summarize(count = dplyr::n()) %>%
-    tidyr::pivot_wider(names_from = risk_2055, values_from = count) %>%
-    dplyr::ungroup()
+    group_by(risk_1995, risk_2055) %>%
+    summarize(count = n()) %>%
+    pivot_wider(names_from = risk_2055, values_from = count) %>%
+    ungroup()
 
   # add columns that do not exist
   if(!'extreme' %in% names(IVR_risk_table)) IVR_risk_table <- IVR_risk_table %>% tibble::add_column(extreme = 0)
@@ -905,8 +955,8 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # tidy
   IVR_risk_table <- IVR_risk_table %>%
     dplyr::rename("down_1995_across_2055" = "risk_1995") %>%
-    dplyr::relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
-    dplyr::arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
+    relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
+    arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
     # replace missing categories with 0
     replace(is.na(.), 0) %>%
     as.data.frame()
@@ -924,43 +974,11 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   IVR_risk_table[4, ] <- formattable::proportion_bar("gray")(IVR_risk_table[4, ])
 
   # print table, e.g., in html format
-  IVR_risk_kable <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
+  IVR_risk_table <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    kableExtra::add_header_above(., header = c("(down) historical risk" = 1, "(across) risk due to climate change by 2055" = 4), bold = TRUE) %>%
+    kableExtra::add_header_above(., header = c("(down) historical risk" = 1, "risk due to climate change (2055)" = 4), bold = TRUE) %>%
     kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 5), bold = TRUE)
 
-
-  ## create range shift table---------------------------------------------------
-
-  # use terra expanse to calculate suitable area
-  slf_range_shift_table <- terra::expanse(
-    x = slf_range_shift,
-    unit = "km",
-    byValue = TRUE
-  )
-
-  # naming object
-  ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
-
-  # tidy
-  slf_range_shift_table <- slf_range_shift_table %>%
-    dplyr::select(-layer) %>%
-    dplyr::mutate("Ld_range_shift_type" = ranges.obj) %>%
-    dplyr::rename("area_km" = "area") %>%
-    dplyr::select(-value) %>%
-    dplyr::relocate(Ld_range_shift_type)
-
-  # .html formatting
-  slf_range_shift_table[, 2] <- formattable::proportion_bar("grey")(slf_range_shift_table[, 2])
-  # format row colors
-  slf_range_shift_table[1, 1] <- kableExtra::cell_spec(slf_range_shift_table[1, 1], format = "html", background = "azure4")
-  slf_range_shift_table[2, 1] <- kableExtra::cell_spec(slf_range_shift_table[2, 1], format = "html", background = "darkred")
-  slf_range_shift_table[3, 1] <- kableExtra::cell_spec(slf_range_shift_table[3, 1], format = "html", background = "darkgreen")
-  slf_range_shift_table[4, 1] <- kableExtra::cell_spec(slf_range_shift_table[4, 1], format = "html", background = "azure")
-
-  # convert to kable
-  slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
-    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
   ## create report--------------------------------------------------------------
 
@@ -972,9 +990,8 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       "2055_risk_map" = slf_binarized_2055_plot
     ),
     "viticultural_risk_plot" = xy_joined_rescaled_plot,
-    "viticultural_risk_table" = IVR_risk_kable,
-    "range_shift_map" = slf_range_shift_plot,
-    "range_shift_table" = slf_range_shift_kable
+    "viticultural_risk_table" = IVR_risk_table,
+    "range_shift_map" = slf_range_shift_plot
   )
 
 
@@ -998,7 +1015,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
 
     # save files
     # IVR list
-    readr::write_csv(IVR_locations_locality, file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
+    write_csv(IVR_locations_locality, file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
 
     # risk maps
     ggsave(
@@ -1041,28 +1058,15 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # IVR risk table
     # save as .html
     kableExtra::save_kable(
-      IVR_risk_kable,
+      IVR_risk_table,
       file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
       self_contained = TRUE
     )
 
-    # convert to jpg
+    # convert to png
     webshot2::webshot(
       url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.jpg"))
-    )
-
-    # slf range shift table
-    kableExtra::save_kable(
-      slf_range_shift_kable,
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
-      self_contained = TRUE
-    )
-
-    # convert to jpg
-    webshot2::webshot(
-      url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.jpg"))
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.png"))
     )
 
 

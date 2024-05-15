@@ -48,7 +48,7 @@ v1- updated invaded model weighting to use new global model output, updated inva
 v2- reverted to eastern USA test area instead of 355km buffer
 v3- did not weight easternUSA model. Moved section on weighting to supp materials
 v4- added koeppen climate download and use for selecting background points
-v5- added table indicating number of training points per model
+v5- added table indicating number of training points per model, added plot faceting
 
 
 

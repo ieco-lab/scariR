@@ -1,0 +1,815 @@
+---
+title: "Example usage of create_risk_report.R to create reports of key viticultural areas"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-05-13"
+format: html
+editor: visual
+---
+
+INTRO
+
+# Setup
+
+```{r library}
+
+library(tidyverse)
+library(cli)
+library(here)
+
+# spatial data
+library(terra)
+library(rnaturalearth)
+# remotes::install_github("ropensci/rnaturalearthhires")
+library(rnaturalearthhires)
+# remotes::install_github("ropensci/scrubr")
+library(scrubr)
+
+# aesthetics
+library(kableExtra)
+library(formattable)
+library(webshot2)
+# devtools::install_github("eliocamp/ggnewscale")
+library(ggnewscale)
+
+```
+
+# Create internal dataset for function
+
+```{r datasets for function data import}
+
+# .csv files
+threshold_exponential_values <- read.csv(file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"))
+# .rds files
+IVR_locations <- readr::read_rds(file = file.path(here::here(), "data", "wineries_tidied.rds"))
+summary_global <- readr::read_rds(file = file.path(here::here(), "data", "global_summary_all_iterations_v2.rds"))
+summary_regional_ensemble <- readr::read_rds(file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
+# predicted xy suitability
+xy_global_1995 <- readr::read_rds(file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds"))
+xy_global_2055 <- readr::read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+xy_regional_ensemble_1995 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit.rds"))
+xy_regional_ensemble_2055 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+
+```
+
+```{r internal data object}
+
+# transform all data frames to internal dataset
+usethis::use_data(
+  threshold_exponential_values, IVR_locations, summary_global, summary_regional_ensemble, xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055,
+  internal = TRUE,
+  overwrite = FALSE
+)
+
+```
+
+# Apply function
+
+## USA
+
+```{r USA reports}
+
+slfSpread::create_risk_report(
+  locality = "united states",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# try state level
+slfSpread::create_risk_report(
+  locality = "california",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+slfSpread::create_risk_report(
+  locality = "pennsylvania",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+```
+
+```{r edit USA reports}
+
+### USA
+# the USA map usually comes including Alaska and hawaii, which we do not want
+
+USA_current <- united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_future <- united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_shift <- united_states_slf_risk_report[["range_shift_map"]] +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+
+#save
+ggsave(
+  USA_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states__risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  USA_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  USA_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+## China
+
+```{r china}
+
+slfSpread::create_risk_report(
+  locality = "china",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# this report should have 2 IVR points
+slfSpread::create_risk_report(
+  locality = "shandong",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# this report should have no IVR records
+slfSpread::create_risk_report(
+  locality = "yunnan",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+# it worked still so thats good
+
+```
+
+# Viticultural shifts due to climate change
+
+Morales-Castilla et al 2020 predicted that the following areas would experience a loss in suitability for viticulture under a 4C warming scenario of climate change:
+
+highest losses:
+* Italy
+* Spain
+
+others:
+* Turkey
+* South Africa
+* Portugal
+* mexico
+
+Concurrently, they predicted that the following areas would experience a gain in suitability under the same scenario:
+
+* Pacific Northwestern States (USA)
+* New Zealand
+* Great Britain
+* Ireland
+* Sweden
+
+Finally, some countries are expected to experience a more balanced ratio of losses and gains in suitability:
+
+* France
+
+Another paper, Webb et al 2013 predicted analogous climates for specific Vitis cultivars under climate change. This paper focused more on predicting where specific cultivars might move as growers keep pace with climate change. Based on predicted climate shifts in temperature and precipitation, this study predicts that the following areas will be generally less suitable for Vitis cultivars in the future:
+
+* Central valley, California, USA
+* Hotter parts of Australia
+
+Meanwhile, the following areas may increase in suitabiliy due to warming winter temperature minimums:
+
+* Michigan, USA
+* New Zealand
+
+## Countries experiencing a loss in viticultural suitability
+
+```{r countries experiencing a loss of Vitis suitability}
+
+# spain
+slfSpread::create_risk_report(
+  locality = "spain",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "spain"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# italy
+slfSpread::create_risk_report(
+  locality = "italy",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "italy"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# portugal
+slfSpread::create_risk_report(
+  locality = "portugal",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "portugal"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# turkey
+slfSpread::create_risk_report(
+  locality = "turkey",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "turkey"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+
+# south africa
+slfSpread::create_risk_report(
+  locality =  "south africa",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "south_africa"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# mexico
+slfSpread::create_risk_report(
+  locality = "mexico",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "mexico"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+
+```
+
+```{r edit spain maps}
+
+# the spain report came out with the the maps needing some work.
+# The map is zoomed very far out because of some territories belonging to spain.
+# I will try to limiting the x and y coordinates of the plot to zoom in.
+
+spain_current <- spain_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-10, 5) +
+  ylim(35, 44)
+
+spain_future <- spain_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-10, 5) +
+  ylim(35, 44)
+
+spain_shift <- spain_slf_risk_report[["range_shift_map"]] +
+  xlim(-10, 5) +
+  ylim(35, 44)
+
+
+#save
+ggsave(
+  spain_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  spain_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  spain_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+# the canary islands also have a number of vineyards so I will create maps of just those
+canary_current <- spain_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-19, -13) +
+  ylim(27, 30) +
+  labs(subtitle = "Spain: canary islands")
+
+canary_future <- spain_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-19, -13) +
+  ylim(27, 30) +
+  labs(subtitle = "Spain: canary islands")
+
+canary_shift <- spain_slf_risk_report[["range_shift_map"]] +
+  xlim(-19, -13) +
+  ylim(27, 30) +
+  labs(subtitle = "Spain: canary islands")
+
+
+#save
+ggsave(
+  canary_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  canary_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  canary_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+
+```
+
+```{r edit portugal maps}
+
+# the spain report came out with the the maps needing some work.
+# The map is zoomed very far out because of some territories belonging to spain.
+# I will try to limiting the x and y coordinates of the plot to zoom in.
+
+portugal_current <- portugal_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-10, -6) +
+  ylim(36, 42)
+
+portugal_future <- portugal_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-10, -6) +
+  ylim(36, 42)
+
+portugal_shift <- portugal_slf_risk_report[["range_shift_map"]] +
+  xlim(-10, -6) +
+  ylim(36, 42)
+
+
+#save
+ggsave(
+  portugal_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  portugal_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  portugal_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+```{r edit south_africa maps}
+
+# the spain report came out with the the maps needing some work.
+# The map is zoomed very far out because of some territories belonging to spain.
+# I will try to limiting the x and y coordinates of the plot to zoom in.
+
+south_africa_current <- south_africa_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(15, 35) +
+  ylim(-35, -22)
+
+south_africa_future <- south_africa_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(15, 35) +
+  ylim(-35, -22)
+
+south_africa_shift <- south_africa_slf_risk_report[["range_shift_map"]] +
+  xlim(15, 35) +
+  ylim(-35, -22)
+
+
+#save
+ggsave(
+  south_africa_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  south_africa_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  south_africa_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+## Countries experiencing a gain in viticultural suitability
+
+```{r countries with a gain in vitis suitability}
+
+# united kingdom
+slfSpread::create_risk_report(
+  locality = "united kingdom",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "UK"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# Ireland
+slfSpread::create_risk_report(
+  locality = "Ireland",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Ireland"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# New zealand
+slfSpread::create_risk_report(
+  locality = "new zealand",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "new_zealand"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# sweden
+slfSpread::create_risk_report(
+  locality = "sweden",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "sweden"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+
+# michigan
+slfSpread::create_risk_report(
+  locality = "michigan",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# oregon
+slfSpread::create_risk_report(
+  locality = "oregon",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# washington
+slfSpread::create_risk_report(
+  locality = "washington",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+
+```
+
+```{r edit new_zealand maps}
+
+# the spain report came out with the the maps needing some work.
+# The map is zoomed very far out because of some territories belonging to spain.
+# I will try to limiting the x and y coordinates of the plot to zoom in.
+
+new_zealand_current <- new_zealand_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(165, 180) +
+  ylim(-48, -34)
+
+new_zealand_future <- new_zealand_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(165, 180) +
+  ylim(-48, -34)
+
+new_zealand_shift <- new_zealand_slf_risk_report[["range_shift_map"]] +
+  xlim(165, 180) +
+  ylim(-48, -34)
+
+
+#save
+ggsave(
+  new_zealand_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  new_zealand_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  new_zealand_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+## other countries of interest
+
+```{r countries of interest}
+
+# countries of interest
+# france
+slfSpread::create_risk_report(
+  locality = "france",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# chile
+slfSpread::create_risk_report(
+  locality = "chile",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "chile"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# australia
+slfSpread::create_risk_report(
+  locality = "australia",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# romania
+slfSpread::create_risk_report(
+  locality = "romania",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "romania"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+# argentina
+slfSpread::create_risk_report(
+  locality = "argentina",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "argentina"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# georgia
+slfSpread::create_risk_report(
+  locality = "georgia",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "georgia"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# russia
+slfSpread::create_risk_report(
+  locality = "russia",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "russia"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+# no shapefile data exist
+
+
+```
+
+```{r edit france maps}
+
+france_current <- france_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+france_future <- france_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+france_shift <- france_slf_risk_report[["range_shift_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+
+#save
+ggsave(
+  france_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  france_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  france_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+```{r edit australia maps}
+
+australia_current <- australia_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(110, 155) +
+  ylim(-44, -10)
+
+australia_future <- australia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(110, 155) +
+  ylim(-44, -10)
+
+australia_shift <- australia_slf_risk_report[["range_shift_map"]] +
+  xlim(110, 155) +
+  ylim(-44, -10)
+
+
+#save
+ggsave(
+  australia_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  australia_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  australia_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+## other areas of CC interest
+
+These areas experienced a significant increase in SLF risk on the main global maps.
+
+```{r regions with projected gains}
+
+# finland
+slfSpread::create_risk_report(
+  locality = "finland",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "finland"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+
+```
+
+
+
+# Create faceted maps
+
+What is the organization here?
+
+*remove* arrows layer from scatter plots when faceting
+
+ggplot$layers[[2]] <- NULL
+
+
+
+
+
+
+
+# DEPRECATED
+
+```{r bbox cropping in function}
+# inclusion of bbox cropping in function
+
+library(sf)
+library(cartographer)
+
+# I originally included package cargtographer in the dependencies, but decided
+# against it because it depends on some superceded packages. I only need the data object called
+# countries_bbox from the package, so I downloaded it from the
+# package and will include it in the import for my function.
+# info retrieved from: https://gist.github.com/graydon/11198540
+
+ bbox_list <- countries_bbox
+
+# append france because that is absent for some reason
+# it was causing issues because of its territories
+# info from http://bboxfinder.com/#42.240307,-5.075684,51.171134,8.336426
+# xmin and ymin edited slightly for visualization
+ 
+ bbox_list <- tibble::add_row(bbox_list, iso = "FR", name = "France", x_min = -5.000, x_max = 8.336426, y_min = 42.00, y_max = 51.171134)
+
+```
+
+# References
+
+Webb, L. B., I. Watterson, J. Bhend, P. H. Whetton, and E. W. R. Barlow. 2013. Global climate analogues for winegrowing regions in future periods: projections of temperature and precipitation. Australian Journal of Grape and Wine Research 19:331–341.
+

@@ -882,7 +882,7 @@ Now lets plot it for a sanity check.
 
 ```{r plot china}
 
-(regional_native_withSLF_plot <- ggplot() +
+(regional_native_asian_withSLF_plot <- ggplot() +
   geom_polygon(
     data = map_data('world', region = c("Brunei", "East Timor", "Indonesia", "Laos", "Malaysia", "Myanmar", "Philippines", "Singapore", "Thailand", "Vietnam", "China", "Hong Kong", "Macau", "Mongolia", "Taiwan","Bangladesh", "Bhutan", "India", "Maldives", "Nepal", "Sri Lanka")), 
     aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
@@ -906,7 +906,7 @@ Now lets plot it for a sanity check.
 ```{r save plot}
 
 ggsave(
-  regional_native_withSLF_plot, 
+  regional_native_asian_withSLF_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_native_extent_KG_climate_zones.jpg"),
   height = 8, 
   width = 10,
@@ -1279,7 +1279,7 @@ global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
 
 ```{r plot points}
 
-(regional_native_points_plot <- ggplot() +
+(native_points_plot <- ggplot() +
   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_native_bio2_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = regional_native_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
@@ -1295,7 +1295,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 
 ```{r save plot}
 
-ggsave(regional_native_points_plot, 
+ggsave(native_points_plot, 
        filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_unweighted_v2.jpg"),
        height = 8, 
        width = 10,
@@ -1556,180 +1556,13 @@ Now we are ready to run both regional models!
 
 # Patchwork together figures
 
-I will put the figures together for publication
-
 ```{r regional_invaded}
 
-x_scale_labels <- c(-140, -120, -100, -80, -60)
-y_scale_labels <- c(20, 30, 40, 50, 60)
 
-regional_invaded_withSLF_plot <- regional_invaded_withSLF_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background point area (Koeppen climate zones)") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-
-regional_invaded_background_plot <- regional_invaded_background_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-  
-regional_invaded_slf_plot  <- regional_invaded_slf_plot +
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "presence points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-
-
-
-regional_invaded_patchwork <- (regional_invaded_slf_plot + regional_invaded_background_plot) / (regional_invaded_withSLF_plot + plot_spacer()) +
-  plot_layout(axis_titles = "collect") +
-  plot_annotation(title = "'regional_invaded' model elements") 
-
-```
-
-```{r save plot}
-
-ggsave(
-  regional_invaded_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_summary.jpg"),
-  height = 8, 
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-```{r regional_invaded_asian}
-
-x_scale_labels <- c(130, 140, 150)
-y_scale_labels <- c(25, 30, 35, 40, 45)
-
-regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background point area (Koeppen climate zones)") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-
-regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-  
-regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "presence points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-
-
-
-regional_invaded_asian_patchwork <- (regional_invaded_asian_slf_plot + regional_invaded_asian_points_plot) / (regional_invaded_asian_withSLF_plot + plot_spacer()) +
-  plot_annotation(title = "'regional_invaded_asian' model elements") 
-
-```
-
-```{r save plot}
-
-ggsave(
-  regional_invaded_asian_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_summary.jpg"),
-  height = 8, 
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-  )
 
 ```
 
 
-```{r regional_native}
-
-x_scale_labels <- c(80, 100, 120, 140)
-y_scale_labels <- c(0, 10, 20, 30, 40, 50)
-
-regional_native_withSLF_plot <- regional_native_withSLF_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background point area (Koeppen climate zones)") +
-  scale_x_continuous(labels = seq(from = 70, to = 140, by = 10), breaks = seq(from = 70, to = 140, by = 10), expand = c(0, 0)) +
-  scale_y_continuous(labels = c(-10, 0, 10, 20, 30, 40, 50), breaks = c(-10, 0, 10, 20, 30, 40, 50), expand = c(0, 0)) 
-
-
-regional_native_points_plot <- regional_native_points_plot + 
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "background points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-  
-regional_native_slf_plot  <- regional_native_slf_plot +
-  theme(
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(title = "presence points") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
-
-
-
-
-regional_native_patchwork <- (regional_native_slf_plot + regional_native_points_plot) / (regional_native_withSLF_plot + plot_spacer()) +
-  plot_layout(design = "
-  AABB
-  AABB
-  CC##
-  CC##
-  ") +
-  plot_annotation(title = "'regional_native' model elements") 
-
-```
-
-```{r save plot}
-
-ggsave(
-  regional_native_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_summary.jpg"),
-  height = 8, 
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
 
 # References
 

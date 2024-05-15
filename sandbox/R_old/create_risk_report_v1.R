@@ -887,7 +887,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # create counts and make into acrostic table
     dplyr::group_by(risk_1995, risk_2055) %>%
     dplyr::summarize(count = dplyr::n()) %>%
-    tidyr::pivot_wider(names_from = risk_2055, values_from = count) %>%
+    dplyr::pivot_wider(names_from = risk_2055, values_from = count) %>%
     dplyr::ungroup()
 
   # add columns that do not exist
@@ -924,7 +924,7 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   IVR_risk_table[4, ] <- formattable::proportion_bar("gray")(IVR_risk_table[4, ])
 
   # print table, e.g., in html format
-  IVR_risk_kable <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
+  IVR_risk_table <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
     kableExtra::add_header_above(., header = c("(down) historical risk" = 1, "(across) risk due to climate change by 2055" = 4), bold = TRUE) %>%
     kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 5), bold = TRUE)
@@ -939,29 +939,6 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     byValue = TRUE
   )
 
-  # naming object
-  ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
-
-  # tidy
-  slf_range_shift_table <- slf_range_shift_table %>%
-    dplyr::select(-layer) %>%
-    dplyr::mutate("Ld_range_shift_type" = ranges.obj) %>%
-    dplyr::rename("area_km" = "area") %>%
-    dplyr::select(-value) %>%
-    dplyr::relocate(Ld_range_shift_type)
-
-  # .html formatting
-  slf_range_shift_table[, 2] <- formattable::proportion_bar("grey")(slf_range_shift_table[, 2])
-  # format row colors
-  slf_range_shift_table[1, 1] <- kableExtra::cell_spec(slf_range_shift_table[1, 1], format = "html", background = "azure4")
-  slf_range_shift_table[2, 1] <- kableExtra::cell_spec(slf_range_shift_table[2, 1], format = "html", background = "darkred")
-  slf_range_shift_table[3, 1] <- kableExtra::cell_spec(slf_range_shift_table[3, 1], format = "html", background = "darkgreen")
-  slf_range_shift_table[4, 1] <- kableExtra::cell_spec(slf_range_shift_table[4, 1], format = "html", background = "azure")
-
-  # convert to kable
-  slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
-    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
-
   ## create report--------------------------------------------------------------
 
   slf_risk_report <- list(
@@ -972,9 +949,8 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
       "2055_risk_map" = slf_binarized_2055_plot
     ),
     "viticultural_risk_plot" = xy_joined_rescaled_plot,
-    "viticultural_risk_table" = IVR_risk_kable,
-    "range_shift_map" = slf_range_shift_plot,
-    "range_shift_table" = slf_range_shift_kable
+    "viticultural_risk_table" = IVR_risk_table,
+    "range_shift_map" = slf_range_shift_plot
   )
 
 
@@ -1041,28 +1017,15 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
     # IVR risk table
     # save as .html
     kableExtra::save_kable(
-      IVR_risk_kable,
+      IVR_risk_table,
       file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
       self_contained = TRUE
     )
 
-    # convert to jpg
+    # convert to png
     webshot2::webshot(
       url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.jpg"))
-    )
-
-    # slf range shift table
-    kableExtra::save_kable(
-      slf_range_shift_kable,
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
-      self_contained = TRUE
-    )
-
-    # convert to jpg
-    webshot2::webshot(
-      url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
-      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.jpg"))
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.png"))
     )
 
 
