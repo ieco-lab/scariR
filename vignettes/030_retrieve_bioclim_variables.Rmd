@@ -25,7 +25,7 @@ First, I will download the data from CHELSA into a local library. I will then ti
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here()
+here::here()
 # here() is ".../Shared drives/slfClimate/projects/slfSpread/slfSpread_pkg"
 
 library(devtools)
@@ -55,7 +55,7 @@ My first approach to downloading these data was to create a loop to open each UR
 if(FALSE) {
 
   # historical data
-  chelsa_historic_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_1981-2010_bioclim_URLs.txt"),
+  chelsa_historic_URLs <- read_table(file = file.path(here::here(), "data-raw", "CHELSA", "chelsa_1981-2010_bioclim_URLs.txt"),
                                 col_names = FALSE) %>%
     as.data.frame() %>%
     dplyr::select("X1") %>%
@@ -88,7 +88,7 @@ Next, I will download data from the provided CMIP6 models. I will be downloading
 if(FALSE) {
 
   # ssp370 data
-  chelsa_370_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
+  chelsa_370_URLs <- read_table(file = file.path(here::here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
                                 col_names = FALSE) %>%
     as.data.frame() %>%
     dplyr::select("X1") %>%
@@ -124,7 +124,7 @@ I will mask the CHELSA rasters using a dataset called ["global access to cities"
 ```{r load in reference layers}
 
 # set path to external directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                           dirname(),
                         "maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals")
 
@@ -141,7 +141,7 @@ We will get a list of the files that I need to modify. We will also create an ob
 ```{r get file names}
  
 # file path to directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                       dirname(),
                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
@@ -228,7 +228,7 @@ This chunk will take a very long time to run... so maybe find a good book to rea
 if(FALSE) {
   
     # file path to directory
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -283,7 +283,7 @@ Finally, we will convert the rasters to the `.ascii` format required by MaxEnt.
 
 if(FALSE){
   
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -318,7 +318,7 @@ This additional step can be run on-demand. I will aggregate selected rasters to 
 if (FALSE) {
   
   # pathing
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                           dirname(),
                         "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -367,7 +367,7 @@ Here, we will go through all of the above steps in section 2.3 for the CMIP6 ver
 ```{r get file names}
  
 # file path to directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                       dirname(),
                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
@@ -393,7 +393,7 @@ output.files <- output.files %>%
 ```{r loop to tidy rasters}
   
 # file path to directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                     dirname(),
                   "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
@@ -449,7 +449,7 @@ if(FALSE) {
 
 if(FALSE){
   
-  mypath <- file.path(here() %>%
+  mypath <- file.path(here::here() %>%
                         dirname(),
                       "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
   
@@ -482,7 +482,7 @@ if(FALSE){
 if (FALSE) {
   
   # pathing
-  mypath <- file.path(here() %>%
+  mypath <- file.path(here::here() %>%
                         dirname(),
                       "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
   
@@ -537,7 +537,7 @@ We will downsize the rasters from the `v1` folder to perform a co-linearity anal
 
 if(FALSE) {
   
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -577,7 +577,7 @@ We will use `ENMTools::raster.cor.matrix()` to perform the correlation analysis.
 
 if(FALSE){
   
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -596,7 +596,7 @@ if(FALSE){
   env.cor <- ENMTools::raster.cor.matrix(env = env, method = "pearson")
   
   # write out correlations as .csv.
-  write.csv(x = env.cor, file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"), col.names = TRUE, row.names = TRUE)
+  write.csv(x = env.cor, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"), col.names = TRUE, row.names = TRUE)
   
 }
 
@@ -606,7 +606,7 @@ The correlation values have been saved as a 24x24 matrix. Now that the values ha
 
 ```{r tidy env.cor}
 
-env.cor2 <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv")) 
+env.cor2 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv")) 
 
 env.cor2 <- as.data.frame(env.cor2) 
 # convert rownames column to rownames
@@ -642,7 +642,7 @@ env.cor4 <- env.cor3 %>%
   dplyr::select(!var) # take out temp column
 
 # write tidied data
-write.csv(x = env.cor4, file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
+write.csv(x = env.cor4, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
 
 ```
 
@@ -654,7 +654,7 @@ Now that they are in a more readable format and have been converted to an absolu
 
 ```{r prepare data to visualize}
 
-env.cor5 <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"))
+env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"))
 
 row.names(env.cor5) <- env.cor5$X
 
@@ -665,7 +665,7 @@ env.cor5 <- as.matrix(env.cor5[, which(names(env.cor5) != "X")])
 # pivot correlation heatmap for plotting
 # code taken from Huron et.al
 env.cor5 <- env.cor5 %>%
-  as.tibble() %>%
+  tibble::as_tibble() %>%
   mutate(covar = colnames(.)) %>%
   dplyr::select(covar, everything()) %>% # put covar at front
   pivot_longer(cols = -covar, names_to = "var") %>% # pivot longer for plotting
@@ -722,8 +722,9 @@ var.renames <- c(
   guides(x =  guide_axis(angle = 45)) +
   labs(x = "", y = "")  +
   labs(title = "Pearson's correlations: CHELSA and atc covariate rasters") +
-  #theme(axis.ticks.x = element_blank()) +
-  scale_y_discrete(labels = var.renames)
+  theme(legend.position = "bottom") +
+  scale_y_discrete(labels = var.renames) +
+   coord_equal(ratio = 1)
 )
 
 ```
@@ -739,7 +740,7 @@ I will save this plot and produce a binarized version before I continue choosing
 ```{r save correlation heatmap}
 
 # save correlation heatmap
-ggsave(env.cor_plot, filename = file.path(here(), "vignette-outputs", "figures", "env_cor_CHELSA.jpg"),
+ggsave(env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v1.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -766,8 +767,9 @@ env.cor6$value <- cut(env.cor6$value, breaks = c(0, 0.709, 1), labels = c("0.7 o
   labs(x = "", y = "")  +
   labs(title = "Pearson's correlations: CHELSA and atc covariate rasters") +
   scale_fill_manual(values = c("yellow2", "azure4")) +
-  #theme(axis.ticks.x = element_blank()) +
-  scale_y_discrete(labels = var.renames)
+  theme(legend.position = "bottom") +
+  scale_y_discrete(labels = var.renames) +
+  coord_equal(ratio = 1)
 )
 
 ```
@@ -776,7 +778,7 @@ Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarte
 
 ```{r save binary heatmap}
 
-ggsave(env.cor_binary_plot, filename = file.path(here(), "vignette-outputs", "figures", "env_cor_CHELSA_binary.jpg"),
+ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v1_binary.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -788,7 +790,7 @@ ggsave(env.cor_binary_plot, filename = file.path(here(), "vignette-outputs", "fi
 
 ```{r }
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
@@ -837,7 +839,7 @@ These chunks are identical to chunks 8 and 11, except these chunks convert NA va
 
 if(FALSE){
   
-  mypath <- file.path(here() %>% 
+  mypath <- file.path(here::here() %>% 
                         dirname(),
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
   
@@ -871,7 +873,7 @@ if(FALSE){
 
 if(TRUE){
   
-  mypath <- file.path(here() %>%
+  mypath <- file.path(here::here() %>%
                         dirname(),
                       "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
   
@@ -917,7 +919,7 @@ Along with the 19 traditional bioclimatic variables, CHELSA has created about [2
 if(FALSE) {
 
   # historical data
-  chelsa_historic_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_1981-2010_bioclim_URLs.txt"),
+  chelsa_historic_URLs <- read_table(file = file.path(here::here(), "data-raw", "CHELSA", "chelsa_1981-2010_bioclim_URLs.txt"),
                                 col_names = FALSE) %>%
     as.data.frame() %>%
     dplyr::select("X1") %>%
@@ -944,7 +946,7 @@ Files were placed in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/orig
 ```{r get file names}
  
 # file path to directory
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                       dirname(),
                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
@@ -978,7 +980,7 @@ output.files <- output.files %>%
 if(FALSE) {
 
   # ssp370 data
-  chelsa_370_URLs <- read_table(file = file.path(here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
+  chelsa_370_URLs <- read_table(file = file.path(here::here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
                                 col_names = FALSE) %>%
     as.data.frame() %>%
     dplyr::select("X1") %>%
@@ -1006,7 +1008,7 @@ These files were stored manually in `"maxent/future_climate_rasters/chelsa2.1_30
 ```{r get file names}
  
 # file path to directory
-mypath <- file.path(here() %>%
+mypath <- file.path(here::here() %>%
                       dirname(),
                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 

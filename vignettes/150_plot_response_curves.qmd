@@ -2,6 +2,7 @@
 title: "Plot response curves"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
+date: "2024-05-03"
 format: html
 editor: visual
 ---
@@ -21,7 +22,6 @@ library(devtools)
 # SDMtune and dependencies
 library(SDMtune) # main package used to run SDMs
 library(dismo) # package underneath SDMtune
-library(rJava) # for running MaxEnt
 library(plotROC) # plots ROCs
 
 # spatial data handling
@@ -1930,6 +1930,177 @@ ggsave(
 
 ```
 
+# Patchwork together plots
+
+## Response curves
+
+```{r univariate}
+
+bio11_univar_combined <- bio11_univar_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 11") 
+
+
+
+bio12_univar_combined <- bio12_univar_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 12") 
+
+
+  
+bio15_univar_combined <- bio15_univar_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 15") 
+
+
+bio2_univar_combined  <- bio2_univar_combined +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 2") 
+
+
+
+
+univar_combined_patchwork <- (bio11_univar_combined + bio12_univar_combined + bio15_univar_combined + bio2_univar_combined) +
+  plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
+  theme(legend.position = "bottom")
+
+```
+
+```{r save plot}
+
+ggsave(
+  univar_combined_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r univariate supp materials}
+
+
+bio12_univar_combined <- bio12_univar_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 12") 
+
+
+
+bio2_univar_combined  <- bio2_univar_combined +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 2") 
+
+
+
+
+univar_combined_patchwork_supp <- (bio12_univar_combined / bio2_univar_combined) +
+  plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
+  theme(legend.position = "bottom")
+
+```
+
+```{r save plot}
+
+ggsave(
+  univar_combined_patchwork_supp, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_supp.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r marginal}
+
+bio11_marginal_combined <- bio11_marginal_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 11") 
+
+
+
+bio12_marginal_combined <- bio12_marginal_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 12") 
+
+
+  
+bio15_marginal_combined <- bio15_marginal_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 15") 
+
+
+bio2_marginal_combined  <- bio2_marginal_combined +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 2") 
+
+
+
+
+marginal_combined_patchwork <- (bio11_marginal_combined + bio12_marginal_combined + bio15_marginal_combined + bio2_marginal_combined) +
+  plot_annotation(title = "Marginal response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
+  theme(legend.position = "bottom")
+
+```
+
+```{r save plot}
+
+ggsave(
+  marginal_combined_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_marginal_resp_curve_cloglog.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
 # References
 

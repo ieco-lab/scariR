@@ -1,6 +1,7 @@
 ---
 title: "Other assorted plots"
 author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
 date: "2024-05-11"
 output: html_document
 ---
