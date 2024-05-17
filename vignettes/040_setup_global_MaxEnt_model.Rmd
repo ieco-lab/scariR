@@ -39,7 +39,7 @@ I will prepare for this vignette by loading the necessary packages to run this s
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here()
+here::here()
 # here() starts at the root folder of this package.
 
 library(devtools)
@@ -53,6 +53,7 @@ library(terra)
 #install.packages("webshot2")
 library(webshot2)
 library(kableExtra)
+library(patchwork)
 
 ```
 
@@ -326,9 +327,9 @@ global_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_points, file = file.path(here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+write_csv(x = global_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
 # save as rds file
-write_rds(global_points, file = file.path(here(), "data", "global_background_points_v3.rds"))
+write_rds(global_points, file = file.path(here::here(), "data", "global_background_points_v2.rds"))
   
   
 ```
@@ -344,13 +345,13 @@ mypath <- file.path(here::here() %>%
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
 
 ```
 
 ```{r plot points}
 
-global_points_plot <- ggplot() +
+global_background_plot <- ggplot() +
     geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
     geom_point(data = global_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
     ggtitle("'global' model background points") +
@@ -363,7 +364,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 
 ```{r save plot}
 
-ggsave(global_points_plot, 
+ggsave(global_background_plot, 
        filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
        height = 8, 
        width = 10,
@@ -412,6 +413,57 @@ ggsave(
 
 Now that we have selected the background point datasets and created rasters for training and projection purposes, we are ready to run our models. The next vignette will train and project the global model, while the following vignette will perform a similar setup for the regional model.
 
+# Patchwork background and presence plots
+
+```{r patchwork}
+
+global_slf_plot <- global_slf_plot + 
+  theme(
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(title = "presence points") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) 
+
+
+global_background_plot <- global_background_plot + 
+  theme(
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(title = "background points") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) 
+
+
+
+
+
+global_patchwork <- (global_slf_plot / global_background_plot) +
+  plot_layout(axes = "collect", axis_titles = "collect") +
+  plot_annotation(title = "'global' model elements") 
+
+# work around because collect axes not working
+global_patchwork <- patchwork::patchworkGrob(global_patchwork) %>%
+  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
+
+```
+
+```{r save plot}
+
+ggsave(
+  global_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_summary.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
 # References
 

@@ -80,6 +80,7 @@ library(kgc) # koppen climate rasters
 library(webshot2)
 library(kableExtra)
 library(patchwork)
+library(gridExtra)
 
 ```
 
@@ -215,7 +216,7 @@ terra::crs(agg_layer)
 # resample
 koppen_zones_rast <- terra::resample(
   x = kmz_data_rast,
-  y = agg_layer, # aggregate to this origin and resoluion
+  y = agg_layer, # aggregate to this origin and resolution
   method = "mode",
   threads = TRUE,
   filename = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"),
@@ -1228,8 +1229,8 @@ slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-
    dplyr::select(-species) 
 
 # mask layer I will use
-regional_native_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
-  !is.na()
+regional_native_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) # %>%
+  #!is.na()
 
 # also get ext
 terra::ext(regional_native_bio2)
@@ -1566,27 +1567,33 @@ y_scale_labels <- c(20, 30, 40, 50, 60)
 regional_invaded_withSLF_plot <- regional_invaded_withSLF_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
-  labs(title = "background point area (Koeppen climate zones)") +
+  labs(title = "background point area") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
+
+
 
 
 regional_invaded_background_plot <- regional_invaded_background_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "background points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
+
   
 regional_invaded_slf_plot  <- regional_invaded_slf_plot +
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "presence points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
@@ -1594,10 +1601,12 @@ regional_invaded_slf_plot  <- regional_invaded_slf_plot +
 
 
 
-
-regional_invaded_patchwork <- (regional_invaded_slf_plot + regional_invaded_background_plot) / (regional_invaded_withSLF_plot + plot_spacer()) +
-  plot_layout(axis_titles = "collect") +
+regional_invaded_patchwork <- (regional_invaded_slf_plot + regional_invaded_background_plot) / (regional_invaded_withSLF_plot + plot_spacer())
   plot_annotation(title = "'regional_invaded' model elements") 
+
+  # work around because collect axes not working
+regional_invaded_patchwork <- patchwork::patchworkGrob(regional_invaded_patchwork) %>%
+  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
 
 ```
 
@@ -1622,9 +1631,10 @@ y_scale_labels <- c(25, 30, 35, 40, 45)
 regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
-  labs(title = "background point area (Koeppen climate zones)") +
+  labs(title = "background point area") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
@@ -1632,7 +1642,8 @@ regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot +
 regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "background points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
@@ -1642,7 +1653,8 @@ regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot +
 regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "presence points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
@@ -1653,6 +1665,10 @@ regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
 
 regional_invaded_asian_patchwork <- (regional_invaded_asian_slf_plot + regional_invaded_asian_points_plot) / (regional_invaded_asian_withSLF_plot + plot_spacer()) +
   plot_annotation(title = "'regional_invaded_asian' model elements") 
+
+# work around because collect axes not working
+regional_invaded_asian_patchwork <- patchwork::patchworkGrob(regional_invaded_asian_patchwork) %>%
+  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
 
 ```
 
@@ -1678,9 +1694,10 @@ y_scale_labels <- c(0, 10, 20, 30, 40, 50)
 regional_native_withSLF_plot <- regional_native_withSLF_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
-  labs(title = "background point area (Koeppen climate zones)") +
+  labs(title = "background point area") +
   scale_x_continuous(labels = seq(from = 70, to = 140, by = 10), breaks = seq(from = 70, to = 140, by = 10), expand = c(0, 0)) +
   scale_y_continuous(labels = c(-10, 0, 10, 20, 30, 40, 50), breaks = c(-10, 0, 10, 20, 30, 40, 50), expand = c(0, 0)) 
 
@@ -1688,7 +1705,8 @@ regional_native_withSLF_plot <- regional_native_withSLF_plot +
 regional_native_points_plot <- regional_native_points_plot + 
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "background points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
@@ -1698,7 +1716,8 @@ regional_native_points_plot <- regional_native_points_plot +
 regional_native_slf_plot  <- regional_native_slf_plot +
   theme(
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(title = "presence points") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
@@ -1707,14 +1726,12 @@ regional_native_slf_plot  <- regional_native_slf_plot +
 
 
 
-regional_native_patchwork <- (regional_native_slf_plot + regional_native_points_plot) / (regional_native_withSLF_plot + plot_spacer()) +
-  plot_layout(design = "
-  AABB
-  AABB
-  CC##
-  CC##
-  ") +
+regional_native_patchwork <- (regional_native_slf_plot | regional_native_points_plot) / (regional_native_withSLF_plot | plot_spacer()) +
   plot_annotation(title = "'regional_native' model elements") 
+
+# work around because collect axes not working
+regional_native_patchwork <- patchwork::patchworkGrob(regional_native_patchwork) %>%
+  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
 
 ```
 
