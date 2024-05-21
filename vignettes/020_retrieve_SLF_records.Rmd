@@ -33,7 +33,7 @@ First, I will load in the necessary packages.
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here()
+here::here()
 # here() is set at the root folder of this package
 
 library(devtools) # installing packages not from CRAN
@@ -129,7 +129,7 @@ First, I will import the dataset to my working directory. I will also retrieve t
 # download the data as a zip to PC
 slf_gbif_download <- occ_download_get(
   key = '0046146-231120084113126',
-  path = file.path(here(), "data-raw"),
+  path = file.path(here::here(), "data-raw"),
   # overwrite = TRUE
   ) %>% 
   occ_download_import()
@@ -139,8 +139,8 @@ gbif_citation('0046146-231120084113126')
  
 # rename .zip file
 file.rename(
-  from = file.path(here(), "data-raw", "0046146-231120084113126.zip"),
-  to = file.path(here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".zip"))
+  from = file.path(here::here(), "data-raw", "0046146-231120084113126.zip"),
+  to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".zip"))
   )
 
 # simplify download into more useable .csv
@@ -160,7 +160,7 @@ slf_gbif_download_simple$date <- as_date(slf_gbif_download_simple$date)
 
 # save .csv output for use
 write_csv(x = slf_gbif_download_simple, 
-          file = file.path(here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+          file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
 )
 
 ``` 
@@ -172,7 +172,7 @@ First, we want to check the coordinate veracity using the `scrubr` package. This
 ```{r coordinate veracity}
 
 # read in data
-slf_gbif_coords1 <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
+slf_gbif_coords1 <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
 
 slf_gbif_coords1 <- slf_gbif_coords1 %>%
   coord_incomplete() %>%
@@ -237,10 +237,10 @@ We will save the results of the cleaning we just performed so they can be refere
 
 ```{r save cleaned data}
 
-write_csv(slf_gbif_coords3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+write_csv(slf_gbif_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
 
 # also save as a .rds file
-write_rds(slf_gbif_coords3, file = file.path(here(), "data", "slf_gbif_cleaned_coords_2024-01-05.rds"))
+write_rds(slf_gbif_coords3, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-01-05.rds"))
 
 ```
 
@@ -255,7 +255,7 @@ Next, we will retrieve data from the lydemapR package and save it as a `.csv`. I
 slf_lyde <- lydemapr::lyde
 
 write_csv(x = slf_lyde, 
-          file = file.path(here(), "data-raw", paste0("slf_lyde_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
+          file = file.path(here::here(), "data-raw", paste0("slf_lyde_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv")))
 
 ```
 
@@ -265,7 +265,7 @@ The next chunk is an import from an unpublished version of the lydemapr dataset 
 
 if (FALSE) {
   
-  slf_lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+  slf_lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
   # tidy
   slf_lyde_raw %<>%
@@ -277,7 +277,7 @@ if (FALSE) {
     )
   
   # overwrite save original version
-  write_csv(x = slf_lyde_raw, file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+  write_csv(x = slf_lyde_raw, file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
   
 }
 
@@ -288,7 +288,7 @@ The raw dataset is composed of over 658,000 records of SLF in the USA alone. Mos
 ```{r select only desired records}
 
 # read in data
-slf_lyde <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+slf_lyde <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
 # unique values for collection method
 unique(slf_lyde$collection_method)
@@ -344,10 +344,10 @@ slf_lyde3 <- slf_lyde2 %>%
 
 ```{r save cleaned data}
 
-write_csv(slf_lyde3, file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+write_csv(slf_lyde3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
 
 # also save as a .rds file
-write_rds(slf_lyde3, file = file.path(here(), "data", "slf_lyde_cleaned_coords_2023-12-12.rds"))
+write_rds(slf_lyde3, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2023-12-12.rds"))
 
 ```
 
@@ -358,10 +358,10 @@ We want to visualize the difference between the raw coordinates that were pulled
 ```{r visualize raw and thinned GBIF records}
 
 # raw data
-gbif_raw <- read_csv(file = file.path(here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
+gbif_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
 
 # thinned data
-gbif_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+gbif_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
 
 # plot world map
 map_gbif_thinned <- ggplot() +
@@ -400,10 +400,10 @@ From the mapping, it seems that the spatial thinning reduced the GBIF records, w
 ```{r visualize raw and thinned lydemapr records}
 
 # raw data
-lyde_raw <- read_csv(file = file.path(here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
+lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
 # thinned data
-lyde_thinned <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+lyde_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
 
 # plot map of NAmerica
 map_lyde_thinned <- ggplot() +
@@ -458,7 +458,7 @@ In this step, I will combine the records obtained from GBIF and LydemapR with da
 ```{r kable table of published literature}
 
 # read in .csv of papers
-slf_published_papers <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
+slf_published_papers <- read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
 
 # kable table
 
@@ -470,10 +470,10 @@ slf_published_papers %>%
 
 ```{r load in records from literature}
 
-slf_published <- read_csv(file.path(here(), "data-raw", "slf_publishedOccurrenceRecords_v2.csv"))
+slf_published <- read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_v2.csv"))
 
 # save as .rds before proceeding
-write_rds(x = slf_published, file = file.path(here(), "data", "slf_publishedOccurrenceRecords_v2.rds"))
+write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publishedOccurrenceRecords_v2.rds"))
 
 ```
 
@@ -518,9 +518,9 @@ Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produ
 
 ```{r load in GBIF and lyde data}
 
-slf_gbif_coords3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+slf_gbif_coords3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
 
-slf_lyde3 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+slf_lyde3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
 
 ```
 
@@ -578,7 +578,7 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-write_csv(x = slf_all_coords, file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
+write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
 
 ```
 
@@ -592,7 +592,7 @@ Both files will be written to the `vignettes-outputs` folder, which holds interm
 
 ```{r load in data}
 
-slf_all_coords <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
+slf_all_coords <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
 
 ```
 
@@ -611,9 +611,9 @@ if(TRUE) {
                               write.files = TRUE, # returns list of thinned data as a separate .csv file
                               # next, create a file that logs the thinning run, write the path to and name of the log file
                               write.log.file = TRUE, 
-                              log.file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-02-01.txt")),
+                              log.file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-02-01.txt")),
                               # finally, tell it where to write the new files and what to call the thinned dataset
-                              out.dir = file.path(here(), "vignette-outputs", "data-tables"),
+                              out.dir = file.path(here::here(), "vignette-outputs", "data-tables"),
                               out.base = paste0("slf_all_coords_cleaned_2024-02-01"),
                               verbose = TRUE # give details of run in the console
                               )
@@ -638,7 +638,7 @@ Now, lets load in the final thinned dataset for a final round of cleaning.
 
 ```{r read in thinned data}
 
-slf_all_coords2 <- read_csv(file.path(here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2024-02-01_thin1.csv"))
+slf_all_coords2 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2024-02-01_thin1.csv"))
 
 ```
 
@@ -661,16 +661,16 @@ slf_all_coords3 <- slf_all_coords3 %>%
          "y" = "latitude")
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2024-02-01.csv")))
+write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2024-02-01.csv")))
 
 # also save as a .rds file
-write_rds(slf_all_coords3, file = file.path(here(), "data", paste0("slf_all_final_coords_2024-02-01.rds")))
+write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_final_coords_2024-02-01.rds")))
 
 ```
 
 ```{r map all points}
 
-slf_all_coords3 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv"))
+slf_all_coords3 <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv"))
 
  map_all <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
@@ -723,7 +723,7 @@ SLF_by_longitude <- ggplot(data = slf_all_coords3) +
   theme_minimal()
 
 # save output
-ggsave(SLF_by_longitude, filename = file.path(here(), "vignette-outputs", "figures", "SLF_final_all_coords_by_longitude.jpg"),
+ggsave(SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_final_all_coords_by_longitude.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -748,7 +748,7 @@ If this next chunk is run, the compilation of the SLF data from section 2 will n
 
 if(FALSE) {
 
-  slf_coords4 <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+  slf_coords4 <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
   
   # locate coords that maxent threw errors for
   slf_error_points <- slf_coords4 %>%
@@ -815,10 +815,10 @@ if(FALSE) {
                     121.73337
     ))
   
-  write_csv(slf_coords4, file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05_v1.csv"))
+  write_csv(slf_coords4, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05_v1.csv"))
   
   # also save as a .rds file
-  write_rds(slf_coords4, file = file.path(here(), "data", "slf_gbif_cleaned_2024-01-05_v1.rds"))
+  write_rds(slf_coords4, file = file.path(here::here(), "data", "slf_gbif_cleaned_2024-01-05_v1.rds"))
 
 }
 
@@ -831,10 +831,10 @@ if(FALSE) {
 if(FALSE) {
 
   # old data
-  slf_2020 <- read_csv(file = file.path(here(), "data-raw", "data-old", "slf_gbif_cleaned_coords_2022.csv"))
+  slf_2020 <- read_csv(file = file.path(here::here(), "data-raw", "data-old", "slf_gbif_cleaned_coords_2022.csv"))
   
   # new data
-  slf_new <- read_csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+  slf_new <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
   
   # plot SLF
   map_slf <- ggplot() +

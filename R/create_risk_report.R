@@ -945,13 +945,16 @@ create_risk_report <- function(locality, locality.type, save.report = FALSE, myp
   # tidy
   slf_range_shift_table <- slf_range_shift_table %>%
     dplyr::select(-layer) %>%
-    dplyr::mutate("Ld_range_shift_type" = ranges.obj) %>%
+    dplyr::mutate(
+      "Ld_range_shift_type" = ranges.obj,
+      "prop_area" = scales::label_percent()(area / sum(area)),
+      "area" = scales::label_comma()(area)
+      ) %>%
     dplyr::rename("area_km" = "area") %>%
     dplyr::select(-value) %>%
     dplyr::relocate(Ld_range_shift_type)
 
   # .html formatting
-  slf_range_shift_table[, 2] <- formattable::proportion_bar("grey")(slf_range_shift_table[, 2])
   # format row colors
   slf_range_shift_table[1, 1] <- kableExtra::cell_spec(slf_range_shift_table[1, 1], format = "html", background = "azure4")
   slf_range_shift_table[2, 1] <- kableExtra::cell_spec(slf_range_shift_table[2, 1], format = "html", background = "darkred")

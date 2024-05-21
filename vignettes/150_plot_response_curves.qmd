@@ -22,6 +22,7 @@ library(devtools)
 # SDMtune and dependencies
 library(SDMtune) # main package used to run SDMs
 library(dismo) # package underneath SDMtune
+library(rJava)
 library(plotROC) # plots ROCs
 
 # spatial data handling
@@ -30,6 +31,7 @@ library(terra)
 library(sf)
 
 library(viridis)
+library(patchwork)
 
 ```
 
@@ -1988,6 +1990,50 @@ univar_combined_patchwork <- (bio11_univar_combined + bio12_univar_combined + bi
 ggsave(
   univar_combined_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r univariate main paper}
+
+
+bio11_univar_combined <- bio11_univar_combined + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 11") 
+
+
+
+bio15_univar_combined  <- bio15_univar_combined +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(title = "bio 15") 
+
+
+
+
+univar_combined_patchwork_main <- (bio11_univar_combined / bio15_univar_combined) +
+  plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
+  theme(legend.position = "bottom")
+
+```
+
+```{r save plot}
+
+ggsave(
+  univar_combined_patchwork_main, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_main.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
