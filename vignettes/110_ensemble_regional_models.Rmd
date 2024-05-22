@@ -1252,14 +1252,29 @@ ggsave(
 
 This bar chart will show the relative weights of each of the three regional models as a percent contribution to the total ensemble. I will take the relative weights from each exdet raster, normalize them and plot those weights.
 
+```{r load in data}
+
+ensemble_weight_regional_native_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2.tif"))
+# invaded
+ensemble_weight_regional_invaded_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6.tif"))
+# invaded_asian
+ensemble_weight_regional_invaded_asian_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1.tif"))
+
+# stack
+ensemble_weights_stack <- c(ensemble_weight_regional_native_hist, ensemble_weight_regional_invaded_hist, ensemble_weight_regional_invaded_asian_hist)
+
+```
+
+
 ```{r prepare data}
 
 # take mean of weights
 relative_weights <- c(
-  regional_native = mean(values(exdet_hist_stack[[1]]), na.rm = TRUE),
-  regional_invaded = mean(values(exdet_hist_stack[[2]]), na.rm = TRUE),
-  regional_invaded_asian = mean(values(exdet_hist_stack[[3]]), na.rm = TRUE)
-)
+  regional_native = mean(values(ensemble_weights_stack[[1]]), na.rm = TRUE),
+  regional_invaded = mean(values(ensemble_weights_stack[[2]]), na.rm = TRUE),
+  regional_invaded_asian = mean(values(ensemble_weights_stack[[3]]), na.rm = TRUE)
+) %>%
+  abs() # absolute value 
 
 # sum the weights
 relative_weights_sum <- sum(relative_weights)
@@ -1281,13 +1296,17 @@ ensemble_colors <- c(
 ```{r plot proportions}
 
 ensemble_relative_cont_plot <- ggplot() +
-  geom_bar(aes(x = names(relative_weights_prop), y = relative_weights_prop * 100, fill = ensemble_colors), stat = "identity") +
+  geom_bar(aes(x = names(relative_weights_prop), y = relative_weights_prop, fill = ensemble_colors), stat = "identity", color = "black") +
   theme_bw() +
   labs(
     title = "Relative contributions of models to regional_ensemble",
     x = "model",
-    y = "relative contribution (%)"
+    y = "relative contribution"
   ) +
+  # text labels
+  geom_text(aes(x = names(relative_weights_prop), y = relative_weights_prop - 0.05), label = scales::percent(relative_weights_prop)) +
+  # percent scale
+  scale_y_continuous(labels = scales::percent) +
   scale_fill_manual(name = "model", values = c("#e41a1c", "#377eb8", "#4daf4a"), labels = c("invaded", "invaded_asian", "native"))
 
 ```
