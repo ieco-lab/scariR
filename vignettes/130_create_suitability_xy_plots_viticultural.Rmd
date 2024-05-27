@@ -286,6 +286,20 @@ I will plot the suitability values in two different ways- I will plot the raw xy
 
 I created the function `slfSpread::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
 
+```{r re-load pred suit datasets}
+
+# global
+xy_global_1995 <- read_rds(file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds"))
+xy_global_2055 <- read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+
+# regional
+xy_regional_ensemble_1995 <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit.rds"))
+xy_regional_ensemble_2055 <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+
+```
+
+I will use the internal function `slfSpread::rescale_cloglog_suitability()` to re-scale these suitability values. 
+
 ```{r transform global xy data}
 
 xy_global_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
@@ -345,6 +359,55 @@ xy_regional_ensemble_2055_rescaled_thresholds <- xy_regional_ensemble_2055_resca
 xy_regional_ensemble_2055_rescaled <- xy_regional_ensemble_2055_rescaled[[1]]
 
 ```
+
+```{r save re-scaled values}
+
+# global
+write_rds(
+  xy_global_1995_rescaled, 
+  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit_rescaled.rds")
+  )
+write_rds(
+  xy_global_2055_rescaled, 
+  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds")
+  )
+
+# regional
+write_rds(
+  xy_regional_ensemble_1995_rescaled, 
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit_rescaled.rds")
+  )
+write_rds(
+  xy_regional_ensemble_2055_rescaled, 
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds")
+  )
+
+```
+
+```{r save thresholds}
+
+# global
+write_rds(
+  xy_global_1995_rescaled_thresholds, 
+  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit_rescaled_thresholds.rds")
+  )
+write_rds(
+  xy_global_2055_rescaled_thresholds, 
+  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds")
+  )
+
+# regional
+write_rds(
+  xy_regional_ensemble_1995_rescaled_thresholds, 
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit_rescaled_thresholds.rds")
+  )
+write_rds(
+  xy_regional_ensemble_2055_rescaled_thresholds, 
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds")
+  )
+
+```
+
 
 # 3. Plot untransformed suitability values
 
@@ -415,6 +478,35 @@ ggsave(
 
 I will manually change the scale of these values to a 1-10 scale so that this plot of risk is not confused for a measure of suitability from the model.
 
+```{r re-load rescaled values}
+
+# global
+xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+
+```
+
+```{r re-load thresholds}
+
+# global
+xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+
+```
+
+
 ```{r join datasets}
 
 # join datasets for plotting
@@ -442,6 +534,8 @@ regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thr
 regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
 
 ```
+
+Next, I will use case_when() (a vectorized ifelse) to calculate when a point shifts across a suitability threshold due to climate change.
 
 ```{r filter segments that cross thresholds}
 
@@ -537,8 +631,13 @@ ggsave(
   dpi = "retina"
   )
 
-```
+# I will also save the ggplot object as an rds because I need to facet it later
+write_rds(
+  xy_joined_rescaled_plot,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "SLF_risk_IVR_regions_global_regional_ensemble.rds")
+  )
 
+```
 
 # 5. Create summary table of transformed plot
 
@@ -584,13 +683,13 @@ risk_levels <- c("extreme", "high", "moderate", "low")
 
 IVR_risk_table <- IVR_locations_risk %>%
   # create counts and make into acrostic table
-  group_by(risk_1995, risk_2055) %>%
-  summarize(count = n()) %>%
+  dplyr::group_by(risk_1995, risk_2055) %>%
+  dplyr::summarize(count = n()) %>%
   pivot_wider(names_from = risk_2055, values_from = count) %>%
   # tidy
-  dplyr::rename("down_1995_across_2055" = "risk_1995") %>%
-  relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
-  arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
+  dplyr::rename("rows_1995_cols_2055" = "risk_1995") %>%
+  relocate("rows_1995_cols_2055", "extreme", "high", "moderate") %>%
+  arrange(factor(.$rows_1995_cols_2055, levels = risk_levels)) %>%
   # replace missing categories with 0
   replace(is.na(.), 0) %>%
   ungroup()
@@ -601,7 +700,7 @@ IVR_risk_table <- IVR_risk_table %>%
   # add totals column
   tibble::add_column("total_present" = rowSums(.[, 2:5])) %>%
   # add row totals
-  tibble::add_row(down_1995_across_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
+  tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
   # convert to df
   as.data.frame()
 
@@ -613,9 +712,90 @@ write_csv(IVR_risk_table, file = file.path(here::here(), "vignette-outputs", "da
 
 ```
 
-# 6. add percentage change to scatter plot
+# 6. global risk shift vs regional risk shift
+
+I will create a table to sum the number of points in three different groups.  My goal is to understand how the regional model adds resolution to our calculation of risk. So, I will look at how
+
+I will sum the number of points that are suitable in the global model only, unsuitable in the global model only, and unsuitable in the global model / suitable in the regional model. I will repeat this operation for both time periods.
+
+```{r create table of sums}
+
+global_regional_risk_shift <- tibble(
+  time_period = c(1995, 1995, 1995, 2055, 2055, 2055),
+  quadrants = c("quad4_quad2", "quad3_quad1", "quad3", "quad4_quad2", "quad3_quad1", "quad3"),
+  risk = c("extreme_moderate", "high_low", "high", "extreme_moderate", "high_low", "high"),
+  model_suit = c("global_suit", "global_unsuit", "global_unsuit_regional_suit", "global_suit", "global_unsuit", "global_unsuit_regional_suit"),
+  IVR_region_count = c(
+    # global suitable 1995
+    sum(IVR_locations_joined$xy_global_1995_rescaled >= global_MTSS),
+    # global unsuitable 1995
+    sum(IVR_locations_joined$xy_global_1995_rescaled < global_MTSS),
+    # global unsuitable and regional suitable 1995
+    sum(IVR_locations_joined$xy_global_1995_rescaled < global_MTSS & IVR_locations_joined$xy_regional_ensemble_1995_rescaled >= regional_ensemble_MTSS_1995),
+    # global suitable 2055
+    sum(IVR_locations_joined$xy_global_2055_rescaled >= global_MTSS),
+    # global unsuitable 2055
+    sum(IVR_locations_joined$xy_global_2055_rescaled < global_MTSS),
+    # global unsuitable and regional suitable 2055
+    sum(IVR_locations_joined$xy_global_2055_rescaled < global_MTSS & IVR_locations_joined$xy_regional_ensemble_2055_rescaled >= regional_ensemble_MTSS_2055)
+  )
+)
+
+```
+
+```{r add proportions and make specific calculations}
+
+# total # IVRs
+total_IVR <- sum(global_regional_risk_shift[1:2, 5])
+
+global_regional_risk_shift <- mutate(
+  global_regional_risk_shift, 
+  IVR_region_prop = IVR_region_count / total_IVR
+  )
+
+
+# calculate % of unsuit (quad3 and quad 1) that are are in quad3
+quad3_risk_prop <- tibble(
+  time_period = c("quad3_1995", "quad3_2055"),
+  prop_total_unsuit_in_quad3 = c(
+    scales::label_percent(accuracy = 0.01) (abs(as.numeric((global_regional_risk_shift[3, 5]) / global_regional_risk_shift[2, 5]))),
+    scales::label_percent(accuracy = 0.01) (abs(as.numeric((global_regional_risk_shift[6, 5]) / global_regional_risk_shift[5, 5])))
+  )
+)
+
+
+
+# number and proportion of IVRs shifting with CC
+#global_regional_risk_shift_summary <- tibble(
+##  "risk_shift" = c("global_unsuit_shift_1995_2055", "quad3_high_shift_diff_1995_2055"),
+#  "IVR_region_change_count" = c(
+#    as.numeric(global_regional_risk_shift[2, 5]) - as.numeric(global_regional_risk_shift[5, 5]),
+#    as.numeric(global_regional_risk_shift[3, 5]) - as.numeric(global_regional_risk_shift[6, 5])
+#  ),
+#  "IVR_region_change_prop" = c(
+#    as.numeric(global_regional_risk_shift[2, 6]) - as.numeric(global_regional_risk_shift[5, 6]),
+#    as.numeric(global_regional_risk_shift[3, 6]) - as.numeric(global_regional_risk_shift[6, 6])
+#  )
+#) %>%
+  # make percentages and change signs
+#  mutate(
+#    IVR_region_change_count = abs(IVR_region_change_count),
+ #   IVR_region_change_prop = scales::label_percent(accuracy = 0.01) (abs(IVR_region_change_prop))
+#    )
+
+```
+
+With this analysis, I found that currently, 65.2% of the global IVRs are low risk according to the global model. However, 26% of the total IVRs are specifically in quadrant 3 (high risk). This means that the global model alone would label 693 of the 1063 IVRs as low risk, when in actuality 287 or about 41.4% of these are at high risk for SLF establishment (above the MTSS threshold) when we spatially segment the presence data into an ensemble of regional-scale models. After climate change, 893 of the 1063 IVRs (82%) would be unsuitable if the global model alone were used to describe the risk of SLF. However, 341 or 39.1% of these unsuitable IVRs are still suitable in regional_scale models and thus would be missed by an analysis of risk using only a global-scale model.
+
+This means that our regional-scale ensemble is adding resolution and nuance to our estimation of risk for SLF establishment.
+
+# Appendix
+
+## add percentage change to scatter plot
 
 I will add a percentage change for each quadrant that illustrates the total loss or gain per quadrant over time. I will use the IVR_risk_table created above
+
+*this section's code is broken dont use*
 
 ```{r % change table}
 
@@ -623,12 +803,12 @@ IVR_quad_percent_change <- tibble(
   "risk_quadrant" = c("extreme", "high", "moderate", "low"),
   "percent_change" = c(
     # extreme
-    ((colSums(IVR_risk_table[, 2]) - rowSums(IVR_risk_table[1, 2:5])) / (rowSums(IVR_risk_table[1, 2:5]) + colSums(IVR_risk_table[, 2]))),
+    ((IVR_risk_table[5, 2] - rowSums(IVR_risk_table[5, 2:5])) / (IVR_risk_table[5, 2] + rowSums(IVR_risk_table[5, 2:5]))),
     # high
-    ((colSums(IVR_risk_table[, 3]) - rowSums(IVR_risk_table[2, 2:5])) / (rowSums(IVR_risk_table[2, 2:5]) + colSums(IVR_risk_table[, 3]))),
+    ((IVR_risk_table[5, 3] - rowSums(IVR_risk_table[5, 2:5])) / (IVR_risk_table[5, 3] + rowSums(IVR_risk_table[5, 2:5]))),
     # moderate
-    ((colSums(IVR_risk_table[, 4]) - rowSums(IVR_risk_table[3, 2:5])) / (rowSums(IVR_risk_table[3, 2:5]) + colSums(IVR_risk_table[, 4]))),
-    ((colSums(IVR_risk_table[, 5]) - rowSums(IVR_risk_table[4, 2:5])) / (rowSums(IVR_risk_table[4, 2:5]) + colSums(IVR_risk_table[, 5])))
+    ((IVR_risk_table[5, 4] - rowSums(IVR_risk_table[5, 2:5])) / (IVR_risk_table[5, 4] + rowSums(IVR_risk_table[5, 2:5]))),
+    ((IVR_risk_table[5, 5] - rowSums(IVR_risk_table[5, 2:5])) / (IVR_risk_table[5, 5] + rowSums(IVR_risk_table[5, 2:5])))
   )
 )
 
@@ -703,8 +883,6 @@ ggsave(
   )
 
 ```
-
-# Appendix
 
 ## plot unweighted mean versions of suitability plots
 

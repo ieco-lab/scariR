@@ -877,9 +877,10 @@ ggsave(
 
 These areas experienced a significant increase in SLF risk on the main global maps.
 
-```{r regions with projected gains}
+```{r other areas}
 
 # finland
+# projected gain of slf suitability here
 slfSpread::create_risk_report(
   locality.iso = "fin",
   locality.name = "finland",
@@ -889,14 +890,29 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
+# just because it is important
+slfSpread::create_risk_report(
+  locality.iso = "DEU",
+  locality.name = "germany",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "germany"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+## ESTONIA
+##LATVIA
+## LITHUANIA
 
 ```
 
-# Create faceted maps
+# Appendix
+
+## Create faceted maps
 
 First I will facet some examples of different risk scenarios for SLF with their respective risk maps. I will use Romania, the USA and Spain. Romania is an example of a country with a high shift toward the regional model predictions because almost all viticultural regions shift from extreme to high suitability, highlighting the importance of the regional model. The USA exhibits this same trend, but not with the same strength that Romania does. Viticultural regions in spain exhibit a general shift to unsuitability in both models. The regional model seems to display risk under the current climate, but that risk disappears with climate change.
 
-## Example countries
+### Example countries
 
 ```{r edit plots}
 
@@ -1107,7 +1123,7 @@ ggsave(
 
 ```
 
-## US States
+### US States
 
 ```{r edit plots}
 
@@ -1308,7 +1324,7 @@ ggsave(
 
 ```
 
-## Viticultural regions of interest- Oceania
+### Viticultural regions of interest- Oceania
 
 ```{r edit plots}
 
@@ -1454,7 +1470,7 @@ ggsave(
 
 ```
 
-## Viticultural regions of interest- Oceania
+### Viticultural regions of interest- Oceania
 
 ```{r edit plots}
 
@@ -1599,7 +1615,208 @@ ggsave(
 
 ```
 
-# DEPRECATED
+
+
+
+
+### Viticultural regions of interest- Europe
+
+```{r edit plots}
+
+france_risk_plot <- france_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+# edits
+# remove geom_text
+france_risk_plot <- france_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+france_risk_plot$data[[4]]$size <- 1.5
+france_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#france_risk_plot$data[[3]]$linewidth <- 0.1
+
+france_risk_plot <- ggplot_gtable(france_risk_plot) %>%
+  wrap_ggplot_grob()
+
+# germany
+germany_risk_plot <- germany_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+germany_risk_plot <- germany_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+germany_risk_plot$data[[4]]$size <- 1.5
+germany_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#germany_risk_plot$data[[3]]$linewidth <- 0.1
+
+germany_risk_plot <- ggplot_gtable(germany_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# italy
+italy_risk_plot <- italy_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+italy_risk_plot <- italy_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+italy_risk_plot$data[[4]]$size <- 1.5
+italy_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#italy_risk_plot$data[[3]]$linewidth <- 0.1
+
+italy_risk_plot <- ggplot_gtable(italy_risk_plot) %>%
+  wrap_ggplot_grob()
+
+  # edit maps
+
+france_risk_map <- france_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+
+france_risk_map <- ggplot_build(france_risk_map)
+# edit point size
+france_risk_map$data[[3]]$size <- 1.5
+
+france_risk_map <- ggplot_gtable(france_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+germany_risk_map <- germany_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+germany_risk_map <- ggplot_build(germany_risk_map)
+# edit point size
+germany_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+germany_risk_map <- ggplot_gtable(germany_risk_map) %>%
+  wrap_ggplot_grob()
+  
+
+italy_risk_map <- italy_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+italy_risk_map <- ggplot_build(italy_risk_map)
+# edit point size
+italy_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+italy_risk_map <- ggplot_gtable(italy_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+Europe_patchwork <- (
+  france_risk_plot + plot_spacer() + france_risk_map +
+  italy_risk_plot + plot_spacer() + italy_risk_map +
+  germany_risk_plot + plot_spacer() + germany_risk_map 
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Europe"
+    ) +
+  plot_layout(ncol = 2, nrow = 3, widths = unit(5, "cm"), heights = unit(c(5, 0, 7.5), "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  Europe_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_Europe.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## DEPRECATED
 
 ```{r bbox cropping in function}
 # inclusion of bbox cropping in function

@@ -1673,6 +1673,31 @@ ggsave(
 
 ```
 
+```{r save figure objects}
+# bio 11
+write_rds(
+  bio11_marginal_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio11_marginal_resp_curve_cloglog.rds")
+)
+# bio 12
+write_rds(
+  bio12_marginal_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio12_marginal_resp_curve_cloglog.rds")
+)
+# bio 15
+write_rds(
+  bio15_marginal_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio15_marginal_resp_curve_cloglog.rds")
+)
+# bio 2
+write_rds(
+  bio2_marginal_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio2_marginal_resp_curve_cloglog.rds")
+)
+
+```
+
+
 # create univariate response curves
 
 ```{r scatter style object}
@@ -1934,9 +1959,49 @@ ggsave(
 
 ```
 
+```{r save figure objects}
+# bio 11
+write_rds(
+  bio11_univar_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio11_univar_resp_curve_cloglog.rds")
+)
+# bio 12
+write_rds(
+  bio12_univar_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio12_univar_resp_curve_cloglog.rds")
+)
+# bio 15
+write_rds(
+  bio15_univar_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio15_univar_resp_curve_cloglog.rds")
+)
+# bio 2
+write_rds(
+  bio2_univar_combined,
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio2_univar_resp_curve_cloglog.rds")
+)
+
+```
+
 # Patchwork together plots
 
-## Response curves
+## univariate response curves
+
+```{r re-load objects}
+# bio 11
+bio11_univar_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio11_univar_resp_curve_cloglog.rds")
+)
+# bio 12
+bio12_univar_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio12_univar_resp_curve_cloglog.rds")
+)
+# bio 15
+bio15_univar_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio15_univar_resp_curve_cloglog.rds")
+)
+# bio 2
+bio2_univar_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio2_univar_resp_curve_cloglog.rds")
+)
+
+```
 
 ```{r univariate}
 
@@ -1947,7 +2012,7 @@ bio11_univar_combined <- bio11_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
   labs(tag = "A") 
 
@@ -1960,7 +2025,7 @@ bio12_univar_combined <- bio12_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
   labs(tag = "B") 
 
@@ -1973,7 +2038,7 @@ bio15_univar_combined <- bio15_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
   labs(tag = "C") 
 
@@ -1985,7 +2050,7 @@ bio2_univar_combined  <- bio2_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
   labs(tag = "D") 
 
@@ -2019,9 +2084,12 @@ bio11_univar_combined <- bio11_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
-  labs(title = "bio 11") 
+  labs(tag = "A") 
 
 
 
@@ -2029,9 +2097,12 @@ bio15_univar_combined  <- bio15_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
-  labs(title = "bio 15") 
+  labs(tag = "B")  
 
 
 
@@ -2063,9 +2134,12 @@ bio12_univar_combined <- bio12_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
-  labs(title = "bio 12") 
+  labs(tag = "A") 
 
 
 
@@ -2073,9 +2147,12 @@ bio2_univar_combined  <- bio2_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
-  labs(title = "bio 2") 
+  labs(tag = "B") 
 
 
 
@@ -2097,6 +2174,24 @@ ggsave(
   device = "jpeg",
   dpi = "retina"
   )
+
+```
+
+## marginal
+
+```{r re-load objects}
+# bio 11
+bio11_marginal_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio11_marginal_resp_curve_cloglog.rds")
+)
+# bio 12
+bio12_marginal_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio12_marginal_resp_curve_cloglog.rds")
+)
+# bio 15
+bio15_marginal_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio15_marginal_resp_curve_cloglog.rds")
+)
+# bio 2
+bio2_marginal_combined <- read_rds(file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "regional_ensemble_global_bio2_marginal_resp_curve_cloglog.rds")
+)
 
 ```
 

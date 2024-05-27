@@ -961,9 +961,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # tidy
   IVR_risk_table <- IVR_risk_table %>%
-    dplyr::rename("down_1995_across_2055" = "risk_1995") %>%
-    dplyr::relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
-    dplyr::arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
+    dplyr::rename("rows_1995_cols_2055" = "risk_1995") %>%
+    dplyr::relocate("rows_1995_cols_2055", "extreme", "high", "moderate") %>%
+    dplyr::arrange(factor(.$rows_1995_cols_2055, levels = risk_levels)) %>%
     # replace missing categories with 0
     replace(is.na(.), 0)
 
@@ -971,12 +971,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # add totals row and column
   IVR_risk_table <- IVR_risk_table %>%
     tibble::add_column("total_present" = rowSums(dplyr::select(., 2:5))) %>%
-    tibble::add_row(down_1995_across_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
+    tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
     as.data.frame()
   # add rownames
   rownames(IVR_risk_table) <- IVR_risk_table[, 1]
   # get rid of names column
-  IVR_risk_table <- dplyr::select(IVR_risk_table, -down_1995_across_2055)
+  IVR_risk_table <- dplyr::select(IVR_risk_table, -rows_1995_cols_2055)
 
 
   # make nice .html table
