@@ -32,6 +32,11 @@ library(webshot2)
 # devtools::install_github("eliocamp/ggnewscale")
 library(ggnewscale)
 
+# for analysis
+library(patchwork)
+#install.packages("gginnards")
+library(gginnards)
+
 ```
 
 # Create internal dataset for function
@@ -70,16 +75,18 @@ usethis::use_data(
 ```{r USA reports}
 
 slfSpread::create_risk_report(
-  locality = "united states",
+  locality.iso = "usa",
+  locality.name = "united states",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE
 )
 
 # try state level
 slfSpread::create_risk_report(
-  locality = "california",
+  locality.iso = "usa",
+  locality.name = "california",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
@@ -87,7 +94,8 @@ slfSpread::create_risk_report(
 )
 
 slfSpread::create_risk_report(
-  locality = "pennsylvania",
+  locality.iso = "usa",
+  locality.name = "pennsylvania",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
@@ -149,7 +157,8 @@ ggsave(
 ```{r china}
 
 slfSpread::create_risk_report(
-  locality = "china",
+  locality.iso = "chn", 
+  locality.name = "china",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
   create.dir = FALSE,
@@ -158,7 +167,8 @@ slfSpread::create_risk_report(
 
 # this report should have 2 IVR points
 slfSpread::create_risk_report(
-  locality = "shandong",
+  locality.iso = "chn",
+  locality.name = "shandong",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
   create.dir = FALSE,
@@ -167,7 +177,8 @@ slfSpread::create_risk_report(
 
 # this report should have no IVR records
 slfSpread::create_risk_report(
-  locality = "yunnan",
+  locality.iso = "chn",
+  locality.name = "yunnan",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
   create.dir = FALSE,
@@ -181,37 +192,31 @@ slfSpread::create_risk_report(
 
 Morales-Castilla et al 2020 predicted that the following areas would experience a loss in suitability for viticulture under a 4C warming scenario of climate change:
 
-highest losses:
-* Italy
-* Spain
+highest losses: \* Italy \* Spain
 
-others:
-* Turkey
-* South Africa
-* Portugal
-* mexico
+others: \* Turkey \* South Africa \* Portugal \* mexico
 
 Concurrently, they predicted that the following areas would experience a gain in suitability under the same scenario:
 
-* Pacific Northwestern States (USA)
-* New Zealand
-* Great Britain
-* Ireland
-* Sweden
+-   Pacific Northwestern States (USA)
+-   New Zealand
+-   Great Britain
+-   Ireland
+-   Sweden
 
 Finally, some countries are expected to experience a more balanced ratio of losses and gains in suitability:
 
-* France
+-   France
 
 Another paper, Webb et al 2013 predicted analogous climates for specific Vitis cultivars under climate change. This paper focused more on predicting where specific cultivars might move as growers keep pace with climate change. Based on predicted climate shifts in temperature and precipitation, this study predicts that the following areas will be generally less suitable for Vitis cultivars in the future:
 
-* Central valley, California, USA
-* Hotter parts of Australia
+-   Central valley, California, USA
+-   Hotter parts of Australia
 
 Meanwhile, the following areas may increase in suitabiliy due to warming winter temperature minimums:
 
-* Michigan, USA
-* New Zealand
+-   Michigan, USA
+-   New Zealand
 
 ## Countries experiencing a loss in viticultural suitability
 
@@ -219,25 +224,28 @@ Meanwhile, the following areas may increase in suitabiliy due to warming winter 
 
 # spain
 slfSpread::create_risk_report(
-  locality = "spain",
+  locality.iso = "esp",
+  locality.name = "spain",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "spain"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE
 )
 
 # italy
 slfSpread::create_risk_report(
-  locality = "italy",
+  locality.iso = "ita",
+  locality.name = "italy",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "italy"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
 # portugal
 slfSpread::create_risk_report(
-  locality = "portugal",
+  locality.iso = "prt",
+  locality.name = "portugal",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "portugal"),
   create.dir = TRUE,
@@ -246,7 +254,8 @@ slfSpread::create_risk_report(
 
 # turkey
 slfSpread::create_risk_report(
-  locality = "turkey",
+  locality.iso = "tur",
+  locality.name = "turkey",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "turkey"),
   create.dir = TRUE,
@@ -256,7 +265,8 @@ slfSpread::create_risk_report(
 
 # south africa
 slfSpread::create_risk_report(
-  locality =  "south africa",
+  locality.iso = "zaf",
+  locality.name =  "south africa",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "south_africa"),
   create.dir = TRUE,
@@ -265,7 +275,8 @@ slfSpread::create_risk_report(
 
 # mexico
 slfSpread::create_risk_report(
-  locality = "mexico",
+  locality.iso = "mex",
+  locality.name = "mexico",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "mexico"),
   create.dir = TRUE,
@@ -377,16 +388,16 @@ ggsave(
 # I will try to limiting the x and y coordinates of the plot to zoom in.
 
 portugal_current <- portugal_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
-  xlim(-10, -6) +
-  ylim(36, 42)
+  xlim(-18, -6) +
+  ylim(32, 42)
 
 portugal_future <- portugal_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
-  xlim(-10, -6) +
-  ylim(36, 42)
+  xlim(-18, -6) +
+  ylim(32, 42)
 
 portugal_shift <- portugal_slf_risk_report[["range_shift_map"]] +
-  xlim(-10, -6) +
-  ylim(36, 42)
+  xlim(-18, -6) +
+  ylim(32, 42)
 
 
 #save
@@ -474,7 +485,8 @@ ggsave(
 
 # united kingdom
 slfSpread::create_risk_report(
-  locality = "united kingdom",
+  locality.iso = "gbr",
+  locality.name = "united kingdom",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "UK"),
   create.dir = FALSE,
@@ -483,16 +495,18 @@ slfSpread::create_risk_report(
 
 # Ireland
 slfSpread::create_risk_report(
-  locality = "Ireland",
+  locality.iso = "irl",
+  locality.name = "Ireland",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Ireland"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
 # New zealand
 slfSpread::create_risk_report(
-  locality = "new zealand",
+  locality.iso = "nzl",
+  locality.name = "new zealand",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "new_zealand"),
   create.dir = FALSE,
@@ -501,17 +515,22 @@ slfSpread::create_risk_report(
 
 # sweden
 slfSpread::create_risk_report(
-  locality = "sweden",
+  locality.iso = "swe",
+  locality.name = "sweden",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "sweden"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
+```
+
+```{r states with projected increase in viticultural suitability}
 
 # michigan
 slfSpread::create_risk_report(
-  locality = "michigan",
+  locality.iso = "usa",
+  locality.name = "michigan",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
@@ -520,7 +539,8 @@ slfSpread::create_risk_report(
 
 # oregon
 slfSpread::create_risk_report(
-  locality = "oregon",
+  locality.iso = "usa",
+  locality.name = "oregon",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
@@ -529,12 +549,24 @@ slfSpread::create_risk_report(
 
 # washington
 slfSpread::create_risk_report(
-  locality = "washington",
+  locality.iso = "usa",
+  locality.name = "washington",
   locality.type = "states_provinces",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
   save.report = TRUE
 )
+
+# washington
+slfSpread::create_risk_report(
+  locality.iso = "aus",
+  locality.name = "tasmania",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
 
 
 ```
@@ -595,43 +627,48 @@ ggsave(
 # countries of interest
 # france
 slfSpread::create_risk_report(
-  locality = "france",
+  locality.iso = "fra",
+  locality.name = "france",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
 # chile
 slfSpread::create_risk_report(
-  locality = "chile",
+  locality.iso = "chl",
+  locality.name = "chile",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "chile"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
 # australia
 slfSpread::create_risk_report(
-  locality = "australia",
+  locality.iso = "aus",
+  locality.name = "australia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
 # romania
 slfSpread::create_risk_report(
-  locality = "romania",
+  locality.iso = "rou",
+  locality.name = "romania",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "romania"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE
 )
 
 # argentina
 slfSpread::create_risk_report(
-  locality = "argentina",
+  locality.iso = "arg",
+  locality.name = "argentina",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "argentina"),
   create.dir = TRUE,
@@ -640,7 +677,8 @@ slfSpread::create_risk_report(
 
 # georgia
 slfSpread::create_risk_report(
-  locality = "georgia",
+  locality.iso = "geo",
+  locality.name = "georgia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "georgia"),
   create.dir = TRUE,
@@ -649,7 +687,8 @@ slfSpread::create_risk_report(
 
 # russia
 slfSpread::create_risk_report(
-  locality = "russia",
+  locality.iso = "rus",
+  locality.name = "russia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "russia"),
   create.dir = TRUE,
@@ -750,6 +789,90 @@ ggsave(
 
 ```
 
+```{r edit russia maps}
+
+russia_current <- russia_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(20, 180) 
+
+russia_future <- russia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(20, 180) 
+
+russia_shift <- russia_slf_risk_report[["range_shift_map"]] +
+  xlim(20, 180) 
+
+
+#save
+ggsave(
+  russia_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  russia_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  russia_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+```{r edit chile maps}
+
+chile_current <- chile_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-78, -65) 
+
+chile_future <- chile_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-78, -65) 
+
+chile_shift <- chile_slf_risk_report[["range_shift_map"]] +
+  xlim(-78, -65) 
+
+
+#save
+ggsave(
+  chile_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  chile_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  chile_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
 ## other areas of CC interest
 
 These areas experienced a significant increase in SLF risk on the main global maps.
@@ -758,31 +881,723 @@ These areas experienced a significant increase in SLF risk on the main global ma
 
 # finland
 slfSpread::create_risk_report(
-  locality = "finland",
+  locality.iso = "fin",
+  locality.name = "finland",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "finland"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
 
 ```
 
-
-
 # Create faceted maps
 
-What is the organization here?
+First I will facet some examples of different risk scenarios for SLF with their respective risk maps. I will use Romania, the USA and Spain. Romania is an example of a country with a high shift toward the regional model predictions because almost all viticultural regions shift from extreme to high suitability, highlighting the importance of the regional model. The USA exhibits this same trend, but not with the same strength that Romania does. Viticultural regions in spain exhibit a general shift to unsuitability in both models. The regional model seems to display risk under the current climate, but that risk disappears with climate change.
 
-*remove* arrows layer from scatter plots when faceting
+## Example countries
 
-ggplot$layers[[2]] <- NULL
+```{r edit plots}
+
+romania_risk_plot <- romania_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+# edits
+# remove geom_text
+romania_risk_plot <- romania_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+romania_risk_plot$data[[4]]$size <- 1.5
+romania_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#romania_risk_plot$data[[3]]$linewidth <- 0.1
+
+romania_risk_plot <- ggplot_gtable(romania_risk_plot) %>%
+  wrap_ggplot_grob()
 
 
 
+united_states_risk_plot <- united_states_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+united_states_risk_plot <- united_states_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+united_states_risk_plot$data[[4]]$size <- 1.5
+united_states_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#united_states_risk_plot$data[[3]]$linewidth <- 0.1
+
+united_states_risk_plot <- ggplot_gtable(united_states_risk_plot) %>%
+  wrap_ggplot_grob()
+
+  
+
+spain_risk_plot <- spain_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "E") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+spain_risk_plot <- spain_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+spain_risk_plot$data[[4]]$size <- 1.5
+spain_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#spain_risk_plot$data[[3]]$linewidth <- 0.1
+
+spain_risk_plot <- ggplot_gtable(spain_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+  # edit maps
+
+romania_risk_map <- romania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+
+romania_risk_map <- ggplot_build(romania_risk_map)
+# edit point size
+romania_risk_map$data[[3]]$size <- 1.5
+
+romania_risk_map <- ggplot_gtable(romania_risk_map) %>%
+  wrap_ggplot_grob()
 
 
 
+USA_risk_map <-  united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    ) +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_risk_map <- ggplot_build(USA_risk_map)
+# edit point size
+USA_risk_map$data[[3]]$size <- 1.5
+
+USA_risk_map <- ggplot_gtable(USA_risk_map) %>%
+  wrap_ggplot_grob()
+ 
+
+
+spain_risk_map <- spain_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "F") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+spain_risk_map <- ggplot_build(spain_risk_map)
+# edit point size
+spain_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+spain_risk_map <- ggplot_gtable(spain_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+#layout <- c(
+#  area(t = 1, b = 1, l = 1, r = 1),
+#  area(t = 1, b = 1, l = 2, r = 2),
+##  area(t = 2, b = 2, l = 1, r = 1),
+#  area(t = 2, b = 2, l = 2, r = 3),
+#  area(t = 3, b = 3, l = 1, r = 1),
+#  area(t = 3, b = 3, l = 2, r = 2)
+#)
+
+example_countries_patchwork <- (
+  # romania top row
+  romania_risk_plot + plot_spacer() + romania_risk_map + 
+  # USA 2nd row
+  united_states_risk_plot + plot_spacer() + USA_risk_map + 
+  # spain 3rd row
+  spain_risk_plot + plot_spacer() + spain_risk_map
+  ) +
+  # annotation
+  plot_annotation(title = "Differential risk shift due to climate change among countries") +
+  plot_layout(ncol = 3, widths = c(1, 0, -1)) 
+
+```
+
+```{r save plot}
+
+ggsave(
+  example_countries_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "differential_risk_shift_countries.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## US States
+
+```{r edit plots}
+
+washington_risk_plot <- washington_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+# edits
+# remove geom_text
+washington_risk_plot <- washington_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+washington_risk_plot$data[[4]]$size <- 1.5
+washington_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#washington_risk_plot$data[[3]]$linewidth <- 0.1
+
+washington_risk_plot <- ggplot_gtable(washington_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+oregon_risk_plot <- oregon_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+oregon_risk_plot <- oregon_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+oregon_risk_plot$data[[4]]$size <- 1.5
+oregon_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#oregon_risk_plot$data[[3]]$linewidth <- 0.1
+
+oregon_risk_plot <- ggplot_gtable(oregon_risk_plot) %>%
+  wrap_ggplot_grob()
+
+  
+
+michigan_risk_plot <- michigan_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "E") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+michigan_risk_plot <- michigan_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+michigan_risk_plot$data[[4]]$size <- 1.5
+michigan_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#michigan_risk_plot$data[[3]]$linewidth <- 0.1
+
+michigan_risk_plot <- ggplot_gtable(michigan_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+  # edit maps
+
+washington_risk_map <- washington_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(-0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+
+washington_risk_map <- ggplot_build(washington_risk_map)
+# edit point size
+washington_risk_map$data[[3]]$size <- 1.5
+
+washington_risk_map <- ggplot_gtable(washington_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+
+oregon_risk_map <-  oregon_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(-0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    ) 
+
+oregon_risk_map <- ggplot_build(oregon_risk_map)
+# edit point size
+oregon_risk_map$data[[3]]$size <- 1.5
+
+oregon_risk_map <- ggplot_gtable(oregon_risk_map) %>%
+  wrap_ggplot_grob()
+ 
+
+
+michigan_risk_map <- michigan_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "F") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(-0.1, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+michigan_risk_map <- ggplot_build(michigan_risk_map)
+# edit point size
+michigan_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+michigan_risk_map <- ggplot_gtable(michigan_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+example_states_patchwork <- (
+  # washington top row
+  washington_risk_plot + plot_spacer() + washington_risk_map + 
+  # USA 2nd row
+  oregon_risk_plot + plot_spacer() + oregon_risk_map + 
+  # michigan 3rd row
+  michigan_risk_plot + plot_spacer() + michigan_risk_map
+  ) +
+  # annotation
+  plot_annotation(title = "Risk shift in US states of future interest for viticulture") +
+  plot_layout(ncol = 3, nrow = 3, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  example_states_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "risk_shift_viticultural_states.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## Viticultural regions of interest- Oceania
+
+```{r edit plots}
+
+new_zealand_risk_plot <- new_zealand_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+# edits
+# remove geom_text
+new_zealand_risk_plot <- new_zealand_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+new_zealand_risk_plot$data[[4]]$size <- 1.5
+new_zealand_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#new_zealand_risk_plot$data[[3]]$linewidth <- 0.1
+
+new_zealand_risk_plot <- ggplot_gtable(new_zealand_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+tasmania_risk_plot <- tasmania_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+tasmania_risk_plot <- tasmania_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+tasmania_risk_plot$data[[4]]$size <- 1.5
+tasmania_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#tasmania_risk_plot$data[[3]]$linewidth <- 0.1
+
+tasmania_risk_plot <- ggplot_gtable(tasmania_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+  # edit maps
+
+new_zealand_risk_map <- new_zealand_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+
+new_zealand_risk_map <- ggplot_build(new_zealand_risk_map)
+# edit point size
+new_zealand_risk_map$data[[3]]$size <- 1.5
+
+new_zealand_risk_map <- ggplot_gtable(new_zealand_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+tasmania_risk_map <- ggplot_build(tasmania_risk_map)
+# edit point size
+tasmania_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+tasmania_risk_map <- ggplot_gtable(tasmania_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+oceania_patchwork <- (
+  # new_zealand top row
+  new_zealand_risk_plot + plot_spacer() + new_zealand_risk_map + 
+  # tasmania bottom row
+  tasmania_risk_plot + plot_spacer() + tasmania_risk_map
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Oceania"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  oceania_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_oceania.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## Viticultural regions of interest- Oceania
+
+```{r edit plots}
+
+chile_risk_plot <- chile_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+# edits
+# remove geom_text
+chile_risk_plot <- chile_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+chile_risk_plot$data[[4]]$size <- 1.5
+chile_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#chile_risk_plot$data[[3]]$linewidth <- 0.1
+
+chile_risk_plot <- ggplot_gtable(chile_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+argentina_risk_plot <- argentina_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+argentina_risk_plot <- argentina_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+argentina_risk_plot$data[[4]]$size <- 1.5
+argentina_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#argentina_risk_plot$data[[3]]$linewidth <- 0.1
+
+argentina_risk_plot <- ggplot_gtable(argentina_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+  # edit maps
+
+chile_risk_map <- chile_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+
+
+chile_risk_map <- ggplot_build(chile_risk_map)
+# edit point size
+chile_risk_map$data[[3]]$size <- 1.5
+
+chile_risk_map <- ggplot_gtable(chile_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+argentina_risk_map <- argentina_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.9),
+    plot.tag = element_text(face = "bold")
+    )
+  
+argentina_risk_map <- ggplot_build(argentina_risk_map)
+# edit point size
+argentina_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+argentina_risk_map <- ggplot_gtable(argentina_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+SAmerica_patchwork <- (
+  chile_risk_plot + argentina_risk_plot +
+  plot_spacer() + plot_spacer() +
+  chile_risk_map + argentina_risk_map 
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "South America"
+    ) +
+  plot_layout(ncol = 2, nrow = 3, widths = unit(5, "cm"), heights = unit(c(5, 0, 7.5), "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  SAmerica_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_SAmerica.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
 # DEPRECATED
 
@@ -811,5 +1626,4 @@ library(cartographer)
 
 # References
 
-Webb, L. B., I. Watterson, J. Bhend, P. H. Whetton, and E. W. R. Barlow. 2013. Global climate analogues for winegrowing regions in future periods: projections of temperature and precipitation. Australian Journal of Grape and Wine Research 19:331–341.
-
+Webb, L. B., I. Watterson, J. Bhend, P. H. Whetton, and E. W. R. Barlow. 2013. Global climate analogues for winegrowing regions in future periods: projections of temperature and precipitation. Australian Journal of Grape and Wine Research 19:331--341.

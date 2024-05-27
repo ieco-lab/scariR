@@ -348,12 +348,12 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
+     size = 2, stroke = 0.7, color = "black", fill = "white"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055, y = xy_regional_ensemble_2055, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, stroke = 0.7, color = "black", fill = "firebrick3"
+     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
      ) +
    # axes scaling
    scale_x_continuous(name =  "'global' model cloglog suitability", limits = c(0, 1), breaks = breaks) + 
@@ -462,17 +462,17 @@ Now lets plot the data.
        y = xy_regional_ensemble_1995_rescaled,
        yend = xy_regional_ensemble_2055_rescaled
      ), 
-     arrow = grid::arrow(angle = 4.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+     arrow = grid::arrow(angle = 5.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
    ) +
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
+     size = 2, stroke = 0.7, color = "black", fill = "white"
      ) +
    # GFDL ssp370 data
    geom_point(
      aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, stroke = 0.7, color = "black", fill = "firebrick3"
+     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
      ) +
    # axes scaling
    scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
@@ -522,9 +522,7 @@ I will create a summary table of the quadrant placement (and thus the level of r
 
 # create dataset and tidy
 slf_populations_joined <- left_join(slf_populations, xy_joined_rescaled, by = c("x", "y")) %>%
-  relocate(ID, x, y) %>%
-  # remove NA
-  slice(-1064)
+  relocate(ID, x, y) 
   
 # calculate risk quadrants
 slf_populations_risk <- slf_populations_joined %>%
@@ -564,7 +562,16 @@ slf_risk_table <- slf_populations_risk %>%
   relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
   arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
   # replace missing categories with 0
-  replace(is.na(.), 0)
+  replace(is.na(.), 0) %>%
+  ungroup()
+
+
+# tidy
+slf_risk_table <- slf_risk_table %>%
+  # add totals column
+  tibble::add_column("total_present" = rowSums(.[, 2:5])) %>%
+  # add row totals
+  tibble::add_row(down_1995_across_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) 
 
 ```
 
@@ -576,9 +583,6 @@ write_csv(
   )
 
 ```
-
-## make .html
-
 
 
 # 6. add percentage change to scatter plot

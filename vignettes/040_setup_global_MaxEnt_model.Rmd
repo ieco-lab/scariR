@@ -419,24 +419,36 @@ Now that we have selected the background point datasets and created rasters for 
 
 global_slf_plot <- global_slf_plot + 
   theme(
+    plot.title = element_blank(),
     plot.subtitle = element_blank(),
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(title = "presence points") +
+  labs(tag = "A") +
   scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) 
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold")
+    )
 
 
 global_background_plot <- global_background_plot + 
   theme(
+    plot.title = element_blank(),
     plot.subtitle = element_blank(),
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(title = "background points") +
+  labs(tag = "B") +
   scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) 
+  scale_y_continuous(expand = c(0, 0))  +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold")
+  )
 
 
 
@@ -445,10 +457,6 @@ global_background_plot <- global_background_plot +
 global_patchwork <- (global_slf_plot / global_background_plot) +
   plot_layout(axes = "collect", axis_titles = "collect") +
   plot_annotation(title = "'global' model elements") 
-
-# work around because collect axes not working
-global_patchwork <- patchwork::patchworkGrob(global_patchwork) %>%
-  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
 
 ```
 

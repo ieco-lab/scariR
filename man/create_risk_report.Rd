@@ -5,7 +5,8 @@
 \title{Creates}
 \usage{
 create_risk_report(
-  locality,
+  locality.iso,
+  locality.name = locality.iso,
   locality.type,
   save.report = FALSE,
   mypath,
@@ -14,12 +15,16 @@ create_risk_report(
 )
 }
 \arguments{
-\item{locality}{The name of the country, state or province for which to
-generate the report. Please type the full name and not an abbreviation
-(ex: United States, not USA). Avoid special characters,
+\item{locality.iso}{The \href{https://www.iso.org/obp/ui/#search}{alpha-3 ISO code} corresponding to the country of interest.
+If the desired locality is a state or province, please still enter the ISO code
+and supply the name of that province in \code{locality.name}}
+
+\item{locality.name}{The name of the country, state or province for which to
+generate the report. This is optional if the report is for a country, but
+required if the report is for a state or province. Avoid special characters,
 but please include those used used in the ethnic naming (ex: Côte d'Ivoire).}
 
-\item{locality.type}{Character. One of "country" or "states_provinces". If you do
+\item{locality.type}{One of "country" or "states_provinces". If you do
 not know the state or province you are looking for, you might create a report
 at the country level and then look at the return for the name of the provinces
 / states included.}
@@ -27,7 +32,7 @@ at the country level and then look at the return for the name of the provinces
 \item{save.report}{Logical. Should the report be saved to file? File location
 specified by \code{mypath}.}
 
-\item{mypath}{Character.A file path to the sub directory where the model
+\item{mypath}{Character. A file path to the sub directory where the model
 output will be stored. Should be used with the \code{\link[=file.path]{file.path()}} function
 (i.e. with '/' instead of '\\'). If this sub directory does not already exist
 and should be created by the function, set \code{create.dir} = TRUE. This will
@@ -57,6 +62,8 @@ object include:
 
 Some maps may be formatted strangely because of a country's outlying territories.
 You may need to further crop the plot using xlim and ylim (see examples).
+
+Use caution, this function will overwrite previous files output for the same locality.
 }
 \description{
 blarg

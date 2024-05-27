@@ -1444,6 +1444,8 @@ marginal_plots_style <- list(
 
 ```
 
+## Bio 11
+
 ```{r combine plots}
 
 bio11_marginal_combined <- ggplot() +
@@ -1477,7 +1479,7 @@ bio11_marginal_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 11 (mean temperature of the coldest quarter)",
-    x = "mean temperature of the coldest quarter (C)"
+    x = "Bio 11: mean temperature of the coldest quarter (C)"
     ) +
   # aesthetics
   xlim(-20, 20) 
@@ -1534,7 +1536,7 @@ bio12_marginal_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 12 (Annual Precipitation)",
-    x = "annual precipitation (mm)"
+    x = "Bio 12: annual precipitation (mm)"
     ) +
   # aesthetics
   xlim(0, 4250) 
@@ -1591,7 +1593,7 @@ bio15_marginal_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 15 (Precipitation Seasonality, CV)",
-    x = "precipitation seasonality (%)"
+    x = "Bio 15: precipitation seasonality (%)"
     ) +
   # aesthetics
   xlim(0, 120) 
@@ -1648,7 +1650,7 @@ bio2_marginal_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 2 (Mean Diurnal Range)",
-    x = "mean diurnal range (C)"
+    x = "Bio 2: mean diurnal range (C)"
     ) +
   # aesthetics
   xlim(0, 15) 
@@ -1738,7 +1740,7 @@ bio11_univar_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 11 (mean temperature of the coldest quarter)",
-    x = "mean temperature of the coldest quarter (C)"
+    x = "Bio 11: mean temperature of the coldest quarter (C)"
     ) +
   # aesthetics
   xlim(-20, 20) 
@@ -1795,7 +1797,7 @@ bio12_univar_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 12 (Annual Precipitation)",
-    x = "annual precipitation (mm)"
+    x = "Bio 12: annual precipitation (mm)"
     ) +
   # aesthetics
   xlim(0, 4250) 
@@ -1852,7 +1854,7 @@ bio15_univar_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 15 (Precipitation Seasonality, CV)",
-    x = "precipitation seasonality (%)"
+    x = "Bio 15: precipitation seasonality (%)"
     ) +
   # aesthetics
   xlim(0, 120) 
@@ -1909,7 +1911,7 @@ bio2_univar_combined <- ggplot() +
   # labels
   labs(
     subtitle = "Bio 2 (Mean Diurnal Range)",
-    x = "mean diurnal range (C)"
+    x = "Bio 2: mean diurnal range (C)"
     ) +
   # aesthetics
   xlim(0, 15) 
@@ -1942,9 +1944,12 @@ bio11_univar_combined <- bio11_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 11") 
+  labs(tag = "A") 
 
 
 
@@ -1952,9 +1957,12 @@ bio12_univar_combined <- bio12_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 12") 
+  labs(tag = "B") 
 
 
   
@@ -1962,18 +1970,24 @@ bio15_univar_combined <- bio15_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 15") 
+  labs(tag = "C") 
 
 
 bio2_univar_combined  <- bio2_univar_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 2") 
+  labs(tag = "D") 
 
 
 
@@ -1981,7 +1995,7 @@ bio2_univar_combined  <- bio2_univar_combined +
 univar_combined_patchwork <- (bio11_univar_combined + bio12_univar_combined + bio15_univar_combined + bio2_univar_combined) +
   plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
   plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") 
 
 ```
 
@@ -2092,9 +2106,12 @@ bio11_marginal_combined <- bio11_marginal_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 11") 
+  labs(tag = "A") 
 
 
 
@@ -2102,9 +2119,12 @@ bio12_marginal_combined <- bio12_marginal_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 12") 
+  labs(tag = "B") 
 
 
   
@@ -2112,18 +2132,24 @@ bio15_marginal_combined <- bio15_marginal_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 15") 
+  labs(tag = "C") 
 
 
 bio2_marginal_combined  <- bio2_marginal_combined +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold")
     ) +
-  labs(title = "bio 2") 
+  labs(tag = "D") 
 
 
 

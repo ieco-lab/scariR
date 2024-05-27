@@ -38,18 +38,35 @@ IVR_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "d
 
 ```
 
+```{r calculate percentages}
+
+total_IVR <- sum(IVR_risk_table[1:4, 1:4])
+
+IVR_shift_prop_table <- tibble(
+  risk_shift = c("no_shift", "risk_increase", "risk_decrease"),
+  prop_change = c(
+    sum(IVR_risk_table[1, 1], IVR_risk_table[2, 2], IVR_risk_table[3, 3], IVR_risk_table[4, 4]) / total_IVR,
+    sum(IVR_risk_table[2:4, 1], IVR_risk_table[3:4, 2], IVR_risk_table[4, 3]) / total_IVR,
+    sum(IVR_risk_table[1, 2], IVR_risk_table[1:2, 3], IVR_risk_table[1:3, 4]) / total_IVR
+  )
+)
+
+```
+
+
 ```{r format table}
 
-IVR_risk_table[1, ] <- formattable::proportion_bar("darkred")(IVR_risk_table[1, ])
-IVR_risk_table[2, ] <- formattable::proportion_bar("darkorange")(IVR_risk_table[2, ])
-IVR_risk_table[3, ] <- formattable::proportion_bar("gold")(IVR_risk_table[3, ])
-IVR_risk_table[4, ] <- formattable::proportion_bar("gray")(IVR_risk_table[4, ])
+IVR_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(IVR_risk_table[1:4, 1])
+IVR_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(IVR_risk_table[1:4, 2])
+IVR_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(IVR_risk_table[1:4, 3])
+IVR_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(IVR_risk_table[1:4, 4])
 
 # print table, e.g., in html format
 IVR_risk_table <- kable(IVR_risk_table, "html", escape = FALSE) %>% 
   kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-  add_header_above(., header = c("(down) historical risk" = 1, "risk due to climate change (2055)" = 4), bold = TRUE) %>%
-  add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 5), bold = TRUE)
+  # standardize col width
+  kableExtra::column_spec(1:5, width_min = '4cm') %>%
+  add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
 
   
 ```
@@ -85,21 +102,38 @@ slf_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "d
 
 ```
 
+```{r calculate percentages}
+
+total_slf <- sum(slf_risk_table[1:4, 1:4])
+
+slf_shift_prop_table <- tibble(
+  risk_shift = c("no_shift", "risk_increase", "risk_decrease"),
+  prop_change = c(
+    sum(slf_risk_table[1, 1], slf_risk_table[2, 2], slf_risk_table[3, 3], slf_risk_table[4, 4]) / total_slf,
+    sum(slf_risk_table[2:4, 1], slf_risk_table[3:4, 2], slf_risk_table[4, 3]) / total_slf,
+    sum(slf_risk_table[1, 2], slf_risk_table[1:2, 3], slf_risk_table[1:3, 4]) / total_slf
+  )
+)
+
+```
+
 ```{r format table}
 
-slf_risk_table[1, ] <- proportion_bar("darkred")(slf_risk_table[1, ])
-slf_risk_table[2, ] <- proportion_bar("darkorange")(slf_risk_table[2, ])
-slf_risk_table[3, ] <- proportion_bar("gold")(slf_risk_table[3, ])
-slf_risk_table[4, ] <- proportion_bar("gray")(slf_risk_table[4, ])
+slf_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(slf_risk_table[1:4, 1])
+slf_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(slf_risk_table[1:4, 2])
+slf_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(slf_risk_table[1:4, 3])
+slf_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(slf_risk_table[1:4, 4])
 
 # print table, e.g., in html format
 slf_risk_table <- kable(slf_risk_table, "html", escape = FALSE) %>% 
   kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-  add_header_above(., header = c("(down) historical risk" = 1, "risk due to climate change (2055)" = 4), bold = TRUE) %>%
-  add_header_above(., header = c("Risk of persistence for known L delicatula populations" = 5), bold = TRUE)
+  # standardize col width
+  kableExtra::column_spec(1:5, width_min = '4cm') %>%
+  add_header_above(., header = c("Risk of persistence for known L delicatula populations" = 6), bold = TRUE)
 
   
 ```
+
 
 ```{r save table from above, if desired}
 

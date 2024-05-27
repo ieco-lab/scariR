@@ -2,16 +2,16 @@
 #'
 #'@description blarg
 #'
-#'@param locality.iso The [alpha-3 ISO code](https://www.iso.org/obp/ui/#search) corresponding to the country of interest.
+#'@param locality The [alpha-3 ISO code](https://www.iso.org/obp/ui/#search) corresponding to the country of interest.
 #'If the desired locality is a state or province, please still enter the ISO code
 #'and supply the name of that province in `locality.name`
 #'
 #'@param locality.name The name of the country, state or province for which to
-#'generate the report. This is optional if the report is for a country, but
-#'required if the report is for a state or province. Avoid special characters,
+#'generate the report. Please type the full name and not an abbreviation
+#'(ex: United States, not USA). Avoid special characters,
 #'but please include those used used in the ethnic naming (ex: Côte d'Ivoire).
 #'
-#'@param locality.type One of "country" or "states_provinces". If you do
+#'@param locality.type Character. One of "country" or "states_provinces". If you do
 #'not know the state or province you are looking for, you might create a report
 #'at the country level and then look at the return for the name of the provinces
 #'/ states included.
@@ -19,7 +19,7 @@
 #'@param save.report Logical. Should the report be saved to file? File location
 #'specified by `mypath`.
 #'
-#'@param mypath Character. A file path to the sub directory where the model
+#'@param mypath Character.A file path to the sub directory where the model
 #'output will be stored. Should be used with the [file.path()] function
 #'(i.e. with '/' instead of '\\'). If this sub directory does not already exist
 #'and should be created by the function, set `create.dir` = TRUE. This will
@@ -83,8 +83,6 @@
 #'Some maps may be formatted strangely because of a country's outlying territories.
 #'You may need to further crop the plot using xlim and ylim (see examples).
 #'
-#'Use caution, this function will overwrite previous files output for the same locality.
-#'
 #'@examples
 #'
 #'The output is in list format, so it should be called using this notation:
@@ -103,20 +101,14 @@
 #'ylim(35, 44)
 #'
 #'@export
-create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, create.dir = FALSE, map.style = NA) {
+create_risk_report <- function(locality, locality.name, locality.type, save.report = FALSE, mypath, create.dir = FALSE, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
-  if (is.character(locality.iso) == FALSE) {
-    cli::cli_alert_danger("Parameter 'locality.iso' must be of type character")
+  if (is.character(locality) == FALSE) {
+    cli::cli_alert_danger("Parameter 'locality' must be of type character")
     stop()
   }
-
-  if (is.character(locality.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'locality.name' must be of type character")
-    stop()
-  }
-
 
   if (is.character(locality.type) == FALSE) {
     cli::cli_alert_danger("Parameter 'locality.type' must be of type character")
@@ -130,12 +122,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   if (is.logical(save.report) == FALSE) {
     cli::cli_alert_danger("Parameter 'save.report' must be of type character")
-    stop()
-  }
-
-
-  if (stringr::str_length(locality.iso) != 3) {
-    cli::cli_alert_danger("Parameter 'locality.iso' must consist of the alpha-3 country code.")
     stop()
   }
 
@@ -203,13 +189,8 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   }
 
-  # locality.iso
-  locality_iso_internal <- locality.iso %>%
-    toupper() %>%
-    gsub(pattern = " ", replacement = "")
-
-  # locality.name
-  locality_name_internal <- locality.name %>%
+  # locality
+  locality_internal <- locality %>%
     tolower() %>%
     gsub(pattern = " ", replacement = "_") %>%
     gsub(pattern = "-", replacement = "_") %>%
@@ -238,57 +219,25 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   dir.create(here::here(), "data-raw", "ne_states_provinces")
 
 
-  # import countries, first checking if the file already exists
-  if(file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) == TRUE) {
+  # import countries
+  countries_sf <- rnaturalearth::ne_download(
+    scale = 10, # highest resolution
+    type = "admin_0_countries", # states and provinces
+    category = "cultural",
+    destdir = file.path(here::here(), "data-raw", "ne_countries"),
+    load = TRUE, # load into environment
+    returnclass = "sf" # shapefile
+  )
 
-    countries_sf <- rnaturalearth::ne_load(
-      scale = 10,
-      type = "admin_0_countries",
-      category = "cultural",
-      destdir = file.path(here::here(), "data-raw", "ne_countries"),
-      returnclass = "sf"
-    )
-
-    cli::cli_alert_info(paste0("Importing shapefiles from: ", file.path(here::here(), "data-raw")))
-
-  } else if (file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) == FALSE) {
-
-    countries_sf <- rnaturalearth::ne_download(
-      scale = 10, # highest resolution
-      type = "admin_0_countries", # countries
-      category = "cultural",
-      destdir = file.path(here::here(), "data-raw", "ne_countries"),
-      load = TRUE, # load into environment
-      returnclass = "sf" # shapefile
-    )
-
-  }
-
-
-
-  # import states and provinces
-  if(file.exists(file.path(here::here(), "data-raw", "ne_states_provinces", "ne_10m_admin_1_states_provinces.shp")) == TRUE) {
-
-    states_provinces_sf <- rnaturalearth::ne_load(
-      scale = 10,
-      type = "admin_1_states_provinces",
-      category = "cultural",
-      destdir = file.path(here::here(), "data-raw", "ne_states_provinces"),
-      returnclass = "sf"
-    )
-
-  } else if (file.exists(file.path(here::here(), "data-raw", "ne_states_provinces", "ne_10m_admin_1_states_provinces.shp")) == FALSE) {
-
-    states_provinces_sf <- rnaturalearth::ne_download(
-      scale = 10, # highest resolution
-      type = "admin_1_states_provinces", # states and provinces
-      category = "cultural",
-      destdir = file.path(here::here(), "data-raw", "ne_states_provinces"),
-      load = TRUE, # load into environment
-      returnclass = "sf" # shapefile
-    )
-
-  }
+  # import states
+  states_provinces_sf <- rnaturalearth::ne_download(
+    scale = 10, # highest resolution
+    type = "admin_1_states_provinces", # states and provinces
+    category = "cultural",
+    destdir = file.path(here::here(), "data-raw", "ne_states_provinces"),
+    load = TRUE, # load into environment
+    returnclass = "sf" # shapefile
+  )
 
   # tidy shapefiles-------------------------------------------------------------
 
@@ -300,9 +249,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       NAME_LONG = gsub(NAME_LONG, pattern = "/", replacement = ""),
       NAME_LONG = gsub(NAME_LONG, pattern = "-", replacement = "_"),
       NAME_LONG = gsub(NAME_LONG, pattern = ".", replacement = "", fixed = TRUE),
-      # alpha-3 iso used to isolate sf
-      ADM0_A3 = toupper(ADM0_A3),
-      ADM0_A3 = gsub(ADM0_A3, pattern = " ", replacement = ""),
       # also tidy abbreviations
       ABBREV = toupper(ABBREV),
       ABBREV = gsub(ABBREV, pattern = "/", replacement = ""),
@@ -318,10 +264,15 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       name = gsub(name, pattern = "/", replacement = ""),
       name = gsub(name, pattern = "-", replacement = "_"),
       name = gsub(name, pattern = ".", replacement = "", fixed = TRUE),
-      # alpha-3 iso used to isolate sf
-      adm0_a3 = toupper(adm0_a3),
-      adm0_a3 = gsub(adm0_a3, pattern = " ", replacement = "")
+      # geonunit used for data mapping downstream
+      geonunit = tolower(geonunit),
+      # fix united states
+      geonunit = gsub(geonunit, pattern = "united states of america", replacement = "united states"),
+      geonunit = gsub(geonunit, pattern = " ", replacement = "_"),
+      geonunit = gsub(geonunit, pattern = "/", replacement = ""),
+      geonunit = gsub(geonunit, pattern = "-", replacement = "_")
     )
+
 
 
   # tidy IVR dataset------------------------------------------------------------
@@ -354,7 +305,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   if(locality.type == "country") {
 
     country.name.check <- countries_sf %>%
-      dplyr::filter(ADM0_A3 == locality_iso_internal)
+      dplyr::filter(NAME_LONG == locality_internal)
 
       # if at least 1 record, success
     if(nrow(country.name.check) > 0) {
@@ -370,7 +321,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # the check if the locality is a state or province
   } else if(locality.type == "states_provinces") {
     state.name.check <- states_provinces_sf %>%
-      dplyr::filter(name == locality_name_internal)
+      dplyr::filter(name == locality_internal)
 
     # if at least 1 record, success
     if(nrow(state.name.check) > 0) {
@@ -396,16 +347,16 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # if a country, import country sf
   if(locality.type == "country") {
     locality_sf <- countries_sf %>%
-      dplyr::filter(ADM0_A3 == locality_iso_internal, na.rm = TRUE)
+      dplyr::filter(NAME_LONG == locality_internal, na.rm = TRUE)
 
     # if the locality is a country, I will also map the provinces on top
     locality_sf_plot_layer <- states_provinces_sf %>%
-      dplyr::filter(adm0_a3 == locality_iso_internal, na.rm = TRUE)
+      dplyr::filter(geonunit == locality_internal, na.rm = TRUE)
 
     # if a state, import state sf
   } else if(locality.type == "states_provinces") {
     locality_sf <- states_provinces_sf %>%
-      dplyr::filter(name == locality_name_internal, na.rm = TRUE)
+      dplyr::filter(name == locality_internal, na.rm = TRUE)
 
   }
 
@@ -477,7 +428,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # data layer
     geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
     # add province layer
-    geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
+    geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
     # fill scale 1
     scale_discrete_manual(
       name = "projected risk",
@@ -490,7 +441,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # new scale
     ggnewscale::new_scale_fill() +
     # IVRs
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
     # fill scale for points
     scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
@@ -498,7 +449,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # other stuff
     labs(
       title = "Current projected risk of Lycorma delicatula invasion",
-      subtitle = stringr::str_to_title(locality_name_internal)
+      subtitle = stringr::str_to_title(locality)
       ) +
     coord_sf()
 
@@ -510,8 +461,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       map_style +
       # data layer
       geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
-      # add province layer
-      geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
       # fill scale raster
       scale_discrete_manual(
         name = "projected risk",
@@ -524,7 +473,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # new scale
       ggnewscale::new_scale_fill() +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
       # fill scale for points
       scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
@@ -532,9 +481,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Current projected risk of Lycorma delicatula invasion",
-        subtitle = stringr::str_to_title(locality_name_internal)
+        subtitle = stringr::str_to_title(locality)
       ) +
-      coord_sf()
+      coord_equal()
 
   }
 
@@ -549,7 +498,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # data layer
       geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
       # add province layer
-      geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
+      geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
       # fill scale raster
       scale_discrete_manual(
         name = "projected risk",
@@ -562,7 +511,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # new scale
       ggnewscale::new_scale_fill() +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
       # fill scale for points
       scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
@@ -570,7 +519,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Projected risk of Lycorma delicatula invasion under climate change",
-        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2055 | ssp370 | GFDL-ESM4")
+        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
       ) +
       coord_sf()
 
@@ -582,8 +531,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       map_style +
       # data layer
       geom_raster(data = slf_binarized_2055_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
-      # add province layer
-      geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
       # fill scale raster
       scale_discrete_manual(
         name = "projected risk",
@@ -596,7 +543,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # new scale
       ggnewscale::new_scale_fill() +
       # IVRs
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
       # fill scale for points
       scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
@@ -604,9 +551,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Projected risk of Lycorma delicatula invasion under climate change",
-        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2055 | ssp370 | GFDL-ESM4")
+        subtitle = paste(stringr::str_to_title(locality), "| 2055 | ssp370 | GFDL-ESM4")
       ) +
-      coord_sf()
+      coord_equal()
 
   }
 
@@ -649,7 +596,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # data layer
     geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
     # add province layer
-    geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
+    geom_sf(data = locality_sf_plot_layer, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
     # fill scale
     scale_discrete_manual(
       name = "suitability for\nL delicatula",
@@ -662,7 +609,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # new fill scale
     ggnewscale::new_scale_fill() +
     # IVR regions
-    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+    geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
     # fill scale for points
     scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
     # aesthetics
@@ -670,7 +617,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # other stuff
     labs(
       title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
-      subtitle = stringr::str_to_title(locality_name_internal)
+      subtitle = stringr::str_to_title(locality)
     ) +
     theme(legend.title = element_text(hjust = 1)) +
     coord_sf()
@@ -684,7 +631,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # data layer
       geom_raster(data = slf_range_shift_df, aes(x = x, y = y, fill = as.factor(range_shift_summed))) +
       # add province layer
-      geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.3) +
+      geom_sf(data = locality_sf, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.1) +
       # fill scale
       scale_discrete_manual(
         name = stringr::str_wrap("suitability for L delicatula"),
@@ -697,7 +644,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # new fill scale
       ggnewscale::new_scale_fill() +
       # IVR regions
-      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
+      geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 1.5, shape = 21) +
       # fill scale for points
       scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
       # aesthetics
@@ -705,7 +652,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
-        subtitle = stringr::str_to_title(locality_name_internal)
+        subtitle = stringr::str_to_title(locality)
       ) +
       theme(legend.title = element_text(hjust = 1)) +
       coord_sf()
@@ -873,12 +820,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
          y = xy_regional_ensemble_1995_rescaled,
          yend = xy_regional_ensemble_2055_rescaled
        ),
-       arrow = grid::arrow(angle = 5.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+       arrow = grid::arrow(angle = 4.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
      ) +
      # historical data
      geom_point(
        aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"),
-       size = 2, stroke = 0.7, color = "black", fill = "orchid1"
+       size = 2, stroke = 0.7, color = "black", fill = "azure4"
      ) +
      # GFDL ssp370 data
      geom_point(
@@ -905,7 +852,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
      coord_fixed(ratio = 1) +
     labs(
       title = "Projected risk of Lycorma delicatula invasion under climate change",
-      subtitle = paste0(stringr::str_to_title(locality_name_internal), ": important viticultural regions"),
+      subtitle = paste0(stringr::str_to_title(locality), ": important viticultural regions"),
       caption = "arrows indicate a region is crossing a risk threshold"
     )
 
@@ -916,7 +863,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   ## create IVR summary table---------------------------------------------------
 
   # join rescaled suitability values witu IVR locations
-  IVR_locations_joined <- dplyr::left_join(IVR_locations_locality, xy_joined_rescaled, by = c("x", "y")) %>%
+  IVR_locations_joined <-  dplyr::left_join(IVR_locations_locality, xy_joined_rescaled, by = c("x", "y")) %>%
     dplyr::relocate(ID, x, y)
 
 
@@ -959,20 +906,15 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   if(!'moderate' %in% IVR_risk_table$risk_1995) IVR_risk_table <- IVR_risk_table %>% tibble::add_row(risk_1995 = "moderate", extreme = 0, high = 0, moderate = 0, low = 0)
   if(!'low' %in% IVR_risk_table$risk_1995) IVR_risk_table <- IVR_risk_table %>% tibble::add_row(risk_1995 = "low", extreme = 0, high = 0, moderate = 0, low = 0)
 
-  # tidy
+    # tidy
   IVR_risk_table <- IVR_risk_table %>%
     dplyr::rename("down_1995_across_2055" = "risk_1995") %>%
     dplyr::relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
     dplyr::arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
     # replace missing categories with 0
-    replace(is.na(.), 0)
-
-  # more tidying
-  # add totals row and column
-  IVR_risk_table <- IVR_risk_table %>%
-    tibble::add_column("total_present" = rowSums(dplyr::select(., 2:5))) %>%
-    tibble::add_row(down_1995_across_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
+    replace(is.na(.), 0) %>%
     as.data.frame()
+
   # add rownames
   rownames(IVR_risk_table) <- IVR_risk_table[, 1]
   # get rid of names column
@@ -980,17 +922,16 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
 
   # make nice .html table
-  IVR_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(IVR_risk_table[1:4, 1])
-  IVR_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(IVR_risk_table[1:4, 2])
-  IVR_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(IVR_risk_table[1:4, 3])
-  IVR_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(IVR_risk_table[1:4, 4])
+  IVR_risk_table[1, ] <- formattable::proportion_bar("darkred")(IVR_risk_table[1, ])
+  IVR_risk_table[2, ] <- formattable::proportion_bar("darkorange")(IVR_risk_table[2, ])
+  IVR_risk_table[3, ] <- formattable::proportion_bar("gold")(IVR_risk_table[3, ])
+  IVR_risk_table[4, ] <- formattable::proportion_bar("gray")(IVR_risk_table[4, ])
 
   # print table, e.g., in html format
   IVR_risk_kable <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    # standardize col width
-    kableExtra::column_spec(1:5, width_min = '4cm') %>%
-    kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 6), bold = TRUE)
+    kableExtra::add_header_above(., header = c("(down) historical risk" = 1, "(across) risk due to climate change by 2055" = 4), bold = TRUE) %>%
+    kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 5), bold = TRUE)
 
 
   ## create range shift table---------------------------------------------------
@@ -1002,58 +943,36 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     byValue = TRUE
   )
 
-
   # naming object
-  range.tibble <- tibble::tibble(
-    Ld_range_shift_type = c("remains_unsuitable", "contraction", "expansion", "retained_suitability"),
-    value = c(5, 6, 9, 10)
-  )
+  ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
 
-
-  #tidying
-  # add rows
-  slf_range_shift_table <-  slf_range_shift_table %>%
-    dplyr::left_join(., range.tibble, by = "value")
-
-  # conditional to add missing categories
-  if(!'remains_unsuitable' %in% slf_range_shift_table$Ld_range_shift_type) slf_range_shift_table <- slf_range_shift_table %>% tibble::add_row(layer = 1, value = 5, area = 0, Ld_range_shift_type = "remains_unsuitable")
-  if(!'contraction' %in% slf_range_shift_table$Ld_range_shift_type) slf_range_shift_table <- slf_range_shift_table %>% tibble::add_row(layer = 1, value = 6, area = 0, Ld_range_shift_type = "contraction")
-  if(!'expansion' %in% slf_range_shift_table$Ld_range_shift_type) slf_range_shift_table <- slf_range_shift_table %>% tibble::add_row(layer = 1, value = 9, area = 0, Ld_range_shift_type = "expansion")
-  if(!'retained_suitability' %in% slf_range_shift_table$Ld_range_shift_type) slf_range_shift_table <- slf_range_shift_table %>% tibble::add_row(layer = 1, value = 10, area = 0, Ld_range_shift_type = "retained_suitability")
-
-
-  # more tidying
+  # tidy
   slf_range_shift_table <- slf_range_shift_table %>%
+    dplyr::select(-layer) %>%
     dplyr::mutate(
-      prop_area = scales::label_percent()(area / sum(area)),
-      area = scales::label_comma()(area)
+      "Ld_range_shift_type" = ranges.obj,
+      "prop_area" = scales::label_percent()(area / sum(area)),
+      "area" = scales::label_comma()(area)
       ) %>%
     dplyr::rename("area_km" = "area") %>%
-    dplyr::select(-c(value, layer)) %>%
-    dplyr::relocate(Ld_range_shift_type) %>%
-    replace(is.na(.), 0)
+    dplyr::select(-value) %>%
+    dplyr::relocate(Ld_range_shift_type)
 
   # .html formatting
   # format row colors
-  slf_range_shift_table <- slf_range_shift_table %>%
-    mutate(Ld_range_shift_type = kableExtra::cell_spec(Ld_range_shift_type, format = "html", background = case_when(
-      Ld_range_shift_type == "remains_unsuitable" ~ "azure4",
-      Ld_range_shift_type == "contraction" ~ "darkred",
-      Ld_range_shift_type == "expansion" ~ "darkgreen",
-      Ld_range_shift_type == "retained_suitability" ~ "azure"
-    )
-    ))
+  slf_range_shift_table[1, 1] <- kableExtra::cell_spec(slf_range_shift_table[1, 1], format = "html", background = "azure4")
+  slf_range_shift_table[2, 1] <- kableExtra::cell_spec(slf_range_shift_table[2, 1], format = "html", background = "darkred")
+  slf_range_shift_table[3, 1] <- kableExtra::cell_spec(slf_range_shift_table[3, 1], format = "html", background = "darkgreen")
+  slf_range_shift_table[4, 1] <- kableExtra::cell_spec(slf_range_shift_table[4, 1], format = "html", background = "azure")
 
   # convert to kable
   slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
-    # standardize col width
-    kableExtra::column_spec(1:3, width_min = '4cm') %>%
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
   ## create report--------------------------------------------------------------
 
   slf_risk_report <- list(
-    paste0("Report prepared for: ", stringr::str_to_title(locality_name_internal)),
+    paste0("Report prepared for: ", stringr::str_to_title(locality)),
     "viticultural_regions_list" = IVR_locations_output,
     "risk_maps" = list(
       "current_risk_map" = slf_binarized_1995_plot,
@@ -1075,7 +994,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   if(save.report == TRUE) {
 
     # return output
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+    assign(paste0(locality_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
 
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {
@@ -1086,12 +1005,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
     # save files
     # IVR list
-    readr::write_csv(IVR_locations_locality, file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
+    readr::write_csv(IVR_locations_locality, file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
 
     # risk maps
     ggsave(
       slf_binarized_1995_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_present.jpg")),
+      filename = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_risk_map_present.jpg")),
       height = 8,
       width = 10,
       device = "jpeg",
@@ -1099,7 +1018,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     )
     ggsave(
       slf_binarized_2055_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_2055_ssp370_GFDL-ESM4.jpg")),
+      filename = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_risk_map_2055_ssp370_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
       device = "jpeg",
@@ -1109,7 +1028,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # range shift map
     ggsave(
       slf_range_shift_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_map_2055_ssp370_GFDL-ESM4.jpg")),
+      filename = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_map_2055_ssp370_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
       device = "jpeg",
@@ -1119,7 +1038,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # risk quadrant plot
     ggsave(
       xy_joined_rescaled_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_plot.jpg")),
+      filename = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_plot.jpg")),
       height = 8,
       width = 8,
       device = "jpeg",
@@ -1130,36 +1049,29 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # save as .html
     kableExtra::save_kable(
       IVR_risk_kable,
-      file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_table.html")),
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
       self_contained = TRUE
     )
 
     # convert to jpg
     webshot2::webshot(
-      url = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_table.html")),
-      file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_table.jpg"))
+      url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.html")),
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_viticultural_risk_table.jpg"))
     )
 
     # slf range shift table
     kableExtra::save_kable(
       slf_range_shift_kable,
-      file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_table.html")),
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
       self_contained = TRUE
     )
 
     # convert to jpg
     webshot2::webshot(
-      url = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_table.html")),
-      file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_table.jpg"))
+      url = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.html")),
+      file = file.path(mypath, paste0(locality_internal, "_L_delicatula_report_range_shift_table.jpg"))
     )
 
-
-
-    # remove .html files
-    file.remove(
-      file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_table.html")),
-      file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_table.html"))
-      )
 
 
     # success message
@@ -1167,9 +1079,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # DONE saving
 
 
-  } else if(save.report == FALSE) {
+  } else if(save.return == FALSE) {
 
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+    assign(paste0(locality_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
 
   }
 

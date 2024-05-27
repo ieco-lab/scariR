@@ -1115,7 +1115,120 @@ if(FALSE) {
 
 # Appendix
 
-## Create suitability plots for global model
+## Add country admin boundaries to risk plots
+
+```{r load countries sf}
+
+# load data
+global_countries <- sf::st_read(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))
+
+```
+
+### 1995
+
+```{r add countries shapefile}
+
+# plot
+slf_binarized_1995_plot_withCountries <- slf_binarized_1995_plot +
+  geom_sf(data = global_countries, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.15) + 
+  # re-crop to usual boundaries
+  coord_sf(xlim = c(-180.00013888885, 178.999859675084), ylim = c(-58.5001390148238, 82.99986041915))
+
+# save
+ggsave(
+  slf_binarized_1995_plot_withCountries, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_countries_1981-2010.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### 2055
+
+```{r add countries shapefile}
+
+# plot
+slf_binarized_2055_plot_withCountries <- slf_binarized_2055_plot +
+  geom_sf(data = global_countries, aes(geometry = geometry), fill = NA, color = "black", linewidth = 0.15) + 
+  # re-crop to usual boundaries
+  coord_sf(xlim = c(-180.00013888885, 178.999859675084), ylim = c(-58.5001390148238, 82.99986041915))
+
+
+# save
+ggsave(
+  slf_binarized_2055_plot_withCountries, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_countries_2041-2070_ssp370_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## create patchwork of risk plots
+
+```{r regional_native}
+
+slf_binarized_1995_plot_withCountries <- slf_binarized_1995_plot_withCountries + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 20),
+    legend.title = element_text(face = "bold")
+    ) +
+  labs(tag = "A") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) 
+
+
+slf_binarized_2055_plot_withCountries <- slf_binarized_2055_plot_withCountries + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 20),
+    legend.title = element_text(face = "bold")
+    ) +
+  labs(tag = "B") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) 
+
+
+
+
+slf_binarized_patchwork <- (slf_binarized_1995_plot_withCountries / slf_binarized_2055_plot_withCountries) +
+  plot_layout(axes = "collect", guides = "collect") & 
+  theme(legend.position = "bottom") 
+  
+  #plot_layout(widths = unit(20, "cm")) 
+
+```
+
+```{r save plot}
+
+ggsave(
+  slf_binarized_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_risk_patchwork.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## Create raw suitability plots for global model
 
 I will create the same suitability maps for the global model, for ease of comparison
 

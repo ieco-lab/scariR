@@ -86,7 +86,7 @@ IVR_locations <- wineries %>%
     !is.na(y)
     ) %>%
   # de-duplicate
-  scrubr::dedup(how = "one", tolerance = 0.7) 
+  scrubr::dedup(how = "one", tolerance = 0.7) # change to 0.92 on laptop PC
   # I chose the value of the tolerance that retrieved the number of records closest to the number of records in the xy_global_1995 (further down, 1064 records)
 
 # remove unnecessary obj
@@ -138,7 +138,7 @@ The xy_suitabilities for the global models also contain a few less records than 
 ```{r de-duplicate and filter join}
 
 # de-duplicate just to make sure
-xy_global_1995 <- scrubr::dedup(xy_global_1995, how = "one", tolerance = 0.99) 
+xy_global_1995 <- scrubr::dedup(xy_global_1995, how = "one", tolerance = 0.99) # change to 0.93 on laptop PC
 xy_global_2055 <- scrubr::dedup(xy_global_2055, how = "one", tolerance = 0.99) 
 
 
@@ -154,7 +154,14 @@ IVR_locations <- IVR_locations %>%
 
 ```{r save tidied data}
 
-readr::write_rds(IVR_locations, file.path(here::here(), "data", "wineries_tidied.rds"))
+if (FALSE) {
+
+  readr::write_rds(IVR_locations, file.path(here::here(), "data", "wineries_tidied.rds"))
+  
+  #read it back in
+  IVR_locations <- read_rds(file.path(here::here(), "data", "wineries_tidied.rds"))
+  
+}
 
 ```
 
@@ -369,7 +376,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "orchid1"
      ) +
    # GFDL ssp370 data
    geom_point(
@@ -483,12 +490,12 @@ Now lets plot the data.
        y = xy_regional_ensemble_1995_rescaled,
        yend = xy_regional_ensemble_2055_rescaled
      ), 
-     arrow = grid::arrow(angle = 4.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+     arrow = grid::arrow(angle = 5.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
    ) +
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "orchid1"
      ) +
    # GFDL ssp370 data
    geom_point(
@@ -585,7 +592,18 @@ IVR_risk_table <- IVR_locations_risk %>%
   relocate("down_1995_across_2055", "extreme", "high", "moderate") %>%
   arrange(factor(.$down_1995_across_2055, levels = risk_levels)) %>%
   # replace missing categories with 0
-  replace(is.na(.), 0)
+  replace(is.na(.), 0) %>%
+  ungroup()
+
+
+# tidy
+IVR_risk_table <- IVR_risk_table %>%
+  # add totals column
+  tibble::add_column("total_present" = rowSums(.[, 2:5])) %>%
+  # add row totals
+  tibble::add_row(down_1995_across_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
+  # convert to df
+  as.data.frame()
 
 ```
 
@@ -862,7 +880,7 @@ xy_joined_unweighted_plot <- ggplot(data = xy_joined_unweighted) +
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995_unweighted, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "orchid1"
      ) +
    # GFDL ssp370 data
    geom_point(
@@ -940,7 +958,7 @@ regional_ensemble_MTSS_2055_unweighted <- as.numeric(xy_regional_ensemble_1995_u
    # historical data
    geom_point(
      aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_unweighted_rescaled, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "azure4"
+     size = 2, stroke = 0.7, color = "black", fill = "orchid1"
      ) +
    # GFDL ssp370 data
    geom_point(
