@@ -979,6 +979,17 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   IVR_risk_table <- dplyr::select(IVR_risk_table, -rows_1995_cols_2055)
 
 
+  # begin formatting
+  # add negative sign to top half
+  IVR_risk_table[1, 2] <- -(IVR_risk_table[1, 2])
+  IVR_risk_table[1:2, 3] <- -(IVR_risk_table[1:2, 3])
+  IVR_risk_table[1:3, 4] <- -(IVR_risk_table[1:3, 4])
+
+  # add positive sign to bottom half
+  IVR_risk_table[2:4, 1] <- sprintf("%+.0f", IVR_risk_table[2:4, 1])
+  IVR_risk_table[3:4, 2] <- sprintf("%+.0f", IVR_risk_table[3:4, 2])
+  IVR_risk_table[4, 3] <- sprintf("%+.0f", IVR_risk_table[4, 3])
+
   # make nice .html table
   IVR_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(IVR_risk_table[1:4, 1])
   IVR_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(IVR_risk_table[1:4, 2])
