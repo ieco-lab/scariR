@@ -80,7 +80,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
   create.dir = FALSE,
-  save.report = FALSE
+  save.report = TRUE
 )
 
 # try state level
@@ -229,7 +229,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "spain"),
   create.dir = FALSE,
-  save.report = FALSE
+  save.report = TRUE
 )
 
 # italy
@@ -557,7 +557,7 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
-# washington
+# tasmania
 slfSpread::create_risk_report(
   locality.iso = "aus",
   locality.name = "tasmania",
@@ -652,7 +652,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "romania"),
   create.dir = FALSE,
-  save.report = FALSE
+  save.report = TRUE
 )
 
 # argentina
@@ -1074,7 +1074,7 @@ romania_risk_plot <- romania_slf_risk_report[["viticultural_risk_plot"]] +
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 # edits
@@ -1105,7 +1105,7 @@ united_states_risk_plot <- united_states_slf_risk_report[["viticultural_risk_plo
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 united_states_risk_plot <- united_states_risk_plot %>%
@@ -1134,7 +1134,7 @@ spain_risk_plot <- spain_slf_risk_report[["viticultural_risk_plot"]] +
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 spain_risk_plot <- spain_risk_plot %>%
@@ -1165,7 +1165,7 @@ romania_risk_map <- romania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
   theme(
     legend.position = "none", 
     plot.tag.position = c(0.1, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 
@@ -1191,7 +1191,7 @@ USA_risk_map <-  united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]]
   theme(
     legend.position = "none", 
     plot.tag.position = c(0.1, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     ) +
   xlim(-125, -65) +
   ylim(25, 50)
@@ -1218,7 +1218,7 @@ spain_risk_map <- spain_future +
   theme(
     legend.position = "none", 
     plot.tag.position = c(0.1, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
   
 spain_risk_map <- ggplot_build(spain_risk_map)
@@ -1261,8 +1261,8 @@ example_countries_patchwork <- (
 ggsave(
   example_countries_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "differential_risk_shift_countries.jpg"),
-  height = 8, 
-  width = 10,
+  height = 10, 
+  width = 8,
   device = "jpeg",
   dpi = "retina"
   )
@@ -2902,7 +2902,7 @@ china_risk_map <- china_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
   labs(tag = "B") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0, 0.9),
+    plot.tag.position = c(-0.1, 0.9),
     plot.tag = element_text(face = "bold", size = 20)
     )
 
@@ -2929,7 +2929,7 @@ south_korea_risk_map <- south_korea_slf_risk_report[["risk_maps"]][["2055_risk_m
   labs(tag = "D") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(-0.05, 0.9),
+    plot.tag.position = c(-0.1, 0.9),
     plot.tag = element_text(face = "bold", size = 20)
     )
 
@@ -2955,7 +2955,7 @@ japan_risk_map <- japan_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
   labs(tag = "F") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0, 0.9),
+    plot.tag.position = c(-0.1, 0.9),
     plot.tag = element_text(face = "bold", size = 20)
     )
   
