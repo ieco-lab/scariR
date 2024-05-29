@@ -54,9 +54,41 @@ IVR_shift_prop_table <- tibble(
   # make % format
   dplyr::mutate(prop_change = scales::label_percent(accuracy = 0.01) (prop_change))
 
+
 ```
 
 For reporting purposes, we see that about 69.7% of the 1063 IVRs experience no change in risk of SLF establishment due to climate change by 2055. Meanwhile, about 1.7% actually experience an increase in risk due to climate change and the remaining 28.6% move down one or more levels of risk by 2055.
+
+```{r save table from above, if desired}
+
+if(TRUE) {
+  
+  # make kable
+  IVR_shift_prop_table <- kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
+    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:2, width_min = '4cm') %>%
+    add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
+
+  
+  # save as .html
+  kableExtra::save_kable(
+    IVR_shift_prop_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.jpg")
+  )
+    
+}
+
+```
 
 Now I will format and export the table. I will add colored proportion bars to the columns, which indicate the category distribution of IVRs entering that risk category. In other words, the columns represent the risk category in 2055, so the proportion bars represent the distribution of which current risk category those points move from by 2055. I will also add positive and negative signs to indicate a risk increase or decrease. The diagonal (top L to bottom R) will have no signs because this represents no shift in risk by 2055. All points experiencing a decline in risk sit above the diagonal, and points experiencing an increase in risk sit below the diagonal.
 
@@ -139,6 +171,38 @@ slf_shift_prop_table <- tibble(
 ```
 
 For reporting purposes, we see that about 86.2% of the 769 slf populations experience no change in risk of persistence due to climate change by 2055. Meanwhile, about 2.7% actually experience an increase in risk due to climate change and the remaining 11% move down one or more levels of risk by 2055.
+
+
+```{r save table from above, if desired}
+
+if(TRUE) {
+  
+  # make kable
+  slf_shift_prop_table <- kable(slf_shift_prop_table, "html", escape = FALSE) %>% 
+    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:2, width_min = '4cm') %>%
+    add_header_above(., header = c("SLF risk table shift proportions" = 2), bold = TRUE)
+  
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_shift_prop_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.jpg")
+  )
+    
+}
+
+```
 
 ```{r format table}
 

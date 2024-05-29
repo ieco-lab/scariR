@@ -1697,7 +1697,6 @@ write_rds(
 
 ```
 
-
 # create univariate response curves
 
 ```{r scatter style object}
@@ -2005,6 +2004,20 @@ bio2_univar_combined <- read_rds(file = file.path(here::here(), "vignette-output
 
 ```{r univariate}
 
+
+bio2_univar_combined  <- bio2_univar_combined +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 25)
+    ) +
+  labs(tag = "A") 
+
+
+
 bio11_univar_combined <- bio11_univar_combined + 
   theme(
     plot.title = element_blank(),
@@ -2012,9 +2025,9 @@ bio11_univar_combined <- bio11_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold", size = 20)
+    plot.tag = element_text(face = "bold", size = 25)
     ) +
-  labs(tag = "A") 
+  labs(tag = "B") 
 
 
 
@@ -2025,9 +2038,9 @@ bio12_univar_combined <- bio12_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold", size = 20)
+    plot.tag = element_text(face = "bold", size = 25)
     ) +
-  labs(tag = "B") 
+  labs(tag = "C") 
 
 
   
@@ -2038,26 +2051,14 @@ bio15_univar_combined <- bio15_univar_combined +
     plot.caption = element_blank(),
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold", size = 20)
-    ) +
-  labs(tag = "C") 
-
-
-bio2_univar_combined  <- bio2_univar_combined +
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank(),
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.9),
-    plot.tag = element_text(face = "bold", size = 20)
+    plot.tag = element_text(face = "bold", size = 25)
     ) +
   labs(tag = "D") 
 
 
 
 
-univar_combined_patchwork <- (bio11_univar_combined + bio12_univar_combined + bio15_univar_combined + bio2_univar_combined) +
+univar_combined_patchwork <- (bio2_univar_combined + bio11_univar_combined + bio12_univar_combined + bio15_univar_combined) +
   plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
   plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect") & # collect y axis and legends
   theme(legend.position = "bottom") 
@@ -2069,6 +2070,44 @@ univar_combined_patchwork <- (bio11_univar_combined + bio12_univar_combined + bi
 ggsave(
   univar_combined_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r patchwork in halves- pt 1}
+
+univar_combined_patchwork_pt1 <- (bio2_univar_combined + bio11_univar_combined) +
+  plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect", nrow = 2) & # collect y axis and legends
+  theme(legend.position = "bottom") 
+
+# save
+ggsave(
+  univar_combined_patchwork_pt1, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_half1.jpg"),
+  height = 8, 
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r patchwork in halves- pt 1}
+
+univar_combined_patchwork_pt2 <- (bio12_univar_combined + bio15_univar_combined) +
+  plot_annotation(title = "Univariate response of 'regional_ensemble' and 'global' models") +
+  plot_layout(axes = "collect_y", axis_titles = "collect_y", guides = "collect", nrow = 2) & # collect y axis and legends
+  theme(legend.position = "bottom") 
+
+# save
+ggsave(
+  univar_combined_patchwork_pt2, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_half2.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",

@@ -492,7 +492,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # IVRs
     geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
     # fill scale for points
-    scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+    scale_fill_manual(name = "", values = c("viticultural\narea" = "orchid1")) +
     # aesthetics
     guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
     # other stuff
@@ -526,7 +526,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # IVRs
       geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
       # fill scale for points
-      scale_fill_manual(name = "", values = c("viticultural\narea" = "purple3")) +
+      scale_fill_manual(name = "", values = c("viticultural\narea" = "orchid1")) +
       # aesthetics
       guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
@@ -1059,6 +1059,10 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:3, width_min = '4cm') %>%
+    # add footnotes
+    kableExtra::add_footnote("number signs indicate whether climate change is increasing or decreasing risk", notation = "alphabet") %>%
+    kableExtra::add_footnote("bars indicate the porportion of points in each current risk category that are a part of each 2055 risk category", notation = "alphabet") %>%
+    # styling
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
   ## create report--------------------------------------------------------------
