@@ -464,7 +464,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 ggsave(
   xy_joined_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_IVR_regions_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "IVR_xy_suitability_IVR_regions_global_regional_ensemble.jpg"
     ),
   height = 8, 
   width = 8,
@@ -623,7 +623,7 @@ Now lets plot the data.
 ggsave(
   xy_joined_rescaled_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "SLF_risk_IVR_regions_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "IVR_risk_plot.jpg"
     ),
   height = 8, 
   width = 8,
@@ -634,7 +634,7 @@ ggsave(
 # I will also save the ggplot object as an rds because I need to facet it later
 write_rds(
   xy_joined_rescaled_plot,
-  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "SLF_risk_IVR_regions_global_regional_ensemble.rds")
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "IVR_risk_plot.rds")
   )
 
 ```
@@ -708,7 +708,7 @@ IVR_risk_table <- IVR_risk_table %>%
 
 ```{r export table}
 
-write_csv(IVR_risk_table, file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table_global_regional_ensemble.csv"))
+write_csv(IVR_risk_table, file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table.csv"))
 
 ```
 
@@ -788,6 +788,40 @@ quad3_risk_prop <- tibble(
 With this analysis, I found that currently, 65.2% of the global IVRs are low risk according to the global model. However, 26% of the total IVRs are specifically in quadrant 3 (high risk). This means that the global model alone would label 693 of the 1063 IVRs as low risk, when in actuality 287 or about 41.4% of these are at high risk for SLF establishment (above the MTSS threshold) when we spatially segment the presence data into an ensemble of regional-scale models. After climate change, 893 of the 1063 IVRs (82%) would be unsuitable if the global model alone were used to describe the risk of SLF. However, 341 or 39.1% of these unsuitable IVRs are still suitable in regional_scale models and thus would be missed by an analysis of risk using only a global-scale model.
 
 This means that our regional-scale ensemble is adding resolution and nuance to our estimation of risk for SLF establishment.
+
+```{r save table from above, if desired}
+
+if(TRUE) {
+  
+  # add %
+  global_regional_risk_shift <- mutate(global_regional_risk_shift, IVR_region_prop = scales::label_percent(accuracy = 0.01) (IVR_region_prop))
+  
+  # make kable
+  global_regional_risk_shift <- kable(global_regional_risk_shift, "html", escape = FALSE) %>% 
+    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:2, width_min = '4cm') %>%
+    add_header_above(., header = c("IVR risk plot quadrant proportions" = 6), bold = TRUE)
+  
+  
+  # save as .html
+  kableExtra::save_kable(
+    global_regional_risk_shift, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.jpg")
+  )
+    
+}
+
+```
 
 # Appendix
 
@@ -1082,7 +1116,7 @@ xy_joined_unweighted_plot <- ggplot(data = xy_joined_unweighted) +
 ggsave(
   xy_joined_unweighted_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_IVR_regions_global_regional_ensemble_unweighted.jpg"
+    here::here(), "vignette-outputs", "figures", "IVR_xy_suitability_IVR_regions_global_regional_ensemble_unweighted.jpg"
     ),
   height = 8, 
   width = 8,
@@ -1170,7 +1204,7 @@ regional_ensemble_MTSS_2055_unweighted <- as.numeric(xy_regional_ensemble_1995_u
 ggsave(
   xy_joined_unweighted_rescaled_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "SLF_risk_IVR_regions_global_regional_ensemble_unweighted.jpg"
+    here::here(), "vignette-outputs", "figures", "IVR_risk_plot_regional_ensemble_unweighted.jpg"
     ),
   height = 8, 
   width = 8,

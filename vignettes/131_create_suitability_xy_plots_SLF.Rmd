@@ -446,7 +446,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 ggsave(
   xy_joined_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_slf_populations_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "slf_xy_suitability_slf_populations_global_regional_ensemble.jpg"
     ),
   height = 8, 
   width = 8,
@@ -602,7 +602,7 @@ Now lets plot the data.
 ggsave(
   xy_joined_rescaled_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "SLF_risk_slf_populations_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "slf_risk_plot.jpg"
     ),
   height = 8, 
   width = 8,
@@ -613,7 +613,7 @@ ggsave(
 # also save to rds
 write_rds(
   xy_joined_rescaled_plot,
-  file = file.path(here::here(), "vignette-outputs", "figures", "SLF_risk_slf_populations_global_regional_ensemble.rds")
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot.rds")
 )
 
 ```
@@ -686,7 +686,7 @@ slf_risk_table <- slf_risk_table %>%
 
 write_csv(
   slf_risk_table, 
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_populations_risk_table_global_regional_ensemble.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_risk_table.csv")
   )
 
 ```
@@ -747,6 +747,38 @@ quad3_risk_prop <- tibble(
 With this analysis, I found that currently, only about 2.9% of known (rarefied) SLF populations are low risk according to the global model. However, 1.1% of the total populations are specifically in quadrant 3 (high risk). This means that the global model alone would label 22 of the 769 slf populations as low risk, when in actuality 9 or about 40.9% of these are at high risk of persisting (above the MTSS threshold) when we spatially segment the presence data into an ensemble of regional-scale models. After climate change, 78 of the 1063 populations (10%) would be unsuitable if the global model alone were used to describe the risk of SLF. However, 22 or 28% of these unsuitable populations are still suitable in regional_scale models and thus would be missed by an analysis of risk using only a global-scale model.
 
 This means that our regional-scale ensemble is adding resolution and nuance to our estimation of risk for SLF establishment.
+
+```{r save table from above, if desired}
+
+if(TRUE) {
+  
+  # add %
+  global_regional_risk_shift <- mutate(global_regional_risk_shift, slf_population_prop = scales::label_percent(accuracy = 0.01) (slf_population_prop))
+  
+  # make kable
+  global_regional_risk_shift <- kable(global_regional_risk_shift, "html", escape = FALSE) %>% 
+    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    add_header_above(., header = c("SLF risk plot quadrant proportions" = 6), bold = TRUE)
+  
+  
+  # save as .html
+  kableExtra::save_kable(
+    global_regional_risk_shift, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg")
+  )
+    
+}
+
+```
 
 # Appendix
 

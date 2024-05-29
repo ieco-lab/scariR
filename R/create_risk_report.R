@@ -906,7 +906,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     labs(
       title = "Projected risk of Lycorma delicatula invasion under climate change",
       subtitle = paste0(stringr::str_to_title(locality_name_internal), ": important viticultural regions"),
-      caption = "arrows indicate a region is crossing a risk threshold"
+      caption = "arrows indicate a region is crossing a risk threshold (dashed lines, MTSS thresh)"
     )
 
 
@@ -971,7 +971,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # add totals row and column
   IVR_risk_table <- IVR_risk_table %>%
     tibble::add_column("total_present" = rowSums(dplyr::select(., 2:5))) %>%
-    tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = NA) %>%
+    tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = nrow(IVR_locations_locality)) %>%
     as.data.frame()
   # add rownames
   rownames(IVR_risk_table) <- IVR_risk_table[, 1]
@@ -1001,6 +1001,10 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:5, width_min = '4cm') %>%
+    # add footnotes
+    kableExtra::add_footnote("number signs indicate whether climate change is increasing or decreasing risk", notation = "alphabet") %>%
+    kableExtra::add_footnote("bars indicate the porportion of points in each current risk category that are a part of each 2055 risk category", notation = "alphabet") %>%
+    # styling
     kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 6), bold = TRUE)
 
 
@@ -1059,9 +1063,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   slf_range_shift_kable <- knitr::kable(x = slf_range_shift_table, format = "html", escape = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:3, width_min = '4cm') %>%
-    # add footnotes
-    kableExtra::add_footnote("number signs indicate whether climate change is increasing or decreasing risk", notation = "alphabet") %>%
-    kableExtra::add_footnote("bars indicate the porportion of points in each current risk category that are a part of each 2055 risk category", notation = "alphabet") %>%
     # styling
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 

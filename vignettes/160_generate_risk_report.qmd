@@ -238,7 +238,7 @@ slfSpread::create_risk_report(
   locality.name = "italy",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "italy"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -248,16 +248,16 @@ slfSpread::create_risk_report(
   locality.name = "portugal",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "portugal"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
-# turkey
+# türkiye
 slfSpread::create_risk_report(
   locality.iso = "tur",
-  locality.name = "turkey",
+  locality.name = "türkiye",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "turkey"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "türkiye"),
   create.dir = TRUE,
   save.report = TRUE
 )
@@ -269,7 +269,7 @@ slfSpread::create_risk_report(
   locality.name =  "south africa",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "south_africa"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -279,7 +279,7 @@ slfSpread::create_risk_report(
   locality.name = "mexico",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "mexico"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -625,16 +625,6 @@ ggsave(
 ```{r countries of interest}
 
 # countries of interest
-# france
-slfSpread::create_risk_report(
-  locality.iso = "fra",
-  locality.name = "france",
-  locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
-  create.dir = TRUE,
-  save.report = TRUE
-)
-
 # chile
 slfSpread::create_risk_report(
   locality.iso = "chl",
@@ -651,7 +641,7 @@ slfSpread::create_risk_report(
   locality.name = "australia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -681,7 +671,7 @@ slfSpread::create_risk_report(
   locality.name = "georgia",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "georgia"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -696,51 +686,6 @@ slfSpread::create_risk_report(
 )
 # no shapefile data exist
 
-
-```
-
-```{r edit france maps}
-
-france_current <- france_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
-  xlim(-5, 10) +
-  ylim(41, 51)
-
-france_future <- france_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
-  xlim(-5, 10) +
-  ylim(41, 51)
-
-france_shift <- france_slf_risk_report[["range_shift_map"]] +
-  xlim(-5, 10) +
-  ylim(41, 51)
-
-
-#save
-ggsave(
-  france_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_present_edited.jpg"),
-  height = 8,
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-)
-
-ggsave(
-  france_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_2055_edited.jpg"),
-  height = 8,
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-)
-
-ggsave(
-  france_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_range_shift_map_edited.jpg"),
-  height = 8,
-  width = 10,
-  device = "jpeg",
-  dpi = "retina"
-)
 
 ```
 
@@ -890,19 +835,220 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
-# just because it is important
+
+
+## ESTONIA
+##LATVIA
+## LITHUANIA
+
+```
+
+## Geographic Areas
+
+### Western europe
+
+```{r western europe}
+
+# germany
 slfSpread::create_risk_report(
   locality.iso = "DEU",
   locality.name = "germany",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "germany"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+
+# france
+slfSpread::create_risk_report(
+  locality.iso = "fra",
+  locality.name = "france",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
+
+
+# portugual and italy done above
+
+```
+
+```{r edit france maps}
+
+france_current <- france_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+france_future <- france_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+france_shift <- france_slf_risk_report[["range_shift_map"]] +
+  xlim(-5, 10) +
+  ylim(41, 51)
+
+
+#save
+ggsave(
+  france_current,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_present_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  france_future,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_2055_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+ggsave(
+  france_shift,
+  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_range_shift_map_edited.jpg"),
+  height = 8,
+  width = 10,
+  device = "jpeg",
+  dpi = "retina"
+)
+
+```
+
+### Eastern Europe
+
+```{r eastern europe}
+
+# greece
+slfSpread::create_risk_report(
+  locality.iso = "GRC",
+  locality.name = "greece",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "greece"),
   create.dir = TRUE,
   save.report = TRUE
 )
 
-## ESTONIA
-##LATVIA
-## LITHUANIA
+
+# austria
+slfSpread::create_risk_report(
+  locality.iso = "AUT",
+  locality.name = "austria",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "austria"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# hungary
+slfSpread::create_risk_report(
+  locality.iso = "HUN",
+  locality.name = "hungary",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "hungary"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# czech republic (Czechia)
+slfSpread::create_risk_report(
+  locality.iso = "CZE",
+  locality.name = "Czechia",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "czechia"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+
+```
+
+### Africa
+
+```{r Africa}
+
+# algeria
+slfSpread::create_risk_report(
+  locality.iso = "DZA",
+  locality.name = "algeria",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "algeria"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+## south africa above
+
+```
+
+### N America
+
+```{r N America}
+
+# canada
+slfSpread::create_risk_report(
+  locality.iso = "CAN",
+  locality.name = "canada",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "canada"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# mexico above
+
+```
+
+
+### West Asia
+
+```{r west asia}
+
+# turkey
+slfSpread::create_risk_report(
+  locality.iso = "TUR",
+  locality.name = "turkey",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "turkey"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+
+# georgia above
+
+```
+
+### East Asia
+
+```{r east asia}
+
+## china above
+
+# south korea
+slfSpread::create_risk_report(
+  locality.iso = "KOR",
+  locality.name = "south korea",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "south korea"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# japan
+slfSpread::create_risk_report(
+  locality.iso = "JPN",
+  locality.name = "japan",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "japan"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
 
 ```
 
@@ -1340,7 +1486,7 @@ new_zealand_risk_plot <- new_zealand_slf_risk_report[["viticultural_risk_plot"]]
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 # edits
@@ -1358,7 +1504,8 @@ new_zealand_risk_plot <- ggplot_gtable(new_zealand_risk_plot) %>%
   wrap_ggplot_grob()
 
 
-tasmania_risk_plot <- tasmania_slf_risk_report[["viticultural_risk_plot"]] +
+# australia
+australia_risk_plot <- australia_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1370,7 +1517,39 @@ tasmania_risk_plot <- tasmania_slf_risk_report[["viticultural_risk_plot"]] +
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+australia_risk_plot <- australia_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+australia_risk_plot$data[[4]]$size <- 1.5
+australia_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#australia_risk_plot$data[[3]]$linewidth <- 0.1
+
+australia_risk_plot <- ggplot_gtable(australia_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+# tasmania
+tasmania_risk_plot <- tasmania_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "E") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 tasmania_risk_plot <- tasmania_risk_plot %>%
@@ -1387,7 +1566,7 @@ tasmania_risk_plot <- ggplot_gtable(tasmania_risk_plot) %>%
 
 
   # edit maps
-
+# new zealand
 new_zealand_risk_map <- new_zealand_future +
   theme(
     plot.title = element_blank(),
@@ -1401,7 +1580,7 @@ new_zealand_risk_map <- new_zealand_future +
   theme(
     legend.position = "none", 
     plot.tag.position = c(0, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 
@@ -1413,7 +1592,9 @@ new_zealand_risk_map <- ggplot_gtable(new_zealand_risk_map) %>%
   wrap_ggplot_grob()
 
 
-tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+
+# australia
+australia_risk_map <- australia_future +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1425,8 +1606,34 @@ tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] 
   labs(tag = "D") +
   theme(
     legend.position = "none", 
+    plot.tag.position = c(-0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+australia_risk_map <- ggplot_build(australia_risk_map)
+# edit point size
+australia_risk_map$data[[3]]$size <- 1.5
+
+australia_risk_map <- ggplot_gtable(australia_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+# tasmania
+tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "F") +
+  theme(
+    legend.position = "none", 
     plot.tag.position = c(0, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
   
 tasmania_risk_map <- ggplot_build(tasmania_risk_map)
@@ -1444,6 +1651,8 @@ tasmania_risk_map <- ggplot_gtable(tasmania_risk_map) %>%
 oceania_patchwork <- (
   # new_zealand top row
   new_zealand_risk_plot + plot_spacer() + new_zealand_risk_map + 
+  # australia
+  australia_risk_plot + plot_spacer() + australia_risk_map +
   # tasmania bottom row
   tasmania_risk_plot + plot_spacer() + tasmania_risk_map
   ) +
@@ -1452,7 +1661,7 @@ oceania_patchwork <- (
     title = "Risk shift in regions of future interest for viticulture",
     subtitle = "Oceania"
     ) +
-  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+  plot_layout(ncol = 3, nrow = 3, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
 
 
 ```
@@ -1462,15 +1671,15 @@ oceania_patchwork <- (
 ggsave(
   oceania_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_oceania.jpg"),
-  height = 8, 
-  width = 10,
+  height = 10, 
+  width = 8,
   device = "jpeg",
   dpi = "retina"
   )
 
 ```
 
-### Viticultural regions of interest- Oceania
+### Viticultural regions of interest- South America
 
 ```{r edit plots}
 
@@ -1608,22 +1817,19 @@ ggsave(
   SAmerica_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_SAmerica.jpg"),
   height = 8, 
-  width = 10,
+  width = 8,
   device = "jpeg",
   dpi = "retina"
   )
 
 ```
 
-
-
-
-
-### Viticultural regions of interest- Europe
+### Viticultural regions of interest- Western Europe
 
 ```{r edit plots}
 
-france_risk_plot <- france_slf_risk_report[["viticultural_risk_plot"]] +
+# portugal
+portugal_risk_plot <- portugal_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1635,7 +1841,38 @@ france_risk_plot <- france_slf_risk_report[["viticultural_risk_plot"]] +
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+portugal_risk_plot <- portugal_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+portugal_risk_plot$data[[4]]$size <- 1.5
+portugal_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#portugal_risk_plot$data[[3]]$linewidth <- 0.1
+
+portugal_risk_plot <- ggplot_gtable(portugal_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# france
+france_risk_plot <- france_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 # edits
@@ -1660,12 +1897,12 @@ germany_risk_plot <- germany_slf_risk_report[["viticultural_risk_plot"]] +
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(tag = "C") +
+  labs(tag = "E") +
   theme(
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 germany_risk_plot <- germany_risk_plot %>%
@@ -1689,12 +1926,12 @@ italy_risk_plot <- italy_slf_risk_report[["viticultural_risk_plot"]] +
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(tag = "C") +
+  labs(tag = "G") +
   theme(
     legend.position = "none", 
     panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
     plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 italy_risk_plot <- italy_risk_plot %>%
@@ -1709,9 +1946,10 @@ italy_risk_plot$data[[5]]$size <- 1.5
 italy_risk_plot <- ggplot_gtable(italy_risk_plot) %>%
   wrap_ggplot_grob()
 
-  # edit maps
 
-france_risk_map <- france_future +
+# edit maps
+# france
+portugal_risk_map <- portugal_future +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1723,8 +1961,35 @@ france_risk_map <- france_future +
   labs(tag = "B") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0.2, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+portugal_risk_map <- ggplot_build(portugal_risk_map)
+# edit point size
+portugal_risk_map$data[[3]]$size <- 1.5
+
+portugal_risk_map <- ggplot_gtable(portugal_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+
+# france
+france_risk_map <- france_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     )
 
 
@@ -1735,7 +2000,7 @@ france_risk_map$data[[3]]$size <- 1.5
 france_risk_map <- ggplot_gtable(france_risk_map) %>%
   wrap_ggplot_grob()
 
-
+# germany map
 germany_risk_map <- germany_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
   theme(
     plot.title = element_blank(),
@@ -1745,11 +2010,11 @@ germany_risk_map <- germany_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
     axis.text = element_blank(),
     axis.ticks = element_blank()
     ) +
-  labs(tag = "D") +
+  labs(tag = "F") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0.15, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     )
   
 germany_risk_map <- ggplot_build(germany_risk_map)
@@ -1759,7 +2024,7 @@ germany_risk_map$data[[3]]$size <- 1.5
 germany_risk_map <- ggplot_gtable(germany_risk_map) %>%
   wrap_ggplot_grob()
   
-
+# italy map
 italy_risk_map <- italy_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
   theme(
     plot.title = element_blank(),
@@ -1769,11 +2034,11 @@ italy_risk_map <- italy_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
     axis.text = element_blank(),
     axis.ticks = element_blank()
     ) +
-  labs(tag = "D") +
+  labs(tag = "H") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0.15, 0.9),
-    plot.tag = element_text(face = "bold")
+    plot.tag.position = c(0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
     )
   
 italy_risk_map <- ggplot_build(italy_risk_map)
@@ -1788,17 +2053,18 @@ italy_risk_map <- ggplot_gtable(italy_risk_map) %>%
 
 ```{r patchwork plots}
 
-Europe_patchwork <- (
+west_europe_patchwork <- (
+  portugal_risk_plot + plot_spacer() + portugal_risk_map +
   france_risk_plot + plot_spacer() + france_risk_map +
-  italy_risk_plot + plot_spacer() + italy_risk_map +
-  germany_risk_plot + plot_spacer() + germany_risk_map 
+  germany_risk_plot + plot_spacer() + germany_risk_map +
+  italy_risk_plot + plot_spacer() + italy_risk_map 
   ) +
   # annotation
   plot_annotation(
     title = "Risk shift in regions of future interest for viticulture",
-    subtitle = "Europe"
+    subtitle = "Western Europe"
     ) +
-  plot_layout(ncol = 2, nrow = 3, widths = unit(5, "cm"), heights = unit(c(5, 0, 7.5), "cm"))
+  plot_layout(ncol = 3, nrow = 4, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
 
 
 ```
@@ -1806,10 +2072,930 @@ Europe_patchwork <- (
 ```{r save plot}
 
 ggsave(
-  Europe_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_Europe.jpg"),
+  west_europe_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_western_europe.jpg"),
+  height = 12, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Viticultural regions of interest- Eastern Europe
+
+```{r edit plots}
+
+# portugal
+austria_risk_plot <- austria_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+austria_risk_plot <- austria_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+austria_risk_plot$data[[4]]$size <- 1.5
+austria_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#austria_risk_plot$data[[3]]$linewidth <- 0.1
+
+austria_risk_plot <- ggplot_gtable(austria_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# france
+hungary_risk_plot <- hungary_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+hungary_risk_plot <- hungary_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+hungary_risk_plot$data[[4]]$size <- 1.5
+hungary_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#hungary_risk_plot$data[[3]]$linewidth <- 0.1
+
+hungary_risk_plot <- ggplot_gtable(hungary_risk_plot) %>%
+  wrap_ggplot_grob()
+
+# czechia
+czechia_risk_plot <- czechia_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "E") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+czechia_risk_plot <- czechia_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+czechia_risk_plot$data[[4]]$size <- 1.5
+czechia_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#czechia_risk_plot$data[[3]]$linewidth <- 0.1
+
+czechia_risk_plot <- ggplot_gtable(czechia_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# italy
+greece_risk_plot <- greece_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "G") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+greece_risk_plot <- greece_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+greece_risk_plot$data[[4]]$size <- 1.5
+greece_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#greece_risk_plot$data[[3]]$linewidth <- 0.1
+
+greece_risk_plot <- ggplot_gtable(greece_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# edit maps
+# hungary
+austria_risk_map <- austria_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+austria_risk_map <- ggplot_build(austria_risk_map)
+# edit point size
+austria_risk_map$data[[3]]$size <- 1.5
+
+austria_risk_map <- ggplot_gtable(austria_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+
+# hungary
+hungary_risk_map <- hungary_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+hungary_risk_map <- ggplot_build(hungary_risk_map)
+# edit point size
+hungary_risk_map$data[[3]]$size <- 1.5
+
+hungary_risk_map <- ggplot_gtable(hungary_risk_map) %>%
+  wrap_ggplot_grob()
+
+# czechia map
+czechia_risk_map <- czechia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "F") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+  
+czechia_risk_map <- ggplot_build(czechia_risk_map)
+# edit point size
+czechia_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+czechia_risk_map <- ggplot_gtable(czechia_risk_map) %>%
+  wrap_ggplot_grob()
+  
+# greece map
+greece_risk_map <- greece_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "H") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+  
+greece_risk_map <- ggplot_build(greece_risk_map)
+# edit point size
+greece_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+greece_risk_map <- ggplot_gtable(greece_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+east_europe_patchwork <- (
+  austria_risk_plot + plot_spacer() + austria_risk_map +
+  hungary_risk_plot + plot_spacer() + hungary_risk_map +
+  czechia_risk_plot + plot_spacer() + czechia_risk_map +
+  greece_risk_plot + plot_spacer() + greece_risk_map 
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Eastern Europe"
+    ) +
+  plot_layout(ncol = 3, nrow = 4, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  east_europe_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_eastern_europe.jpg"),
+  height = 12, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Viticultural regions of interest- Africa
+
+```{r edit plots}
+
+# south_africa
+south_africa_risk_plot <- south_africa_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+# edits
+# remove geom_text
+south_africa_risk_plot <- south_africa_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+south_africa_risk_plot$data[[4]]$size <- 1.5
+south_africa_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#algeria_risk_plot$data[[3]]$linewidth <- 0.1
+
+south_africa_risk_plot <- ggplot_gtable(south_africa_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+# algeria
+algeria_risk_plot <- algeria_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+algeria_risk_plot <- algeria_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+algeria_risk_plot$data[[4]]$size <- 1.5
+algeria_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#algeria_risk_plot$data[[3]]$linewidth <- 0.1
+
+algeria_risk_plot <- ggplot_gtable(algeria_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# edit maps
+# south_africa
+south_africa_risk_map <- south_africa_future +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+south_africa_risk_map <- ggplot_build(south_africa_risk_map)
+# edit point size
+south_africa_risk_map$data[[3]]$size <- 1.5
+
+south_africa_risk_map <- ggplot_gtable(south_africa_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+# algeria
+algeria_risk_map <- algeria_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+algeria_risk_map <- ggplot_build(algeria_risk_map)
+# edit point size
+algeria_risk_map$data[[3]]$size <- 1.5
+
+algeria_risk_map <- ggplot_gtable(algeria_risk_map) %>%
+  wrap_ggplot_grob()
+
+```
+
+```{r patchwork plots}
+
+africa_patchwork <- (
+  south_africa_risk_plot + plot_spacer() + south_africa_risk_map +
+  algeria_risk_plot + plot_spacer() + algeria_risk_map
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Africa"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  africa_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_africa.jpg"),
   height = 8, 
-  width = 10,
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Viticultural regions of interest- North America
+
+```{r edit plots}
+
+# canada
+canada_risk_plot <- canada_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+canada_risk_plot <- canada_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+canada_risk_plot$data[[4]]$size <- 1.5
+canada_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#canada_risk_plot$data[[3]]$linewidth <- 0.1
+
+canada_risk_plot <- ggplot_gtable(canada_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+# mexico
+mexico_risk_plot <- mexico_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+mexico_risk_plot <- mexico_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+mexico_risk_plot$data[[4]]$size <- 1.5
+mexico_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#mexico_risk_plot$data[[3]]$linewidth <- 0.1
+
+mexico_risk_plot <- ggplot_gtable(mexico_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# edit maps
+# canada
+canada_risk_map <- canada_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+canada_risk_map <- ggplot_build(canada_risk_map)
+# edit point size
+canada_risk_map$data[[3]]$size <- 1.5
+
+canada_risk_map <- ggplot_gtable(canada_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+# mexico
+mexico_risk_map <- mexico_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+mexico_risk_map <- ggplot_build(mexico_risk_map)
+# edit point size
+mexico_risk_map$data[[3]]$size <- 1.5
+
+mexico_risk_map <- ggplot_gtable(mexico_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+```
+
+```{r patchwork plots}
+
+NAmerica_patchwork <- (
+    canada_risk_plot + plot_spacer() + canada_risk_map +
+    mexico_risk_plot + plot_spacer() + mexico_risk_map
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "North America"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  NAmerica_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_north_america.jpg"),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Viticultural regions of interest- West Asia
+
+```{r edit plots}
+
+# türkiye
+türkiye_risk_plot <- türkiye_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+türkiye_risk_plot <- türkiye_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+türkiye_risk_plot$data[[4]]$size <- 1.5
+türkiye_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#türkiye_risk_plot$data[[3]]$linewidth <- 0.1
+
+türkiye_risk_plot <- ggplot_gtable(türkiye_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+# georgia
+georgia_risk_plot <- georgia_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+georgia_risk_plot <- georgia_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+georgia_risk_plot$data[[4]]$size <- 1.5
+georgia_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#georgia_risk_plot$data[[3]]$linewidth <- 0.1
+
+georgia_risk_plot <- ggplot_gtable(georgia_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# edit maps
+# türkiye
+türkiye_risk_map <- türkiye_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+türkiye_risk_map <- ggplot_build(türkiye_risk_map)
+# edit point size
+türkiye_risk_map$data[[3]]$size <- 1.5
+
+türkiye_risk_map <- ggplot_gtable(türkiye_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+# georgia
+georgia_risk_map <- georgia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.1, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+georgia_risk_map <- ggplot_build(georgia_risk_map)
+# edit point size
+georgia_risk_map$data[[3]]$size <- 1.5
+
+georgia_risk_map <- ggplot_gtable(georgia_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+```
+
+```{r patchwork plots}
+
+west_asia_patchwork <- (
+    türkiye_risk_plot + plot_spacer() + türkiye_risk_map +
+    georgia_risk_plot + plot_spacer() + georgia_risk_map
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Western Asia"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  west_asia_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_west_asia.jpg"),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+
+### Viticultural regions of interest- East Asia
+
+```{r edit plots}
+
+# china
+china_risk_plot <- china_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+china_risk_plot <- china_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+china_risk_plot$data[[4]]$size <- 1.5
+china_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#china_risk_plot$data[[3]]$linewidth <- 0.1
+
+china_risk_plot <- ggplot_gtable(china_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# south_korea
+south_korea_risk_plot <- south_korea_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+south_korea_risk_plot <- south_korea_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+south_korea_risk_plot$data[[4]]$size <- 1.5
+south_korea_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#south_korea_risk_plot$data[[3]]$linewidth <- 0.1
+
+south_korea_risk_plot <- ggplot_gtable(south_korea_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+
+# japan
+japan_risk_plot <- japan_slf_risk_report[["viticultural_risk_plot"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "E") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+japan_risk_plot <- japan_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+japan_risk_plot$data[[4]]$size <- 1.5
+japan_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#japan_risk_plot$data[[3]]$linewidth <- 0.1
+
+japan_risk_plot <- ggplot_gtable(japan_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+  # edit maps
+# new zealand
+china_risk_map <- china_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+china_risk_map <- ggplot_build(china_risk_map)
+# edit point size
+china_risk_map$data[[3]]$size <- 1.5
+
+china_risk_map <- ggplot_gtable(china_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+
+# south_korea
+south_korea_risk_map <- south_korea_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(-0.05, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+
+south_korea_risk_map <- ggplot_build(south_korea_risk_map)
+# edit point size
+south_korea_risk_map$data[[3]]$size <- 1.5
+
+south_korea_risk_map <- ggplot_gtable(south_korea_risk_map) %>%
+  wrap_ggplot_grob()
+
+
+# japan
+japan_risk_map <- japan_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
+  labs(tag = "F") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+  
+japan_risk_map <- ggplot_build(japan_risk_map)
+# edit point size
+japan_risk_map$data[[3]]$size <- 1.5
+# rebuild plot
+japan_risk_map <- ggplot_gtable(japan_risk_map) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+east_asia_patchwork <- (
+  # china top row
+  china_risk_plot + plot_spacer() + china_risk_map + 
+  # south_korea
+  south_korea_risk_plot + plot_spacer() + south_korea_risk_map +
+  # japan bottom row
+  japan_risk_plot + plot_spacer() + japan_risk_map
+  ) +
+  # annotation
+  plot_annotation(
+    title = "Risk shift in regions of future interest for viticulture",
+    subtitle = "Eastern Asia"
+    ) +
+  plot_layout(ncol = 3, nrow = 3, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  east_asia_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_east_asia.jpg"),
+  height = 10, 
+  width = 8,
   device = "jpeg",
   dpi = "retina"
   )
