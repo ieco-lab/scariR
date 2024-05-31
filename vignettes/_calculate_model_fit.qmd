@@ -1,0 +1,156 @@
+---
+title: "Calculate model fit statistics"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-04-26"
+format: html
+editor: visual
+---
+
+THEORY
+
+# Setup
+
+```{r library packages}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here::here() # here() starts at the root folder of this package.
+library(devtools)
+
+# SDMtune and dependencies
+library(SDMtune) # main package used to run SDMs
+library(dismo) # package underneath SDMtune
+library(rJava) # for running MaxEnt
+library(plotROC) # plots ROCs
+
+# html tools
+library(kableExtra)
+library(webshot2)
+
+```
+
+```{r set wd}
+
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+```
+
+
+# Sensitivity and Specificity of Models
+
+We calculate these according to the cloglog MTSS threshold per model
+
+```{r import confusion matrices}
+
+# global
+global_conf_matr <- read_csv(file = file.path(mypath, "slf_global_v2", "global_thresh_confusion_matrix_all_iterations.csv")) %>%
+  # only MTSS threshold
+  slice(7)
+
+
+# regional models
+# native
+regional_native_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_thresh_confusion_matrix.csv")) %>%
+  slice(7)
+# invaded_asia
+regional_invaded_asian_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_asian_v1", "regional_invaded_asian_thresh_confusion_matrix.csv")) %>%
+  slice(7)
+# invaded_NAmerica
+regional_invaded_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_thresh_confusion_matrix.csv")) %>%
+  slice(7)
+
+```
+
+```{r calculate sens and spec}
+
+model_sens_spec <- tibble(
+  metric = rep(c("sensitivity", "specificity", "commission_error"), 4),
+  description = rep(c("true_positive_rate", "true_negative_rate", "1 - true_negative_rate"), 4),
+  thresh = "MTSS.cloglog",
+  thresh_value = c(
+    rep(global_conf_matr$threshold_value, 3), 
+    rep(regional_native_conf_matr$threshold_value, 3), 
+    rep(regional_invaded_conf_matr$threshold_value, 3),
+    rep(regional_invaded_asian_conf_matr$threshold_value, 3)
+    ),
+  model = c(
+    rep("global", 3),
+    rep("regional_native", 3),
+    rep("regional_invaded NAmerica", 3),
+    rep("regional_invaded Asia", 3)
+  ),
+  total_test_pos = c(
+    rep(155, 3), # global
+    rep(328, 3),  # native
+    rep(241, 3), # invaded_NAmerica
+    rep(328, 3) # invaded_Asia
+  ),
+  total_bg_neg = c(
+    rep(20000, 3), # global
+    rep(10000, 9) # regional
+  ),
+  value = c(
+    # global
+    round(global_conf_matr$tp_mean / 155, 4), round(global_conf_matr$tn_mean / 20000, 4), round(1 - (global_conf_matr$tn_mean / 20000), 4),
+    # native
+    round(regional_native_conf_matr$tp / 328, 4), round(regional_native_conf_matr$tn / 10000, 4), round(1 - (regional_native_conf_matr$tn / 10000), 4),
+    # invaded_NAmerica
+    round(regional_invaded_conf_matr$tp / 241, 4), round(regional_invaded_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_conf_matr$tn / 10000), 4),
+    # invaded_asia
+    round(regional_invaded_asian_conf_matr$tp / 328, 4), round(regional_invaded_asian_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_asian_conf_matr$tn / 10000), 4)
+  )
+)
+
+```
+
+```{r save as .csv}
+
+write_csv(model_sens_spec, file.path(here::here(), "vignette-outputs", "data-tables", "model_sensitivity_specificity.csv"))
+
+```
+
+I will also write it to a kable so it can be printed
+
+```{r save tables from above, if desired}
+
+if(TRUE) {
+  
+  # add column formatting
+  model_sens_spec <- mutate(model_sens_spec, total_bg_neg = scales::label_comma() (total_bg_neg))
+  
+  # convert to kable
+model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", escape = FALSE) %>%
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  
+  # save as .html
+  kableExtra::save_kable(
+    model_sens_spec_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg")
+  )
+  
+  # model extents
+    
+}
+
+```
+
+# References
+
+Jiménez‐Valverde, A. 2012. Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography 21:498–507.
+
+Zou, K. H., A. J. O’Malley, and L. Mauri. 2007. Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation 115:654–657.
+

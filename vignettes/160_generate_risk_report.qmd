@@ -13,9 +13,11 @@ INTRO
 
 ```{r library}
 
+# general tools
 library(tidyverse)
 library(cli)
 library(here)
+library(common)
 
 # spatial data
 library(terra)
@@ -102,6 +104,9 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
+# save USA report for other uses
+readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_slf_risk_report.rds"))
+
 ```
 
 ```{r edit USA reports}
@@ -185,6 +190,10 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 # it worked still so thats good
+
+
+# save report for other uses
+readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "china", "china_slf_risk_report.rds"))
 
 ```
 
@@ -1035,8 +1044,8 @@ slfSpread::create_risk_report(
   locality.iso = "KOR",
   locality.name = "south korea",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "south korea"),
-  create.dir = TRUE,
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "south_korea"),
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -1046,9 +1055,15 @@ slfSpread::create_risk_report(
   locality.name = "japan",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "japan"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
+
+
+# save reports for other uses
+readr::write_rds(japan_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "japan", "japan_slf_risk_report.rds"))
+
+readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "south_korea", "south_korea_slf_risk_report.rds"))
 
 ```
 
@@ -1948,8 +1963,10 @@ italy_risk_plot <- ggplot_gtable(italy_risk_plot) %>%
 
 
 # edit maps
-# france
+# portugal
 portugal_risk_map <- portugal_future +
+  xlim(-10, -6) +
+  ylim(37, 42) +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),

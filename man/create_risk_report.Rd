@@ -69,7 +69,7 @@ Use caution, this function will overwrite previous files output for the same loc
 blarg
 }
 \details{
-Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale'.
+Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 
 Note that this function performs downloads from \href{https://www.naturalearthdata.com/}{naturalearthdata.com}.
 The function will automatically create subfolders in \code{root/data-raw}

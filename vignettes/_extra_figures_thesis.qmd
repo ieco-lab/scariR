@@ -1,0 +1,412 @@
+---
+title: "extra_figures_thesis"
+author: "Samuel M. Owens"
+contact: "sam.owens@temple.edu"
+date: "2024-05-06"
+format: html
+editor: visual
+---
+
+# Setup
+
+```{r load necesssary packages, echo = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here::here() # here() starts at the root folder of this package.
+library(devtools)
+
+# spatial data handling
+library(terra)
+library(scrubr)
+library(tidygeocoder) # analysis 7
+
+# plot aesthetics
+library(scales)
+library(patchwork)
+library(grid)
+
+```
+
+```{r set wd}
+
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models")
+
+```
+
+# Facet SLF presence scatter plots by country
+
+I want to segment the SLF presences by country and create risk plots similar to what I have for IVR regions.
+
+```{r load in SLF dataset}
+
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds"))
+
+```
+
+## Geocode country codes
+
+```{r geocode country}
+
+if(FALSE) {
+
+  # geocode
+  slf_populations_geocoded <- tidygeocoder::reverse_geocode(
+    .tbl = slf_populations, 
+    lat = y, 
+    long = x, 
+    full_results = TRUE, # give each element of the address in a column
+    method = "arcgis",
+    progress_bar = TRUE
+    )
+  
+  # get unique values- should only be 4 countries
+  unique(slf_populations_geocoded$CountryCode)
+  
+  # filter out presences with no country code
+  slf_populations_geocoded_tidy <- slf_populations_geocoded %>%
+    dplyr::filter(!CountryCode %in% c("", "NA"), !is.na(CountryCode)) %>%
+    dplyr::select(species, x, y, CountryCode) 
+  
+  slf_populations_geocoded_tidy$CountryCode <- toupper(slf_populations_geocoded_tidy$CountryCode)
+  
+  nrow(slf_populations_geocoded_tidy)
+  # we only lost about 4 records
+  
+  # save
+  write_csv(
+    x = slf_populations_geocoded_tidy, 
+    file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01_withCountries.csv")
+    )
+
+}
+
+```
+
+## Load in suitability data
+
+```{r re-load rescaled values}
+
+# global
+xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+
+```
+
+```{r re-load thresholds}
+
+# global
+xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+
+```
+
+```{r join datasets}
+
+# join datasets for plotting
+xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
+  # join CC datasets
+  full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
+  full_join(., xy_regional_ensemble_2055_rescaled, by = c("x", "y")) %>%
+  # order
+  dplyr::relocate(x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
+  dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055))
+
+
+```
+
+Isolate threshold values
+
+```{r retrieve threshold values}
+
+# global
+global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
+# regional ensemble
+regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
+
+```
+
+## for loop to create plots
+
+Now lets plot the data. I will create 4 plots, 1 per country using a for loop.
+
+```{r plot SLF suitability values, fig.asp = 1}
+
+# create empty list for appending
+slf_plots_output <- list()
+
+
+# for loop
+for(i in unique(slf_populations_geocoded_tidy$CountryCode)) {
+
+  ## create datasets
+  
+  # filter datasets
+  slf_populations_internal <- slf_populations_geocoded_tidy %>%
+    dplyr::filter(CountryCode == i)
+  
+  # filter out only records from country using join
+  xy_joined_rescaled_internal <- xy_joined_rescaled %>%
+    right_join(., slf_populations_internal, by = c("x", "y")) %>%
+    dplyr::select(-c(species, CountryCode))
+  
+  
+  ## boundary crossing arrows 
+  
+  # first get the ones that cross a threshold
+  slf_intersects <- xy_joined_rescaled_internal %>%
+    mutate(
+      crosses_threshold = case_when(
+        # conditional for starting and ending points that overlap a the threshold
+        # x-axis
+        xy_global_1995_rescaled > global_MTSS & xy_global_2055_rescaled < global_MTSS ~ "crosses",
+        xy_global_1995_rescaled < global_MTSS & xy_global_2055_rescaled > global_MTSS ~ "crosses",
+        # y-axis
+        xy_regional_ensemble_1995_rescaled > regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055 ~ "crosses",
+         xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled > regional_ensemble_MTSS_2055 ~ "crosses",
+        # else
+        .default = "does not cross"
+      )
+    )
+  
+  # filter out the crosses
+  slf_intersects <- dplyr::filter(
+    slf_intersects,
+    crosses_threshold == "crosses"
+  )
+  
+  
+  
+  
+  # plot
+   slf_plot <- ggplot(data = xy_joined_rescaled_internal) +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # arrows indicating change
+   geom_segment(
+     data = slf_intersects,
+     aes(
+       x = xy_global_1995_rescaled,
+       xend = xy_global_2055_rescaled,
+       y = xy_regional_ensemble_1995_rescaled,
+       yend = xy_regional_ensemble_2055_rescaled
+     ), 
+     arrow = grid::arrow(angle = 5.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+   ) +
+   # historical data
+   geom_point(
+     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
+     size = 2, stroke = 0.7, color = "black", fill = "white"
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
+
+  
+  
+  # append to output
+  slf_plots_output[[i]] <- slf_plot
+  
+  
+  # remove objects
+  rm(slf_plot)
+  rm(slf_intersects)
+  rm(slf_populations_internal)
+  rm(xy_joined_rescaled_internal)
+  
+}
+  
+```
+
+## patchwork figure
+
+```{r edit plots}
+
+# USA
+USA_risk_plot <- slf_plots_output[["USA"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+USA_risk_plot <- USA_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+USA_risk_plot$data[[4]]$size <- 1.5
+USA_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#USA_risk_plot$data[[3]]$linewidth <- 0.1
+
+USA_risk_plot <- ggplot_gtable(USA_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# france
+CHN_risk_plot <- slf_plots_output[["CHN"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+CHN_risk_plot <- CHN_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+CHN_risk_plot$data[[4]]$size <- 1.5
+CHN_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#CHN_risk_plot$data[[3]]$linewidth <- 0.1
+
+CHN_risk_plot <- ggplot_gtable(CHN_risk_plot) %>%
+  wrap_ggplot_grob()
+
+# JPN
+JPN_risk_plot <- slf_plots_output[["JPN"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+JPN_risk_plot <- JPN_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+JPN_risk_plot$data[[4]]$size <- 1.5
+JPN_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#JPN_risk_plot$data[[3]]$linewidth <- 0.1
+
+JPN_risk_plot <- ggplot_gtable(JPN_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# italy
+KOR_risk_plot <- slf_plots_output[["KOR"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+KOR_risk_plot <- KOR_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+KOR_risk_plot$data[[4]]$size <- 1.5
+KOR_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#KOR_risk_plot$data[[3]]$linewidth <- 0.1
+
+KOR_risk_plot <- ggplot_gtable(KOR_risk_plot) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+slf_plot_patchwork <- (
+  USA_risk_plot + plot_spacer() + CHN_risk_plot +
+  JPN_risk_plot + plot_spacer() + KOR_risk_plot 
+  ) +
+  # annotation
+  plot_annotation(
+    title = "SLF risk plots by country",
+    subtitle = "USA | CHN | JPN | KOR"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot}
+
+ggsave(
+  slf_plot_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plots_by_country.jpg"),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+

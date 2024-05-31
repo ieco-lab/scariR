@@ -40,6 +40,8 @@ library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
 here::here() # here() starts at the root folder of this package.
 library(devtools)
+# install.packages("common")
+library(common)
 
 # spatial data handling
 library(terra) 
@@ -1061,13 +1063,14 @@ ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suit
 slf_range_shift_table <- slf_range_shift_table %>%
   dplyr::select(-layer) %>%
   dplyr::mutate(
-    "Ld_range_shift_type" = ranges.obj,
-    "prop_area" = scales::label_percent()(area / sum(area)),
-    "area" = scales::label_comma()(area)
+    Ld_range_shift_type = ranges.obj,
+    prop_total_area = scales::label_percent()(area / sum(area)),
+    area = scales::label_comma()(area)
     ) %>%
-  dplyr::rename("area_km" = "area") %>%
   dplyr::select(-value) %>%
-  dplyr::relocate(Ld_range_shift_type, prop_area)
+  dplyr::relocate(Ld_range_shift_type, area)
+
+colnames(slf_range_shift_table)[2] <- paste0("area_km", common::supsc("2"))
 
 # .html formatting
 # format row colors
@@ -1339,6 +1342,117 @@ ggsave(
   device = "jpeg",
   dpi = "retina"
   )
+
+```
+
+## Calculate total area predicted by each model
+
+I will calculate the total suitable area predicted by each category and model. 
+
+As a reminder, the categories in these rasters are:
+
+Unsuitable Agreement = 5
+Suitable Agreement = 10
+unsuitable regional/suitable global = 9
+Suitable regional/unsuitable global = 6
+
+```{r retrieve summary table}
+
+# load rasters
+slf_binarized_1995 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc")) 
+slf_binarized_2055 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp370_GFDL.asc")) 
+
+# 1995
+slf_model_prop_table_1995 <- terra::expanse(
+  x = slf_binarized_1995,
+  unit = "km",
+  byValue = TRUE
+) 
+
+# 2055
+slf_model_prop_table_2055 <- terra::expanse(
+  x = slf_binarized_2055,
+  unit = "km",
+  byValue = TRUE
+) 
+
+```
+
+```{r format and convert to Kable}
+
+# create list of range shift values
+categories.obj <- tibble(
+  model_suitability = c("unsuitable_agreement", "regional", "global", "suitable_agreement"),
+  value = c(5, 6, 9, 10)
+)
+
+# join
+slf_model_prop_table_joined <- left_join(slf_model_prop_table_1995, slf_model_prop_table_2055, by = c("value", "layer")) %>%
+  # add labels
+  left_join(., categories.obj, by = "value")
+
+# tidy
+slf_model_prop_table_joined <- slf_model_prop_table_joined %>%
+  dplyr::select(-c(layer, value)) %>%
+  dplyr::rename(
+    "area_km_1995" = "area.x",
+    "area_km_2055" = "area.y"
+    ) %>%
+  dplyr::mutate(
+    # make proportions
+    prop_total_area_1995 = scales::label_percent()(area_km_1995 / sum(area_km_1995)),
+    prop_total_area_2055 = scales::label_percent()(area_km_2055 / sum(area_km_2055)),
+    # change labels
+    area_km_1995 = scales::label_comma()(area_km_1995),
+    area_km_2055 = scales::label_comma()(area_km_2055)
+    ) %>%
+  dplyr::relocate(model_suitability, area_km_1995, prop_total_area_1995, area_km_2055, prop_total_area_2055)
+
+# add superscript
+colnames(slf_model_prop_table_joined)[2] <- paste0("area_km", common::supsc("2"), "_1995")
+colnames(slf_model_prop_table_joined)[4] <- paste0("area_km", common::supsc("2"), "_2055")
+
+# .html formatting
+# format row colors
+slf_model_prop_table_joined[1, 1] <- kableExtra::cell_spec(slf_model_prop_table_joined[1, 1], format = "html", background = "azure4")
+slf_model_prop_table_joined[2, 1] <- kableExtra::cell_spec(slf_model_prop_table_joined[2, 1], format = "html", background = "darkorange")
+slf_model_prop_table_joined[3, 1] <- kableExtra::cell_spec(slf_model_prop_table_joined[3, 1], format = "html", background = "gold")
+slf_model_prop_table_joined[4, 1] <- kableExtra::cell_spec(slf_model_prop_table_joined[4, 1], format = "html", background = "darkred")
+
+# convert to kable
+slf_model_prop_kable <- knitr::kable(x = slf_model_prop_table_joined, format = "html", escape = FALSE) %>%
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  
+
+```
+
+```{r save tables from above, if desired}
+
+if(TRUE) {
+  
+  # model training dataset
+  # save as .csv
+  write_csv(slf_model_prop_table_joined, file.path(here::here(), "vignette-outputs", "data-tables", "slf_binarized_summed_areas_table.csv"))
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_model_prop_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.jpg")
+  )
+  
+  # model extents
+    
+}
 
 ```
 

@@ -37,7 +37,7 @@
 #'
 #'@details
 #'
-#'Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale'.
+#'Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 #'
 #'Note that this function performs downloads from [naturalearthdata.com](https://www.naturalearthdata.com/).
 #'The function will automatically create subfolders in `root/data-raw`
@@ -101,6 +101,10 @@
 #'map_current <- slf_risk_report[["risk_maps"]][["current_risk_map"]] +
 #'xlim(-10, 5) +
 #'ylim(35, 44)
+#'
+#'If you need to save the report Rdata object and use those figures elsewhere:
+#'
+#'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 #'
 #'@export
 create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, create.dir = FALSE, map.style = NA) {
@@ -497,7 +501,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
     # other stuff
     labs(
-      title = "Current projected risk of Lycorma delicatula invasion",
+      title = "Current projected risk of Lycorma delicatula establishment",
       subtitle = stringr::str_to_title(locality_name_internal)
       ) +
     coord_sf()
@@ -531,7 +535,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
       labs(
-        title = "Current projected risk of Lycorma delicatula invasion",
+        title = "Current projected risk of Lycorma delicatula establishment",
         subtitle = stringr::str_to_title(locality_name_internal)
       ) +
       coord_sf()
@@ -569,7 +573,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
       labs(
-        title = "Projected risk of Lycorma delicatula invasion under climate change",
+        title = "Projected risk of Lycorma delicatula establishment under climate change",
         subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2055 | ssp370 | GFDL-ESM4")
       ) +
       coord_sf()
@@ -603,7 +607,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guides(fill = guide_legend(ncol = 1, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
       labs(
-        title = "Projected risk of Lycorma delicatula invasion under climate change",
+        title = "Projected risk of Lycorma delicatula establishment under climate change",
         subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2055 | ssp370 | GFDL-ESM4")
       ) +
       coord_sf()
@@ -723,17 +727,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   IVR_locations_locality <-  dplyr::semi_join(IVR_locations, IVR_locations_plot_layer, by = c("x", "y"))
 
 
-
-  # format nice .html table
-  IVR_locations_output <- IVR_locations_locality
-
-  IVR_locations_output <- knitr::kable(IVR_locations_output, "html", escape = FALSE) %>%
-    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    kableExtra::add_header_above(., header = c("Important viticultural regions" = 7), bold = TRUE)
-
-
-  # success message
-  cli::cli_alert_success("Viticultural risk table created")
 
   ## plot scatter plot of IVRs--------------------------------------------------
 
@@ -904,7 +897,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
      theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
      coord_fixed(ratio = 1) +
     labs(
-      title = "Projected risk of Lycorma delicatula invasion under climate change",
+      title = "Projected risk of Lycorma delicatula establishment under climate change",
       subtitle = paste0(stringr::str_to_title(locality_name_internal), ": important viticultural regions"),
       caption = "arrows indicate a region is crossing a risk threshold (dashed lines, MTSS thresh)"
     )
@@ -1040,13 +1033,16 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # more tidying
   slf_range_shift_table <- slf_range_shift_table %>%
     dplyr::mutate(
-      prop_area = scales::label_percent()(area / sum(area)),
+      prop_total_area = scales::label_percent()(area / sum(area)),
       area = scales::label_comma()(area)
       ) %>%
-    dplyr::rename("area_km" = "area") %>%
     dplyr::select(-c(value, layer)) %>%
-    dplyr::relocate(Ld_range_shift_type) %>%
+    dplyr::relocate(Ld_range_shift_type, area) %>%
     replace(is.na(.), 0)
+
+  # EVEN MORE tidying
+  # add superscript
+  colnames(slf_range_shift_table)[2] <- paste0("area_km", common::supsc("2"))
 
   # .html formatting
   # format row colors
@@ -1066,11 +1062,45 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # styling
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
+
+
+
+  # format IVR table------------------------------------------------------------
+
+  # create .csv output
+  IVR_locations_output <- IVR_locations_locality %>%
+    dplyr::left_join(., xy_joined_rescaled, by = c("x", "y")) %>%
+    dplyr::rename(
+      "global_model_risk_present" = "xy_global_1995_rescaled",
+      "regional_ensemble_risk_present" = "xy_regional_ensemble_1995_rescaled",
+      "global_model_risk_2055" = "xy_global_2055_rescaled",
+      "regional_ensemble_risk_2055" = "xy_regional_ensemble_2055_rescaled"
+    ) %>%
+    dplyr::mutate(
+      global_model_risk_present = round((global_model_risk_present * 10), 2),
+      regional_ensemble_risk_present = round((regional_ensemble_risk_present * 10), 2),
+      global_model_risk_2055 = round((global_model_risk_2055 * 10), 2),
+      regional_ensemble_risk_2055 = round((regional_ensemble_risk_2055 * 10), 2)
+    ) %>%
+    dplyr::relocate(ID, x, y, Continent, Country, Region, `Sub-Region`, global_model_risk_present, regional_ensemble_risk_present, global_model_risk_2055, regional_ensemble_risk_2055)
+
+
+
+  # format as .html
+  IVR_locations_output_kable <- knitr::kable(IVR_locations_output, "html", escape = FALSE) %>%
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    kableExtra::add_header_above(., header = c("L delicatula risk to important viticultural regions" = 11), bold = TRUE)
+
+  # success message
+  cli::cli_alert_success("Viticultural risk table created")
+
+
+
   ## create report--------------------------------------------------------------
 
   slf_risk_report <- list(
     paste0("Report prepared for: ", stringr::str_to_title(locality_name_internal)),
-    "viticultural_regions_list" = IVR_locations_output,
+    "viticultural_regions_list" = IVR_locations_output_kable,
     "risk_maps" = list(
       "current_risk_map" = slf_binarized_1995_plot,
       "2055_risk_map" = slf_binarized_2055_plot
@@ -1102,7 +1132,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
     # save files
     # IVR list
-    readr::write_csv(IVR_locations_locality, file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
+    readr::write_csv(IVR_locations_output, file = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_regions_list.csv")))
 
     # risk maps
     ggsave(

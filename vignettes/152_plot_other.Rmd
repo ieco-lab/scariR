@@ -20,6 +20,7 @@ library(terra)
 library(scrubr)
 
 ```
+
 ```{r ggplot object for map style}
 
 map_style <- list(
