@@ -430,7 +430,7 @@ global_slf_plot <- global_slf_plot +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 20)
+    plot.tag = element_text(face = "bold", size = 25)
     )
 
 
@@ -447,7 +447,7 @@ global_background_plot <- global_background_plot +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 20)
+    plot.tag = element_text(face = "bold", size = 25)
   )
 
 

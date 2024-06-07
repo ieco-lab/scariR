@@ -1621,9 +1621,36 @@ regional_invaded_slf_plot  <- regional_invaded_slf_plot +
   )
 
 
+# redefine
+x_scale_labels <- c(80, 100, 120, 140)
+y_scale_labels <- c(0, 10, 20, 30, 40, 50)
 
-regional_invaded_patchwork <- (regional_invaded_slf_plot + regional_invaded_background_plot) / (regional_invaded_withSLF_plot + plot_spacer()) +
-  plot_annotation(title = "'regional_invaded' model elements") 
+
+regional_native_slf_plot <- regional_native_slf_plot +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "D") +
+  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
+
+
+regional_invaded_patchwork <- (
+  (regional_invaded_slf_plot + regional_invaded_background_plot) / 
+  (regional_invaded_withSLF_plot + regional_native_slf_plot) 
+  ) +
+  plot_annotation(
+    title = "'regional_invaded' model elements",
+    subtitle = "A) training region B) background points C) background selection area D) test region"
+    ) 
 
   # work around because collect axes not working
 # regional_invaded_patchwork <- patchwork::patchworkGrob(regional_invaded_patchwork) %>%
@@ -1636,8 +1663,8 @@ regional_invaded_patchwork <- (regional_invaded_slf_plot + regional_invaded_back
 ggsave(
   regional_invaded_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_summary.jpg"),
-  height = 8, 
-  width = 10,
+  height = 10, 
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1704,17 +1731,39 @@ regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
     plot.tag = element_text(face = "bold", size = 25)
   )
 
+# redefine
+x_scale_labels <- c(-140, -120, -100, -80, -60)
+y_scale_labels <- c(20, 30, 40, 50, 60)
+
+regional_invaded_slf_plot <- regional_invaded_slf_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(
+    tag = "D",
+    fill = "zone"
+    ) +
+  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
 
 
 
-
-regional_invaded_asian_patchwork <- (regional_invaded_asian_slf_plot + regional_invaded_asian_points_plot) / (regional_invaded_asian_withSLF_plot + plot_spacer()) +
-  plot_annotation(title = "'regional_invaded_asian' model elements")# +
- # plot_layout(widths = unit(13, "cm"))
-
-# work around because collect axes not working
-# regional_invaded_asian_patchwork <- patchwork::patchworkGrob(regional_invaded_asian_patchwork) %>%
-#  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
+regional_invaded_asian_patchwork <- (
+  (regional_invaded_asian_slf_plot + regional_invaded_asian_points_plot) / 
+  (regional_invaded_asian_withSLF_plot + regional_invaded_slf_plot) 
+  ) +
+  plot_annotation(
+    title = "'regional_invaded_asian' model elements",
+    subtitle = "A) training region B) background points C) background selection area D) test region"
+    )
 
 ```
 
@@ -1723,8 +1772,8 @@ regional_invaded_asian_patchwork <- (regional_invaded_asian_slf_plot + regional_
 ggsave(
   regional_invaded_asian_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_summary.jpg"),
-  height = 8, 
-  width = 10,
+  height = 10, 
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1785,10 +1834,38 @@ regional_native_slf_plot  <- regional_native_slf_plot +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
 
+# redefine
+x_scale_labels <- c(-140, -120, -100, -80, -60)
+y_scale_labels <- c(20, 30, 40, 50, 60)
 
-regional_native_patchwork <- (regional_native_slf_plot | regional_native_points_plot) / 
-  (regional_native_withSLF_plot | plot_spacer()) +
-  plot_annotation(title = "'regional_native' model elements") +
+regional_invaded_slf_plot <- regional_invaded_slf_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(
+    tag = "D",
+    fill = "zone"
+    ) +
+  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
+
+
+regional_native_patchwork <- (
+  (regional_native_slf_plot | regional_native_points_plot) / 
+  (regional_native_withSLF_plot | regional_invaded_slf_plot)
+   ) +
+  plot_annotation(
+    title = "'regional_native' model elements",
+    subtitle = "A) training region B) background points C) background selection area D) test region"
+    ) +
   plot_layout(widths = unit(20, "cm")) 
 
 # work around because collect axes not working
@@ -1802,7 +1879,7 @@ regional_native_patchwork <- (regional_native_slf_plot | regional_native_points_
 ggsave(
   regional_native_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_summary.jpg"),
-  height = 8, 
+  height = 10, 
   width = 10,
   device = "jpeg",
   dpi = "retina"

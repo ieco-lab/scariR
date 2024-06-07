@@ -29,10 +29,7 @@ library(raster)
 # remotes::install_github("densitymodelling/dsmextra")
 library(dsmextra) # ExDet and MIC
 
-# aes
 library(viridis)
-library(ggnewscale)
-library(patchwork)
 
 ```
 
@@ -65,6 +62,7 @@ map_style_MIC <- list(
         panel.background = element_rect(fill = "azure3",
                                         colour = "azure3")
   ),
+  viridis::scale_fill_viridis(option = "rainbow", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2")),
   scale_x_continuous(expand = c(0, 0)),
   scale_y_continuous(expand = c(0, 0)),
   labs(
@@ -77,13 +75,6 @@ map_style_MIC <- list(
 # color scheme taken from: https://colorbrewer2.org/?type=diverging&scheme=RdBu&n=11
 
 ```
-
-```{r helper function for plot aesthetics}
-
-format_decimal <- function(x) as.numeric(sprintf("%.*f", 2, x))
-
-```
-
 
 ## Import datasets
 
@@ -115,7 +106,6 @@ x_global_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_ma
   grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
 ```
-
 
 I will rename the variables and import the rasters.
 
@@ -203,31 +193,7 @@ global_background <- read_csv(
 
 ```
 
-I need to import the rasters of the area from which the background points were chosen so these can be displayed on each ExDet and MIC plot
-
-```{r import background area rasters}
-
-# path to directory
-mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-
-# native
-regional_native_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc"))
-# invaded
-regional_invaded_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc"))
-# invaded_asian
-regional_invaded_asian_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc"))
-
-
-# convert to df
-regional_native_background_area_df <- terra::as.data.frame(regional_native_background_area, xy = TRUE)
-regional_invaded_background_area_df <- terra::as.data.frame(regional_invaded_background_area, xy = TRUE)
-regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invaded_asian_background_area, xy = TRUE)
-
-```
-
+I need to import the rasters of the background point area so that I can display that on the ExDet and MIC plots
 
 ## Extract variables for climate data
 
@@ -483,39 +449,27 @@ Finally, I will create plots of each of the ExDet and MIC analyses.
 
 # plot mean raster first
 exdet_regional_native_hist_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_native_hist[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_native_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_native_hist), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_native_hist), na.rm = TRUE)), 
-      0, 1, 
-      format_decimal(max(values(exdet_regional_native_hist), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_native_hist), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_native_hist), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
-  # labs
   labs(
     title = "ExDet analysis: bio2, bio11, bio12 and bio15",
     subtitle = "Global climate divergence from 'regional_native' model training set",
     fill = "ExDet Analysis"
-    ) 
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_native_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_native_hist), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_native_hist), na.rm = TRUE), 5), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_native_hist), na.rm = TRUE), 5)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  )
 
 ```
 
@@ -526,7 +480,7 @@ ggsave(
   exdet_regional_native_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v2_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -539,24 +493,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_native_hist_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_native_hist[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
-  # aes
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_native' model",
-    subtitle = "Covariate causing most extrapolation from model training set"
-    ) 
+    subtitle = "Covariate causing most extrapolation from model training set",
+    fill = "MIC"
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -567,7 +512,7 @@ ggsave(
   mic_regional_native_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v2_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -636,38 +581,27 @@ exdet_regional_native_CMIP6 <- exdet_MIC_regional_native_CMIP6[["rasters"]][["Ex
 
 # plot mean raster first
 exdet_regional_native_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_native_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_native_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_native_CMIP6), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_native_CMIP6), na.rm = TRUE)), 
-      0, 1,
-      format_decimal(max(values(exdet_regional_native_CMIP6), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_native_CMIP6), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_native_CMIP6), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) +
-   # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
     subtitle = "Global climate divergence from 'regional_native' model training set",
     fill = "ExDet Analysis"
-    ) 
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_native_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_native_CMIP6), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_native_CMIP6), na.rm = TRUE), 6), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_native_CMIP6), na.rm = TRUE), 6)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  )
 
 ```
 
@@ -678,7 +612,7 @@ ggsave(
   exdet_regional_native_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -691,24 +625,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_native_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_native_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
-  # aes
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_native' model",
-    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL"
-    ) 
+    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL",
+    fill = "MIC"
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -719,7 +644,7 @@ ggsave(
   mic_regional_native_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -786,38 +711,28 @@ exdet_regional_invaded_hist <- exdet_MIC_regional_invaded_hist[["rasters"]][["Ex
 
 # plot mean raster first
 exdet_regional_invaded_hist_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_hist[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_invaded_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_hist), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_invaded_hist), na.rm = TRUE)), 
-      0, 1,
-      format_decimal(max(values(exdet_regional_invaded_hist), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_invaded_hist), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_invaded_hist), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) + 
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "ExDet analysis: bio2, bio11, bio12 and bio15",
     subtitle = "Global climate divergence from 'regional_invaded' model training set",
     fill = "ExDet Analysis"
-    ) 
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_invaded_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_hist), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_invaded_hist), na.rm = TRUE), 5), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_invaded_hist), na.rm = TRUE), 5)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  ) + 
+  theme(legend.text = element_text(angle = 25))
 
 ```
 
@@ -828,7 +743,7 @@ ggsave(
   exdet_regional_invaded_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v6_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -841,23 +756,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_invaded_hist_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_hist[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_invaded' model",
-    subtitle = "Covariate causing most extrapolation from model training set"
-    ) 
+    subtitle = "Covariate causing most extrapolation from model training set",
+    fill = "MIC"
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -868,7 +775,7 @@ ggsave(
   mic_regional_invaded_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v6_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -935,39 +842,28 @@ exdet_regional_invaded_CMIP6 <- exdet_MIC_regional_invaded_CMIP6[["rasters"]][["
 
 # plot mean raster first
 exdet_MIC_regional_invaded_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_invaded_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_CMIP6), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_invaded_CMIP6), na.rm = TRUE)), 
-      0, 1, 
-      format_decimal(max(values(exdet_regional_invaded_CMIP6), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_invaded_CMIP6), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_invaded_CMIP6), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) + 
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
     subtitle = "Global climate divergence from 'regional_invaded' model training set",
     fill = "ExDet Analysis"
-    ) 
-
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_invaded_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_CMIP6), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_invaded_CMIP6), na.rm = TRUE), 5), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_invaded_CMIP6), na.rm = TRUE), 5)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  ) + 
+  theme(legend.text = element_text(angle = 25))
 
 ```
 
@@ -978,7 +874,7 @@ ggsave(
   exdet_MIC_regional_invaded_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v6_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -991,23 +887,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_invaded_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_invaded' model",
-    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL"
-    ) 
+    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL",
+    fill = "MIC"
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -1018,7 +906,7 @@ ggsave(
   mic_regional_invaded_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v6_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1085,38 +973,28 @@ exdet_regional_invaded_asian_hist <- exdet_MIC_regional_invaded_asian_hist[["ras
 
 # plot mean raster first
 exdet_regional_invaded_asian_hist_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_asian_hist[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_invaded_asian_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_asian_hist), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_invaded_asian_hist), na.rm = TRUE)), 
-      0, 1,  
-      format_decimal(max(values(exdet_regional_invaded_asian_hist), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_invaded_asian_hist), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_invaded_asian_hist), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "ExDet analysis: bio2, bio11, bio12 and bio15",
     subtitle = "Global climate divergence from 'regional_invaded_asian' model training set",
     fill = "ExDet Analysis"
-    ) 
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_invaded_asian_hist), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_asian_hist), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_invaded_asian_hist), na.rm = TRUE), 15), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_invaded_asian_hist), na.rm = TRUE), 15)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  ) + 
+  theme(legend.text = element_text(angle = 25))
 
 ```
 
@@ -1127,7 +1005,7 @@ ggsave(
   exdet_regional_invaded_asian_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1140,24 +1018,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_invaded_asian_hist_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_asian_hist[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_invaded_asian' model",
     subtitle = "Covariate causing most extrapolation from model training set",
     fill = "MIC"
-    ) 
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -1168,7 +1037,7 @@ ggsave(
   mic_regional_invaded_asian_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v1_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1235,38 +1104,28 @@ exdet_regional_invaded_asian_CMIP6 <- exdet_MIC_regional_invaded_asian_CMIP6[["r
 
 # plot mean raster first
 exdet_MIC_regional_invaded_asian_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_asian_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE)), 
-      0, 1, 
-      format_decimal(max(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE))
-      ),
-    limits = c(
-      format_decimal(min(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE)), 
-      format_decimal(max(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) + 
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
-  theme(legend.key = element_rect(color = "black")) +
   labs(
     title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
     subtitle = "Global climate divergence from 'regional_invaded_asian' model training set",
     fill = "ExDet Analysis"
-    ) 
+    ) +
+  # default plot style
+  map_style_exdet +
+  # fill scale
+  scale_fill_gradientn(
+  name = "ExDet Score",
+  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+  values = scales::rescale(x = c(min(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE))),
+  breaks = c(
+    round(min(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE), 6), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_regional_invaded_asian_CMIP6), na.rm = TRUE), 6)
+    ),
+  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
+  ) + 
+  theme(legend.text = element_text(angle = 25))
 
 ```
 
@@ -1277,7 +1136,7 @@ ggsave(
   exdet_MIC_regional_invaded_asian_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1290,23 +1149,15 @@ ggsave(
 
 # plot mean raster first
 mic_regional_invaded_asian_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_regional_invaded_asian_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
-  # new scale
-  ggnewscale::new_scale_fill() +
-  # add layer for bg point area
-  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background")) +
-  # scale 2
-  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_invaded_asian' model",
     subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL",
     fill = "MIC"
-    ) 
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -1317,7 +1168,7 @@ ggsave(
   mic_regional_invaded_asian_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1390,27 +1241,27 @@ Finally, I will create plots of each of the ExDet and MIC analyses.
 
 # plot mean raster first
 exdet_global_hist_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_global_hist[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
+  labs(
+    title = "ExDet analysis: bio2, bio11, bio12 and bio15",
+    subtitle = "Global climate divergence from 'global' model training set",
+    fill = "ExDet Analysis"
+    ) +
+  # default plot style
+  map_style_exdet +
   # fill scale
   scale_fill_gradientn(
   name = "ExDet Score",
   colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
   values = scales::rescale(x = c(min(values(exdet_global_hist), na.rm = TRUE), 0, 1, max(values(exdet_global_hist), na.rm = TRUE))),
   breaks = c(
-    format_decimal(min(values(exdet_global_hist), na.rm = TRUE)), 
-    0, 1, 
-    format_decimal(max(values(exdet_global_hist), na.rm = TRUE))
+    round(min(values(exdet_global_hist), na.rm = TRUE), 5), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_global_hist), na.rm = TRUE), 5)
     ),
   guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
-  ) +
-  labs(
-    title = "ExDet analysis: bio2, bio11, bio12 and bio15",
-    subtitle = "Global climate divergence from 'global' model training set",
-    fill = "ExDet Analysis"
-    ) 
+  )
 
 ```
 
@@ -1421,7 +1272,7 @@ ggsave(
   exdet_global_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v2_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1434,17 +1285,16 @@ ggsave(
 
 # plot mean raster first
 mic_global_hist_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_global_hist[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
   labs(
     title = "Most Influential Covariate (MIC) for 'global' model",
     subtitle = "Covariate causing most extrapolation from model training set",
     fill = "MIC"
-    ) 
+    ) +
+  # default plot style
+  map_style_MIC 
+
 ```
 
 ```{r save plot}
@@ -1454,7 +1304,7 @@ ggsave(
   mic_global_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v2_background_projGlobe.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1521,28 +1371,28 @@ exdet_global_CMIP6 <- exdet_MIC_global_CMIP6[["rasters"]][["ExDet"]][["all"]]
 
 # plot mean raster first
 exdet_global_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_global_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = ExDet)) +
+  labs(
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
+    subtitle = "Global climate divergence from 'global' model training set",
+    fill = "ExDet Analysis"
+    ) +
+  # default plot style
+  map_style_exdet +
   # fill scale
   scale_fill_gradientn(
   name = "ExDet Score",
   colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
   values = scales::rescale(x = c(min(values(exdet_global_CMIP6), na.rm = TRUE), 0, 1, max(values(exdet_global_CMIP6), na.rm = TRUE))),
   breaks = c(
-    format_decimal(min(values(exdet_global_CMIP6), na.rm = TRUE)), 
-    0, 1, 
-    format_decimal(max(values(exdet_global_CMIP6), na.rm = TRUE))
+    round(min(values(exdet_global_CMIP6), na.rm = TRUE), 6), 
+    round(0, 1), round(1, 1), 
+    round(max(values(exdet_global_CMIP6), na.rm = TRUE), 6)
     ),
   guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
-  ) +
-  labs(
-    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
-    subtitle = "Global climate divergence from 'global' model training set",
-    fill = "ExDet Analysis"
-    ) 
-  
+  )
+
 ```
 
 ```{r save plot}
@@ -1552,7 +1402,7 @@ ggsave(
   exdet_global_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1565,17 +1415,15 @@ ggsave(
 
 # plot mean raster first
 mic_global_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = exdet_MIC_global_CMIP6[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
-  # fill scale 1
-  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
   labs(
     title = "Most Influential Covariate (MIC) for 'global' model",
     subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL",
     fill = "MIC"
-    ) 
+    ) +
+  # default plot style
+  map_style_MIC 
 
 ```
 
@@ -1586,197 +1434,15 @@ ggsave(
   mic_global_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 12,
+  width = 14,
   device = "jpeg",
   dpi = "retina"
   )
 
 ```
 
-# Appendix
-
-## Patchwork plots- MIC
-
-```{r patchwork regional_native}
-
-mic_regional_native_hist_plot <- mic_regional_native_hist_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "A") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25)
-    )
 
 
-mic_regional_native_CMIP6_plot <- mic_regional_native_CMIP6_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "B") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0))  +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25)
-  )
-
-
-
-
-
-mic_regional_native_patchwork <- (mic_regional_native_hist_plot / mic_regional_native_CMIP6_plot) +
-  plot_layout(axes = "collect", axis_titles = "collect", guides = "collect") +
-  plot_annotation(
-    title = "Most Influential Covariate (MIC) for 'regional_native' model for A) Present B) 2055",
-    subtitle = "Covariate causing most extrapolation from model training set"
-    ) &
-  theme(legend.position = "bottom")
-
-```
-
-```{r save plot}
-
-ggsave(
-  mic_regional_native_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_native_v2_background_projGlobe_patchwork.jpg"),
-  height = 12, 
-  width = 12,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-```{r patchwork regional_invaded}
-
-mic_regional_invaded_hist_plot <- mic_regional_invaded_hist_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "A") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25)
-    )
-
-
-mic_regional_invaded_CMIP6_plot <- mic_regional_invaded_CMIP6_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "B") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0))  +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25)
-  )
-
-
-
-
-
-mic_regional_invaded_patchwork <- (mic_regional_invaded_hist_plot / mic_regional_invaded_CMIP6_plot) +
-  plot_layout(axes = "collect", axis_titles = "collect", guides = "collect") +
-  plot_annotation(
-    title = "Most Influential Covariate (MIC) for 'regional_invaded' model for A) Present B) 2055",
-    subtitle = "Covariate causing most extrapolation from model training set"
-    ) &
-  theme(legend.position = "bottom")
-
-```
-
-```{r save plot}
-
-ggsave(
-  mic_regional_invaded_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_invaded_v6_background_projGlobe_patchwork.jpg"),
-  height = 12, 
-  width = 12,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-```{r patchwork regional_invaded_asian}
-
-mic_regional_invaded_asian_hist_plot <- mic_regional_invaded_asian_hist_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "A") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25),
-    legend.position = "none"
-    )
-
-
-mic_regional_invaded_asian_CMIP6_plot <- mic_regional_invaded_asian_CMIP6_plot + 
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    plot.caption = element_blank()
-    ) +
-  labs(tag = "B") +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme(
-    plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
-    plot.tag = element_text(face = "bold", size = 25),
-    legend.position = "bottom"
-  )
-
-
-
-
-
-mic_regional_invaded_asian_patchwork <- (mic_regional_invaded_asian_hist_plot / mic_regional_invaded_asian_CMIP6_plot) +
-  plot_layout(axes = "collect", axis_titles = "collect") +
-  plot_annotation(
-    title = "Most Influential Covariate (MIC) for 'regional_invaded_asian' model for A) Present B) 2055",
-    subtitle = "Covariate causing most extrapolation from model training set"
-    ) 
-
-```
-
-```{r save plot}
-
-ggsave(
-  mic_regional_invaded_asian_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_invaded_asian_v1_background_projGlobe_patchwork.jpg"),
-  height = 12, 
-  width = 12,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
 
 # References
 

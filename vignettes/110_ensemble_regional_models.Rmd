@@ -39,6 +39,37 @@ if (FALSE) {
 
 ```
 
+## Plotting
+
+```{r helper function for plot aesthetics}
+
+format_decimal <- function(x) as.numeric(sprintf("%.*f", 2, x))
+
+```
+
+```{r import background area rasters}
+
+# path to directory
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+
+# native
+regional_native_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc"))
+# invaded
+regional_invaded_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc"))
+# invaded_asian
+regional_invaded_asian_background_area <- terra::rast(x = file.path(mypath, "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc"))
+
+
+# convert to df
+regional_native_background_area_df <- terra::as.data.frame(regional_native_background_area, xy = TRUE)
+regional_invaded_background_area_df <- terra::as.data.frame(regional_invaded_background_area, xy = TRUE)
+regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invaded_asian_background_area, xy = TRUE)
+
+```
+
 # Import datasets
 
 ## MaxEnt Predictions
@@ -996,27 +1027,32 @@ map_style_exdet <- list(
 
 # plot mean raster first
 exdet_regional_ensemble_hist_plot <- ggplot() +
-  # plot regular raster of values first
-  geom_raster(data = exdet_hist_mean_df, aes(x = x, y = y, fill = mean)) +
-  labs(
-    title = "ExDet analysis: bio2, bio11, bio12, bio15",
-    subtitle = "Global climate divergence from 'regional_ensemble' model training set"
-    ) +
   # default plot style
   map_style_exdet +
+  # plot regular raster of values first
+  geom_raster(data = exdet_hist_mean_df, aes(x = x, y = y, fill = mean)) +
   # fill scale
   scale_fill_gradientn(
-  name = "ExDet Score",
-  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-  values = scales::rescale(x = c(min(values(exdet_hist_mean), na.rm = TRUE), 0, 1, max(values(exdet_hist_mean), na.rm = TRUE))),
-  breaks = c(
-    round(min(values(exdet_hist_mean), na.rm = TRUE), 8), 
-    round(0, 1), round(1, 1)#, 
-    # no max for this plot
-    #round(max(values(exdet_hist_mean), na.rm = TRUE), 8)
-    ),
-  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
-  )
+    name = "ExDet Score",
+    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+    values = scales::rescale(x = c(min(values(exdet_hist_mean), na.rm = TRUE), 0, 1, max(values(exdet_hist_mean), na.rm = TRUE))),
+    breaks = c(
+      format_decimal(min(values(exdet_hist_mean), na.rm = TRUE)), 
+      0, 1 
+      ),
+    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
+    ) +
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+   labs(
+    title = "ExDet analysis: bio2, bio11, bio12, bio15",
+    subtitle = "Global climate divergence from 'regional_ensemble' model training set"
+    ) 
 
 ```
 
@@ -1027,7 +1063,7 @@ ggsave(
   exdet_regional_ensemble_hist_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v0_background_projGlobe.jpg"),
   height = 8, 
-  width = 14,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1038,27 +1074,33 @@ ggsave(
 
 # plot mean raster first
 exdet_regional_ensemble_CMIP6_plot <- ggplot() +
+  # default plot style
+  map_style_exdet +
   # plot regular raster of values first
   geom_raster(data = exdet_CMIP6_mean_df, aes(x = x, y = y, fill = mean)) +
+  # fill scale
+  scale_fill_gradientn(
+    name = "ExDet Score",
+    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+    values = scales::rescale(x = c(min(values(exdet_CMIP6_mean), na.rm = TRUE), 0, 1, max(values(exdet_CMIP6_mean), na.rm = TRUE))),
+    breaks = c(
+      format_decimal(min(values(exdet_CMIP6_mean), na.rm = TRUE)), 
+      0, 1,
+      format_decimal(max(values(exdet_CMIP6_mean), na.rm = TRUE))
+      ),
+    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
+    ) +
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
   labs(
     title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
-    ) +
-  # default plot style
-  map_style_exdet +
-  # fill scale
-  scale_fill_gradientn(
-  name = "ExDet Score",
-  colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-  values = scales::rescale(x = c(min(values(exdet_CMIP6_mean), na.rm = TRUE), 0, 1, max(values(exdet_CMIP6_mean), na.rm = TRUE))),
-  breaks = c(
-    round(min(values(exdet_CMIP6_mean), na.rm = TRUE), 8), 
-    round(0, 1), round(1, 1), 
-    round(max(values(exdet_CMIP6_mean), na.rm = TRUE), 6)
-    ),
-  guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20)
-  ) +
-  theme(legend.text = element_text(angle = 25))
+  ) 
 
 ```
 
@@ -1069,7 +1111,7 @@ ggsave(
   exdet_regional_ensemble_CMIP6_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v0_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 14,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1174,7 +1216,6 @@ map_style_MIC <- list(
         panel.background = element_rect(fill = "azure3",
                                         colour = "azure3")
   ),
-  viridis::scale_fill_viridis(option = "rainbow", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2")),
   scale_x_continuous(expand = c(0, 0)),
   scale_y_continuous(expand = c(0, 0)),
   labs(
@@ -1192,15 +1233,16 @@ map_style_MIC <- list(
 
 # plot mean raster first
 mic_hist_mean_plot <- ggplot() +
+  # default plot style
+  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = mic_hist_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  # fill scale 1
+  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_ensemble' model",
-    subtitle = "Covariate causing most extrapolation from model training set",
-    fill = "MIC"
-    ) +
-  # default plot style
-  map_style_MIC 
+    subtitle = "Covariate causing most extrapolation from model training set"
+    ) 
 
 ```
 
@@ -1211,7 +1253,7 @@ ggsave(
   mic_hist_mean_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v0_background_projGlobe.jpg"),
   height = 8, 
-  width = 14,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1222,15 +1264,15 @@ ggsave(
 
 # plot mean raster first
 mic_CMIP6_mean_plot <- ggplot() +
+  # default plot style
+  map_style_MIC +
   # plot regular raster of values first
   geom_raster(data = mic_CMIP6_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
   labs(
     title = "Most Influential Covariate (MIC) for 'regional_ensemble' model",
-    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL",
-    fill = "MIC"
-    ) +
-  # default plot style
-  map_style_MIC 
+    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL"
+    ) 
 
 ```
 
@@ -1241,7 +1283,7 @@ ggsave(
   mic_CMIP6_mean_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v0_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
-  width = 14,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -1429,6 +1471,67 @@ minmax(test_unweighted)
 ```
 
 I think they do because the weighted.mean was the same as the mean when the weights were kept equal proportionally to each other, but summed to over 1.
+
+## Patchwork plots- MIC
+
+```{r patchwork regional_native}
+
+mic_hist_mean_plot <- mic_hist_mean_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(tag = "A") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+    )
+
+
+mic_CMIP6_mean_plot <- mic_CMIP6_mean_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank()
+    ) +
+  labs(tag = "B") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))  +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
+
+
+
+mic_regional_ensemble_patchwork <- (mic_hist_mean_plot / mic_CMIP6_mean_plot) +
+  plot_layout(axes = "collect", axis_titles = "collect", guides = "collect") +
+  plot_annotation(
+    title = "Most Influential Covariate (MIC) for 'regional_ensemble' model A) Present B) 2055",
+    subtitle = "Covariate causing most extrapolation from model training sets"
+    ) &
+  theme(legend.position = "bottom")
+
+```
+
+```{r save plot}
+
+ggsave(
+  mic_regional_ensemble_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_regional_ensemble_background_projGlobe_patchwork.jpg"),
+  height = 12, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
 
 # References
 

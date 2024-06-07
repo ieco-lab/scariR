@@ -104,6 +104,7 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 
 v0- initial version- in sandbox/vignettes_old
 v1- added ExDet and MIC for global model
+v2- added grey area to each figure to represent bg area
 
 
 
