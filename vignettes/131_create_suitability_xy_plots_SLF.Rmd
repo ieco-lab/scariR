@@ -34,6 +34,8 @@ library(scrubr)
 library(scales)
 library(patchwork)
 library(grid)
+library(kableExtra)
+library(webshot2)
 
 ```
 
@@ -757,8 +759,8 @@ if(TRUE) {
   
   # make kable
   global_regional_risk_shift <- kable(global_regional_risk_shift, "html", escape = FALSE) %>% 
-    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    add_header_above(., header = c("SLF risk plot quadrant proportions" = 6), bold = TRUE)
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    kableExtra::add_header_above(., header = c("SLF risk plot quadrant proportions" = 6), bold = TRUE)
   
   
   # save as .html

@@ -24,8 +24,6 @@ library(terra)
 library(rnaturalearth)
 # remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
-# remotes::install_github("ropensci/scrubr")
-library(scrubr)
 
 # aesthetics
 library(kableExtra)
@@ -640,7 +638,7 @@ slfSpread::create_risk_report(
   locality.name = "chile",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "chile"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -670,7 +668,7 @@ slfSpread::create_risk_report(
   locality.name = "argentina",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "argentina"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -939,7 +937,7 @@ slfSpread::create_risk_report(
   locality.name = "greece",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "greece"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE
 )
 
@@ -974,6 +972,56 @@ slfSpread::create_risk_report(
   save.report = TRUE
 )
 
+# other
+# estonia
+slfSpread::create_risk_report(
+  locality.iso = "est",
+  locality.name = "estonia",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "estonia"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# latvia
+slfSpread::create_risk_report(
+  locality.iso = "lva",
+  locality.name = "lativa",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "lativa"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# lithuania
+slfSpread::create_risk_report(
+  locality.iso = "ltu",
+  locality.name = "lithuania",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "lithuania"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# denmark
+slfSpread::create_risk_report(
+  locality.iso = "dnk",
+  locality.name = "denmark",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "denmark"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
+
+# poland
+slfSpread::create_risk_report(
+  locality.iso = "pol",
+  locality.name = "poland",
+  locality.type = "country",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "poland"),
+  create.dir = TRUE,
+  save.report = TRUE
+)
 
 ```
 
@@ -1012,7 +1060,6 @@ slfSpread::create_risk_report(
 # mexico above
 
 ```
-
 
 ### West Asia
 
@@ -1064,6 +1111,22 @@ slfSpread::create_risk_report(
 readr::write_rds(japan_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "japan", "japan_slf_risk_report.rds"))
 
 readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "south_korea", "south_korea_slf_risk_report.rds"))
+
+```
+
+### Other
+
+```{r other regions}
+
+# New zealand
+slfSpread::create_risk_report(
+  locality.iso = "nzl",
+  locality.name = "marlborough",
+  locality.type = "states_provinces",
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "new_zealand"),
+  create.dir = FALSE,
+  save.report = TRUE
+)
 
 ```
 
@@ -2807,7 +2870,6 @@ ggsave(
   )
 
 ```
-
 
 ### Viticultural regions of interest- East Asia
 

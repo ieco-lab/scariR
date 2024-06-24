@@ -39,7 +39,6 @@ mypath <- file.path(here::here() %>%
 
 ```
 
-
 # Sensitivity and Specificity of Models
 
 We calculate these according to the cloglog MTSS threshold per model
@@ -68,44 +67,50 @@ regional_invaded_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_in
 ```{r calculate sens and spec}
 
 model_sens_spec <- tibble(
-  metric = rep(c("sensitivity", "specificity", "commission_error"), 4),
-  description = rep(c("true_positive_rate", "true_negative_rate", "1 - true_negative_rate"), 4),
+  metric = rep(c("sensitivity", "specificity", "commission error", "omission error"), 4),
+  description = rep(c("true_positive rate", "true_negative rate", "1 - true_negative rate", "false_negative rate"), 4),
   thresh = "MTSS.cloglog",
   thresh_value = c(
-    rep(global_conf_matr$threshold_value, 3), 
-    rep(regional_native_conf_matr$threshold_value, 3), 
-    rep(regional_invaded_conf_matr$threshold_value, 3),
-    rep(regional_invaded_asian_conf_matr$threshold_value, 3)
+    rep(global_conf_matr$threshold_value, 4), 
+    rep(regional_native_conf_matr$threshold_value, 4), 
+    rep(regional_invaded_conf_matr$threshold_value, 4),
+    rep(regional_invaded_asian_conf_matr$threshold_value, 4)
     ),
   model = c(
-    rep("global", 3),
-    rep("regional_native", 3),
-    rep("regional_invaded NAmerica", 3),
-    rep("regional_invaded Asia", 3)
+    rep("global", 4),
+    rep("regional\nnative", 4),
+    rep("regional\ninvaded NAmerica", 4),
+    rep("regional\ninvaded Asia", 4)
   ),
-  total_test_pos = c(
-    rep(155, 3), # global
-    rep(328, 3),  # native
-    rep(241, 3), # invaded_NAmerica
-    rep(328, 3) # invaded_Asia
+  test_pos = c(
+    rep(155, 4), # global
+    rep(328, 4),  # native
+    rep(241, 4), # invaded_NAmerica
+    rep(328, 4) # invaded_Asia
   ),
-  total_bg_neg = c(
-    rep(20000, 3), # global
-    rep(10000, 9) # regional
+  bg_neg = c(
+    rep(20000, 4), # global
+    rep(10000, 12) # regional
   ),
   value = c(
     # global
-    round(global_conf_matr$tp_mean / 155, 4), round(global_conf_matr$tn_mean / 20000, 4), round(1 - (global_conf_matr$tn_mean / 20000), 4),
+    round(global_conf_matr$tp_mean / 155, 4), round(global_conf_matr$tn_mean / 20000, 4), round(1 - (global_conf_matr$tn_mean / 20000), 4), round((global_conf_matr$fn_mean / 20000), 4),
     # native
-    round(regional_native_conf_matr$tp / 328, 4), round(regional_native_conf_matr$tn / 10000, 4), round(1 - (regional_native_conf_matr$tn / 10000), 4),
+    round(regional_native_conf_matr$tp / 328, 4), round(regional_native_conf_matr$tn / 10000, 4), round(1 - (regional_native_conf_matr$tn / 10000), 4), round((regional_native_conf_matr$fn / 10000), 4),
     # invaded_NAmerica
-    round(regional_invaded_conf_matr$tp / 241, 4), round(regional_invaded_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_conf_matr$tn / 10000), 4),
+    round(regional_invaded_conf_matr$tp / 241, 4), round(regional_invaded_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_conf_matr$tn / 10000), 4), round((regional_invaded_conf_matr$fn / 10000), 4),
     # invaded_asia
-    round(regional_invaded_asian_conf_matr$tp / 328, 4), round(regional_invaded_asian_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_asian_conf_matr$tn / 10000), 4)
+    round(regional_invaded_asian_conf_matr$tp / 328, 4), round(regional_invaded_asian_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_asian_conf_matr$tn / 10000), 4), round((regional_invaded_asian_conf_matr$fn / 10000), 4)
   )
 )
 
 ```
+
+```{r additional mods}
+
+
+```
+
 
 ```{r save as .csv}
 
@@ -120,11 +125,11 @@ I will also write it to a kable so it can be printed
 if(TRUE) {
   
   # add column formatting
-  model_sens_spec <- mutate(model_sens_spec, total_bg_neg = scales::label_comma() (total_bg_neg))
+  model_sens_spec <- mutate(model_sens_spec, bg_neg = scales::label_comma() (bg_neg))
   
   # convert to kable
 model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", escape = FALSE) %>%
-  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = TRUE)
   
   # save as .html
   kableExtra::save_kable(
@@ -150,7 +155,6 @@ model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", esca
 
 # References
 
-Jiménez‐Valverde, A. 2012. Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography 21:498–507.
+Jiménez‐Valverde, A. 2012. Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography 21:498--507.
 
-Zou, K. H., A. J. O’Malley, and L. Mauri. 2007. Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation 115:654–657.
-
+Zou, K. H., A. J. O'Malley, and L. Mauri. 2007. Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation 115:654--657.

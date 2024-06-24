@@ -33,7 +33,17 @@ library(kableExtra)
 
 ```{r read in table}
 
-IVR_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table_global_regional_ensemble.csv"), row.names = 1)
+IVR_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table.csv"), row.names = 1) %>%
+  dplyr::rename(
+    "extreme_2055" = "extreme",
+    "high_2055" = "high",
+    "moderate_2055" = "moderate",
+    "low_2055" = "low"
+  )
+
+# change rownames
+rownames(IVR_risk_table) <- c("extreme_present", "high_present", "moderate_present", "low_present", "total_2055")
+
 
 ```
 
@@ -74,7 +84,7 @@ if(TRUE) {
   # save as .html
   kableExtra::save_kable(
     IVR_shift_prop_table, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
     self_contained = TRUE
     )
   
@@ -82,8 +92,8 @@ if(TRUE) {
  # webshot::install_phantomjs()
   # convert to pdf
   webshot2::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop_global_regional_ensemble.jpg")
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.jpg")
   )
     
 }
@@ -127,7 +137,7 @@ if(TRUE) {
   # save as .html
   kableExtra::save_kable(
     IVR_risk_table, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
     self_contained = TRUE
     )
   
@@ -135,8 +145,8 @@ if(TRUE) {
  # webshot::install_phantomjs()
   # convert to pdf
   webshot2::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_global_regional_ensemble.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_global_regional_ensemble.jpg")
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.jpg")
   )
     
 }
@@ -149,7 +159,16 @@ I will do the same for the SLF populations.
 
 ```{r read in table}
 
-slf_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_populations_risk_table_global_regional_ensemble.csv"), row.names = 1)
+slf_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_risk_table.csv"), row.names = 1) %>%
+  dplyr::rename(
+    "extreme_2055" = "extreme",
+    "high_2055" = "high",
+    "moderate_2055" = "moderate",
+    "low_2055" = "low"
+  )
+
+# change rownames
+rownames(slf_risk_table) <- c("extreme_present", "high_present", "moderate_present", "low_present", "total_2055")
 
 ```
 
@@ -188,7 +207,7 @@ if(TRUE) {
   # save as .html
   kableExtra::save_kable(
     slf_shift_prop_table, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"),
     self_contained = TRUE
     )
   
@@ -196,8 +215,8 @@ if(TRUE) {
  # webshot::install_phantomjs()
   # convert to pdf
   webshot2::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_shift_prop_global_regional_ensemble.jpg")
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.jpg")
   )
     
 }
@@ -240,7 +259,7 @@ if(TRUE) {
   # save as .html
   kableExtra::save_kable(
     slf_risk_table, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_global_regional_ensemble.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"),
     self_contained = TRUE
     )
   
@@ -248,8 +267,8 @@ if(TRUE) {
  # webshot::install_phantomjs()
   # convert to pdf
   webshot2::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_global_regional_ensemble.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_populations_risk_table_global_regional_ensemble.jpg")
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.jpg")
   )
     
 }

@@ -37,7 +37,7 @@
 #'
 #'@details
 #'
-#'Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
+#'Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 #'
 #'Note that this function performs downloads from [naturalearthdata.com](https://www.naturalearthdata.com/).
 #'The function will automatically create subfolders in `root/data-raw`

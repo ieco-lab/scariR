@@ -80,7 +80,6 @@ library(kgc) # koppen climate rasters
 library(webshot2)
 library(kableExtra)
 library(patchwork)
-library(gridExtra)
 
 ```
 

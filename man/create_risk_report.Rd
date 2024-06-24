@@ -69,7 +69,7 @@ Use caution, this function will overwrite previous files output for the same loc
 blarg
 }
 \details{
-Requires the following packages: 'tidyverse', 'terra', 'scrubr', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
+Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 
 Note that this function performs downloads from \href{https://www.naturalearthdata.com/}{naturalearthdata.com}.
 The function will automatically create subfolders in \code{root/data-raw}
@@ -117,5 +117,9 @@ risk_map_2055 <- slf_risk_report[["risk_maps"]][["2055_risk_map"]]
 map_current <- slf_risk_report[["risk_maps"]][["current_risk_map"]] +
 xlim(-10, 5) +
 ylim(35, 44)
+
+If you need to save the report Rdata object and use those figures elsewhere:
+
+readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 
 }
