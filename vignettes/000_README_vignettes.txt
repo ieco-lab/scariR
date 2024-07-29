@@ -16,7 +16,21 @@ Initializes renv, saves data objects for internal use
 
 ## Changelog
 
-v0-
+v0- initial version
+
+
+----------010_initialize_pkg.R----------
+
+## About
+
+
+
+## Changelog
+
+v0- initial version
+v1
+v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF workflow
+v3- 2024-07-29- rework using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
 
 
 

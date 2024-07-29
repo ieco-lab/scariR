@@ -1,24 +1,28 @@
 ---
-title: "Retrieve SLF records from various sources and tidy them for MaxEnt modeling"
-author: "Samuel M. Owens"
-date: "2024-07-29"
+title: "Retrieve SLF records from various sources and tidy them for MaxEnt modeling (chapter 1)"
+author: "Sam Owens"
+date: "2024-01-05"
 contact: 'sam.owens@temple.edu'
 output: html_document
 ---
 
 # Overview
 
-This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.csv` file of SLF presence records that can be loaded into MaxEnt.
+This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.csv` file of SLF presence records that can be loaded into MaxEnt java or MaxEnt for R (see the [dismo package](https://cran.r-project.org/web/packages/dismo/index.html)).
 
-The first step will be to retrieve data from `GBIF` and `lydemapR`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The [lyde()] function within the `Lydemapr` package gives access to nearly one million SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 
+The first step will be to retrieve data from `GBIF` and `lydemapr`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The [lyde()] function within the `Lydemapr` package gives access to over 650,000 SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 
 
-These data will need to be cleaned and tidied during this step. To get to this tidy dataset, the data will be checked for inconsistent and false records. The data will also be spatially thinned so that points are no less than 10km (the resolution of the climate data, 5 arcminutes) to eliminate the effects of sampling bias.
+These data will need to be cleaned and tidied during this step. To get to this tidy dataset, the data will be checked for inconsistent and false records. The data will also be spatially thinned so that points are no less than 1km (the resolution of the climate data, 30 arcseconds) to eliminate the effects of sampling bias.
 
 The second step will be to combine these records with data gathered from peer-reviewed literature and from natural history notes. A majority of these records are from established populations of SLF within China, South Korea and southeast Asia. These records are especially important because China and southeast Asia represent the native range for SLF, and there is very little data on the extent of its native range. These records are also important because MaxEnt correlates presence records with the local climate; thus, if there is very little characterization of the native range for this species, it is unlikely that models for SLF will make realistic predictions for its potential niche elsewhere.
 
 The final step of this analysis will be to organize the different datasets into a single `.csv` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined. 
 
 Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.  
+
+### Versioning
+
+* 2024-01-05- adapted to use `rgbif` instead of `spocc` for gbif download
 
 # Setup
 
@@ -53,7 +57,7 @@ Most of this compendium and its functions are built on the `tidyverse` language.
 
 # 1. Retrieve data from GBIF and lydemapR and tidy
 
-## 1.1- GBIF via rgbif
+## 1.1- GBIF
 
 I will begin by retrieving the GBIF taxonomic ID for Lycorma delicatula.
 
@@ -64,25 +68,19 @@ ids <- taxize::get_ids(sci_com = "Lycorma delicatula", db = "gbif")
 
 ```
 
-I will also perform a few operations specific to rgbif. I will need to enter my user credentials for gbif; to keep these private, I will edit the .Renviron and call them from there. Once this chunk is run and the .Renviron pops up, enter your username, password and email credentials in the following format:
-
-GBIF_USER=" "
-GBIF_PWD=" "
-GBIF_EMAIL=" "
-
-Save and close the document. 
-
-I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada).
+I will also perform a few operations specific to rgbif. I will need to enter my user credentials for gbif; to keep these private, I will edit the .Renviron and call them from there. I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada).
 
 ```{r other rgbif operations}
 
 # edit R environment for user credentials
+# enter user credentials using the following: GBIF_USER; GBIF_PWD; GBIF_EMAIL
 usethis::edit_r_environ()
 
 # get list of countries
 rgbif::enumeration_country(curlopts = list())
 
 ```
+
 
 ### Retrieve and save records
 
@@ -118,7 +116,7 @@ slf_gbif <- rgbif::occ_download(
 # be sure to open slf_gbif and retrieve the download key
 
 # check on download status using key
-occ_download_wait('0041651-240626123714530')
+occ_download_wait('0046146-231120084113126')
 
 ```
 
@@ -130,39 +128,35 @@ First, I will import the dataset to my working directory. I will also retrieve t
 
 # download the data as a zip to PC
 slf_gbif_download <- occ_download_get(
-  key = '0041651-240626123714530',
+  key = '0046146-231120084113126',
   path = file.path(here::here(), "data-raw"),
   # overwrite = TRUE
   ) %>% 
   occ_download_import()
 
-
-# .zip file
-# unzip
-utils::unzip(
-  zipfile = file.path(here::here(), "data-raw", "0041651-240626123714530.zip"),
-  exdir =  file.path(here::here(), "data-raw")
-  )
-# rename .csv file
+# retrieve data citation
+gbif_citation('0046146-231120084113126')
+ 
+# rename .zip file
 file.rename(
-  from = file.path(here::here(), "data-raw", "0041651-240626123714530.csv"),
-  to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+  from = file.path(here::here(), "data-raw", "0046146-231120084113126.zip"),
+  to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".zip"))
   )
-# delete original zip
-file.remove(file.path(here::here(), "data-raw", "0041651-240626123714530.zip"))
-
-
 
 # simplify download into more useable .csv
 slf_gbif_download_simple <- slf_gbif_download %>%
   mutate(prov = "gbif") %>%
-  dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "prov", "year", "gbifID")) %>% # select desired columns
+  dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "prov", "eventDate", "gbifID")) %>% # select desired columns
   # rename for consistency with rest of vignette
   rename("name" = "species",
          "longitude" = "decimalLongitude", 
          "latitude" = "decimalLatitude",
+         "date" = "eventDate",
          "key" = "gbifID"
   )
+
+# remove times from date column
+slf_gbif_download_simple$date <- as_date(slf_gbif_download_simple$date)
 
 # save .csv output for use
 write_csv(x = slf_gbif_download_simple, 
@@ -171,14 +165,6 @@ write_csv(x = slf_gbif_download_simple,
 
 ``` 
 
-```{r retrieve data citation}
-
-gbif_citation('0041651-240626123714530')
-
-```
-
-Here is the data citation: "GBIF Occurrence Download https://doi.org/10.15468/dl.pqxya7 Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2024-07-29"
-
 ### Coordinate veracity
 
 First, we want to check the coordinate veracity using the `scrubr` package. This will check for unlikely, impossible or incomplete coordinate data. 
@@ -186,7 +172,7 @@ First, we want to check the coordinate veracity using the `scrubr` package. This
 ```{r coordinate veracity}
 
 # read in data
-slf_gbif_coords1 <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-07-29.csv"))
+slf_gbif_coords1 <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
 
 slf_gbif_coords1 <- slf_gbif_coords1 %>%
   coord_incomplete() %>%
@@ -201,10 +187,10 @@ Next, I will remove known erroneous points manually. We will also check for any 
 
 # remove incorrect points manually
 slf_gbif_coords1 <- slf_gbif_coords1 %>%
-  dplyr::filter(key != "2860187641") %>% #rm OR---lat, lon:(43.63691, -121.85569)
-  dplyr::filter(key != "2862292948") %>% #rm NE---lat, lon:(42.50641,-101.01562)
-  dplyr::filter(key != "2864687343") %>% #rm DE---lat, lon:(37.91855, -75.14999)
-  dplyr::filter(!key %in% c("2856537682", "2851117559")) #rm MA---lat, lon:(42.20994, -71.18331)
+  filter(key != "2860187641") %>% #rm OR---lat, lon:(43.63691, -121.85569)
+  filter(key != "2862292948") %>% #rm NE---lat, lon:(42.50641,-101.01562)
+  filter(key != "2864687343") %>% #rm DE---lat, lon:(37.91855, -75.14999)
+  filter(!key %in% c("2856537682", "2851117559")) #rm MA---lat, lon:(42.20994, -71.18331)
 
 # check species name
 unique(slf_gbif_coords1$name)
@@ -218,7 +204,7 @@ unique(slf_gbif_coords1$name)
 
 Next, we will use `humboldt::humboldt.occ.rarefy` and `scrubr::dedup` to spatially thin the occurrence data. The `Humboldt` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
 
-In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. The resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
+In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. THe resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
 
 Note: Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk.
 
@@ -226,21 +212,19 @@ Note: Simply change the `FALSE` within the `if()` statement to `TRUE` to run a c
 
 set.seed(997)
 
-if(TRUE) {
+if(FALSE) {
 
-  slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(
-    in.pts = slf_gbif_coords1, 
-    colxy = 2:3, # coordinate columns
-    rarefy.dist = 10, 
-    rarefy.units = "km", 
-    run.silent.rar = F # display progress bars
-    ) 
+  slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_gbif_coords1, 
+                                                    colxy = 2:3, # coordinate columns
+                                                    rarefy.dist = 10, 
+                                                    rarefy.units = "km", 
+                                                    run.silent.rar = F) # display progress bars
 
 }
 
 ```
 
-Spatial thinning left 505 of 1,489 observations. Finally, we will de-duplicate the data.
+Spatial thinning left 5888 of 17,339 observations, so it is apparent that the spatial thinning was needed. On the run without records in N. America, it left 433 of 1,301 observations. Finally, we will de-duplicate the data.
 
 ```{r de-duplicate}
 
@@ -253,10 +237,10 @@ We will save the results of the cleaning we just performed so they can be refere
 
 ```{r save cleaned data}
 
-write_csv(slf_gbif_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-07-29.csv"))
+write_csv(slf_gbif_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
 
 # also save as a .rds file
-write_rds(slf_gbif_coords3, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-07-29.rds"))
+write_rds(slf_gbif_coords3, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-01-05.rds"))
 
 ```
 
@@ -275,19 +259,25 @@ write_csv(x = slf_lyde,
 
 ```
 
-The next chunk is an import from an unpublished version of the lydemapr dataset. This version will be published on the package soon, but for now we will use this . This file was named "slf_lyde_raw_coords_2024-07-29.csv" for consistency with previous file naming. It contains about 900,000 published SLF records and includes the years 2022 and 2023.
+The next chunk is an import from an unpublished version of the lydemapr dataset called "tinyslf". This version will be published at on the package soon. This file was named "slf_lyde_raw_coords_2023-12-12.csv" for consistency with previous file naming. It contains about 900,000 published SLF records and includes the years 2022 and 2023.
 
 ```{r load in and tidy unpublished version of lydemapr dataset}
 
-if (TRUE) {
+if (FALSE) {
   
-  slf_lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+  slf_lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
   # tidy
-  slf_lyde_raw <- dplyr::select(slf_lyde_raw, -survey) 
+  slf_lyde_raw %<>%
+    dplyr::select(-survey) %>%
+    rename(
+      "lyde_present" = "slf_present",
+      "lyde_established" = "slf_established",
+      "lyde_density" = "slf_density"
+    )
   
   # overwrite save original version
-  write_csv(x = slf_lyde_raw, file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+  write_csv(x = slf_lyde_raw, file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
   
 }
 
@@ -298,21 +288,21 @@ The raw dataset is composed of over 658,000 records of SLF in the USA alone. Mos
 ```{r select only desired records}
 
 # read in data
-slf_lyde <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+slf_lyde <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
 # unique values for collection method
 unique(slf_lyde$collection_method)
 
 slf_lyde1 <- slf_lyde %>%
-  dplyr::filter(lyde_present == "TRUE", # only select presences
+  filter(lyde_present == "TRUE", # only select presences
          collection_method == "field_survey/management", # collection method = "field_survey/management"
          lyde_established == "TRUE") %>% # only select areas records that are from established populations
   # add species column
-  dplyr::mutate(species = "Lycorma delicatula")
+  mutate(species = "Lycorma delicatula")
 
 ```
 
-The data that fit our needs are about 39,000 records total.
+The data that fit our needs are about 26,000 records total.
 
 ### Coordinate veracity
 
@@ -333,19 +323,17 @@ set.seed(998)
 
 if(FALSE) {
 
-  slf_lyde2 <- humboldt::humboldt.occ.rarefy(
-    in.pts = slf_lyde1, 
-    colxy = 4:5, # coordinate columns
-    rarefy.dist = 10, 
-    rarefy.units = "km", 
-    run.silent.rar = F # display progress bars
-    ) 
+  slf_lyde2 <- humboldt::humboldt.occ.rarefy(in.pts = slf_lyde1, 
+                                             colxy = 4:5, # coordinate columns
+                                             rarefy.dist = 10, 
+                                             rarefy.units = "km", 
+                                             run.silent.rar = F) # display progress bars
 
 }
 
 ```
 
-Spatial thinning for the `lyde` dataset left 364 points out of the 39,000 points that fit our needs.
+Spatial thinning for the `lyde` dataset left 3578 points out of the 26,000 points that fit our needs.
 
 ```{r de-duplicate and remove known errors}
 
@@ -356,10 +344,10 @@ slf_lyde3 <- slf_lyde2 %>%
 
 ```{r save cleaned data}
 
-write_csv(slf_lyde3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+write_csv(slf_lyde3, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
 
 # also save as a .rds file
-write_rds(slf_lyde3, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
+write_rds(slf_lyde3, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2023-12-12.rds"))
 
 ```
 
@@ -370,10 +358,10 @@ We want to visualize the difference between the raw coordinates that were pulled
 ```{r visualize raw and thinned GBIF records}
 
 # raw data
-gbif_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-07-29.csv"))
+gbif_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-01-05.csv"))
 
 # thinned data
-gbif_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-07-29.csv"))
+gbif_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
 
 # plot world map
 map_gbif_thinned <- ggplot() +
@@ -412,54 +400,54 @@ From the mapping, it seems that the spatial thinning reduced the GBIF records, w
 ```{r visualize raw and thinned lydemapr records}
 
 # raw data
-lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2023-12-12.csv"))
 
 # thinned data
-lyde_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+lyde_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
 
 # plot map of NAmerica
-map_lyde_allRecords <- ggplot() +
+map_lyde_thinned <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n all records (blue)\nvs thinned (darkorange)") +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
   theme_bw()
   
-
-
-
-# exclude regulatory incidents 
+# include citizen science platforms
 lyde_raw1 <- lyde_raw %>%
   filter(lyde_present == "TRUE", 
          lyde_established == "TRUE") %>% 
   mutate(species = "Lycorma delicatula")
 
 
+
 # plot map including these records
-map_lyde_noreg <- ggplot() +
+map_lyde_allRecords <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
   geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n all records minus reg incidents (blue)\nvs thinned (darkorange)") +
+  ggtitle("SLF lydemapR records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
   theme_bw()
 
 # patchwork display of plots
- map_lyde_allRecords + map_lyde_noreg +
+map_lyde_thinned + map_lyde_allRecords +
   plot_layout(ncol = 2)
 
 ```
 
-The spatial thinning was successful! However, the first plot does not help us to understand what data were eliminated by the spatial thinning. It would be an issue if we lost spatial extent for removing certain types of data. I believe this is likely due to our preference for records that represent established populations and for excluding regulatory incidents and unconfirmed populations, so I will plot the reduced raw dataset vs our thinned dataset. Indeed, regulatory incidents and unconfirmed populations account for most of the populations that we excluded (we want this). 
+The results of the spatial thinning aren't incredibly clear from the first plot. It seems that most of the spatial extent of the records was eliminated by either the data tidying or the spatial thinning (in the second case, this would be an issue). I believe this is likely due to our preference for records that represent established populations and presences and those obtained from biological surveys. If I am sacrificing spatial extent of the records by excluding records from citizen science platforms, I would rather have these included. So, I will produce a second plot including those records as the blue points.
+
+The second plot reveals that by including those points from citizen science platforms, I am not gaining much spatial extent of the records. The only other choice would be to accept records that do not represent established populations, which would not make for rigorous data. So, I will keep the records as-is (only including biological survey data, which are more reliable data).
 
 # 2. Combine records
 
@@ -476,7 +464,7 @@ slf_published_papers <- read_csv(file.path(here::here(), "data-raw", "slf_publis
 
 slf_published_papers %>%
   dplyr::select(!Notes) %>%
-  knitr::kable(format = "pipe")
+  kable::kable(format = "pipe")
 
 ```
 
