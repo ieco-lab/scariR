@@ -447,7 +447,7 @@ map_lyde_noreg <- ggplot() +
   geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n all records minus reg incidents (blue)\nvs thinned (darkorange)") +
+  ggtitle("SLF lydemapR records- \nall records est populations (blue)\nvs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -530,9 +530,9 @@ Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produ
 
 ```{r load in GBIF and lyde data}
 
-slf_gbif_coords3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-01-05.csv"))
+slf_gbif_coords3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-07-29.csv"))
 
-slf_lyde3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2023-12-12.csv"))
+slf_lyde3 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
 
 ```
 
@@ -576,7 +576,7 @@ head(slf_gbif_coords3)
 
 ```
 
-# 3. Join datasets and final tidying
+# 3. Final Data Tidying
 
 Now the data are in a format that is easier to join. We will join the data and save the cleaned coordinates. 
 
@@ -590,7 +590,7 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
+write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-07-29.csv"))
 
 ```
 
@@ -604,7 +604,7 @@ Both files will be written to the `vignettes-outputs` folder, which holds interm
 
 ```{r load in data}
 
-slf_all_coords <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-02-01.csv"))
+slf_all_coords <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-07-29.csv"))
 
 ```
 
@@ -613,22 +613,23 @@ slf_all_coords <- read_csv(file.path(here::here(), "vignette-outputs", "data-tab
 
 if(TRUE) {
 
-  slf_all_coords2 <- spThin::thin(loc.data = slf_all_coords, 
-                              lat.col = "latitude", long.col = "longitude",
-                              spec.col = "species",
-                              thin.par = 10,
-                              reps = 10, # number of passes
-                              # line below returns a list of data frames with the locations were preserved
-                              locs.thinned.list.return = TRUE, 
-                              write.files = TRUE, # returns list of thinned data as a separate .csv file
-                              # next, create a file that logs the thinning run, write the path to and name of the log file
-                              write.log.file = TRUE, 
-                              log.file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-02-01.txt")),
-                              # finally, tell it where to write the new files and what to call the thinned dataset
-                              out.dir = file.path(here::here(), "vignette-outputs", "data-tables"),
-                              out.base = paste0("slf_all_coords_cleaned_2024-02-01"),
-                              verbose = TRUE # give details of run in the console
-                              )
+  slf_all_coords2 <- spThin::thin(
+    loc.data = slf_all_coords, 
+    lat.col = "latitude", long.col = "longitude",
+    spec.col = "species",
+    thin.par = 10,
+    reps = 10, # number of passes
+    # line below returns a list of data frames with the locations were preserved
+    locs.thinned.list.return = TRUE, 
+    write.files = TRUE, # returns list of thinned data as a separate .csv file
+    # next, create a file that logs the thinning run, write the path to and name of the log file
+    write.log.file = TRUE, 
+    log.file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-07-29.txt")),
+    # finally, tell it where to write the new files and what to call the thinned dataset
+    out.dir = file.path(here::here(), "vignette-outputs", "data-tables"),
+    out.base = paste0("slf_all_coords_cleaned_2024-07-29"),
+    verbose = TRUE # give details of run in the console
+    )
 
 }
 
@@ -644,13 +645,13 @@ spThin::plotThin(thinned = slf_all_coords2)
 
 ```
 
-It seems from plot 3 that 7824-7826 records were retained during almost half of the reps. However, this is not very different from the maximum, so we will keep the maximum. 
+It seems from plot 3 that 813 records were retained during more of the reps. However, this is not very different from the maximum, so we will keep the maximum of 814.
 
 Now, lets load in the final thinned dataset for a final round of cleaning.
 
 ```{r read in thinned data}
 
-slf_all_coords2 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2024-02-01_thin1.csv"))
+slf_all_coords2 <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_cleaned_2024-07-29_thin1.csv"))
 
 ```
 
@@ -673,16 +674,16 @@ slf_all_coords3 <- slf_all_coords3 %>%
          "y" = "latitude")
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2024-02-01.csv")))
+write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_final_coords_2024-07-29.csv")))
 
 # also save as a .rds file
-write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_final_coords_2024-02-01.rds")))
+write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_final_coords_2024-07-29.rds")))
 
 ```
 
 ```{r map all points}
 
-slf_all_coords3 <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv"))
+slf_all_coords3 <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv"))
 
  map_all <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
@@ -698,7 +699,7 @@ slf_all_coords3 <- read_csv(file = file.path(here::here(), "vignette-outputs", "
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
     geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
     coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-    ggtitle("SLF presences N AMerica") +
+    ggtitle("SLF presences N America") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank()) +
@@ -735,7 +736,7 @@ SLF_by_longitude <- ggplot(data = slf_all_coords3) +
   theme_minimal()
 
 # save output
-ggsave(SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_final_all_coords_by_longitude.jpg"),
+ggsave(SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_all_coords_final_by_longitude.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -752,107 +753,23 @@ We now have half of the data we need to perform SDM! In the next vignette, we wi
 
 # Appendix
 
-## Manually remove points that MaxEnt threw errors for
+## Visualize changes in GBIF records over time
 
-If this next chunk is run, the compilation of the SLF data from section 2 will need to be re-run. This chunk was added to remove points from the tidied GBIF pull that Maxent was throwing errors for. IF points do not overlap the climate surface, Maxent will throw errors for them.
-
-```{r remove maxent errors}
+```{r visualize newest gbif records vs older pull}
 
 if(FALSE) {
 
-  slf_coords4 <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
-  
-  # locate coords that maxent threw errors for
-  slf_error_points <- slf_coords4 %>%
-    filter(x %in% c(-73.817129,
-                    -74.166321, 
-                    -74.008017, 
-                    -73.972261, 
-                    -73.999422,
-                    -74.024064, 
-                    -73.720957,
-                    -74.189445,
-                    -76.041131,
-                    -76.340849,
-                    -71.718748,
-                    -74.574037, 
-                    -74.662098,
-                    120.230003,
-                    -74.914262, 
-                    -75.054844,
-                    126.160004, 
-                    122.154455,
-                    126.559998,
-                    126.589996,
-                    126.459999, 
-                    121.73337
-    ))
-  
-  # plot error points
-  map_errors <- ggplot() +
-    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_error_points, aes(x = x, y = y), color = "darkorange", size = 2) +
-    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
-    ggtitle("SLF errors") +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank()) +
-    theme_bw()
-  
-  # all points are real (I was concerned that a - sign may have been missed), so these points will need to be removed
-  
-  # remove error points, write to new csv
-  slf_coords4 <- slf_coords4 %>% 
-     filter(!x %in% c(-73.817129,
-                    -74.166321, 
-                    -74.008017, 
-                    -73.972261, 
-                    -73.999422,
-                    -74.024064, 
-                    -73.720957,
-                    -74.189445,
-                    -76.041131,
-                    -76.340849,
-                    -71.718748,
-                    -74.574037, 
-                    -74.662098,
-                    120.230003,
-                    -74.914262, 
-                    -75.054844,
-                    126.160004, 
-                    122.154455,
-                    126.559998,
-                    126.589996,
-                    126.459999, 
-                    121.73337
-    ))
-  
-  write_csv(slf_coords4, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05_v1.csv"))
-  
-  # also save as a .rds file
-  write_rds(slf_coords4, file = file.path(here::here(), "data", "slf_gbif_cleaned_2024-01-05_v1.rds"))
-
-}
-
-```
-
-## Visualize changes in GBIF records between initial 2020 data pull and newest pull
-
-```{r visualize 2023 pulled gbif records vs 2020 pull}
-
-if(FALSE) {
-
-  # old data
-  slf_2020 <- read_csv(file = file.path(here::here(), "data-raw", "data-old", "slf_gbif_cleaned_coords_2022.csv"))
-  
   # new data
-  slf_new <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+  slf_new <- read_csv(file = file.path(here::here(), "data-raw", "data-old", "slf_gbif_cleaned_2024-07-29.csv"))
+  
+  # old data
+  slf_old <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
   
   # plot SLF
   map_slf <- ggplot() +
     geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_2020, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
-    geom_point(data = slf_new, aes(x = x, y = y), color = "blue", shape = 2) +
+    geom_point(data = slf_new, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
+    geom_point(data = slf_old, aes(x = x, y = y), color = "blue", shape = 2) +
     coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
     ggtitle("SLF new points (darkorange) vs old (blue)") +
     theme(panel.grid.major = element_blank(),
@@ -872,6 +789,6 @@ if(FALSE) {
 
 2. Bona, S. D., L. Barringer, P. Kurtz, J. Losiewicz, G. R. Parra, and M. R. Helmus. 2023, January 30. lydemapr: an R package to track the spread of the invasive Spotted Lanternfly (Lycorma delicatula, White 1845) (Hemiptera, Fulgoridae) in the United States. bioRxiv. 
 
-3. GBIF Occurrence Download https://doi.org/10.15468/dl.8mz3km Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2024-01-05
+3. GBIF Occurrence Download https://doi.org/10.15468/dl.pqxya7 Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2024-07-29
 
 
