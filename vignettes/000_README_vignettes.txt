@@ -19,20 +19,45 @@ Initializes renv, saves data objects for internal use
 v0- initial version
 
 
-----------010_initialize_pkg.R----------
+----------020_retrieve_SLF_records.Rmd----------
 
 ## About
 
-
+retrieves SLF records from various databases and literature sources, harmonizes and compiles them
 
 ## Changelog
 
 v0- initial version
 v1
 v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF workflow
-v3- 2024-07-29- rework using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
+v3- 2024-07-29- rework methods and data update- using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
 
 
+----------030_retrieve_bioclim_variables.Rmd----------
+
+## About
+
+This vignette downloads and tidies the bioclimatic covariates for our models. It also outlines the process for choosing the final set for our models via reducing co-linearity.
+
+## Changelog
+
+v0- initial version
+v1
+v2
+v3- 2024-07-29- rework of methods and data update- adds SSP126 and SSP585 to analyses
+
+
+
+----------040_setup_global_MaxEnt_model.Rmd----------
+
+## About
+
+Preparations for running the global-scale model, including cropping rasters, choosing random background points, and plotting all data elements.
+
+## Changelog
+
+v0- initial version
+v1- 2024-07-31- rework of methods and data update- added cropping of other ssp scenario rasters
 
 
 ----------050_run_global_MaxEnt_model.Rmd----------
@@ -46,6 +71,7 @@ This vignette creates all data objects needed to run the global model. It trains
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old. creates v1 of the global model
 v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
+v3- 2024-07-31- rework of methods and data update- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
 
 
 

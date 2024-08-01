@@ -417,6 +417,10 @@ lyde_raw <- read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_co
 # thinned data
 lyde_thinned <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
 
+# ensure data points represent presences
+lyde_raw <- lyde_raw %>%
+  filter(lyde_present == "TRUE") 
+
 # plot map of NAmerica
 map_lyde_allRecords <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
@@ -424,7 +428,7 @@ map_lyde_allRecords <- ggplot() +
   geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
   coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
-  ggtitle("SLF lydemapR records- \n all records (blue)\nvs thinned (darkorange)") +
+  ggtitle("SLF lydemapR records- \nall records (blue)\nvs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
@@ -435,8 +439,7 @@ map_lyde_allRecords <- ggplot() +
 
 # exclude regulatory incidents 
 lyde_raw1 <- lyde_raw %>%
-  filter(lyde_present == "TRUE", 
-         lyde_established == "TRUE") %>% 
+  filter(lyde_established == "TRUE") %>% 
   mutate(species = "Lycorma delicatula")
 
 

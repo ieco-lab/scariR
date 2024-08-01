@@ -288,15 +288,6 @@ terra::crs(main_layer)
 
 Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326`, and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`. 
 
-```{r set wd}
-
-  mypath <- file.path(here::here() %>% 
-                        dirname(),
-                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-```
-
-
 This chunk will take a very long time to run... so maybe find a good book to read.
 
 ```{r loop to tidy rasters}
@@ -355,24 +346,19 @@ if(FALSE) {
 
 Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. 
 
-```{r get file names}
-
-# directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
-    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE)
-
-
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
-    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
-
-```
-
-
 ```{r conversion of .tif to .asc files}
 
 if(FALSE){
+  
+  mypath <- file.path(here::here() %>% 
+                        dirname(),
+                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+    gsub(pattern = ".tif", replacement = "_10km.asc")
   
   # loop to convert to .ascii
   for(a in seq_along(env.files)){
@@ -381,12 +367,7 @@ if(FALSE){
     rast.hold <- terra::rast(env.files[a])
     
     # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "v1_maxent", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
     
     # remove object once its done
     rm(rast.hold)
@@ -402,6 +383,22 @@ This additional step can be run on-demand. I will aggregate selected rasters to 
 ```{r on-demand aggregation of rasters}
 
 if (FALSE) {
+  
+  # pathing
+  mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  
+  
+  # directory of files to modify
+  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE)
+  # output file names
+  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE) %>%
+    gsub(pattern = ".tif", replacement = ".asc")
+  
+  
   
   # loop to aggregate and convert to .ascii
   for(a in seq_along(env.files)){

@@ -1,15 +1,15 @@
 ---
-title: "Setup for global MaxEnt Models (chapter 1)"
+title: "Setup for global-scale MaxEnt model"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-01-05"
+date: "2024-07-31"
 output: html_document
 ---
 # Overview
 
-In the previous vignette, I retrieved and formatted rasters of 24 global-scale climate and human impact variables from [CHELSA](https://chelsa-climate.org/). These represent some of the most relevant variables for the accomplishment of my goal, which is to explain the distribution for Lycorma delicatula according to climate. I also retrieved climate change versions of these variables, created by the [CMIP6](https://pcmdi.llnl.gov/CMIP6/) climate modeling project. These variables were standardized and formatted for my needs. Additionally, the most relevant variables were chosen for all future models. 
+In the previous vignette, I retrieved and formatted rasters of 24 global-scale climate and human impact variables from [CHELSA](https://chelsa-climate.org/). These represent some of the most relevant variables for the accomplishment of my goal, which is to explain the distribution for Lycorma delicatula according to climate. I also retrieved climate change versions of these variables, created by the [CMIP6](https://pcmdi.llnl.gov/CMIP6/) climate modeling project. These variables were standardized and formatted for my needs. The most relevant variables were chosen for all future models. 
 
-The goal is to produce three models for chapter 1: a global model, a regional_invaded model, and a regional_native model. All three models will be based on historical (1981-2010) climate data and will be extrapolated for climate change using the CMIP6 rasters. Each model will be based on different training and testing ranges. The global model will be trained and tested on all available climate data, which will be split up into 10 random folds. The regional models will be trained on the regional subset of presence data. The regional_native model will be trained on SLF presences and background points chosen from provinces in China which contain known SLF presences. This model will be tested using SLF presence data from the USA. The regional_invaded model will do the opposite: It will be trained on the data from the USA and tested using data from the native range in China. All three of these models will be considered in tandem during analyses. Here is a table that explains the models. The following table outlines the training and testing of these models:
+The goal is to produce four models: a global model, a native range model, and two invaded models based on the invaded ranges in North America and east Asia. All three models will be based on historical (1981-2010) climate data and will be extrapolated for climate change using the CMIP6 rasters. Each model will be based on different training and testing ranges. The global model will be trained and tested on all available climate data, which will be split up into 10 random folds. The regional models will be trained on the regional subset of presence data. The regional_native model will be trained on SLF presences and background points chosen from provinces in China which contain known SLF presences. This model will be tested using SLF presence data from the USA. The invaded models will do the opposite: they will be trained on the data from the USA and tested using data from the native range in China. All three of these models will be considered in tandem during analyses. Here is a table that explains the models. The following table outlines the training and testing of these models:
 
 ```{r model_info table}
 
@@ -80,7 +80,7 @@ map_style <- list(
 
 First, I will need to create a few copies of the bioclim layers that I tidied in the last vignette. I will create a set of rasters cropped to most of North America, which will be used to project all model outputs from both the regional and global models. 
 
-## Historical Rasters- N America
+## 1.1 Historical Rasters- N America
 
 These raster copies will be used to project all models. We are specifically interested in the suitable area for the entire North American continent, but model training should not take place at this scale because it is too large. When projecting a model to create a raster of suitability, SDMtune requires a raster stack containing a layer for each covariate that was used to create the model, with the same naming convention. 
 
@@ -95,7 +95,7 @@ These raster copies will be used to project all models. We are specifically inte
 
 ```{r save table from above, if desired}
 
-if(FALSE) {
+if (FALSE) {
   
   # save as .csv
   write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "global_model_info.csv"))
@@ -194,9 +194,11 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
-## CMIP6 Rasters- N America
+## 1.2 CMIP6 Rasters- N America
 
 We will repeat the same process for the CMIP6 rasters. We only need versions cropped to North America for projection purposes.
+
+### SSP370
 
 ```{r set wd}
 
@@ -278,6 +280,122 @@ bio11_CMIP6_df <- terra::as.data.frame(bio11_CMIP6, xy = TRUE)
 
 ```
 
+I will repeat this process for the other SSP scenarios as well
+
+### SSP126
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp126_GFDL/v1_maxent_10km")
+
+```
+
+```{r setup for cropping bioclim layers}
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. 
+  grep("bio2_2041-2070_gfdl_126_global.asc|bio11_2041-2070_gfdl_126_global.asc|bio12_2041-2070_gfdl_126_global.asc|bio15_2041-2070_gfdl_126_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\_global.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_126_global.asc|bio11_2041-2070_gfdl_126_global.asc|bio12_2041-2070_gfdl_126_global.asc|bio15_2041-2070_gfdl_126_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
+
+# extent object for N America (retrieved 11-30-2023)
+ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
+
+```
+
+```{r loop to crop bioclim layers to N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+```
+
+### SSP585
+
+```{r set wd}
+
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp585_GFDL/v1_maxent_10km")
+
+```
+
+```{r setup for cropping bioclim layers}
+
+# lists of target files in the directory
+# load in bioclim layers to be cropped- the original .asc files
+env.files <- list.files(path = file.path(mypath), pattern = "\\.asc$", full.names = TRUE) %>%
+# extract the 4 bioclim layers I will be using in my models. 
+  grep("bio2_2041-2070_gfdl_585_global.asc|bio11_2041-2070_gfdl_585_global.asc|bio12_2041-2070_gfdl_585_global.asc|bio15_2041-2070_gfdl_585_global.asc", ., value = TRUE)
+
+# output file names
+output.files <- list.files(path = file.path(mypath), pattern = "\\_global.asc$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_585_global.asc|bio11_2041-2070_gfdl_585_global.asc|bio12_2041-2070_gfdl_585_global.asc|bio15_2041-2070_gfdl_585_global.asc", ., value = TRUE) %>%
+  gsub(pattern = "global", replacement = "NAmerica")
+
+# extent object for N America (retrieved 11-30-2023)
+ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
+
+```
+
+```{r loop to crop bioclim layers to N america}
+
+# view list of filetypes for terra, use .ascii
+View(terra::gdal(drivers = TRUE))
+
+if(FALSE) {
+  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)){
+
+    #ensure that the CRS is consistent
+    rast.hold <- terra::rast(env.files[a])
+    
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(x = rast.hold, filename = file.path(mypath, output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
+    
+    # remove object once its done
+    rm(rast.hold)
+    
+  }
+  
+}
+
+```
+
 # 2. Select Background Points for model
 
 MaxEnt also requires a set of "background" points that it will use to sample these rasters. MaxEnt can randomly pick these internally, but it is more intuitive to manually select them. I can also account for latitudinal stretching of cell size and other factors if these are selected manually. Just for review, these points are used to characterize the variables that affect SLF distribution. Temperature / precipitation values will be extracted from the rasters for each point in this set. MaxEnt will then use these points to calculate an equation that describes the relationship of SLF with its environment and predict suitability. Note that only one set of background points need to be created for each of the global and regional models.
@@ -287,8 +405,9 @@ First, I will load in known SLF presences so that background sampling does not o
 ```{r load in SLF presence}
 
 # dismo requires the base function (not tidyverse)
-slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
-   dplyr::select(-species) 
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-07-29.rds")) %>%
+  dplyr::select(-species) %>%
+  as.data.frame()
 
 ```
 
@@ -318,7 +437,7 @@ set.seed(1)
 # generate random points 
 global_points <- dismo::randomPoints(
   mask = global_bio2, 
-  n = 20000, # default number used by maxent
+  n = 20000, # double the default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
   lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
@@ -327,9 +446,9 @@ global_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
+write_csv(x = global_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
 # save as rds file
-write_rds(global_points, file = file.path(here::here(), "data", "global_background_points_v2.rds"))
+write_rds(global_points, file = file.path(here::here(), "data", "global_background_points_v3.rds"))
   
   
 ```
@@ -345,7 +464,7 @@ mypath <- file.path(here::here() %>%
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v2.csv"))
+global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
 
 ```
 
@@ -364,12 +483,14 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 
 ```{r save plot}
 
-ggsave(global_background_plot, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
-       height = 8, 
-       width = 10,
-       device = "jpeg",
-       dpi = "retina")
+ggsave(
+  global_background_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
 
 ```
 
@@ -404,7 +525,7 @@ ggsave(
   global_slf_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points.jpg"),
   height = 8, 
-  width = 10,
+  width = 12,
   device = "jpeg",
   dpi = "retina"
   )
@@ -456,7 +577,7 @@ global_background_plot <- global_background_plot +
 
 global_patchwork <- (global_slf_plot / global_background_plot) +
   plot_layout(axes = "collect", axis_titles = "collect") +
-  plot_annotation(title = "'global' model elements") 
+  plot_annotation(title = "'global' model presences (A) and background points (B)") 
 
 ```
 

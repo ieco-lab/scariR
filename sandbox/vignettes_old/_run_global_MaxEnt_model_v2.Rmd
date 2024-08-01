@@ -1,16 +1,15 @@
 ---
-title: "Run global-scale MaxEnt model"
+title: "Run 'global' MaxEnt model"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-07-31"
+date: "2024-01-09"
 output: html_document
 ---
-
 # Overview
 
 In the last vignette, I set up for the models I will run by cropping my chosen environmental covariates to the proper extents for both training and projecting the models. I also produced the background point datasets that are needed for MaxEnt to run.
 
-In this vignette, I will start training MaxEnt models and obtaining the outputs I will need for my analysis! This vignette will train the global scale model and the next vignette will train the regional scale models. I begin by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. 
+In this vignette, I will (finally) start training MaxEnt models and obtaining the outputs I will need for my analysis! This vignette will train the global scale model and the next vignette will train the regional scale models. I begin by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. 
 
 This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics_CV.R`, `create_MaxEnt_suitability_maps_CV.R`, and `predict_xy_suitability_CV.R`. Please see these subvignettes for a step-by-step guide to the creation of these functions. This package also has versions of the same functions that are designed for MaxEnt models without cross-validation. These share the same name but without the `_CV` ending and will be used for the regional models.
 
@@ -18,7 +17,7 @@ This vignette has 3 subvignettes (051-053) that each outline and comment the bas
 
 # Setup
 
-*CURRENT MODEL VERSION: v3*
+*CURRENT MODEL VERSION: v2*
 
 ```{r load necesssary packages, echo = FALSE}
 
@@ -66,26 +65,9 @@ options(java.parameters = "-Xmx2048m")
 
 # 1. Format Data for Global Model
 
-I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used in the `SDMtune::train()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets.
+## Create input datasets for modeling
 
-## 1.1 Import data
-
-First, I will load in the SLF presence dataset created in vignette 030 and the background points dataset created in the last vignette.
-
-```{r load in points datasets}
-
-# slf presences
-p_slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-07-29.rds")) %>%
-  dplyr::select(-species) %>%
-  as.data.frame()
-
-# entire eastern USA background point set
-a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds")) %>%
-  as.data.frame()
-
-```
-
-Next, I will load in and stack the covariates needed for the model.
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets.
 
 ```{r load in historical covariates}
 
@@ -98,41 +80,42 @@ mypath <- file.path(here::here() %>%
 x_global_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
     grep("bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
-```
+# the env covariates used to project to N America
+x_NAmerica_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
-I will load in 3 sets of CMIP6 covariates, 1 per ssp scenario.
+```
 
 ```{r load in CMIP6 covariates}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/future_climate_rasters/chelsa2.1_30arcsec")
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
 
-
-
-# SSP126
-x_global_126_env_covariates_list <- list.files(
-  path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
+# the env covariates for performing xy predictions for global slf and IVR points
+x_global_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
   # dont include Access to cities
   grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
-
-# SSP370
-x_global_370_env_covariates_list <- list.files(
-  path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
+# the env covariates for creating prediction maps for N America
+x_NAmerica_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
   # dont include Access to cities
   grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
+```
 
-## SSP585
-x_global_585_env_covariates_list <- list.files(
-  path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
-  # dont include Access to cities
-  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+In this chunk, I will load in the SLF presence dataset created in vignette 030 and the background points dataset created in the last vignette.
+
+```{r load in points datasets}
+
+# slf presences
+p_slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
+  dplyr::select(-species)
+
+# entire eastern USA background point set
+a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v2.rds"))
 
 ```
 
@@ -144,6 +127,7 @@ I will import rasters of the environmental covariates, stack them and gather sum
 env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
 
 ```
+
 
 ```{r stack historical covariates and make naming consistent}
 
@@ -162,84 +146,84 @@ minmax(x_global_hist_env_covariates)
 names(x_global_hist_env_covariates) <- env_layer_names
 # confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
 
-```
+# NAmerica rasters
+# stack env covariates
+x_NAmerica_hist_env_covariates <- terra::rast(x = x_NAmerica_hist_env_covariates_list)
 
-Now perform the same operation but times 3 for the CMIP6 models.
+# attributes
+nlyr(x_NAmerica_hist_env_covariates)
+names(x_NAmerica_hist_env_covariates)
+minmax(x_NAmerica_hist_env_covariates)
+# ext(x_NAmerica_hist_env_covariates)
+# crs(x_NAmerica_hist_env_covariates)
+
+names(x_NAmerica_hist_env_covariates) <- env_layer_names
+
+```
 
 ```{r stack CMIP6 covariates and make naming consistent}
 
 # stack env covariates
-x_global_126_env_covariates <- terra::rast(x = x_global_126_env_covariates_list)
+x_global_CMIP6_env_covariates <- terra::rast(x = x_global_CMIP6_env_covariates_list)
 
 # attributes
-nlyr(x_global_126_env_covariates)
-names(x_global_126_env_covariates)
-minmax(x_global_126_env_covariates)
-# ext(x_global_126_env_covariates)
-# crs(x_global_126_env_covariates)
+nlyr(x_global_CMIP6_env_covariates)
+names(x_global_CMIP6_env_covariates)
+minmax(x_global_CMIP6_env_covariates)
+# ext(x_global_CMIP6_env_covariates)
+# crs(x_global_CMIP6_env_covariates)
 
-names(x_global_126_env_covariates) <- env_layer_names
+names(x_global_CMIP6_env_covariates) <- env_layer_names
+
 
 
 # stack env covariates
-x_global_370_env_covariates <- terra::rast(x = x_global_370_env_covariates_list)
+x_NAmerica_CMIP6_env_covariates <- terra::rast(x = x_NAmerica_CMIP6_env_covariates_list)
 
 # attributes
-nlyr(x_global_370_env_covariates)
-names(x_global_370_env_covariates)
-minmax(x_global_370_env_covariates)
-# ext(x_global_370_env_covariates)
-# crs(x_global_370_env_covariates)
+nlyr(x_NAmerica_CMIP6_env_covariates)
+names(x_NAmerica_CMIP6_env_covariates)
+minmax(x_NAmerica_CMIP6_env_covariates)
+# ext(x_NAmerica_CMIP6_env_covariates)
+# crs(x_NAmerica_CMIP6_env_covariates)
 
-names(x_global_370_env_covariates) <- env_layer_names
-
-
-# stack env covariates
-x_global_585_env_covariates <- terra::rast(x = x_global_585_env_covariates_list)
-
-# attributes
-nlyr(x_global_585_env_covariates)
-names(x_global_585_env_covariates)
-minmax(x_global_585_env_covariates)
-# ext(x_global_585_env_covariates)
-# crs(x_global_585_env_covariates)
-
-names(x_global_585_env_covariates) <- env_layer_names
-
-
+names(x_NAmerica_CMIP6_env_covariates) <- env_layer_names
   
 ```
 
 ```{r remove unneeded objects}
 
 rm(x_global_hist_env_covariates_list)
-rm(x_global_126_env_covariates_list)
-rm(x_global_370_env_covariates_list)
-rm(x_global_585_env_covariates_list)
+rm(x_NAmerica_hist_env_covariates_list)
+rm(x_global_CMIP6_env_covariates_list)
+rm(x_NAmerica_CMIP6_env_covariates_list)
 
 ```
 
-## 1.2 create input data objects
+### create input data object
 
 I will need to combine the above covariate, presence and background point datasets into a single dataset to feed into MaxEnt. This dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model, so I will create this now.
 
 ```{r prepare SWD data object}
 
-global_SWD <- SDMtune::prepareSWD(
-  species = "Lycorma delicatula",
-  env = x_global_hist_env_covariates,
-  p = p_slf_points,
-  a = a_global_background_points,
-  verbose = TRUE # print helpful messages
-  )
+if (TRUE) {
 
-global_SWD@coords # coordinates
-global_SWD@pa # presence / absence (background counted as absence)
-global_SWD@data # extracted data from 
+  global_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
+                                    env = x_global_hist_env_covariates,
+                                    p = p_slf_points,
+                                    a = a_global_background_points,
+                                    verbose = TRUE # print helpful messages
+                                    )
+  
+  global_SWD@coords # coordinates
+  global_SWD@pa # presence / absence (background counted as absence)
+  global_SWD@data # extracted data from 
+
+}
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 5 presence records, so this is acceptable. I will also save the output to be used later.
+I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 4 presence records, so this is acceptable. I will also save the output to be used later.
 
 ```{r save SWD file}
 
@@ -262,11 +246,12 @@ I will use 10-fold random cross validation.
 
 global_trainTest <-  SDMtune::trainValTest(
   x = global_SWD,
-  test = 0.2, # set used for predicting maps and suitability values
-  only_presence = TRUE, # only split presences and recycle bg points
+  test = 0.2,
+  only_presence = TRUE,
   seed = 3
 )
 
+# separate off training data
 global_train <- global_trainTest[[1]]
 global_test <- global_trainTest[[2]]
 
@@ -280,7 +265,7 @@ global_train@data # extracted data from
 
 # create random folds
 global_trainFolds <- SDMtune::randomFolds(
-  data = global_SWD,
+  data = global_train,
   k = 10, # 10 folds
   only_presence = TRUE,
   seed = 4
@@ -298,14 +283,14 @@ First, I will train a model with 10 cross-validated replicates. The model will o
 * replicates = all final models will have 10 replicates
 * iterations = 5000. This is the max number of iterations for the optimization algorithm to perform before stopping training. Increasing this number from the default of 500 allows the algorithm to make more refined predictions.
 
-I will use these hyperparameters to train the initial model, but these parameters may change based on model tuning, which I will perform next. 20% of the held apart data will be used for the tuning the hyperparameters (val), while the other 20% will be used for testing the models.
+I will use these hyperparameters to train the initial model, but these parameters may change based on model tuning, which I will perform next.
 
 ```{r train maxent model}
 
 global_model <- SDMtune::train(
   method = "Maxent",
   data = global_train,
-  folds = global_trainFolds, # 10 folds for dataset
+  folds = global_trainFolds, # 5 folds for dataset
   fc = "lqpht", # feature classes set to ALL
   iter = 5000, # number of iterations
   progress = TRUE
@@ -313,7 +298,7 @@ global_model <- SDMtune::train(
 
 ```
 
-## 2.1 Tuning MaxEnt Model
+## Tuning MaxEnt Model
 
 Next, I will perform model tuning by varying specific hyperparameters. I selected the hyperparameters that I thought were best for the model based on numerous papers. However, modeling papers for other species have made different choices for the parameter selection that I did not. Luckily, `SDMtune` makes it easy to select the best fit set of hyperparameters from a range of possibilities using the `gridSearch()` function. This function trains a different model for every possible combination of hyperparameters that is listed. I can then pick the best model based on AUC, TSS or AICc. I selected these hyperparameters for specific reasons listed in the literature.
 
@@ -329,64 +314,35 @@ Regularization penalizes overfitting in the model. If a model is too fit to a ra
 
 * Radosavljevic and Anderson 2014 used a range of regularization multipliers, from 0.25 to 2, to test for the most appropriate value.
 
-I will compare the models with the highest test AUC and TSS values. I will also save all of the model variations in a `.rds` object.
+I will select the model with the highest test AUC value. I will also save all of the model variations in a `.rds` object.
 
 ```{r grid search tunable args}
 
-# the arguments that can be tuned later
-getTunableArgs(global_model)
-
-# list of hyperparameters
-hypers <- list(
-  reg = c(0.25, 0.5, 1, 1.5, 2), # regularization multiplier
-  fc = c("h", "qpht", "lqpht") # feature classes
-  )
-
-```
-
-```{r tune based on test AUC}
-  
 if (TRUE) {
-
+  
+  # the arguments that can be tuned later
+  getTunableArgs(global_model)
+  
+  # list of hyperparameters
+  hypers <- list(
+    reg = c(0.25, 0.5, 1, 1.5, 2), # regularization multiplier
+    fc = c("h", "qpht", "lqpht") # feature classes
+    )
+  
   # Train a model with all possible combinations of hyperparameters
-  global_model_tuned_auc <- SDMtune::gridSearch(
+  global_model_tuned <- SDMtune::gridSearch(
     model = global_model, 
     hypers = hypers, # hyperparameter list
-    metric = "auc",
+    metric = "auc", 
     save_models = TRUE,
     interactive = TRUE, 
     progress = TRUE
     )
   
-  
   # show tuning results
-  global_model_tuned_auc@results
+  global_model_tuned@results
   # select number of best model
-  best.model.auc <- which.max(global_model_tuned_auc@results$test_AUC)
-  
-}
-
-```
-
-```{r tune based on test TSS}
-  
-if (FALSE) {
-
-  # Train a model with all possible combinations of hyperparameters
-  global_model_tuned_tss <- SDMtune::gridSearch(
-    model = global_model, 
-    hypers = hypers, # hyperparameter list
-    metric = "tss", 
-    save_models = TRUE,
-    interactive = TRUE, 
-    progress = TRUE
-    )
-  
-  
-  # show tuning results
-  global_model_tuned_tss@results
-  # select number of best model
-  best.model.tss <- which.max(global_model_tuned_tss@results$test_TSS)
+  best.model <- which.max(global_model_tuned@results$test_AUC)
   
 }
 
@@ -394,7 +350,7 @@ if (FALSE) {
 
 Based on the model tuning, we see that the highest test AUC value was attributed to the model with a regularization multiplier of 1.5 and ALL features (model 12). We will need to re-train the model using these parameters.
 
-## 2.2 Re-training based on tuning
+## Re-training based on tuning
 
 ```{r train maxent model}
 
@@ -410,7 +366,7 @@ global_model <- SDMtune::train(
 
 ```
 
-## 2.3 Summary Statistics
+## Summary Statistics
 
 This function produces all summary statistics for this model. This list includes marginal and univariate response curves, jackknife tests, variable importance, thresholds and confusion matrices, among other statistics. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`. 
 
@@ -419,7 +375,7 @@ This function produces all summary statistics for this model. This list includes
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v3")
+                     "maxent/models/slf_global_v2")
 
 slfSpread::compute_MaxEnt_summary_statistics_CV(
   model.obj = global_model, 
@@ -741,7 +697,7 @@ spatial_autocor$plots
 
 ```
 
-The range of spatial autocorrelation is estimated at 2,263,953 meters for the presence/absence data I am using to build the model. I will also use an interactive tool to visualize block size based on pa data.
+The range of spatial autocorrelation is estimated at 1,495,777 meters for the presence/absence data I am using to build the model. I will also use an interactive tool to visualize block size based on pa data.
 
 ```{r visualize block sizes}
 
@@ -752,7 +708,7 @@ blockCV::cv_block_size(
 
 ```
 
-I will go ahead and use the 2.25 million meter distance for the spatial blocks.
+I will go ahead and use the 1.49 million meter distance for the spatial blocks.
 
 ```{r}
 
@@ -761,7 +717,7 @@ global_folds <- blockCV::cv_spatial(
   column = "pa",
   r = x_global_hist_env_covariates,
   k = 5,
-  size = 2263953,
+  size = 1495772,
   hexagon = FALSE, # I am pretty sure the function used to calculate the autocorrelation distance used square blocks
   selection = "random",
   iteration = 50,
@@ -795,7 +751,7 @@ This method did not work because about 5 test folds out of 10 received 0 test po
 global_folds <- blockCV::cv_cluster(
   x = global_all_points_with_data,
   column = "pa",
-  k = 5,
+  k = 10,
   r = x_global_hist_env_covariates,
   scale = TRUE,
   raster_cluster = TRUE,
@@ -823,8 +779,6 @@ Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformat
 Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
 
 Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
-
-Valavi, R., J. Elith, J. J. Lahoz-Monfort, and G. Guillera-Arroita. 2019. blockCV: An r package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models. Methods in Ecology and Evolution 10:225–232.
 
 VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
 
