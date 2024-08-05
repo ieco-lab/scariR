@@ -75,13 +75,11 @@ First, I will load in the SLF presence dataset created in vignette 030 and the b
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-07-29.rds")) %>%
-  dplyr::select(-species) %>%
-  as.data.frame()
+p_slf_points <- readr::read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
+  dplyr::select(-species) 
 
 # entire eastern USA background point set
-a_global_background_points <- read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds")) %>%
-  as.data.frame()
+a_global_background_points <- readr::read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds")) 
 
 ```
 
@@ -239,7 +237,7 @@ global_SWD@data # extracted data from
 
 ```
 
-I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 5 presence records, so this is acceptable. I will also save the output to be used later.
+I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 2 presence records, so this is acceptable. I will also save the output to be used later.
 
 ```{r save SWD file}
 
@@ -281,7 +279,7 @@ global_train@data # extracted data from
 
 # create random folds
 global_trainFolds <- SDMtune::randomFolds(
-  data = global_SWD,
+  data = global_train,
   k = 10, # 10 folds
   only_presence = TRUE,
   seed = 4
@@ -354,7 +352,7 @@ if (TRUE) {
     model = global_model, 
     hypers = hypers, # hyperparameter list
     metric = "auc",
-    save_models = FALSE,
+    save_models = TRUE,
     interactive = TRUE, 
     progress = TRUE
     )
@@ -368,6 +366,8 @@ if (TRUE) {
 }
 
 ```
+
+Based on the test AUC metric, we see that the highest value was attributed to the model with a regularization multiplier of 1.5 and ALL features (model 12). We will need to re-train the model using these parameters. I will also check based on the TSS.
 
 ```{r tune based on test TSS}
   
@@ -393,7 +393,7 @@ if (TRUE) {
 
 ```
 
-Based on the model tuning, we see that the highest test AUC value was attributed to the model with a regularization multiplier of 1.5 and ALL features (model 12). We will need to re-train the model using these parameters.
+
 
 ## 2.2 Re-training based on tuning
 
@@ -435,6 +435,10 @@ slfSpread::compute_MaxEnt_summary_statistics_CV(
   plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
   )
 
+dir.create(file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models/slf_global_v3"))
+
 ```
 
 I will now save the results from the model tuning that I performed a few chunks ago, because I have created the directory for these model results. I will also save the gridded result figure manually from the Viewer pane to the model directory folder that was created using `compute_MaxEnt_summary_statistics_CV()`.
@@ -445,28 +449,15 @@ I will now save the results from the model tuning that I performed a few chunks 
 
 # save df results of model tuning
 write.csv(global_model_tuned_auc@results, file = file.path(mypath, "global_model_tuning_auc_results.csv"))
-
-# save tuned models
-write_rds(global_model_tuned_auc, file = file.path(mypath, "global_model_tuned_auc.rds"))
-
-
-# save df results of model tuning
 write.csv(global_model_tuned_tss@results, file = file.path(mypath, "global_model_tuning_tss_results.csv"))
 
 # save tuned models
+write_rds(global_model_tuned_auc, file = file.path(mypath, "global_model_tuned_auc.rds"))
 write_rds(global_model_tuned_tss, file = file.path(mypath, "global_model_tuned_tss.rds"))
 
 ```
 
 # 3. Create Outputs for Analysis
-
-## Create distribution map for area of interest
-
-Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps_CV()`.
-
-I will take the above map and reclassify it so that areas that aren't suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum training presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
-
-I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of MaxEnt predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
 
 ```{r set wd}
 
@@ -486,11 +477,15 @@ if (FALSE) {
 
 ```
 
-I will also create global raster predictions.
+## 3.1 Create suitability maps- mean and thresholded
 
-Global predictions
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps_CV()`.
 
-```{r predict mean and thresholded suitability maps for historical data}
+I will take the above map and reclassify it so that areas that aren't suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum training presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
+
+I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of MaxEnt predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
+
+```{r predict suitability maps for historical data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
@@ -502,7 +497,7 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
   clamp.pred = TRUE,
   thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
-  map.thresh.extra = "MTP",
+  map.thresh.extra = "MTP", # whether an added underlayer threshold should be plotted (MTP plotted under MTSS)
   summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 )
 
@@ -510,16 +505,32 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 Lastly, I will create a suitability map for the projected 2041-2070 climate data for N. America.
 
-Global
-
-```{r predict normal and thresholded suitability maps for CMIP6 data}
+```{r predict suitability maps for SSP126 data}
 
 slfSpread::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_global_CMIP6_env_covariates, 
+  env.covar.obj = x_global_126_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp126", # name of area or time period projected to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+)
+
+```
+
+```{r predict suitability maps for SSP370 data}
+
+slfSpread::create_MaxEnt_suitability_maps_CV(
+  model.obj = global_model,
+  model.name = "global", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_global_370_env_covariates, 
   describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
   thresh = c("MTP", "MTSS"),
@@ -530,27 +541,43 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 ```
 
-## Predict suitability for known SLF presences
+```{r predict suitability maps for SSP585 data}
+
+slfSpread::create_MaxEnt_suitability_maps_CV(
+  model.obj = global_model,
+  model.name = "global", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_global_585_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp585", # name of area or time period projected to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+)
+
+```
+
+## 3.2 Predict suitability for known SLF presences
 
 I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the known SLF populations. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
 
 During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
 
-### Historical Data
-
 ```{r data import}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v2")
+                     "maxent/models/slf_global_v3")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
   dplyr::select(-species)
 
 ``` 
 
-```{r predictions for SLF coordinate data}
+```{r predict for SLF coordinate data- historical}
 
 slfSpread::predict_xy_suitability_CV(
   xy.obj = slf_presences,
@@ -565,16 +592,29 @@ slfSpread::predict_xy_suitability_CV(
 
 ```
 
-### CMIP6 Data
-
 I will repeat the same process for the CMIP6 data.
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r  predict for SLF coordinates- SSP126}
 
 slfSpread::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
+  model.obj = global_model,
+  mypath = mypath,
+  clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "global_slf_all_coords_2041-2070_GFDL_ssp126"
+)
+
+```
+
+```{r predict for SLF coordinates- SSP370}
+
+slfSpread::predict_xy_suitability_CV(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_370_env_covariates,
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
@@ -584,7 +624,22 @@ slfSpread::predict_xy_suitability_CV(
 
 ```
 
-## Predict suibability for IVR regions
+```{r predict for SLF coordinates- SSP585}
+
+slfSpread::predict_xy_suitability_CV(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = global_model,
+  mypath = mypath,
+  clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "global_slf_all_coords_2041-2070_GFDL_ssp585"
+)
+
+```
+
+## 3.3 Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of over 1,000 important wineries around the world. These will be used to create similar scatter plots.
 
@@ -592,7 +647,7 @@ I will perform the same action as above, but for the locations of over 1,000 imp
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v2")
+                     "maxent/models/slf_global_v3")
 
 # load in all IVR points
 load(file = file.path(here::here(), "data", "wineries.rda")) 
@@ -602,9 +657,7 @@ IVR_regions <- wineries %>%
 
 ``` 
 
-### Historical Data
-
-```{r predictions for IVR coordinate data}
+```{r predict for IVR coordinate data- historical}
 
 slfSpread::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
@@ -619,19 +672,49 @@ slfSpread::predict_xy_suitability_CV(
 
 ```
 
-### CMIP6 Data
+I will repeat the same process for the CMIP6 data.
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r predict for IVR coordinate data- ssp126}
 
 slfSpread::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
+  model.obj = global_model,
+  mypath = mypath,
+  clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "global_wineries_2041-2070_GFDL_ssp126"
+)
+
+```
+
+```{r predict for IVR coordinate data- ssp370}
+
+slfSpread::predict_xy_suitability_CV(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_370_env_covariates,
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
   predict.type = c("cloglog", "logistic"),
   output.name = "global_wineries_2041-2070_GFDL_ssp370"
+)
+
+```
+
+```{r predict for IVR coordinate data- ssp585}
+
+slfSpread::predict_xy_suitability_CV(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = global_model,
+  mypath = mypath,
+  clamp.pred = TRUE,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "global_wineries_2041-2070_GFDL_ssp585"
 )
 
 ```
@@ -644,13 +727,13 @@ In the next vignette, I will train the regional model needed for the spatial sca
 
 summary_global <- read_csv(file.path(mypath, "global_summary_all_iterations.csv"))
 
-readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v2.rds"))
+readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v3.rds"))
 
 ```
 
 # Appendix
 
-## Attempt at Spatially Blocked Cross-validation
+## Attempt at Spatially and environmentally Blocked Cross-validation
 
 I attempted this method because of the body of literature that says blocked cross validation is more rigorous than random CV. Blocked CV results is more spatially separated training and testing data, which prevents autocorrelation within the environmental covariates. However, this method did not work because of the combination of the scale of the covariates and the comparatively narrow range of SLF presences. The global scale of analysis means that the block size needs to be quite large (about 1.5 million meters) to reduce spatial autocorrelation between the training points. The narrow spread of presence points in comparison means that not every blocked CV group (out of 10) received test presences and some had no test points.
 
@@ -796,5 +879,4 @@ Valavi, R., J. Elith, J. J. Lahoz-Monfort, and G. Guillera-Arroita. 2019. blockC
 VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
 
 Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
-
 

@@ -31,6 +31,7 @@ v0- initial version
 v1
 v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF workflow
 v3- 2024-07-29- rework methods and data update- using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
+v4- 2024-08-05- swapped workflow from scrubr (deprecated) to coordinateCleaner R package, removed Taiwan records based on new paper pre-print
 
 
 ----------030_retrieve_bioclim_variables.Rmd----------
@@ -79,7 +80,7 @@ v3- 2024-07-31- rework of methods and data update- creates v3 of the global mode
 
 ## About
 
-This vignette creates rasters and background point datasets needed for both regional-scale models.
+This vignette creates rasters, presence and background point datasets needed for the regional-scale models.
 
 ## Changelog
 
@@ -89,6 +90,7 @@ v2- reverted to eastern USA test area instead of 355km buffer
 v3- did not weight easternUSA model. Moved section on weighting to supp materials
 v4- added koeppen climate download and use for selecting background points
 v5- added table indicating number of training points per model, added plot faceting
+v6- 2024-08-02- rework of methods and data update
 
 
 
@@ -105,6 +107,8 @@ v1- in sandbox/vignettes_old
 v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridSearch and used model settings from global instead.
 v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vignettes_old
 v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
+v5
+v6- 2024-08-02- rework of methods and data update- changed validation (testing) region to Ri.Asia training region (see citation)
 
 
 

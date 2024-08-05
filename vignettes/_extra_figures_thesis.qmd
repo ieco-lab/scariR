@@ -26,6 +26,7 @@ library(tidygeocoder) # analysis 7
 library(scales)
 library(patchwork)
 library(grid)
+library(kableExtra)
 
 ```
 
@@ -43,7 +44,7 @@ I want to segment the SLF presences by country and create risk plots similar to 
 
 ```{r load in SLF dataset}
 
-slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds"))
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
 
 ```
 
@@ -51,7 +52,7 @@ slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_fina
 
 ```{r geocode country}
 
-if(FALSE) {
+if(TRUE) {
 
   # geocode
   slf_populations_geocoded <- tidygeocoder::reverse_geocode(
@@ -79,9 +80,53 @@ if(FALSE) {
   # save
   write_csv(
     x = slf_populations_geocoded_tidy, 
-    file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01_withCountries.csv")
+    file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05_withCountries.csv")
     )
 
+}
+
+```
+
+```{r summarize slf records per country}
+
+slf_populations_geocoded_table <- slf_populations_geocoded_tidy %>%
+  dplyr::group_by(CountryCode) %>%
+  dplyr::summarize(slf_record_count = n()) %>%
+  dplyr::arrange(desc(slf_record_count)) %>%
+  dplyr::mutate(country_name = c("United_States", "China", "South_Korea", "Japan", "North_Korea")) %>%
+  dplyr::rename("country_code" = "CountryCode") %>%
+  dplyr::relocate(country_code, country_name)
+
+```
+
+
+```{r kable of slf records per country}
+
+if(TRUE) {
+  
+  # make kable
+  slf_populations_geocoded_kable <- knitr::kable(slf_populations_geocoded_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:3, width_min = '4cm') %>%
+    kableExtra::add_header_above(., header = c("SLF population counts per country" = 3), bold = TRUE)
+  
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_populations_geocoded_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot2::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.jpg")
+  )
+    
 }
 
 ```
@@ -409,4 +454,3 @@ ggsave(
   )
 
 ```
-

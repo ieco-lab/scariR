@@ -405,7 +405,7 @@ First, I will load in known SLF presences so that background sampling does not o
 ```{r load in SLF presence}
 
 # dismo requires the base function (not tidyverse)
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -433,7 +433,7 @@ terra::ncell(global_bio2)
 # plenty of cells to work with if we remove those with SLF points
 
 # set seed so that the random points for this dataset are the same the next time this code is run
-set.seed(1)
+set.seed(1.5)
 # generate random points 
 global_points <- dismo::randomPoints(
   mask = global_bio2, 
@@ -485,7 +485,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 
 ggsave(
   global_background_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points_v3.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -523,7 +523,7 @@ global_slf_plot <- ggplot() +
 
 ggsave(
   global_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points_v3.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -577,7 +577,7 @@ global_background_plot <- global_background_plot +
 
 global_patchwork <- (global_slf_plot / global_background_plot) +
   plot_layout(axes = "collect", axis_titles = "collect") +
-  plot_annotation(title = "'global' model presences (A) and background points (B)") 
+  plot_annotation(title = "global-scale model presences (A) and background points (B)") 
 
 ```
 
@@ -585,7 +585,7 @@ global_patchwork <- (global_slf_plot / global_background_plot) +
 
 ggsave(
   global_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_summary.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_v3_summary.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",

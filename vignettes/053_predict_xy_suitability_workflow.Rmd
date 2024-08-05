@@ -1,5 +1,5 @@
 ---
-title: "Predict xy Suitability From Model- workflow (chapter 1)"
+title: "Predict xy Suitability From Model- workflow"
 author: "Samuel M. Owens"
 date: "2024-01-18"
 output: html_document

@@ -2,7 +2,7 @@
 title: "Setup for regional-scale MaxEnt models"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-02"
+date: "2024-01-04"
 output: html_document
 ---
 # Overview
@@ -132,7 +132,7 @@ map_style <- list(
 
 ```
 
-# 1. Retrieve K-G climate zones
+# 1. Trim Bioclim layers
 
 ```{r set wd}
 
@@ -234,15 +234,15 @@ terra::origin(koeppen_zones_rast)
 koeppen_zones_rast_df <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
 
 # plot main layer as example
-KG_climate_map <- ggplot() +
+(KG_climate_map <- ggplot() +
   # change scale of plots to be standard across figures
   geom_raster(data = koeppen_zones_rast_df, 
             aes(x = x, y = y, fill = as.factor(koeppen_climate_zones))) +
     labs(
-      title = "Köppen-Geiger Climate Zones", 
+      title = "Koeppen-Geiger Climate Zones", 
       x = "longitude",
       y = "latitude",
-      fill = "K-G climate zone"
+      fill = "K-G climate zone number"
     ) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
@@ -257,20 +257,19 @@ KG_climate_map <- ggplot() +
   theme_classic() +
   theme(legend.position = "bottom") +
   coord_equal()
-
+)
 
 
 ```
 
 ```{r save plot}
 
-ggsave(
-  KG_climate_map, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "koppen_climate_zones.jpg"),
-  height = 8, 
-  width = 12,
-  device = "jpeg",
-  dpi = "retina"
+ggsave(KG_climate_map, 
+       filename = file.path(here::here(), "vignette-outputs", "figures", "koeppen_climate_zones.jpg"),
+       height = 8, 
+       width = 10,
+       device = "jpeg",
+       dpi = "retina"
 )
 
 ```
@@ -299,20 +298,22 @@ terra::writeVector(
 
 ```
 
+## Invaded regional (eastern USA)
+
+First, I will overlay SLF presence points and use these to select which climate regions to keep. I will use these to create a reference layer. Then, I will use this layer to mask the layers that have already been cropped to N America.
+
+### Select K-G climate regions
+
 ```{r import datasets}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species) 
 
 ```
 
-# 2. Trim bioclim layers 
-
-## 2.1 invaded region in North America (Ri.NAmerica model)
-
-First, I will overlay SLF presence points and use these to select which climate regions to keep. I will use these to create a reference layer. Then, I will use this layer to mask the layers that have already been cropped to N America.
+I just want the presences from the invaded range
 
 ```{r filter presences from invaded range}
 
@@ -338,8 +339,6 @@ rm(slf_points_vect)
 
 Now we will intersect the points with the shapefile. I need to crop the shapefile to the the same extent as the presences and then intersect them to keep the climate zones that contain presences. The resulting shapefile will be used to crop the bioclim data and choose background points for that specific model.
 
-### Intersect points and KG zones
-
 ```{r intersect slf points with shapefile}
 
 # load in shapefile again
@@ -349,7 +348,7 @@ KG_zones_invaded_poly <- sf::read_sf(dsn = file.path(mypath, "models", "working_
 # bounding box for cropping
 ext.obj.vect <- c(xmin = -140.976563, ymin = 15.182421, xmax = -51.064453, ymax = 60.586967)
 # first, crop K-G raster to N America
-KG_zones_invaded_poly <- sf::st_crop(KG_zones_invaded_poly, y = ext.obj.vect) %>%
+KG_zones_invaded_poly <- st_crop(KG_zones_invaded_poly, y = ext.obj.vect) %>%
   # also get rid of ocean
   dplyr::filter(koeppen_climate_zones != 32)
 
@@ -391,11 +390,11 @@ Now lets plot it for a sanity check.
    geom_sf(data = regional_invaded_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
-     title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.NAmerica' model",
-     caption = "K-G zones selected if containing SLF presences",
+     title = "Koeppen climate zones used to choose background points for 'regional_invaded' model",
+     caption = "K-G zones selected if containing SLF presences within North America",
      x = "longitude",
      y = "latitude",
-     fill = "Köppen climate zone"
+     fill = "Koeppen climate zone"
      ) +
    scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
@@ -461,7 +460,7 @@ if(FALSE) {
       x = rast.hold, 
       filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
       filetype = "AAIGrid", 
-      overwrite = TRUE
+      overwrite = FALSE
       )
     
     # remove object once its done
@@ -477,7 +476,7 @@ if(FALSE) {
 
 Lets plot one of the new layers to make sure the cropping worked.
 
-```{r plot to ensure cropping worked}
+```{r plot main_layer to ensure cropping worked}
 
 bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc")) 
 # convert to df
@@ -506,17 +505,17 @@ rm(ext.obj.crop)
 
 ```
 
-## Invaded region in South Korea and Japan (Ri.Asia model)
+## Invaded regional (South Korea and Japan)
 
 I need to find a way to clip the climate zones by native vs invaded region, because the same climate zones are likely present in Japan and Korea as in the native range. However, I want to segment the data by region. I would normally use the country administrative borders, but there are many contested islands that would be left out. So, I will obtain the bounding box for Japan and south korea and use that to geographically segment the KG climate zones before masking.
 
-### Intersect points and KG zones
+### Select K-G climate regions
 
 ```{r import datasets}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species) 
 
 ```
@@ -600,11 +599,11 @@ Now lets plot it for a sanity check.
    geom_sf(data = regional_invaded_asian_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
-     title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.Asia' model",
-     caption = "K-G zones selected if containing SLF presences",
+     title = "Koeppen climate zones used to choose background points for 'regional_invaded_asian' model",
+     caption = "K-G zones selected if containing SLF presences within invaded asian range",
      x = "longitude",
      y = "latitude",
-     fill = "Köppen climate zone"
+     fill = "Koeppen climate zone"
      ) +
    scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
@@ -713,9 +712,9 @@ rm(ext.obj.crop)
 
 Looks good!
 
-## Native region in Southeast Asia (Rn model)
+## Native regional (China)
 
-The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east and southeast Asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
+The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
 
 ### Get shapefile for native range
 
@@ -788,7 +787,7 @@ I will import the slf presences and KG shapefile first.
 ```{r import datasets}
 
 # slf presences
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
   dplyr::select(-species) 
 
 # load in KG shapefile 
@@ -891,11 +890,11 @@ Now lets plot it for a sanity check.
    geom_sf(data = regional_native_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
-     title = "Köppen climate zones as background selection area for 'Rn' model",
-     caption = "K-G zones selected if containing SLF presences",
+     title = "Koeppen climate zones used to choose background points for 'regional_native' model",
+     caption = "K-G zones selected if containing SLF presences within native range",
      x = "longitude",
      y = "latitude",
-     fill = "Köppen climate zone"
+     fill = "Koeppen climate zone"
      ) +
    scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
@@ -1003,7 +1002,7 @@ rm(ext.obj.crop)
 
 We will need to select background points for all three regional models, which we will do next.
 
-# 3. Choose background points from selection areas
+# 2. Background point choice
 
 ```{r set wd}
 
@@ -1013,7 +1012,7 @@ We will need to select background points for all three regional models, which we
 
 ```
 
-## 3.1 invaded region of North America (Ri.NAmerica model)
+## Invaded Regional (eastern USA)
 
 ```{r load datasets}
 
@@ -1021,7 +1020,7 @@ We will need to select background points for all three regional models, which we
 regional_invaded_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -1036,7 +1035,7 @@ set.seed(5)
 
 # generate random points 
 regional_invaded_background <- dismo::randomPoints(
-  mask = regional_invaded_bio11, 
+  mask = regional_invaded_bio11, # cropped to eastern USA
   n = 10000, # default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
@@ -1048,12 +1047,12 @@ regional_invaded_background <- dismo::randomPoints(
 # save as csv
 write_csv(
   x = regional_invaded_background, 
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted_v6.csv")
   )
 # save as rds file
 write_rds(
   regional_invaded_background, 
-  file = file.path(here::here(), "data", "regional_invaded_background_points_v7.rds")
+  file = file.path(here::here(), "data", "regional_invaded_background_points_unweighted_v6.rds")
   )
 
 ```
@@ -1067,7 +1066,7 @@ regional_invaded_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_
   terra::as.data.frame(., xy = TRUE)
 
 # re-read background points 
-regional_invaded_background <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv"))
+regional_invaded_background <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_unweighted_v6.csv"))
 
 # extent object for N America
 ext.obj <- terra::ext( -140.976563, -51.064453, 15.182421, 60.586967)
@@ -1092,7 +1091,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
    scale_x_continuous(expand = c(0, 0)) +
    scale_y_continuous(expand = c(0, 0)) +
    labs(
-     title = "'Ri.NAmerica' model background points", 
+     title = "'regional_invaded' model background points", 
      x = "longitude",
      y = "latitude"
      ) +
@@ -1113,7 +1112,7 @@ We can see that the background points are isolated to the eastern half of the Un
 
 ggsave(
   regional_invaded_background_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v7.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_unweighted_v6.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1123,7 +1122,7 @@ ggsave(
 ```
 
 
-## 3.2 invaded region of Asia (South Korea and Japan, Ri.Asia model)
+## invaded Regional (South Korea and Japan)
 
 ```{r load datasets}
 
@@ -1131,7 +1130,7 @@ ggsave(
 invaded_asian_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -1154,9 +1153,9 @@ regional_invaded_asian_points <- dismo::randomPoints(
   as.data.frame(.)
 
 # save as csv
-write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
+write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted_v1.csv"))
 # save as rds file
-write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_v2.rds"))
+write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_unweighted_v1.rds"))
 
 ```
 
@@ -1172,7 +1171,7 @@ invaded_asian_bio11_df <- terra::rast(
 global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
+regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_unweighted_v1.csv"))
 
 ```
 
@@ -1182,7 +1181,7 @@ regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignet
    geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
    geom_raster(data = invaded_asian_bio11_df, aes(x = x, y = y), fill = "azure1") +
    geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-   ggtitle("'Ri.Asia' model background points") +
+   ggtitle("'regional_invaded_asian' model background points") +
    map_style +
    theme(legend.position = "none") +
    coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
@@ -1198,7 +1197,7 @@ We can see that the background points are isolated to the eastern half of the Un
 
 ggsave(regional_invaded_asian_points_plot, 
        filename = file.path(
-         here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_v2.jpg"
+         here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_unweighted_v1.jpg"
          ),
        height = 8, 
        width = 10,
@@ -1209,7 +1208,7 @@ ggsave(regional_invaded_asian_points_plot,
 ```
 
 
-## 3.3 Native region (Rn model)
+## Native regional (China)
 
 I need to select points for China as well, but I do not need to weight these. The background selection here will be random, but will still exclude cells with SLF points and will correct for latitudinal stretching.
 
@@ -1224,18 +1223,16 @@ mypath <- file.path(here::here() %>%
 
 ```{r load in datasets}
 
+# slf points
+slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+   dplyr::select(-species) 
+
 # mask layer I will use
 regional_native_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) # %>%
   #!is.na()
 
 # also get ext
 terra::ext(regional_native_bio2)
-
-
-# load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
-  dplyr::select(-species) %>%
-  as.data.frame()
 
 ```
 
@@ -1256,11 +1253,11 @@ regional_native_points <- dismo::randomPoints(
 
 # save as csv
 write_csv(x = regional_native_points, 
-          file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
+          file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_unweighted_v2.csv")
           )
 # save as rds file
 write_rds(regional_native_points, 
-          file = file.path(here::here(), "data", "regional_native_background_points_v3.rds")
+          file = file.path(here::here(), "data", "regional_native_background_points_unweighted_v2.rds")
           )
   
   
@@ -1273,7 +1270,7 @@ Now, I will plot these points for visualization purposes.
 regional_native_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv"))
+regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_unweighted_v2.csv"))
 
 global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
@@ -1286,7 +1283,7 @@ global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_native_bio2_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = regional_native_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-  ggtitle("'Rn' model background points") +
+  ggtitle("'regional_native' model background points") +
   map_style +
   theme(legend.position = "none")  +
   coord_equal(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
@@ -1299,7 +1296,7 @@ The points seem to sufficiently cover the global extent. I can also see the lati
 ```{r save plot}
 
 ggsave(regional_native_points_plot, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v3.jpg"),
+       filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_unweighted_v2.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -1325,7 +1322,7 @@ global_atc_df <- terra::rast(
   terra::as.data.frame(., xy = TRUE)
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds")) %>%
   dplyr::select(-species) 
 
 ```
@@ -1336,7 +1333,7 @@ Finally, I will create a plot of all SLF presence locations for reference.
 
 ```{r filter presences from invaded range}
 
-# extent object for N America
+# extent object for eastern USA
 ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
 
 # convert to vector
@@ -1359,7 +1356,7 @@ rm(slf_points_vect)
 
 write_csv(
   x = slf_points_invaded,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_model_presence_points_v7.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_model_presence_points_v6.csv")
 )
 
 ```
@@ -1379,7 +1376,7 @@ regional_invaded_slf_plot <- ggplot() +
   geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded, aes(x = x, y = y), color = "darkorange", size = 0.5) +
   labs(
-    title = "'Ri.NAmerica' model SLF presences",
+    title = "'regional_invaded' model SLF presences",
     x = "longitude",
     y = "latitude"
   ) +
@@ -1398,7 +1395,7 @@ regional_invaded_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points_v7.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points_v6.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1435,7 +1432,7 @@ rm(slf_points_masked)
 
 write_csv(
   x = slf_points_invaded_asian,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_model_presence_points_v2.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_model_presence_points_v1.csv")
 )
 
 ```
@@ -1453,7 +1450,7 @@ regional_invaded_asian_slf_plot <- ggplot() +
   geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded_asian, aes(x = x, y = y), color = "darkorange", size = 1) +
   labs(
-    title = "'Ri.Asia' model SLF presences",
+    title = "'regional_invaded_asian' model SLF presences",
     x = "longitude",
     y = "latitude"
   ) +
@@ -1472,7 +1469,7 @@ regional_invaded_asian_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_asian_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points_v2.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points_v1.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1509,7 +1506,7 @@ rm(mask_layer)
 
 write_csv(
   x = slf_points_native,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_model_presence_points_v3.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_model_presence_points_v2.csv")
 )
 
 ```
@@ -1527,7 +1524,7 @@ regional_native_slf_plot <- ggplot() +
   geom_raster(data = regional_native_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_native, aes(x = x, y = y), color = "darkorange", size = 1) +
   labs(
-    title = "'Rn' model SLF presences",
+    title = "'regional_native' model SLF presences",
     x = "longitude",
     y = "latitude"
   ) +
@@ -1546,7 +1543,7 @@ regional_native_slf_plot <- ggplot() +
 
 ggsave(
   regional_native_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_presence_points_v3.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_presence_points_v2.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1650,7 +1647,7 @@ regional_invaded_patchwork <- (
   (regional_invaded_withSLF_plot + regional_native_slf_plot) 
   ) +
   plot_annotation(
-    title = "'Ri.NAmerica' model elements",
+    title = "'regional_invaded' model elements",
     subtitle = "A) training region B) background points C) background selection area D) test region"
     ) 
 
@@ -1664,7 +1661,7 @@ regional_invaded_patchwork <- (
 
 ggsave(
   regional_invaded_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_v7_summary.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_summary.jpg"),
   height = 10, 
   width = 14,
   device = "jpeg",
@@ -1763,7 +1760,7 @@ regional_invaded_asian_patchwork <- (
   (regional_invaded_asian_withSLF_plot + regional_invaded_slf_plot) 
   ) +
   plot_annotation(
-    title = "'Ri.Asia' model elements",
+    title = "'regional_invaded_asian' model elements",
     subtitle = "A) training region B) background points C) background selection area D) test region"
     )
 
@@ -1773,7 +1770,7 @@ regional_invaded_asian_patchwork <- (
 
 ggsave(
   regional_invaded_asian_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_v2_summary.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_summary.jpg"),
   height = 10, 
   width = 12,
   device = "jpeg",
@@ -1865,7 +1862,7 @@ regional_native_patchwork <- (
   (regional_native_withSLF_plot | regional_invaded_slf_plot)
    ) +
   plot_annotation(
-    title = "'Rn' model elements",
+    title = "'regional_native' model elements",
     subtitle = "A) training region B) background points C) background selection area D) test region"
     ) +
   plot_layout(widths = unit(20, "cm")) 
@@ -1880,7 +1877,7 @@ regional_native_patchwork <- (
 
 ggsave(
   regional_native_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_v3_summary.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_summary.jpg"),
   height = 10, 
   width = 10,
   device = "jpeg",
