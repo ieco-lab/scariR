@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict_xy_suitability_CV.R
 \name{predict_xy_suitability_CV}
 \alias{predict_xy_suitability_CV}
-\title{Predicts suitability for xy coordinates according to a trained MaxEnt model ('SDMmodelCV' object)}
+\title{Predicts suitability for xy coordinates according to a trained MaxEnt model WITH cross-validation ('SDMmodelCV' object)}
 \usage{
 predict_xy_suitability_CV(
   xy.obj,
@@ -13,6 +13,9 @@ predict_xy_suitability_CV(
   predict.fun = "mean",
   predict.type = "cloglog",
   clamp.pred = TRUE,
+  buffer.pred = FALSE,
+  buffer.fun = c("min", "mean", "max"),
+  buffer.dist = 20000,
   output.name
 )
 }
@@ -41,18 +44,29 @@ output will be stored. Should be used with the \code{\link[=file.path]{file.path
 and should be created by the function, set \code{create.dir = TRUE}. This will
 create a folder from the last part of the filepath in \code{mypath}.}
 
-\item{predict.fun}{Character. The default is \code{mean}. This is the function to
+\item{predict.fun}{Character. This is the function to
 be applied to combine the iterations of the model when predicting a suitability
 output. Can be one of: \code{min}, \code{mean}, \code{median}, \code{max}, or \code{sd}
 (standard deviation). If multiple are desired, must be in the concatenated
 form: \code{c("mean", "max")}. Should be all lowercase.}
 
-\item{predict.type}{Character. Default is "cloglog". The type of raster output
+\item{predict.type}{Character. The type of raster output
 to be created from the trained model. Can be one of \code{raw}, \code{logistic} or
 \code{cloglog}. If multiple are desired, must be in the concatenated
 form: \code{c("cloglog", "logistic")}}
 
-\item{clamp.pred}{Logical. Default is TRUE. Should clamping be performed?}
+\item{clamp.pred}{Logical. Should clamping be performed?}
+
+\item{buffer.pred}{Logical. Should suitability predictions be made based
+on a calculation from a buffer around the xy coordinate data? (For Example, take
+the mean, max, etc value of a 20m buffer around the xy coordinates).}
+
+\item{buffer.fun}{Character. The possible functions that can be used to calculate
+the suitability value for the buffer around a point. Possible values include:
+"min", "mean", "max", "sum", "isNA", and "notNA".}
+
+\item{buffer.dist}{Numeric. The distance from each xy coordinate at which to
+calculate the suitability value.}
 
 \item{output.name}{The name of the file output. Separate words with _. Relevant
 information might include the name of the model used to predict, the spatial
@@ -60,21 +74,28 @@ scale, the temporal scale, and the type of data points that are being used for
 predictions.}
 }
 \value{
-Returns 3 .csv files. The first file \code{xy_with_data} contains the input xy
-coordinates with the value of each given environmental covariate at that
-location. The second file \code{xy_no_data} contains the contains any
-coordinates that could not be predicted because of an NA value for one or more
-covariates at that location. The result file \code{xy_pred_suit}
-contains each coordinate, the type of record and the predicted cloglog
-suitability value.
+This function returns 3+ .csv files.
+\itemize{
+\item \code{xy_with_data}: contains the input xy coordinates with the value of each
+given environmental covariate at that location.
+\item \code{xy_no_data}: contains the contains any coordinates that could not be
+predicted because of an NA value for one or more covariates at that location.
+\item \code{xy_pred_suit}: This is the main result file, which contains each coordinate,
+the type of record and the predicted suitability value. One result file will
+be returned per predict.type, predict.fun and buffer.fun combination.
+}
 }
 \description{
-This function predicts establishment suitability based on a trained
-MaxEnt model for a set of xy coordinates. These coordinates do not need to be
-within the training area for the model.
+This function predicts establishment suitability for SLF based on a trained
+MaxEnt model for a set of xy coordinates. The default method is simple point-wise
+predictions, but predictions can also be made using a buffer zone around each
+xy coordinate by setting buffer.pred = TRUE.
 }
 \details{
-The function requires the packages 'cli', 'tidyverse', and 'SDMtune'.
+The function requires the packages 'cli', 'terra', 'tidyverse', and 'SDMtune'.
+
+The xy coordinates do not need to be within the training area for the model, but
+clamping should be applied if they are not within the training are (clamp.pred = TRUE).
 }
 \examples{
 examples

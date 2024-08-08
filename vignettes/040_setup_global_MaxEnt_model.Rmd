@@ -2,7 +2,7 @@
 title: "Setup for global-scale MaxEnt model"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-07-31"
+date: "2024-08-05"
 output: html_document
 ---
 # Overview

@@ -1,5 +1,5 @@
 ---
-title: "Run 'regional_invaded / Ri.NAmerica' model"
+title: "Run 'Ri.NAmerica' model for the invaded region of North America"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-08-02"
@@ -215,7 +215,7 @@ I need to also load in the SLF presence dataset created in vignette 030 and the 
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species)
 
 # entire eastern USA background point set
@@ -223,28 +223,13 @@ a_regional_invaded_background_points <- read.csv(file.path(here::here(), "vignet
 
 ```
 
-I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation.
+I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation. 
 
 ### Model training object
 
-```{r filter presences from invaded range}
+```{r import training points}
 
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
-
-# convert to vector
-p_slf_points_vect <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
-  # crop by extent area of interest
-  terra::crop(., y = ext.obj) %>%
-  # convert to geom, which gets coordinates of a spatVector
-  terra::geom() 
-
-# convert back to data frame
-p_slf_points_invaded <- terra::as.data.frame(p_slf_points_vect) %>%
-  dplyr::select(-c(geom, part, hole))
-
-# will not need this object again
-rm(p_slf_points_vect)
+p_slf_invaded_train <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_v7.csv"))
 
 ```
 
@@ -257,7 +242,7 @@ if (TRUE) {
   regional_invaded_train <- SDMtune::prepareSWD(
     species = "Lycorma delicatula",
     env = x_invaded_env_covariates,
-    p = p_slf_points_invaded, 
+    p = p_slf_invaded_train, 
     a = a_regional_invaded_background_points,
     verbose = TRUE # print helpful messages
     )
@@ -292,27 +277,11 @@ SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
 
 ### Model testing object
 
-The testing / validation SWD object will be created in the same fashion, except using the presences from the invaded range in Asia. These presences will be selected using a shapefile of the Japan/SK extent as a mask. we chose to test using the invaded region over the native region because Sobek-Swant found that their invaded MaxEnt models performed poorly when projected to the native range for EAB. Additionally, the initial versions of this model performed very poorly when tested on the native range. 
+The testing / validation SWD object will be created in the same fashion, except using the presences from the invaded range in Asia. These presences will be selected using a shapefile of the Japan/SK extent as a mask. we chose to test using the invaded region over the native region because Sobek-Swant et al found that their invaded MaxEnt models performed poorly when projected to the native range for EAB. Additionally, the initial versions of this model performed very poorly when tested on the native range (Sobek-Swant et al, 2012). 
 
-```{r filter presences from invaded_asian range}
+```{r import test points}
 
-# native range extent shapefile used to select slf presences
-mask_layer <- terra::vect(x = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp"))
-
-# convert to vector
-slf_points_masked <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
-# crop by extent area of interest
-terra::mask(., mask = mask_layer) %>%
-# convert to geom, which gets coordinates of a spatVector
-terra::geom() 
-
-# convert back to data frame
-slf_points_invaded_asian <- terra::as.data.frame(slf_points_masked) %>%
-  dplyr::select(-c(geom, part, hole)) %>%
-    dplyr::filter(x > 125)
-  
-# will not need this object again
-rm(slf_points_masked)
+p_slf_invaded_test <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v7.csv"))
 
 ```
 
@@ -323,7 +292,7 @@ if (TRUE) {
   regional_invaded_test <- SDMtune::prepareSWD(
     species = "Lycorma delicatula",
     env = x_global_hist_env_covariates, 
-    p = slf_points_invaded_asian, 
+    p = p_slf_invaded_test, 
     a = a_regional_invaded_background_points,
     verbose = TRUE # print helpful messages
     )
@@ -380,7 +349,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v6")
+                     "maxent/models/slf_regional_invaded_v7")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_model, 
@@ -410,7 +379,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v6")
+                     "maxent/models/slf_regional_invaded_v7")
 
 ```
 
@@ -434,7 +403,7 @@ slfSpread::create_MaxEnt_suitability_maps(
   env.covar.obj = x_global_hist_env_covariates, 
   describe.proj = "globe_1981-2010", # name of area or time period describe.proj to
   clamp.pred = TRUE,
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
@@ -442,17 +411,19 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-```{r predict mean and thresholded suitability maps for historical data}
+I will also create suitability maps for the projected 2041-2070 climate data for N. America.
+
+```{r predict suitability maps for ssp126 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_NAmerica_hist_env_covariates, 
-  describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
+  env.covar.obj = x_global_126_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp126", # name of area or time period projected to
   clamp.pred = TRUE,
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
@@ -460,16 +431,14 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-I will also need to create a suitability map for the projected 2041-2070 climate data for N. America.
-
-```{r predict normal and thresholded suitability maps for CMIP6 data}
+```{r predict suitability maps for ssp370 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_global_CMIP6_env_covariates, 
+  env.covar.obj = x_global_370_env_covariates, 
   describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
   thresh = c("MTP", "MTSS"),
@@ -480,17 +449,17 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-```{r predict normal and thresholded suitability maps for CMIP6 data}
+```{r predict suitability maps for ssp585 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
-  describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
+  env.covar.obj = x_global_585_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp585", # name of area or time period projected to
   clamp.pred = TRUE,
-  thresh = c("MTP", "10_percentile", "MTSS"),
+  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   map.thresh.extra = "MTP",
   summary.file = file.path(mypath, "regional_invaded_summary.csv")
@@ -498,27 +467,21 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-## Predict suitability for all SLF presences
-
-I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
-
-During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
-
-### Historical Data
+## 3.2 Predict suitability for known SLF presences
 
 ```{r data import}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v6")
+                     "maxent/models/slf_regional_invaded_v7")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species)
 
 ``` 
 
-```{r predictions for SLF coordinate data}
+```{r predictions for known SLF populations- historical}
 
 slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
@@ -532,16 +495,28 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-### CMIP6 Data
-
 I will repeat the same process for the CMIP6 data.
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r predictions for known SLF populations- ssp126}
 
 slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_2041-2070_GFDL_ssp126"
+)
+
+```
+
+```{r predictions for known SLF populations- ssp370}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_370_env_covariates,
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
@@ -550,7 +525,21 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-## Predict suibability for IVR regions
+```{r predictions for known SLF populations- ssp585}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_slf_all_coords_2041-2070_GFDL_ssp585"
+)
+
+```
+
+## 3.3 Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world. 
 
@@ -558,7 +547,7 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v6")
+                     "maxent/models/slf_regional_invaded_v7")
 
 # load in all IVR points
 load(file = file.path(here::here(), "data", "wineries.rda")) 
@@ -568,9 +557,7 @@ IVR_regions <- wineries %>%
 
 ``` 
 
-### Historical Data
-
-```{r predictions for IVR coordinate data}
+```{r predictions for IVR coordinate data- historical}
 
 slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
@@ -584,18 +571,46 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-### CMIP6 Data
+Do the same for the SSP scenarios
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r predictions for IVR coordinate data- ssp126}
 
 slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp126"
+)
+
+```
+
+```{r predictions for IVR coordinate data- ssp370}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_370_env_covariates,
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
   output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp370"
+)
+
+```
+
+```{r predictions for IVR coordinate data- ssp585}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = regional_invaded_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp585"
 )
 
 ```

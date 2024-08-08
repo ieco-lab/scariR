@@ -2,7 +2,7 @@
 title: "Setup for regional-scale MaxEnt models"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-02"
+date: "2024-08-05"
 output: html_document
 ---
 # Overview
@@ -19,24 +19,29 @@ Here is the table summarizing the model structures:
 
 model_info <- data.frame(
   "model" = c(
-    "regional_native",
-    "regional_invaded",
-    "regional_invaded_asian"
+    "Rn",
+    "Ri.NAmerica",
+    "Ri.Asia"
     ),
-  "train_test_method" = c(
-    "trained on east asia / tested on N America",
-    "trained on N America / tested on east asia",
-    "trained on Korea & Japan / tested on N America"
+  "train_region" = c(
+    "east Asia native region",
+    "N. America invaded region",
+    "east Asia invaded region (Koreas & Japan)"
   ),
   "train_presences" = c(
     241,
-    328,
+    338,
     200
   ),
+  "test_region" = c(
+    "N. America invaded region",
+    "east Asia invaded region (Koreas & Japan)",
+    "N. America invaded region"
+  ),
   "test_presences" = c(
-    328,
-    241,
-    328
+    54,
+    68,
+    40
   ),
   "background_points" = c(
     "10,000",
@@ -100,11 +105,11 @@ if(FALSE) {
     )
   
   # initialize webshot by 
- # webshot::install_phantomjs()
+  # webshot::install_phantomjs()
   # convert to pdf
-  webshot::webshot(
+  webshot2::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.png")
+    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.jpg")
   )
   
   # model extents
@@ -303,7 +308,7 @@ terra::writeVector(
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species) 
 
 ```
@@ -516,7 +521,7 @@ I need to find a way to clip the climate zones by native vs invaded region, beca
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species) 
 
 ```
@@ -788,7 +793,7 @@ I will import the slf presences and KG shapefile first.
 ```{r import datasets}
 
 # slf presences
-slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-07-29.csv")) %>%
+slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species) 
 
 # load in KG shapefile 
@@ -1021,7 +1026,7 @@ We will need to select background points for all three regional models, which we
 regional_invaded_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -1131,7 +1136,7 @@ ggsave(
 invaded_asian_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")) 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -1233,7 +1238,7 @@ terra::ext(regional_native_bio2)
 
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -1307,7 +1312,9 @@ ggsave(regional_native_points_plot,
 
 ```
 
-# 3. Choose and plot presence points
+# 4. Choose and plot training points
+
+I will choose the presence points I will use to train and validate each regional-scale model. 
 
 ```{r set wd}
 
@@ -1325,14 +1332,12 @@ global_atc_df <- terra::rast(
   terra::as.data.frame(., xy = TRUE)
 
 # load in slf points to intersect
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-07-29.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
   dplyr::select(-species) 
 
 ```
 
-## Invaded Regional 
-
-Finally, I will create a plot of all SLF presence locations for reference.
+## 4.1 Invaded region of North America (Ri.NAmerica model)
 
 ```{r filter presences from invaded range}
 
@@ -1359,7 +1364,7 @@ rm(slf_points_vect)
 
 write_csv(
   x = slf_points_invaded,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_model_presence_points_v7.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_v7.csv")
 )
 
 ```
@@ -1398,7 +1403,7 @@ regional_invaded_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_presence_points_v7.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_train_slf_presences_v7.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1407,7 +1412,7 @@ ggsave(
 
 ```
 
-## Invaded Regional (South Korea and Japan)
+## 4.2 Invaded Regional (South Korea and Japan)
 
 ```{r filter presences from invaded_asian range}
 
@@ -1435,7 +1440,7 @@ rm(slf_points_masked)
 
 write_csv(
   x = slf_points_invaded_asian,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_model_presence_points_v2.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_v2.csv")
 )
 
 ```
@@ -1472,7 +1477,7 @@ regional_invaded_asian_slf_plot <- ggplot() +
 
 ggsave(
   regional_invaded_asian_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_presence_points_v2.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_train_slf_presences_v2.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1481,7 +1486,7 @@ ggsave(
 
 ```
 
-## Native Regional
+## 4.3 Native Regional
 
 ```{r filter presences from native range}
 
@@ -1509,7 +1514,7 @@ rm(mask_layer)
 
 write_csv(
   x = slf_points_native,
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_model_presence_points_v3.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_v3.csv")
 )
 
 ```
@@ -1546,7 +1551,7 @@ regional_native_slf_plot <- ggplot() +
 
 ggsave(
   regional_native_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_presence_points_v3.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_train_slf_presences_v3.jpg"),
   height = 8, 
   width = 10,
   device = "jpeg",
@@ -1555,9 +1560,81 @@ ggsave(
 
 ```
 
-Now we are ready to run both regional models!
+# 5. Choose validation points
 
-# Patchwork together figures
+I will train each regional-scale on all of its regional slf presences and test based on another region's points. Here are the models and their training / validation (test) regions
+
+```{r model info}
+
+model_info_kable
+
+```
+
+The training and test points should be geographically separated, but this creates an issue of the proper ratios being kept between the training and test points if I were to use the entire dataset from training one model to test another model. So, I will randomly sample a subset of each model's training region as the test points for another model.
+
+```{r select test points for Ri.NAmerica model}
+
+# this model is trained on N American presences and tested on invaded asian presences
+
+set.seed(8)
+
+# randomly select subset of rows for testing
+slf_points_invaded_test_rows <-  sample(nrow(slf_points_invaded_asian), size = 68, replace = FALSE) # no replacement
+# filter
+slf_points_invaded_test <- slf_points_invaded_asian[slf_points_invaded_test_rows, ]
+
+# write to csv
+write_csv(
+  x = slf_points_invaded_test,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v7.csv")
+)
+
+
+```
+
+```{r select test points for Ri.Asia model}
+
+# this model is trained on invaded asian presences and tested on invaded N American presences
+
+set.seed(9)
+
+# randomly select subset of rows for testing
+slf_points_invaded_asian_test_rows <-  sample(nrow(slf_points_invaded), size = 40, replace = FALSE) # no replacement
+# filter
+slf_points_invaded_asian_test <- slf_points_invaded[slf_points_invaded_asian_test_rows, ]
+
+# write to csv
+write_csv(
+  x = slf_points_invaded_asian_test,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_v2.csv")
+)
+
+
+```
+
+```{r select test points for Rn model}
+
+# this model is trained on Asian native presences and tested on invaded N. American presences
+
+set.seed(10)
+
+# randomly select subset of rows for testing
+slf_points_native_test_rows <-  sample(nrow(slf_points_invaded), size = 54, replace = FALSE) # no replacement
+# filter
+slf_points_native_test <- slf_points_invaded[slf_points_native_test_rows, ]
+
+# write to csv
+write_csv(
+  x = slf_points_native_test,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_v3.csv")
+)
+
+
+```
+
+Now we are ready to run all 3 regional models!
+
+# 6. Patchwork together figures
 
 I will put the figures together for publication
 

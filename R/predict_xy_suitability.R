@@ -1,9 +1,10 @@
-#'Predicts suitability for xy coordinates according to a trained MaxEnt model without cross-validation ('Maxent' object)
+#'Predicts suitability for xy coordinates according to a trained MaxEnt model WITHOUT cross-validation ('Maxent' object)
 #'
 #'@description
-#'This function predicts establishment suitability based on a trained
-#'MaxEnt model for a set of xy coordinates. These coordinates do not need to be
-#'within the training area for the model.
+#'This function predicts establishment suitability for SLF based on a trained
+#'MaxEnt model for a set of xy coordinates. The default method is simple point-wise
+#'predictions, but predictions can also be made using a buffer zone around each
+#'xy coordinate by setting buffer.pred = TRUE.
 #'
 #'@param xy.obj Should be a .csv file or data frame that contains xy coordinate
 #'data only. Coordinates should be in decimal degree format. Longitude should be
@@ -29,12 +30,23 @@
 #'and should be created by the function, set `create.dir = TRUE`. This will
 #'create a folder from the last part of the filepath in `mypath`.
 #'
-#'@param predict.type Character. Default is "cloglog". The type of raster output
+#'@param predict.type Character. The type of raster output
 #'to be created from the trained model. Can be one of `raw`, `logistic` or
 #'`cloglog`. If multiple are desired, must be in the concatenated
 #'form: `c("cloglog", "logistic")`
 #'
-#'@param clamp.pred Logical. Default is TRUE. Should clamping be performed?
+#'@param clamp.pred Logical. Should clamping be performed?
+#'
+#'@param buffer.pred Logical. Should suitability predictions be made based
+#'on a calculation from a buffer around the xy coordinate data? (For Example, take
+#'the mean, max, etc value of a 20m buffer around the xy coordinates).
+#'
+#'@param buffer.fun Character. The possible functions that can be used to calculate
+#'the suitability value for the buffer around a point. Possible values include:
+#'"min", "mean", "max", "sum", "isNA", and "notNA".
+#'
+#'@param buffer.dist Numeric. The distance from each xy coordinate at which to
+#'calculate the suitability value.
 #'
 #'@param output.name The name of the file output. Separate words with _. Relevant
 #'information might include the name of the model used to predict, the spatial
@@ -43,23 +55,28 @@
 #'
 #'@details
 #'
-#'The function requires the packages 'cli', 'tidyverse', and 'SDMtune'.
+#'The function requires the packages 'cli', 'terra', 'tidyverse', and 'SDMtune'.
+#'
+#'The xy coordinates do not need to be within the training area for the model, but
+#'clamping should be applied if they are not within the training are (clamp.pred = TRUE).
 #'
 #'@return
-#'Returns 3 .csv files. The first file `xy_with_data` contains the input xy
-#'coordinates with the value of each given environmental covariate at that
-#'location. The second file `xy_no_data` contains the contains any
-#'coordinates that could not be predicted because of an NA value for one or more
-#'covariates at that location. The result file `xy_pred_suit`
-#'contains each coordinate, the type of record and the predicted cloglog
-#'suitability value.
+#'This function returns 3+ .csv files.
+#'
+#'* `xy_with_data`: contains the input xy coordinates with the value of each
+#'given environmental covariate at that location.
+#'* `xy_no_data`: contains the contains any coordinates that could not be
+#'predicted because of an NA value for one or more covariates at that location.
+#'* `xy_pred_suit`: This is the main result file, which contains each coordinate,
+#'the type of record and the predicted suitability value. One result file will
+#'be returned per predict.type, predict.fun and buffer.fun combination.
 #'
 #'@examples
 #'examples
 #'
 #'
 #'@export
-predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.type = "cloglog", clamp.pred = TRUE, output.name) {
+predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, output.name) {
 
   # Error checks----------------------------------------------------------------
 
@@ -80,10 +97,24 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
     cli::cli_alert_danger("Parameter 'output.name' must be of type 'character'")
     stop()
   }
+  if (is.character(buffer.fun) == FALSE) {
+    cli::cli_alert_danger("Parameter 'buffer.fun' must be of type 'character'")
+    stop()
+  }
 
   # ensure objects are logical type
   if (is.logical(clamp.pred) == FALSE) {
     cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
+    stop()
+  }
+  if (is.logical(buffer.pred) == FALSE) {
+    cli::cli_alert_danger("Parameter 'buffer.pred' must be of type 'logical'")
+    stop()
+  }
+
+  # ensure objects are numeric type
+  if (is.numeric(buffer.dist) == FALSE) {
+    cli::cli_alert_danger("Parameter 'buffer.dist' must be of type 'numeric'")
     stop()
   }
 
@@ -115,7 +146,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   # prepare swd of environmental covariates and xy------------------------------
 
   # status
-  cli::cli_alert_success("preparing xy coordinate data for prediction")
+  cli::cli_alert_info("extracting covariate data for xy coordinates")
 
   # get SWD object containing point location data from rasters
   xy_import_withdata_SWD <- SDMtune::prepareSWD(species = xy.type,
@@ -130,6 +161,9 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
 
 
   # Create table of points with no data-----------------------------------------
+
+  # status
+  cli::cli_alert_info("isolating xy coordinates with no covariate data")
 
   # re-import data
   xy_import_withdata <- read_csv(file = file.path(mypath, paste0(output.name, "_xy_with_data.csv")))
@@ -148,18 +182,46 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   # predict function------------------------------------------------------------
 
   # status
-  cli::cli_alert_success("predicting suitability for xy coordinate data")
+  cli::cli_alert_info("predicting suitability for xy coordinate data")
 
+  ## load in datasets-----------------------------------------------------------
+
+  # for simple point prediction method
   # tidy dataset for sdmtune::predict
   xy_covariates <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
     # select only necessary columns
     dplyr::select(5:length(.))
 
+
+  # for buffer point prediction method
+  xy_sv <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
+    # select only lat lon columns
+    dplyr::select(3:4) %>%
+    as.data.frame()
+  # convert to spatvector
+  xy_sv <- terra::vect(
+    x = xy_sv,
+    crs = "EPSG:4326",
+    geom = c("x", "y")
+  )
+
+
   # loop for every function listed
     for (b in predict.type) {
 
       # initialization message
-      print(paste0("predicting xy suitability for function: ", b))
+      cli::cli_alert_info(paste0("predicting xy suitability for function: ", b))
+
+
+
+       # determines the type of prediction
+      # if a a simple point-wise prediction is desired, perform this operation
+      if (buffer.pred == FALSE) {
+
+        ### simple prediction method--------------------------------------------
+
+        # predict type alert
+        cli::cli_alert_info("prediction type: simple")
 
       # make predictions
       xy_predict <- SDMtune::predict(
@@ -183,13 +245,90 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
         dplyr::select(Species, x, y, contains("suitability"))
 
       # save output
-      write_csv(x = xy_predict, file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ".csv")))
+      write_csv(
+        x = xy_predict,
+        file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ".csv"))
+        )
 
 
       # remove prediction
       rm(xy_predict)
+
+
+
+      # else if a buffer type of prediction is preferred, use this method
+      } else if (buffer.pred == TRUE) {
+
+        ### buffer prediction method---------------------------------------------
+
+
+        # predict type alert
+        cli::cli_alert_info(paste0("prediction type: buffer of ", buffer.dist, "m around points"))
+
+        # predict a raster
+        xy_predict_raster <- SDMtune::predict(
+          object = model.obj,
+          data = env.covar.obj, # the covariate layers used to train the model
+          type = b,
+          clamp = clamp.pred,
+          progress = TRUE
+        )
+
+        # take buffer around points
+        xy_buffer <- terra::buffer(
+          x = xy_sv,
+          width = buffer.dist
+        )
+
+
+        # create table for loop
+        xy_predict_output <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
+          # select only lat lon columns
+          dplyr::select(3:4)
+
+
+        #### predict create a buffer per function--------------------------------
+        for (c in buffer.fun) {
+
+          # predict type alert
+          cli::cli_alert_info(paste0("taking ", c, " value of ", buffer.dist, "m around points"))
+
+          # use buffer to get zonal statistics from raster
+          xy_predict_hold <- terra::zonal(
+            x = xy_predict_raster, # raster of predictions we created
+            z = xy_buffer, # buffer zone
+            fun = c,
+            na.rm = TRUE # remove NAs from buffer
+          )
+
+          # rename column
+          colnames(xy_predict_hold) <- paste0(c, "_", b, "_suitability_", buffer.dist, "m_buffer")
+
+          # join conf.matr.hold temporary object to empty table
+          xy_predict_output <- cbind(xy_predict_output, xy_predict_hold)
+
+
+        } # end of for(c in buffer.fun) statement
+
+        # add Species column
+        xy_predict_output <- cbind(xy_predict_output, xy_import_withdata[1]) %>%
+          dplyr::relocate(Species)
+
+        # write to file when finished
+        write_csv(
+          x = xy_predict_output,
+          file = file.path(mypath, paste0(output.name, "_xy_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, "_", buffer.dist, "m_buffer.csv"))
+        )
+
+        # remove stuff
+        rm(xy_predict_raster) # raster
+        rm(xy_predict_output)
+
+      } # end of if (buffer.pred = TRUE) statement
+
+
       # success message
-      print(paste0("finished predicting xy suitability for function: ", b))
+      cli_alert_success(paste0("finished predicting xy suitability for function: ", b))
 
     } # end of for(b in predict.type) statement
 
