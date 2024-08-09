@@ -270,8 +270,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
           object = model.obj,
           data = env.covar.obj, # the covariate layers used to train the model
           type = b,
-          clamp = clamp.pred,
-          progress = TRUE
+          clamp = clamp.pred
         )
 
         # take buffer around points
@@ -328,7 +327,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
 
 
       # success message
-      cli_alert_success(paste0("finished predicting xy suitability for function: ", b))
+      cli::cli_alert_success(paste0("finished predicting xy suitability for function: ", b))
 
     } # end of for(b in predict.type) statement
 

@@ -45,7 +45,7 @@ This vignette downloads and tidies the bioclimatic covariates for our models. It
 v0- initial version
 v1
 v2
-v3- 2024-07-29- rework of methods and data update- adds SSP126 and SSP585 to analyses
+v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
 
 
 
@@ -58,7 +58,7 @@ Preparations for running the global-scale model, including cropping rasters, cho
 ## Changelog
 
 v0- initial version
-v1- 2024-07-31- rework of methods and data update- added cropping of other ssp scenario rasters
+v1- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- added cropping of other ssp scenario rasters
 
 
 ----------050_run_global_MaxEnt_model.Rmd----------
@@ -72,7 +72,7 @@ This vignette creates all data objects needed to run the global model. It trains
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old. creates v1 of the global model
 v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
-v3- 2024-07-31- rework of methods and data update- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
+v3- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
 
 
 
@@ -90,7 +90,7 @@ v2- reverted to eastern USA test area instead of 355km buffer
 v3- did not weight easternUSA model. Moved section on weighting to supp materials
 v4- added koeppen climate download and use for selecting background points
 v5- added table indicating number of training points per model, added plot faceting
-v6- 2024-08-02- rework of methods and data update
+v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 
@@ -108,7 +108,7 @@ v2- creates the v2 of the regional_invaded_model in maxent/models. Removed gridS
 v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vignettes_old
 v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
 v5
-v6- 2024-08-02- rework of methods and data update- changed validation (testing) region to Ri.Asia training region (see citation)
+v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios- changed validation (testing) region to Ri.Asia training region (see citation)- creates v7 of the regional_invaded model
 
 
 
@@ -121,6 +121,8 @@ This vignette creates all data objects needed to run the regional_invaded_asian 
 ## Changelog
 
 v0- initial version
+v1-
+v2- 2024-08-08- rework- updated SLF presence data and inclusion of other SSP scenarios, creates v2 of the regional_invaded_asian model
 
 
 
@@ -136,6 +138,9 @@ This vignette creates all data objects needed to run the regional_native model. 
 v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old
 v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.
+v3
+v4- 2024-08-08- rework- updated SLF presence data and inclusion of other SSP scenarios, creates v3 of the regional_native model
+
 
 
 ----------100_run_ExDet_MIC.Rmd----------
@@ -149,6 +154,7 @@ v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSe
 v0- initial version- in sandbox/vignettes_old
 v1- added ExDet and MIC for global model
 v2- added grey area to each figure to represent bg area
+v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 
@@ -164,7 +170,21 @@ v2- added grey area to each figure to represent bg area
 v0- initial version- in sandbox/vignettes_old
 v1-
 v2- added section to ensemble ExDet and MIC rasters, bar chart showing % cont to regional ensemble
+v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP scenarios
 
+
+
+----------120_create_suitability_plots.Rmd----------
+
+## About
+
+
+
+## Changelog
+
+v0-
+v1-
+v2- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 
@@ -218,6 +238,17 @@ v0- initial version
 ## About
 
 This vignette plots the response curve outputs from SDMtune as ggplots and adds all ensemble curves to the same plot.
+
+## changelog
+
+v0- initial version
+
+
+----------160_generate_risk_report.Rmd----------
+
+## About
+
+
 
 ## changelog
 

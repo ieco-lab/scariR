@@ -1,8 +1,8 @@
 ---
-title: "Ensemble regional-scale models into a single prediction"
+title: "Ensemble regional models into a single prediction"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-09"
+date: "2024-04-10"
 output: html_document
 ---
 
@@ -33,8 +33,7 @@ mypath <- file.path(here::here() %>%
 
 if (FALSE) {
 
-  dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1"))
-  dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1", "plots"))
+  dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v0", "plots"))
 
 }
 
@@ -71,104 +70,63 @@ regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invad
 
 ```
 
-# 1. Import datasets
+# Import datasets
 
-## 1.1 MaxEnt Predictions
+## MaxEnt Predictions
 
 First, I need to load in the rasters containing the predictions from each model. I will load in both the historical and climate change versions of these predictions.
 
-```{r Rn regional_native model predictions historical}
+```{r regional model predictions historical}
 
 pred_regional_native <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_pred_suit_clamped_cloglog_globe_1981-2010.asc")
+  x = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_pred_suit_clamped_cloglog_globe_1981-2010.asc")
 )
-
-# CMIP6
-# SSP126
-pred_regional_native_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp126.asc")
-)
-
-# SSP370
-pred_regional_native_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
-)
-
-# SSP585
-pred_regional_native_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp585.asc")
-)
-
-```
-
-```{r Ri.NAmerica regional_invaded model}
 
 pred_regional_invaded <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_pred_suit_clamped_cloglog_globe_1981-2010.asc")
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_pred_suit_clamped_cloglog_globe_1981-2010.asc")
 )
-
-# CMIP6
-# SSP126
-pred_regional_invaded_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp126.asc")
-)
-
-# SSP370
-pred_regional_invaded_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
-)
-
-# SSP585
-pred_regional_invaded_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp585.asc")
-)
-
-```
-
-```{r Ri.Asia regional_invaded_asian model}
-
 
 pred_regional_invaded_asian <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_1981-2010.asc")
-)
-
-# CMIP6
-# SSP126
-pred_regional_invaded_asian_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp126.asc")
-)
-
-# SSP370
-pred_regional_invaded_asian_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
-)
-
-
-# SSP585
-pred_regional_invaded_asian_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp585.asc")
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_1981-2010.asc")
 )
 
 
 ```
 
-## 1.2 AUC values
+```{r regional model predictions 2041-2070}
+
+pred_regional_native_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+pred_regional_invaded_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+pred_regional_invaded_asian_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370.asc")
+)
+
+
+```
+
+## AUC values
 
 Next, I will load in the AUC value from each model, which will be used to weight each model's predictions, specifically based on its test AUC value.
 
 ```{r test AUC values}
 
-AUC_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_AUC_TSS.csv")) %>%
+AUC_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_AUC_TSS.csv")) %>%
   dplyr::select(AUC) %>%
   dplyr::slice(2) %>%
   as.numeric()
 
-AUC_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_AUC_TSS.csv")) %>%
+AUC_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_AUC_TSS.csv")) %>%
   dplyr::select(AUC) %>%
   dplyr::slice(2) %>%
   as.numeric()
 
-AUC_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_AUC_TSS.csv")) %>%
+AUC_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_AUC_TSS.csv")) %>%
   dplyr::select(AUC) %>%
   dplyr::slice(2) %>%
   as.numeric()
@@ -184,88 +142,44 @@ AUC_values <- tibble(
 
 ```
 
-## 1.3 ExDet rasters
+## ExDet rasters
 
 Finally, I will load in the results from the ExDet analysis to weight the ensemble.
 
-```{r Rn regional_native model}
+```{r regional model predictions historical}
 
 exdet_regional_native <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "ExDet_slf_regional_native_v3_background_projGlobe.tif")
+  x = file.path(mypath, "models", "slf_regional_native_v2", "ExDet_slf_regional_native_v2_background_projGlobe.tif")
 )
-
-# CMIP6
-# SSP126
-exdet_regional_native_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp126_GFDL.tif")
-)
-
-# SSP370
-exdet_regional_native_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp370_GFDL.tif")
-)
-
-# SSP585
-exdet_regional_native_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v3", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp585_GFDL.tif")
-)
-
-```
-
-
-```{r Ri.NAmerica regional_invaded model}
 
 exdet_regional_invaded <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "ExDet_slf_regional_invaded_v7_background_projGlobe.tif")
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "ExDet_slf_regional_invaded_v6_background_projGlobe.tif")
 )
 
-# CMIP6
-# SSP126
-exdet_regional_invaded_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+exdet_regional_invaded_asian <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe.tif")
 )
 
-# SSP370
-exdet_regional_invaded_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp370_GFDL.tif")
-)
-
-# SSP585
-exdet_regional_invaded_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v7", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp585_GFDL.tif")
-)
 
 ```
 
 ```{r regional model predictions 2041-2070}
 
-exdet_regional_invaded_asian <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe.tif")
+exdet_regional_native_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v2", "ExDet_slf_regional_native_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
 )
 
-
-# CMIP6
-# SSP126
-exdet_regional_invaded_asian_126 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+exdet_regional_invaded_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v6", "ExDet_slf_regional_invaded_v6_background_projGlobe_2041-2070_ssp370_GFDL.tif")
 )
 
-# SSP370
-exdet_regional_invaded_asian_370 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+exdet_regional_invaded_asian_CMIP6 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "ExDet_slf_regional_invaded_asian_v1_background_projGlobe_2041-2070_ssp370_GFDL.tif")
 )
-
-# SSP585
-exdet_regional_invaded_asian_585 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp585_GFDL.tif")
-)
-
 
 ```
 
-# 2. Edit import datasets
-
-## 2.1 Stack rasters
+## Stack rasters
 
 I will need to stack the predicted and ExDet rasters to perform this analysis.
 
@@ -273,10 +187,7 @@ I will need to stack the predicted and ExDet rasters to perform this analysis.
 
 pred_hist_stack <- c(pred_regional_native, pred_regional_invaded, pred_regional_invaded_asian)
 
-# CMIP6
-pred_126_stack <- c(pred_regional_native_126, pred_regional_invaded_126, pred_regional_invaded_asian_126)
-pred_370_stack <- c(pred_regional_native_370, pred_regional_invaded_370, pred_regional_invaded_asian_370)
-pred_585_stack <- c(pred_regional_native_585, pred_regional_invaded_585, pred_regional_invaded_asian_585)
+pred_CMIP6_stack <- c(pred_regional_native_CMIP6, pred_regional_invaded_CMIP6, pred_regional_invaded_asian_CMIP6)
 
 ```
 
@@ -284,50 +195,45 @@ pred_585_stack <- c(pred_regional_native_585, pred_regional_invaded_585, pred_re
 
 exdet_hist_stack <- c(exdet_regional_native, exdet_regional_invaded, exdet_regional_invaded_asian)
 
-# CMIP6
-exdet_126_stack <- c(exdet_regional_native_126, exdet_regional_invaded_126, exdet_regional_invaded_asian_126)
-exdet_370_stack <- c(exdet_regional_native_370, exdet_regional_invaded_370, exdet_regional_invaded_asian_370)
-exdet_585_stack <- c(exdet_regional_native_585, exdet_regional_invaded_585, exdet_regional_invaded_asian_585)
+exdet_CMIP6_stack <- c(exdet_regional_native_CMIP6, exdet_regional_invaded_CMIP6, exdet_regional_invaded_asian_CMIP6)
 
 ```
 
-## 2.2 Preparatory raster edits
+## Preparatory raster edits
 
 The pred rasters need to be cropped slightly because the function used to create the ExDet rasters cropped them slightly. These raster sets need to share the same extent for downstream manipulations.
 
 ```{r crop pred rasters}
 
 terra::ext(pred_hist_stack)
+terra::ext(pred_CMIP6_stack)
 terra::ext(exdet_hist_stack)
-
+terra::ext(exdet_CMIP6_stack)
 
 # I will trim the rasters to the extent of the exdet rasters
 ext.obj <- terra::ext(-180.00013888885, 178.999859675084, -58.5001390148238, 82.99986041915)
 
 # crop rasters
+# hist
 pred_hist_stack <- terra::crop(pred_hist_stack, ext.obj)
 # CMIP6
-pred_126_stack <- terra::crop(pred_126_stack, ext.obj)
-pred_370_stack <- terra::crop(pred_370_stack, ext.obj)
-pred_585_stack <- terra::crop(pred_585_stack, ext.obj)
+pred_CMIP6_stack <- terra::crop(pred_CMIP6_stack, ext.obj)
 
 ```
 
 ```{r rename pred raster layers}
 
 names(pred_hist_stack) <- c("pred_regional_native", "pred_regional_invaded", "pred_regional_invaded_asian")
-# CMIP6
-names(pred_126_stack) <- c("pred_regional_native_126", "pred_regional_invaded_126", "pred_regional_invaded_asian_126")
-names(pred_370_stack) <- c("pred_regional_native_370", "pred_regional_invaded_370", "pred_regional_invaded_asian_370")
-names(pred_585_stack) <- c("pred_regional_native_585", "pred_regional_invaded_585", "pred_regional_invaded_asian_585")
+
+names(pred_CMIP6_stack) <- c("pred_regional_native_CMIP6", "pred_regional_invaded_CMIP6", "pred_regional_invaded_asian_CMIP6")
 
 ```
 
 Now, I need to prepare to weight the predicted distribution rasters using their respective ExDet raster.
 
-# 3. Ensemble rasters
+# Ensemble rasters
 
-## 3.1 take ABS value of Exdet rasters
+## take ABS value of Exdet rasters
 
 First, I will need to manipulate the ExDet rasters so they can be used for weighting. I will begin by adding 1 to any negative ExDet value and then taking the absolute value of each cell. This way, the weighting is performed on a positive scale. The ExDet metric works such that anything between 0 and 1 is not extrapolated, while anything below 0 or above 1 is extrapolated. Next, I will convert any ExDet value below 0 to 1, so that cells without extrapolation are simply not weighted.
 
@@ -335,8 +241,6 @@ First, I will need to manipulate the ExDet rasters so they can be used for weigh
 2.  Take abs value of ExDet values
 3.  Convert any ExDet value below 1 to 1
 4.  Take reciprocal of ExDet raster values
-
-### historical
 
 ```{r exdet historical stack}
 
@@ -390,9 +294,9 @@ minmax(exdet_hist_stack)
 terra::writeRaster(
   x = exdet_hist_stack, 
   filename = c(
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2.tif")
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v2.tif"),
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v6.tif"),
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v1.tif")
   ),
   filetype = "GTiff",
   overwrite = FALSE
@@ -402,49 +306,47 @@ terra::writeRaster(
 
 I will do the same for the CMIP6 exdet rasters
 
-### SSP 126
-
-```{r exdet CMIP6 stack- SSP126}
+```{r exdet CMIP6 stack}
 
 # 1. add 1 to negatives
 
 # take minmax before
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 
-exdet_126_stack <- terra::ifel(
-  exdet_126_stack < 0, # if the value is < 0
-  exdet_126_stack - 1, # subtract 1
-  exdet_126_stack # else, keep the same
+exdet_CMIP6_stack <- terra::ifel(
+  exdet_CMIP6_stack < 0, # if the value is < 0
+  exdet_CMIP6_stack - 1, # subtract 1
+  exdet_CMIP6_stack # else, keep the same
   )
 
 # minmax after
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 
 # 2. take abs
 
-exdet_126_stack <- abs(exdet_126_stack)
+exdet_CMIP6_stack <- abs(exdet_CMIP6_stack)
 
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 
 # 3. convert values below 1 to 1
 
-exdet_126_stack <- terra::ifel(
-  exdet_126_stack < 1 | exdet_126_stack == 0, # if the value is < 1 or == 0
+exdet_CMIP6_stack <- terra::ifel(
+  exdet_CMIP6_stack < 1 | exdet_CMIP6_stack == 0, # if the value is < 1 or == 0
   1, # make 1
-  exdet_126_stack # else, keep the same
+  exdet_CMIP6_stack # else, keep the same
   )
 
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 
 # 4. take reciprocals
 
-exdet_126_stack <- terra::app(exdet_126_stack, fun = (function(i) 1 / i))
+exdet_CMIP6_stack <- terra::app(exdet_CMIP6_stack, fun = (function(i) 1 / i))
 
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 
 ```
@@ -452,11 +354,11 @@ minmax(exdet_126_stack)
 ```{r save raster}
 
 terra::writeRaster(
-  x = exdet_126_stack, 
+  x = exdet_hist_stack, 
   filename = c(
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp126_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp126_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp126_GFDL.tif")
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v2_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v6_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v1_2041-2070_ssp370_GFDL.tif")
   ),
   filetype = "GTiff",
   overwrite = FALSE
@@ -464,137 +366,11 @@ terra::writeRaster(
 
 ```
 
-### SSP 370
-
-```{r exdet CMIP6 stack- SSP370}
-
-# 1. add 1 to negatives
-
-# take minmax before
-minmax(exdet_370_stack)
-
-
-exdet_370_stack <- terra::ifel(
-  exdet_370_stack < 0, # if the value is < 0
-  exdet_370_stack - 1, # subtract 1
-  exdet_370_stack # else, keep the same
-  )
-
-# minmax after
-minmax(exdet_370_stack)
-
-
-# 2. take abs
-
-exdet_370_stack <- abs(exdet_370_stack)
-
-minmax(exdet_370_stack)
-
-
-# 3. convert values below 1 to 1
-
-exdet_370_stack <- terra::ifel(
-  exdet_370_stack < 1 | exdet_370_stack == 0, # if the value is < 1 or == 0
-  1, # make 1
-  exdet_370_stack # else, keep the same
-  )
-
-minmax(exdet_370_stack)
-
-
-# 4. take reciprocals
-
-exdet_370_stack <- terra::app(exdet_370_stack, fun = (function(i) 1 / i))
-
-minmax(exdet_370_stack)
-
-
-```
-
-```{r save raster}
-
-terra::writeRaster(
-  x = exdet_370_stack, 
-  filename = c(
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp370_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp370_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp370_GFDL.tif")
-  ),
-  filetype = "GTiff",
-  overwrite = FALSE
-  )
-
-```
-
-### SSP 585
-
-```{r exdet CMIP6 stack- SSP585}
-
-# 1. add 1 to negatives
-
-# take minmax before
-minmax(exdet_585_stack)
-
-
-exdet_585_stack <- terra::ifel(
-  exdet_585_stack < 0, # if the value is < 0
-  exdet_585_stack - 1, # subtract 1
-  exdet_585_stack # else, keep the same
-  )
-
-# minmax after
-minmax(exdet_585_stack)
-
-
-# 2. take abs
-
-exdet_585_stack <- abs(exdet_585_stack)
-
-minmax(exdet_585_stack)
-
-
-# 3. convert values below 1 to 1
-
-exdet_585_stack <- terra::ifel(
-  exdet_585_stack < 1 | exdet_585_stack == 0, # if the value is < 1 or == 0
-  1, # make 1
-  exdet_585_stack # else, keep the same
-  )
-
-minmax(exdet_585_stack)
-
-
-# 4. take reciprocals
-
-exdet_585_stack <- terra::app(exdet_585_stack, fun = (function(i) 1 / i))
-
-minmax(exdet_585_stack)
-
-
-```
-
-```{r save raster}
-
-terra::writeRaster(
-  x = exdet_585_stack, 
-  filename = c(
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp585_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp585_GFDL.tif"),
-    file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp585_GFDL.tif")
-  ),
-  filetype = "GTiff",
-  overwrite = FALSE
-  )
-
-```
-
-## 3.2 Weight Models using Test AUC
+## Weight Models using Test AUC
 
 The second step in this weighting process is to also weight each model by its goodness-of-fit. We will use the AUC value for each model and integrate this into the weighting formula so that each model contributes based on this goodness of fit. AUC already ranges from 0-1, so if AUC is 1 then the weight will remain unchanged for that model. However, if AUC is less than 1, it will lessen the weight of that model in the overall ensemble. I will multiply each raster by its AUC value and then save these rasters as ensemble weights.
 
-### historical
-
-```{r weight hist exdet rasters using AUC}
+```{r weight hist pred rasters using AUC}
 
 minmax(exdet_hist_stack)
 
@@ -630,47 +406,45 @@ names(exdet_hist_stack) <- c("regional_native", "regional_invaded", "regional_in
 terra::writeRaster(
   x = exdet_hist_stack, 
   filename = c(
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_v7.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_asian_v2.tif")
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1.tif")
   ),
   filetype = "GTiff",
   overwrite = FALSE
   )
 
 ```
-
-### SSP 126
 
 Now, I will perform the same operation to the CMIP6 rasters.
 
-```{r weight CMIP6 exdet rasters using AUC- SSP126}
+```{r weight hist pred rasters using AUC}
 
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 
 # layer 1
-exdet_126_stack[[1]] <-terra::app(
-  x = exdet_126_stack[[1]],
+exdet_CMIP6_stack[[1]] <-terra::app(
+  x = exdet_CMIP6_stack[[1]],
   fun = function(x) x * as.numeric(AUC_values[[1, 2]])
 )
 
 # layer 2
-exdet_126_stack[[2]] <-terra::app(
-  x = exdet_126_stack[[2]],
+exdet_CMIP6_stack[[2]] <-terra::app(
+  x = exdet_CMIP6_stack[[2]],
   fun = function(y) y * as.numeric(AUC_values[[2, 2]])
 )
 
 # layer 3
-exdet_126_stack[[3]] <-terra::app(
-  x = exdet_126_stack[[3]],
+exdet_CMIP6_stack[[3]] <-terra::app(
+  x = exdet_CMIP6_stack[[3]],
   fun = function(z) z * as.numeric(AUC_values[[3, 2]])
 )
 
 
 # other operations
-minmax(exdet_126_stack)
+minmax(exdet_CMIP6_stack)
 # add names
-names(exdet_126_stack) <- c("regional_native_126_2041-2070", "regional_invaded_126_2041-2070", "regional_invaded_asian_126_2041-2070")
+names(exdet_CMIP6_stack) <- c("regional_native_2041-2070", "regional_invaded_2041-2070", "regional_invaded_asian_2041-2070")
 
 
 ```
@@ -678,11 +452,11 @@ names(exdet_126_stack) <- c("regional_native_126_2041-2070", "regional_invaded_1
 ```{r save raster}
 
 terra::writeRaster(
-  x = exdet_126_stack, 
+  x = exdet_CMIP6_stack, 
   filename = c(
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3_2041-2070_ssp126_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_v7_2041-2070_ssp126_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_asian_v2_2041-2070_ssp126_GFDL.tif")
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6_2041-2070_ssp370_GFDL.tif"),
+    file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1_2041-2070_ssp370_GFDL.tif")
   ),
   filetype = "GTiff",
   overwrite = FALSE
@@ -690,182 +464,41 @@ terra::writeRaster(
 
 ```
 
-### SSP 370
+## Weight models using confidence metric (ExDet)
 
-```{r weight CMIP6 exdet rasters using AUC- SSP370}
+Finally, I will apply these weighting factors to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. I will save these to a new folder where I will keep the ensemble output.
 
-minmax(exdet_370_stack)
-
-# layer 1
-exdet_370_stack[[1]] <-terra::app(
-  x = exdet_370_stack[[1]],
-  fun = function(x) x * as.numeric(AUC_values[[1, 2]])
-)
-
-# layer 2
-exdet_370_stack[[2]] <-terra::app(
-  x = exdet_370_stack[[2]],
-  fun = function(y) y * as.numeric(AUC_values[[2, 2]])
-)
-
-# layer 3
-exdet_370_stack[[3]] <-terra::app(
-  x = exdet_370_stack[[3]],
-  fun = function(z) z * as.numeric(AUC_values[[3, 2]])
-)
-
-
-# other operations
-minmax(exdet_370_stack)
-# add names
-names(exdet_370_stack) <- c("regional_native_370_2041-2070", "regional_invaded_370_2041-2070", "regional_invaded_asian_370_2041-2070")
-
-
-```
-
-```{r save raster}
-
-terra::writeRaster(
-  x = exdet_370_stack, 
-  filename = c(
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3_2041-2070_ssp370_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_v7_2041-2070_ssp370_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_asian_v2_2041-2070_ssp370_GFDL.tif")
-  ),
-  filetype = "GTiff",
-  overwrite = FALSE
-  )
-
-```
-
-### SSP 585
-
-```{r weight CMIP6 exdet rasters using AUC- SSP585}
-
-minmax(exdet_585_stack)
-
-# layer 1
-exdet_585_stack[[1]] <-terra::app(
-  x = exdet_585_stack[[1]],
-  fun = function(x) x * as.numeric(AUC_values[[1, 2]])
-)
-
-# layer 2
-exdet_585_stack[[2]] <-terra::app(
-  x = exdet_585_stack[[2]],
-  fun = function(y) y * as.numeric(AUC_values[[2, 2]])
-)
-
-# layer 3
-exdet_585_stack[[3]] <-terra::app(
-  x = exdet_585_stack[[3]],
-  fun = function(z) z * as.numeric(AUC_values[[3, 2]])
-)
-
-
-# other operations
-minmax(exdet_585_stack)
-# add names
-names(exdet_585_stack) <- c("regional_native_585_2041-2070", "regional_invaded_585_2041-2070", "regional_invaded_asian_585_2041-2070")
-
-
-```
-
-```{r save raster}
-
-terra::writeRaster(
-  x = exdet_585_stack, 
-  filename = c(
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3_2041-2070_ssp585_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_v7_2041-2070_ssp585_GFDL.tif"),
-    file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_asian_v2_2041-2070_ssp585_GFDL.tif")
-  ),
-  filetype = "GTiff",
-  overwrite = FALSE
-  )
-
-```
-
-## 3.3 Weight models using confidence metric (ExDet)
-
-Finally, I will apply these weighting factors to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. 
-
-The historical predictions are final, once this weighted mean is taken, so I will create this file first and save it as a .ascii file.
-
-```{r weighted mean pred rasters- historical}
+```{r weighted mean pred rasters}
 
 # historical
 pred_hist_mean <- terra::weighted.mean(
   x = pred_hist_stack,
   w = exdet_hist_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_1981-2010.asc"),
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc"),
   filetype = "AAIGrid",
   overwrite = FALSE
 )
-
-```
-
-I will take the weighted mean of the CMIP6 rasters as well, but will additionally take an unweighted mean of the three files created below to obtain one prediction for the time period of 2041-2070.
-
-```{r weighted mean pred rasters- CMIP6}
 
 # CMIP6
-# SSP126
-pred_126_mean <- terra::weighted.mean(
-  x = pred_126_stack,
-  w = exdet_126_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.tif"),
-  filetype = "GTiff",
-  overwrite = FALSE
-)
-
-# SSP370
-pred_370_mean <- terra::weighted.mean(
-  x = pred_370_stack,
-  w = exdet_370_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.tif"),
-  filetype = "GTiff",
-  overwrite = FALSE
-)
-
-# SSP585
-pred_585_mean <- terra::weighted.mean(
-  x = pred_585_stack,
-  w = exdet_585_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.tif"),
-  filetype = "GTiff",
-  overwrite = FALSE
-)
-
-```
-
-Now I will take an unweighted mean of the above three rasters.
-
-```{r take unweighted mean of weighted pred rasters- CMIP6}
-
-# stack rasters
-pred_CMIP6_mean_stack <- c(pred_126_mean, pred_370_mean, pred_585_mean)
-
-# apply mean between layers
-pred_CMIP6_mean_final <- terra::app(
-  x = pred_CMIP6_mean_stack,
-  fun = "mean",
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc"),
+pred_CMIP6_mean <- terra::weighted.mean(
+  x = pred_CMIP6_stack,
+  w = exdet_CMIP6_stack,
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
   filetype = "AAIGrid",
   overwrite = FALSE
 )
 
 ```
 
-We now have a weighted mean raster for each of the historical and CMIP rasters, and a final climate change prediction that is the mean of the SSP 126, SSP 370 and SSP 585 scenarios.
+We now have a weighted mean raster for each of the historical and CMIP rasters!
 
-# 4. Ensemble thresholds
+# Ensemble thresholds
 
 I also need to ensemble the thresholds that I will be using to create scatter plots and thresholded maps downstream. The ensemble will be performed using the same method as above, but slightly altered. I will use the pred rasters to extract the coordinates of locations that have the same suitability value as the threshold. Next, I will take these coordinates and extract the ExDet values from those same locations. I will take the mean or median of those values. Then, I will multiply the threshold by this value and the AUC for that model. Finally, I will take the weighted mean of the three modified thresh values. This will be repeated for the MTP threshold as well. Finally, this process will also be completed for the CC version of these models.
 
 Per projected time period (historical and CC) and threshold value: 1. Extract all values from `pred` rasters that match the respective model threshold value. 2. Extract all values from the converted `exdet` rasters at those locations 3. Take mean of the exdet values at those locations. 4. Multiply this mean by the AUC value for that model. 5. Take the weighted mean of the three threshold values using these created weights.
 
-## 4.1 Import data
+## Import data
 
 ### ExDet rasters
 
@@ -1323,7 +956,7 @@ readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", 
 Now that I have the suitability values and thresholds ensembled, I can begin to analyze the differences between the global and regional ensemble predictions. I will begin by creating suitability maps in the next vignette.
 
 
-# 5. Ensemble ExDet / MIC maps
+# Ensemble ExDet / MIC maps
 
 As a final step, I will ensemble the ExDet and MIC rasters themselves for visualization. 
 
@@ -1657,7 +1290,7 @@ ggsave(
 
 ```
 
-# 6. plot- Relative weights percent cont
+# Relative weights percent cont
 
 This bar chart will show the relative weights of each of the three regional models as a percent contribution to the total ensemble. I will take the relative weights from each exdet raster, normalize them and plot those weights.
 
@@ -1737,7 +1370,7 @@ ggsave(
 
 ## Unweighted mean ensemble
 
-The weighted mean ensemble is more rigorous because it considers climatic extrapolation and goodness of fit in how it combines the models. However, I will also include the code to create an unweighted ensemble, in the event that one preferred that over the weighted ensemble.
+The weighted mean ensemble is more rigorous because it considers climatic extrapolation and goodness of fit in how it combines the models. However, I will also include the code to create an unweighted ensemble, in the event that someone preferred that over the weighted ensemble.
 
 ```{r unweighted mean pred rasters}
 

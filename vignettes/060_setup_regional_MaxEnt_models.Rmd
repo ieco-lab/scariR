@@ -7,13 +7,21 @@ output: html_document
 ---
 # Overview
 
-In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run two models at the spatial scale of particular regions. I will run two models; one model will be run based on data from the native range (China) and the other will be based on data from the invaded range in North America. We hypothesize that by creating models at multiple spatial scales, we can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change.
+In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run three regional-scale models, one for each region where SLF is found. I will run three models, based on SLF presence data from the native range (China), the invaded region in Asia (Japan and South Korea), and the invaded region in North America. I hypothesize that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change. I believe the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could.
 
-(EXPAND)
+This vignette will set up for these regional-scale models in a similar fashion to the setup I created for the global model in vignette 040, but with some additional steps. I will choose the background training area of each model using the [Köppen-Geiger climate zones](https://koeppen-geiger.vu-wien.ac.at/). If a presence point intersects with a zone, it will be included in the area used to choose background points. I will also use country shapefiles to limit these K-G zones using countries that should be included in this background selection area per regional-scale model. 
 
-This vignette will set up for the regional model in a similar fashion to the setup I created for the global model in vignette 040. Step 1 will involve cropping the bioclim layers to the proper extent and step 2 will involve choosing the background points for each regional model. Note that background point choice for the regional_invaded model will be weighted by the output of the global model, but the background point choice for the regional_native model will not be. This is to account for the fact that SLF have likely not had ample time to spread to all suitable areas within the invaded range. MaxEnt assumes that all training areas (in our case, the eastern USA) are equally as likely to host lanternfly, whereas we know this is not the case because SLF was introduced to this region within the past decade. Weighting our regional predictions with a prediction made using all available data should offset this incorrect assumption.
+For each regional-scale model, I will:
 
-Here is the table summarizing the model structures:
+1. Select the countries or bounding box that will represent that regional-scale model area
+2. Select the SLF presences that fall into that region. These will be used to train the model.
+3. Intersect these SLF presences with the K-G climate zones 
+4. Keep the zones that intersect, combine their area and use this area to crop the bioclim layers we tidied in vignette 020
+5. Use the masked bioclim layers to select the background points
+6. Choose the test/validation presences, which will come from a different region than the training points
+7. Plot the chosen training and test presence per model.
+
+Here is a table summarizing the model structures:
 
 ```{r model_info table}
 
@@ -29,7 +37,7 @@ model_info <- data.frame(
     "east Asia invaded region (Koreas & Japan)"
   ),
   "train_presences" = c(
-    241,
+    269,
     338,
     200
   ),
@@ -139,6 +147,10 @@ map_style <- list(
 
 # 1. Retrieve K-G climate zones
 
+First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.html) package to retrieve the Köppen-Geiger climate zones.
+
+I need to set up a path to my directory and the necessary bioclimatic raster layers.
+
 ```{r set wd}
 
 # path to directory
@@ -159,7 +171,7 @@ env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "
 
 ```
 
-I will also download the Koppen climate zones, which I will use to clip the bioclim layers.
+Now I will download the Köppen-Geiger climate zones, which I will use to clip the bioclim layers.
 
 ```{r download koppen climate data}
  
@@ -229,6 +241,8 @@ koppen_zones_rast <- terra::resample(
     )
 
 ```
+
+Now lets plot those zones to make sure this worked.
 
 ```{r visualize}
 
@@ -304,7 +318,7 @@ terra::writeVector(
 
 ```
 
-```{r import datasets}
+```{r re-import datasets}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
@@ -387,7 +401,7 @@ st_bbox(regional_invaded_withSLF)
 
 Now lets plot it for a sanity check.
 
-```{r plot invaded_asian range}
+```{r plot K-G zones in N America}
 
 (regional_invaded_withSLF_plot <- ggplot() +
    # world map
@@ -427,6 +441,8 @@ So when we mask the bioclim layers, we should see something similar to this.
 
 ### Mask bioclim layers
 
+I will start the masking process by importing the bioclim layers and reference layer I need. I will also crop this layer to only N America, so I will need a bounding box for that.
+
 ```{r setup for cropping bioclim layers}
 
 # import layers
@@ -439,12 +455,12 @@ output.files <- list.files(path = file.path(mypath, "historical_climate_rasters"
 # also load shapefile again
 regional_invaded_withSLF <- terra::vect(file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) 
 
-# for cropping
+# bbox for cropping
 ext.obj.crop <- terra::ext(-138.66681, 19.12534, -52.58347, 60.83319 , xy = TRUE)
 
 ```
 
-I will now mask these rasters using the shapefile created above
+I will now mask these rasters using the shapefile created above.
 
 ```{r loop to crop bioclim layers to NAmerica invaded range}
 
@@ -453,7 +469,7 @@ if(FALSE) {
   # loop to crop extent for all files
   for(a in seq_along(env.files)){
 
-    #ensure that the CRS is consistent
+    # load in first raster
     rast.hold <- terra::rast(env.files[a])
     
     # mask new rasters using shapefile
@@ -513,7 +529,7 @@ rm(ext.obj.crop)
 
 ## Invaded region in South Korea and Japan (Ri.Asia model)
 
-I need to find a way to clip the climate zones by native vs invaded region, because the same climate zones are likely present in Japan and Korea as in the native range. However, I want to segment the data by region. I would normally use the country administrative borders, but there are many contested islands that would be left out. So, I will obtain the bounding box for Japan and south korea and use that to geographically segment the KG climate zones before masking.
+I need to find a way to clip the climate zones by native vs invaded region, because the same climate zones are likely present in Japan and Korea as in the native range. However, I want to segment the data by region. I would normally use the country administrative borders, but there are many contested islands that would be left out. So, I will obtain the bounding box for Japan and South Korea and use that to geographically segment the KG climate zones before masking.
 
 ### Intersect points and KG zones
 
@@ -526,7 +542,7 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 ```
 
-I just want the presences from the invaded range. I will manually filter out some points that accidentally got into both the native and regional_invaded_asian models.
+I just want the presences from the invaded range. I will manually filter out some points that accidentally got into both the native and Ri.Asia models.
 
 ```{r filter presences from invaded range}
 
@@ -723,6 +739,8 @@ Looks good!
 The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east and southeast Asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
 
 ### Get shapefile for native range
+
+I will retrieve the shapefile data from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called rnaturalearth to access this database. 
 
 ```{r rnaturalearth download}
 
@@ -1005,10 +1023,9 @@ rm(ext.obj.crop)
 
 ```
 
-
-We will need to select background points for all three regional models, which we will do next.
-
 # 3. Choose background points from selection areas
+
+Now, I need to use the rasters I just created to choose the background points, which are used by MaxEnt to sample the climate and compare that sample with known SLF presences. The background points should be randomized because they are a stand-in for true absences, so I will generate them using `dismo::randomPoints()`.
 
 ```{r set wd}
 
@@ -1032,34 +1049,38 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 ```
 
-Now, select random points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model. 
+Create 10,000 random background points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model.
 
 ```{r random points}
 
 # set seed
 set.seed(5)
 
-# generate random points 
-regional_invaded_background <- dismo::randomPoints(
-  mask = regional_invaded_bio11, 
-  n = 10000, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
+if (FALSE) {
 
-# save as csv
-write_csv(
-  x = regional_invaded_background, 
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")
+  # generate random points 
+  regional_invaded_background <- dismo::randomPoints(
+    mask = regional_invaded_bio11, 
+    n = 10000, # default number used by maxent
+    p = slf_points,
+    excludep = TRUE, # exclude cells where slf has been found
+    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+    warn = 2 # higher number gives most warnings, including if sample size not reached
+    ) %>%
+    as.data.frame(.)
+  
+  # save as csv
+  write_csv(
+    x = regional_invaded_background, 
+    file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")
+    )
+  # save as rds file
+  write_rds(
+    regional_invaded_background, 
+    file = file.path(here::here(), "data", "regional_invaded_background_points_v7.rds")
   )
-# save as rds file
-write_rds(
-  regional_invaded_background, 
-  file = file.path(here::here(), "data", "regional_invaded_background_points_v7.rds")
-  )
+  
+}
 
 ```
 
@@ -1112,7 +1133,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 
 ```
 
-We can see that the background points are isolated to the eastern half of the United States and some of Canada. This is what we want because the model will be trained on this area. We can also see that points were selected from areas where the model did not predict high suitability (most highly suitable areas were near PA and NJ). For comparison, this figure is roughly opposite of the figure depicting the suitability values for the mean output from the global model.  
+We can see that the background points are isolated to the area selected using the K-G climate zones in North America, so our operation was successful.
 
 ```{r save plot}
 
@@ -1127,6 +1148,7 @@ ggsave(
 
 ```
 
+Now, I will repeat this process for the next two models. 
 
 ## 3.2 invaded region of Asia (South Korea and Japan, Ri.Asia model)
 
@@ -1147,21 +1169,25 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 # set seed
 set.seed(7)
 
-# generate random points 
-regional_invaded_asian_points <- dismo::randomPoints(
-  mask = invaded_asian_bio11, # cropped to regional_invaded_asian range
-  n = 10000, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
-
-# save as csv
-write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
-# save as rds file
-write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_v2.rds"))
+if (FALSE) {
+  
+  # generate random points 
+  regional_invaded_asian_points <- dismo::randomPoints(
+    mask = invaded_asian_bio11, # cropped to regional_invaded_asian range
+    n = 10000, # default number used by maxent
+    p = slf_points,
+    excludep = TRUE, # exclude cells where slf has been found
+    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+    warn = 2 # higher number gives most warnings, including if sample size not reached
+    ) %>%
+    as.data.frame(.)
+  
+  # save as csv
+  write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
+  # save as rds file
+  write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_v2.rds"))
+  
+}
 
 ```
 
@@ -1197,8 +1223,6 @@ regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignet
 
 ```
 
-We can see that the background points are isolated to the eastern half of the United States and some of Canada. This is what we want because the model will be trained on this area. We can also see that points were selected from areas where the model did not predict high suitability (most highly suitable areas were near PA and NJ). For comparison, this figure is roughly opposite of the figure depicting the suitability values for the mean output from the global model.  
-
 ```{r save plot}
 
 ggsave(regional_invaded_asian_points_plot, 
@@ -1215,8 +1239,6 @@ ggsave(regional_invaded_asian_points_plot,
 
 
 ## 3.3 Native region (Rn model)
-
-I need to select points for China as well, but I do not need to weight these. The background selection here will be random, but will still exclude cells with SLF points and will correct for latitudinal stretching.
 
 ```{r set wd}
 
@@ -1248,25 +1270,30 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 # set seed so that the random points for this dataset are the same the next time this code is run
 set.seed(6)
-# generate random points 
-regional_native_points <- dismo::randomPoints(
-  mask = regional_native_bio2, 
-  n = 10000, # default number used by maxent
-  p = slf_points,
-  excludep = TRUE, # exclude cells where slf has been found
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-  warn = 2 # higher number gives most warnings, including if sample size not reached
-  ) %>%
-  as.data.frame(.)
 
-# save as csv
-write_csv(x = regional_native_points, 
-          file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
-          )
-# save as rds file
-write_rds(regional_native_points, 
-          file = file.path(here::here(), "data", "regional_native_background_points_v3.rds")
-          )
+if (FALSE) {
+  
+  # generate random points 
+  regional_native_points <- dismo::randomPoints(
+    mask = regional_native_bio2, 
+    n = 10000, # default number used by maxent
+    p = slf_points,
+    excludep = TRUE, # exclude cells where slf has been found
+    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+    warn = 2 # higher number gives most warnings, including if sample size not reached
+    ) %>%
+    as.data.frame(.)
+  
+  # save as csv
+  write_csv(x = regional_native_points, 
+            file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
+            )
+  # save as rds file
+  write_rds(regional_native_points, 
+            file = file.path(here::here(), "data", "regional_native_background_points_v3.rds")
+            )
+  
+}
   
   
 ```
@@ -1299,8 +1326,6 @@ global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
 
 ```
 
-The points seem to sufficiently cover the global extent. I can also see the latitude weighting, as the areas nearest the poles are less densely covered with points than areas near the equator.
-
 ```{r save plot}
 
 ggsave(regional_native_points_plot, 
@@ -1314,7 +1339,7 @@ ggsave(regional_native_points_plot,
 
 # 4. Choose and plot training points
 
-I will choose the presence points I will use to train and validate each regional-scale model. 
+Next, I will use bounding boxes to isolate SLF presences from each major region. This would not normally be sufficient to select the correct points, but each region is isolated from the others in a fashion that a bounding box easily separates the points by region in this case. 
 
 ```{r set wd}
 
@@ -1338,6 +1363,8 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 ```
 
 ## 4.1 Invaded region of North America (Ri.NAmerica model)
+
+I will convert the SLF points dataset to a spatial vector object so that it can be filtered using a bounding box, then transform it back to a dataframe.
 
 ```{r filter presences from invaded range}
 
@@ -1562,13 +1589,7 @@ ggsave(
 
 # 5. Choose validation points
 
-I will train each regional-scale on all of its regional slf presences and test based on another region's points. Here are the models and their training / validation (test) regions
-
-```{r model info}
-
-model_info_kable
-
-```
+I will train each regional-scale on all of its regional slf presences and test based on another region's points. Here are the models and their training / validation (test) regions: `r model_info_kable`
 
 The training and test points should be geographically separated, but this creates an issue of the proper ratios being kept between the training and test points if I were to use the entire dataset from training one model to test another model. So, I will randomly sample a subset of each model's training region as the test points for another model.
 
@@ -1634,15 +1655,76 @@ write_csv(
 
 Now we are ready to run all 3 regional models!
 
-# 6. Patchwork together figures
+# Appendix
 
-I will put the figures together for publication
+## Patchwork together figures for publication
 
-```{r regional_invaded}
+```{r set wd}
 
+# path to directory
+  mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent")
+
+
+# raster for mapping
+global_atc_df <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
+  ) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+```
+
+### Ri.NAmerica model
+
+These chunks will splice together the plots from above as summary plots.
+
+```{r load necessary datasets}
+
+# validation dataset
+slf_points_invaded_test <- read.csv(
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v7.csv")
+  )
+
+
+# raster for the validation plot
+invaded_asian <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
+  )
+# also convert to df
+invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
+
+```
+
+
+```{r plot validation region for Ri.NAmerica model}
+
+regional_invaded_test_plot <- ggplot() +
+  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points_invaded_test, aes(x = x, y = y), color = "darkorange", size = 1) +
+  labs(
+    title = "'Ri.NAmerica' model validation (test) presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
+
+```
+
+
+```{r Ri.NAmerica model elements}
+# change axis labels
 x_scale_labels <- c(-140, -120, -100, -80, -60)
 y_scale_labels <- c(20, 30, 40, 50, 60)
 
+# background selection area
 regional_invaded_withSLF_plot <- regional_invaded_withSLF_plot + 
   theme(
     plot.title = element_blank(),
@@ -1663,8 +1745,7 @@ regional_invaded_withSLF_plot <- regional_invaded_withSLF_plot +
   )
 
 
-
-
+# background points
 regional_invaded_background_plot <- regional_invaded_background_plot + 
   theme(
     plot.title = element_blank(),
@@ -1682,7 +1763,7 @@ regional_invaded_background_plot <- regional_invaded_background_plot +
   )
 
 
-  
+# training presences
 regional_invaded_slf_plot  <- regional_invaded_slf_plot +
   theme(
     plot.title = element_blank(),
@@ -1700,12 +1781,12 @@ regional_invaded_slf_plot  <- regional_invaded_slf_plot +
   )
 
 
-# redefine
 x_scale_labels <- c(80, 100, 120, 140)
 y_scale_labels <- c(0, 10, 20, 30, 40, 50)
 
 
-regional_native_slf_plot <- regional_native_slf_plot +
+# test/validation presences
+regional_invaded_test_plot <- regional_invaded_test_plot +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1724,11 +1805,11 @@ regional_native_slf_plot <- regional_native_slf_plot +
 
 regional_invaded_patchwork <- (
   (regional_invaded_slf_plot + regional_invaded_background_plot) / 
-  (regional_invaded_withSLF_plot + regional_native_slf_plot) 
+  (regional_invaded_withSLF_plot + regional_invaded_test_plot) 
   ) +
   plot_annotation(
     title = "'Ri.NAmerica' model elements",
-    subtitle = "A) training region B) background points C) background selection area D) test region"
+    subtitle = "(A) training presences (B) background points (C) background selection area (D) test presences"
     ) 
 
   # work around because collect axes not working
@@ -1750,11 +1831,52 @@ ggsave(
 
 ```
 
+### Ri.Asia Model
+
+```{r load necessary datasets}
+
+# validation dataset
+slf_points_invaded_asian_test <- read.csv(
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_v2.csv")
+  )
+
+# load in raster for validation plot
+regional_invaded <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")
+  )
+# also convert to df
+regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
+
+```
+
+
+```{r plot validation region for Ri.Asia model}
+
+regional_invaded_asian_test_plot <- ggplot() +
+  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points_invaded_asian_test, aes(x = x, y = y), color = "darkorange", size = 1) +
+  labs(
+    title = "'Ri.Asia' model test presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+
+```
+
 ```{r regional_invaded_asian}
 
 x_scale_labels <- c(130, 140, 150)
 y_scale_labels <- c(25, 30, 35, 40, 45)
 
+# background selection area
 regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot + 
   theme(
     plot.title = element_blank(),
@@ -1775,7 +1897,7 @@ regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot +
   )
 
 
-
+# background points
 regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot + 
   theme(
     plot.title = element_blank(),
@@ -1793,7 +1915,7 @@ regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot +
   )
 
 
-  
+# training presences
 regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
   theme(
     plot.title = element_blank(),
@@ -1810,21 +1932,19 @@ regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
     plot.tag = element_text(face = "bold", size = 25)
   )
 
-# redefine
+
 x_scale_labels <- c(-140, -120, -100, -80, -60)
 y_scale_labels <- c(20, 30, 40, 50, 60)
 
-regional_invaded_slf_plot <- regional_invaded_slf_plot + 
+# test presences
+regional_invaded_asian_test_plot <- regional_invaded_asian_test_plot + 
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(
-    tag = "D",
-    fill = "zone"
-    ) +
+  labs(tag = "D") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
@@ -1837,11 +1957,11 @@ regional_invaded_slf_plot <- regional_invaded_slf_plot +
 
 regional_invaded_asian_patchwork <- (
   (regional_invaded_asian_slf_plot + regional_invaded_asian_points_plot) / 
-  (regional_invaded_asian_withSLF_plot + regional_invaded_slf_plot) 
+  (regional_invaded_asian_withSLF_plot + regional_invaded_asian_test_plot) 
   ) +
   plot_annotation(
     title = "'Ri.Asia' model elements",
-    subtitle = "A) training region B) background points C) background selection area D) test region"
+    subtitle = "(A) training presences (B) background points (C) background selection area (D) test presences"
     )
 
 ```
@@ -1859,12 +1979,55 @@ ggsave(
 
 ```
 
+### Rn model
+
+```{r load necessary datasets}
+
+# validation dataset
+slf_points_native_test <- read.csv(
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_v3.csv")
+  )
+
+
+# load in raster for validation plot
+regional_invaded <- terra::rast(
+  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")
+  )
+# also convert to df
+regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
+
+```
+
+
+```{r plot validation region for Ri.Asia model}
+
+regional_native_test_plot <- ggplot() +
+  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = slf_points_native_test, aes(x = x, y = y), color = "darkorange", size = 1) +
+  labs(
+    title = "'Rn' model test presences",
+    x = "longitude",
+    y = "latitude"
+  ) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_classic() +
+  theme(panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ) +
+  coord_equal(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+
+```
+
+Patchwork
 
 ```{r regional_native}
 
 x_scale_labels <- c(80, 100, 120, 140)
 y_scale_labels <- c(0, 10, 20, 30, 40, 50)
 
+# background selection area
 regional_native_withSLF_plot <- regional_native_withSLF_plot + 
   theme(
     plot.title = element_blank(),
@@ -1883,6 +2046,7 @@ regional_native_withSLF_plot <- regional_native_withSLF_plot +
   scale_y_continuous(labels = c(-10, 0, 10, 20, 30, 40, 50), breaks = c(-10, 0, 10, 20, 30, 40, 50), expand = c(0, 0)) 
 
 
+# background points
 regional_native_points_plot <- regional_native_points_plot + 
   theme(
     plot.title = element_blank(),
@@ -1898,6 +2062,7 @@ regional_native_points_plot <- regional_native_points_plot +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
   
+# training presences
 regional_native_slf_plot  <- regional_native_slf_plot +
   theme(
     plot.title = element_blank(),
@@ -1917,17 +2082,15 @@ regional_native_slf_plot  <- regional_native_slf_plot +
 x_scale_labels <- c(-140, -120, -100, -80, -60)
 y_scale_labels <- c(20, 30, 40, 50, 60)
 
-regional_invaded_slf_plot <- regional_invaded_slf_plot + 
+# testing presences
+regional_native_test_plot <- regional_native_test_plot + 
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
     plot.caption = element_blank(),
     axis.title = element_blank()
     ) +
-  labs(
-    tag = "D",
-    fill = "zone"
-    ) +
+  labs(tag = "D") +
   scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
@@ -1939,11 +2102,11 @@ regional_invaded_slf_plot <- regional_invaded_slf_plot +
 
 regional_native_patchwork <- (
   (regional_native_slf_plot | regional_native_points_plot) / 
-  (regional_native_withSLF_plot | regional_invaded_slf_plot)
+  (regional_native_withSLF_plot | regional_native_test_plot)
    ) +
   plot_annotation(
     title = "'Rn' model elements",
-    subtitle = "A) training region B) background points C) background selection area D) test region"
+    subtitle = "(A) training presences (B) background points (C) background selection area (D) test presences"
     ) +
   plot_layout(widths = unit(20, "cm")) 
 

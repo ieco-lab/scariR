@@ -2,7 +2,7 @@
 title: "Map regional ensemble predictions and intercept with global model"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-09"
+date: "2024-04-26"
 output: html_document
 ---
 # Overview
@@ -118,7 +118,7 @@ regional_ensemble_1995 <- terra::rast(
   )
 
 regional_ensemble_2055 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
   )
 
 # change names

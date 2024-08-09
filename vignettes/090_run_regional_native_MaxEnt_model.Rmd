@@ -1,19 +1,17 @@
 ---
-title: "Run 'regional_native' maxent model based on east Asian range"
+title: "Run 'Rn' model trained on SLF native range in east Asia"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-03-29"
+date: "2024-08-09"
 output: html_document
 ---
 # Overview
 
-In the last vignette, I trained the first regional model, based on the invaded range. This vignette will train the regional_native model based on SLF presences found in the native range. This model has the advantage that SLF is likely stable within its niche in China.
-
-(THEORY)
+This vignette trains the last regional-scale model, the Rn model, which is based on the native range of SLF in east Asia. 
 
 # Setup
 
-*CURRENT MODEL VERSION: v2*
+*CURRENT MODEL VERSION: v3*
 
 ```{r load necesssary packages, echo = FALSE}
 
@@ -57,7 +55,7 @@ options(java.parameters = "-Xmx2048m")
 
 ```
 
-# 1. Format Data for invaded regional Model
+# 1. Format Data for native regional Model
 
 ## Input Data- env covariates
 
@@ -80,11 +78,6 @@ x_native_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_1
 x_global_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
     grep("bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
-# the scale used to project maps
-x_NAmerica_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
-  # dont include Access to cities
-  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
-
 ```
 
 The CMIP6 versions of these covariates will only be used for projection purposes.
@@ -94,15 +87,22 @@ The CMIP6 versions of these covariates will only be used for projection purposes
 # path to directory
   mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
+                     "maxent/future_climate_rasters/chelsa2.1_30arcsec")
 
 # the env covariates for performing xy predictions for global slf and IVR points
-x_global_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
+
+# SSP126
+x_global_126_env_covariates_list <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
   # dont include Access to cities
   grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
-# the env covariates for creating prediction maps for N America
-x_NAmerica_CMIP6_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) %>%
+# SSP370
+x_global_370_env_covariates_list <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
+  # dont include Access to cities
+  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+
+# SSP585
+x_global_585_env_covariates_list <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) %>%
   # dont include Access to cities
   grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
 
@@ -151,81 +151,88 @@ names(x_global_hist_env_covariates) <- env_layer_names
 # confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
 
 
-
-# NAmerica rasters
-# stack env covariates
-x_NAmerica_hist_env_covariates <- terra::rast(x = x_NAmerica_hist_env_covariates_list)
-
-# attributes
-nlyr(x_NAmerica_hist_env_covariates)
-names(x_NAmerica_hist_env_covariates)
-minmax(x_NAmerica_hist_env_covariates)
-# ext(x_NAmerica_hist_env_covariates)
-# crs(x_NAmerica_hist_env_covariates)
-
-names(x_NAmerica_hist_env_covariates) <- env_layer_names
-
 ```
 
-```{r stack CMIP6 covariates and make naming consistent}
+```{r load in CMIP6 covariates}
 
-# stack env covariates
-x_global_CMIP6_env_covariates <- terra::rast(x = x_global_CMIP6_env_covariates_list)
-
-# attributes
-nlyr(x_global_CMIP6_env_covariates)
-names(x_global_CMIP6_env_covariates)
-minmax(x_global_CMIP6_env_covariates)
-# ext(x_global_CMIP6_env_covariates)
-# crs(x_global_CMIP6_env_covariates)
-
-names(x_global_CMIP6_env_covariates) <- env_layer_names
-
-
-
-# stack env covariates
-x_NAmerica_CMIP6_env_covariates <- terra::rast(x = x_NAmerica_CMIP6_env_covariates_list)
+# SSP126
+x_global_126_env_covariates <- terra::rast(x = x_global_126_env_covariates_list)
 
 # attributes
-nlyr(x_NAmerica_CMIP6_env_covariates)
-names(x_NAmerica_CMIP6_env_covariates)
-minmax(x_NAmerica_CMIP6_env_covariates)
-# ext(x_NAmerica_CMIP6_env_covariates)
-# crs(x_NAmerica_CMIP6_env_covariates)
+nlyr(x_global_126_env_covariates)
+names(x_global_126_env_covariates)
+minmax(x_global_126_env_covariates)
+# ext(x_global_126_env_covariates)
+# crs(x_global_126_env_covariates)
 
-names(x_NAmerica_CMIP6_env_covariates) <- env_layer_names
-  
+names(x_global_126_env_covariates) <- env_layer_names
+
+
+# SSP370
+x_global_370_env_covariates <- terra::rast(x = x_global_370_env_covariates_list)
+
+# attributes
+nlyr(x_global_370_env_covariates)
+names(x_global_370_env_covariates)
+minmax(x_global_370_env_covariates)
+# ext(x_global_370_env_covariates)
+# crs(x_global_370_env_covariates)
+
+names(x_global_370_env_covariates) <- env_layer_names
+
+
+# SSP585
+x_global_585_env_covariates <- terra::rast(x = x_global_585_env_covariates_list)
+
+# attributes
+nlyr(x_global_585_env_covariates)
+names(x_global_585_env_covariates)
+minmax(x_global_585_env_covariates)
+# ext(x_global_585_env_covariates)
+# crs(x_global_585_env_covariates)
+
+names(x_global_585_env_covariates) <- env_layer_names
+
 ```
 
 ```{r remove lists}
 
 rm(x_native_env_covariates_list)
-rm(x_NAmerica_hist_env_covariates_list)
 rm(x_global_hist_env_covariates_list)
-rm(x_NAmerica_CMIP6_env_covariates_list)
-rm(x_global_CMIP6_env_covariates_list)
+rm(x_global_126_env_covariates_list)
+rm(x_global_370_env_covariates_list)
+rm(x_global_585_env_covariates_list)
 
 ```
 
 
-## Input data- presences / absences (training and testing)
+## 1.2 Input data- presences / absences (training and testing)
 
 I need to also load in the SLF presence dataset created in vignette 030 and the background points dataset created in vignette 040.
 
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species)
-# train presences
-p_slf_points_native <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_model_presence_points_v2.csv"))
+
+# training presences
+p_slf_points_native_train <- read.csv(
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_v3.csv")
+  )
 # test presences
-p_slf_points_invaded <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_model_presence_points_v6.csv"))
+p_slf_points_native_test <- read.csv(
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_v3.csv")
+  )
 
 # entire eastern USA background point set
-a_regional_native_background_points <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_unweighted_v2.csv"))
+a_regional_native_background_points <- read.csv(
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
+  )
 
 ```
+
+### Model Training object
 
 Now I will create the "samples with data" object that SDMtune requires. 
 
@@ -235,7 +242,7 @@ if (FALSE) {
 
   regional_native_train <- SDMtune::prepareSWD(species = "Lycorma delicatula",
                                     env = x_native_env_covariates,
-                                    p = p_slf_points_native, 
+                                    p = p_slf_points_native_train, 
                                     a = a_regional_native_background_points,
                                     verbose = TRUE # print helpful messages
                                     )
@@ -252,8 +259,8 @@ if (FALSE) {
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_native_train, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_with_data_v2.csv"),
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_with_data_v2.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_with_data_v3.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_with_data_v3.csv")
   ))
 
 ```
@@ -264,11 +271,11 @@ The model will be tested using all presences from N America.
 
 ```{r prepare SWD data object}
 
-if (TRUE) {
+if (FALSE) {
 
   regional_native_test <- SDMtune::prepareSWD(species = "Lycorma delicatula",
-                                    env = x_global_hist_env_covariates, # need the global covariates for China
-                                    p = p_slf_points_invaded, 
+                                    env = x_global_hist_env_covariates, # need the global covariates for China and N America
+                                    p = p_slf_points_native_test, 
                                     a = a_regional_native_background_points,
                                     verbose = TRUE # print helpful messages
                                     )
@@ -284,7 +291,7 @@ if (TRUE) {
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = regional_native_test, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_with_data_v2.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_with_data_v3.csv"),
   file.path(here::here(), "vignette-outputs", "data-tables", "NULL.csv")
   ))
 
@@ -293,9 +300,7 @@ file.remove(file.path(here::here(), "vignette-outputs", "data-tables", "NULL.csv
 
 ```
 
-# 2. Train Invaded Regional Model
-
-## Training
+# 2. Train native Regional Model
 
 First, I will train a maxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). 
 
@@ -327,7 +332,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_native_v2")
+                     "maxent/models/slf_regional_native_v3")
 
 slfSpread::compute_MaxEnt_summary_statistics(
   model.obj = regional_native_model, 
@@ -346,7 +351,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
 
 # 3. Create Outputs for Analysis
 
-## Create distribution map for area of interest
+## 3.1 Create distribution map for area of interest
 
 Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
 
@@ -358,7 +363,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_native_v2")
+                     "maxent/models/slf_regional_native_v3")
 
 ```
 
@@ -382,23 +387,25 @@ slfSpread::create_MaxEnt_suitability_maps(
   env.covar.obj = x_global_hist_env_covariates, 
   describe.proj = "globe_1981-2010", # name of area or time period describe.proj to
   clamp.pred = TRUE,
-  thresh = c("MTP", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   map.thresh.extra = "MTP",
+  thresh = c("MTP", "10_percentile", "MTSS"),
   summary.file = file.path(mypath, "regional_native_summary.csv")
 )
 
 ```
 
-```{r predict mean and thresholded suitability maps for historical data}
+I will also create suitability maps for the projected 2041-2070 climate data.
+
+```{r predict suitability maps for ssp126 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = regional_native_model,
   model.name = "regional_native", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_NAmerica_hist_env_covariates, 
-  describe.proj = "NAmerica_1981-2010", # name of area or time period describe.proj to
+  env.covar.obj = x_global_126_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp126", # name of area or time period projected to
   clamp.pred = TRUE,
   thresh = c("MTP", "10_percentile", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
@@ -408,36 +415,16 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-I will also need to create a suitability map for the projected 2041-2070 climate data for N. America.
-
-```{r predict normal and thresholded suitability maps for CMIP6 data}
+```{r predict suitability maps for ssp370 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
   model.obj = regional_native_model,
   model.name = "regional_native", 
   mypath = mypath, 
   create.dir = FALSE, 
-  env.covar.obj = x_global_CMIP6_env_covariates, 
+  env.covar.obj = x_global_370_env_covariates, 
   describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
   clamp.pred = TRUE,
-  thresh = c("MTP", "MTSS"),
-  map.thresh = TRUE, # whether thresholded versions of these maps should be created
-  map.thresh.extra = "MTP",
-  summary.file = file.path(mypath, "regional_native_summary.csv")
-)
-
-```
-
-```{r predict normal and thresholded suitability maps for CMIP6 data}
-
-slfSpread::create_MaxEnt_suitability_maps(
-  model.obj = regional_native_model,
-  model.name = "regional_native", 
-  mypath = mypath, 
-  create.dir = FALSE, 
-  env.covar.obj = x_NAmerica_CMIP6_env_covariates, 
-  describe.proj = "NAmerica_2041-2070_GFDL_ssp370", # name of area or time period projected to
-  clamp.pred = TRUE,
   thresh = c("MTP", "10_percentile", "MTSS"),
   map.thresh = TRUE, # whether thresholded versions of these maps should be created
   map.thresh.extra = "MTP",
@@ -446,31 +433,40 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-## Predict suitability for all SLF presences
+```{r predict suitability maps for ssp585 data}
 
-```{r set wd}
+slfSpread::create_MaxEnt_suitability_maps(
+  model.obj = regional_native_model,
+  model.name = "regional_native", 
+  mypath = mypath, 
+  create.dir = FALSE, 
+  env.covar.obj = x_global_585_env_covariates, 
+  describe.proj = "globe_2041-2070_GFDL_ssp585", # name of area or time period projected to
+  clamp.pred = TRUE,
+  thresh = c("MTP", "10_percentile", "MTSS"),
+  map.thresh = TRUE, # whether thresholded versions of these maps should be created
+  map.thresh.extra = "MTP",
+  summary.file = file.path(mypath, "regional_native_summary.csv")
+)
 
-mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent/models/slf_regional_native_v2")
 
 ```
 
-I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.
-
-During data analysis, I will create a scatter plot of these suitability values in the global vs regional models.
-
-### Historical Data
+## 3.2 Predict suitability for all SLF presences
 
 ```{r data import}
 
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_native_v3")
+
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_final_coords_2024-02-01.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species)
 
 ``` 
 
-```{r predictions for SLF coordinate data}
+```{r predictions for known SLF populations- historical}
 
 slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
@@ -484,16 +480,28 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-### CMIP6 Data
-
 I will repeat the same process for the CMIP6 data.
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r predictions for known SLF populations- ssp126}
 
 slfSpread::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
+  model.obj = regional_native_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_native_slf_all_coords_2041-2070_GFDL_ssp126"
+)
+
+```
+
+```{r predictions for known SLF populations- ssp370}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_370_env_covariates,
   model.obj = regional_native_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
@@ -502,9 +510,31 @@ slfSpread::predict_xy_suitability(
 
 ```
 
-## Predict suibability for IVR regions
+```{r predictions for known SLF populations- ssp585}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = slf_presences,
+  xy.type = "Lycorma delicatula",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = regional_native_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_native_slf_all_coords_2041-2070_GFDL_ssp585"
+)
+
+```
+
+## 3.3 Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world. 
+
+```{r set wd}
+
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_native_v3")
+
+```
 
 ```{r data import}
 
@@ -516,9 +546,7 @@ IVR_regions <- wineries %>%
 
 ``` 
 
-### Historical Data
-
-```{r predictions for IVR coordinate data}
+```{r predictions for IVR coordinate data- historical}
 
 slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
@@ -527,28 +555,60 @@ slfSpread::predict_xy_suitability(
   model.obj = regional_native_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_native_wineries_1981-2010"
+  output.name = "regional_native_wineries_1981-2010",
+  buffer.pred = TRUE
 )
 
 ```
 
-### CMIP6 Data
+Do the same for the SSP scenarios
 
-```{r predictions for SLF coordinate data CMIP6}
+```{r predictions for IVR coordinate data- ssp126}
 
 slfSpread::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
-  env.covar.obj = x_global_CMIP6_env_covariates,
+  env.covar.obj = x_global_126_env_covariates,
   model.obj = regional_native_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_native_wineries_2041-2070_GFDL_ssp370"
+  output.name = "regional_native_wineries_2041-2070_GFDL_ssp126",
+  buffer.pred = TRUE
 )
 
 ```
 
-END
+```{r predictions for IVR coordinate data- ssp370}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_370_env_covariates,
+  model.obj = regional_native_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_native_wineries_2041-2070_GFDL_ssp370",
+  buffer.pred = TRUE
+)
+
+```
+
+```{r predictions for IVR coordinate data- ssp585}
+
+slfSpread::predict_xy_suitability(
+  xy.obj = IVR_regions,
+  xy.type = "IVR regions",
+  env.covar.obj = x_global_585_env_covariates,
+  model.obj = regional_native_model,
+  mypath = mypath,
+  predict.type = c("cloglog", "logistic"),
+  output.name = "regional_native_wineries_2041-2070_GFDL_ssp585",
+  buffer.pred = TRUE
+)
+
+```
+
+Now that all of my models have been trained, I can move on to make check for the level of extrapolation and the most important covariate for each model's predictions. This is an important step when applying models to climate change and invasive species, due to the non-equilibrium nature of these applications. 
 
 # References
 

@@ -19,7 +19,7 @@ This file will practice execution of the analyses outlined in the slfrsk researc
 ```{r load necesssary packages, echo = FALSE}
 
 library(devtools)
-library(slfrsk) #this package, has extract_enm()
+#library(slfrsk) #this package, has extract_enm()
 library(lydemapr) # package for tinyslf
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances

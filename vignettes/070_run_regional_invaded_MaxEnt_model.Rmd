@@ -1,5 +1,5 @@
 ---
-title: "Run 'Ri.NAmerica' model for the invaded region of North America"
+title: "Run 'Ri.NAmerica' model trained on SLF invaded region in North America"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-08-02"
@@ -7,9 +7,7 @@ output: html_document
 ---
 # Overview
 
-In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional model based on the invaded range.
-
-(THEORY)
+In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional-scale model based on the invaded North American range.
 
 # Setup
 
@@ -57,11 +55,11 @@ options(java.parameters = "-Xmx2048m")
 
 ```
 
-# 1. Format Data for invaded regional Model
+# 1. Format Data for Model
+
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used in the `SDMtune::train()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets.
 
 ## 1.1 Input Data- env covariates
-
-I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The covariates are cropped at 3 different scales. The easternUSA versions will be used to train the regional model, while the NAmerica and global scales will be used to project the models (apply the trained model to a new dataset and obtain results).
 
 ```{r load in historical covariates}
 
@@ -411,7 +409,7 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-I will also create suitability maps for the projected 2041-2070 climate data for N. America.
+I will also create suitability maps for the projected 2041-2070 climate data.
 
 ```{r predict suitability maps for ssp126 data}
 
@@ -566,7 +564,8 @@ slfSpread::predict_xy_suitability(
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_invaded_wineries_1981-2010"
+  output.name = "regional_invaded_wineries_1981-2010",
+  buffer.pred = TRUE
 )
 
 ```
@@ -582,7 +581,8 @@ slfSpread::predict_xy_suitability(
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp126"
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp126",
+  buffer.pred = TRUE
 )
 
 ```
@@ -596,7 +596,8 @@ slfSpread::predict_xy_suitability(
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp370"
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp370",
+  buffer.pred = TRUE
 )
 
 ```
@@ -610,7 +611,8 @@ slfSpread::predict_xy_suitability(
   model.obj = regional_invaded_model,
   mypath = mypath,
   predict.type = c("cloglog", "logistic"),
-  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp585"
+  output.name = "regional_invaded_wineries_2041-2070_GFDL_ssp585",
+  buffer.pred = TRUE
 )
 
 ```
