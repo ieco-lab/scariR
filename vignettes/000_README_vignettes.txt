@@ -147,7 +147,7 @@ v4- 2024-08-08- rework- updated SLF presence data and inclusion of other SSP sce
 
 ## About
 
-
+This vignette runs the exdet and MIC analyses and saves their outputs. It also creates plots of the outputs.
 
 ## Changelog
 
@@ -163,7 +163,7 @@ v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP sce
 
 ## About
 
-
+This vignette takes steps to ensemble the predictions of each regional model into an ensemble. Ensembling is done per time period and ssp scenario. The three ssp scenarios are also ensembled into a final mean / modal prediction. First, rasters are weighted using the AUC and exdet per model and a weighted mean is taken. Next, rasters and MTSS / MTP thresholds are ensembled. MICs are also ensembled. Finally, we analyze the percent contribution of each model to the ensemble.
 
 ## Changelog
 

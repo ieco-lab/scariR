@@ -2471,7 +2471,7 @@ ggsave(
 
 ```
 
-### mic- mode of all ssp scenarios
+### ssp mode
 
 ```{r stack mic rasters}
 

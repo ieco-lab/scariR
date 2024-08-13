@@ -723,6 +723,46 @@ readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_
 
 ```
 
+# 4. Take mean of ssp scenario predictions
+
+I will load the three ssp scenario rasters I just created back into R and will take a mean of those rasters for my predictions step later downstream.
+
+```{r re-load ssp pred rasters}
+
+# ssp 126
+pred_global_2055_126 <- terra::rast(
+  x = file.path(mypath, "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp126_mean.asc")
+)
+# ssp 370
+pred_global_2055_370 <- terra::rast(
+  x = file.path(mypath, "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc")
+)
+# ssp 585
+pred_global_2055_585 <- terra::rast(
+  x = file.path(mypath, "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp585_mean.asc")
+)
+
+```
+
+```{r stack rasters}
+
+pred_global_2055_stack <- c(pred_global_2055_126, pred_global_2055_370, pred_global_2055_585)
+
+```
+
+```{r take unweighted mean}
+
+# apply mean between layers
+pred_global_2055_mean <- terra::app(
+  x = pred_global_2055_stack,
+  fun = "mean",
+  filename = file.path(mypath, "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp_averaged.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+```
+
 # Appendix
 
 ## Attempt at Spatially and environmentally Blocked Cross-validation

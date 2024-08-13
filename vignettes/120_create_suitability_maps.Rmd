@@ -7,19 +7,9 @@ output: html_document
 ---
 # Overview
 
-EDIT
+In this vignette, I will compare known SLF presences with the predicted SLF suitability to infer a level of establishment risk for each point. This will be done by extracting the predicted suitability values at each known SLF point from both models. I will then binarize these rasters (suitable/unsuitable) and use these versions to infer the level of range filling and establishment risk of the points. 
 
-OUTLINE
-1. suitability maps (thresholded) of the regional ensemble
-2. binarized overlap between the regional and global models
-
-
-
-
-
-In this vignette, I will compare known SLF presences with the predicted SLF suitability to infer an "invasion stage" for each point. This will be done by extracting the predicted suitability values at each known SLF point from both models. I will then binarize these rasters (suitable/unsuitable) and use these versions to infer the level of range filling and invasion stage of the points. I ran two trial models, v5_global and v5_regional that will be used to build this analysis. 
-
-For my analysis, I need to compare the predictions of both the regional and global models in the invaded region. I will begin by comparing the performance of each model at each point across the invaded range. Gallien et.al did this for both observed presences and pseudo-absences ("background points"), but in this vignette I will only use known SLF presences. The extracted values of the points were used to produce a boxplot of predicted suitability for the global vs the regional model. I will create a boxplot of the values and plot the points over the rasters
+For my analysis, I need to compare the predictions of the global model and all regional models. I will begin by comparing the performance of each model at each point across the invaded range. Gallien et.al did this for both observed presences and pseudo-absences ("background points"), but in this vignette I will only use known SLF presences. The extracted values of the points were used to produce a boxplot of predicted suitability for the global vs the regional model. I will create a boxplot of the values and plot the points over the rasters
 
 Next, I will need to infer the amount of range filling and invasion stage of SLF according to each model. In Gallien et.al, this was done by binarizing each raster and overlaying them. The raster values are summed I will then overlay known SLF presences.  There are a few steps to this process:
 
@@ -27,9 +17,6 @@ Next, I will need to infer the amount of range filling and invasion stage of SLF
 2. Convert each output to binary (suitable/unsuitable) based on these suitability thresholds 
 2. Mosaic the rasters and sum their values.
 2. Re-classify summed raster as areas where both agree on presence, both agree on absence, or one classifies and the other classifies absent (4 total categories)
-
-
-
 
 # Setup
 
@@ -45,7 +32,7 @@ library(common)
 
 # spatial data handling
 library(terra) 
-library(scrubr)
+library(CoordinateCleaner)
 
 # aesthetics
 library(viridis)
@@ -111,29 +98,60 @@ mypath <- file.path(here::here() %>%
 
 ## regional ensemble
 
+I will import the predicted suitability rasters from the regional model ensembling. I will also import the ensembled thresholds and change the raster naming.
+
 ```{r ensemble rasters}
 
+# historical 
 regional_ensemble_1995 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
   )
 
-regional_ensemble_2055 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc")
+
+# CMIP6
+# ssp126
+regional_ensemble_2055_126 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.asc")
+  )
+# ssp370
+regional_ensemble_2055_370 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  )
+# ssp585
+regional_ensemble_2055_585 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.asc")
   )
 
-# change names
-names(regional_ensemble_1995) <- "ensemble_suitability"
-names(regional_ensemble_2055) <- "ensemble_suitability"
-
-# also convert to df
-regional_ensemble_1995_df <- terra::as.data.frame(regional_ensemble_1995, xy = TRUE)
-regional_ensemble_2055_df <- terra::as.data.frame(regional_ensemble_2055, xy = TRUE)
+# the mean of the ssp scenarios
+regional_ensemble_2055_mean <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc")
+  )
 
 ```
 
 ```{r ensemble thresholds}
 
-regional_ensemble_thresholds <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
+regional_ensemble_thresholds <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
+
+```
+
+```{r change raster names and convert to df}
+
+# change names
+names(regional_ensemble_1995) <- "ensemble_suitability"
+# CMIP6
+names(regional_ensemble_2055_126) <- "ensemble_suitability"
+names(regional_ensemble_2055_370) <- "ensemble_suitability"
+names(regional_ensemble_2055_585) <- "ensemble_suitability"
+names(regional_ensemble_2055_mean) <- "ensemble_suitability"
+
+# also convert to df
+regional_ensemble_1995_df <- terra::as.data.frame(regional_ensemble_1995, xy = TRUE)
+# CMIP6
+regional_ensemble_2055_126_df <- terra::as.data.frame(regional_ensemble_2055_126, xy = TRUE)
+regional_ensemble_2055_370_df <- terra::as.data.frame(regional_ensemble_2055_370, xy = TRUE)
+regional_ensemble_2055_585_df <- terra::as.data.frame(regional_ensemble_2055_585, xy = TRUE)
+regional_ensemble_2055_mean_df <- terra::as.data.frame(regional_ensemble_2055_mean, xy = TRUE)
 
 ```
 
@@ -141,74 +159,128 @@ regional_ensemble_thresholds <- read_csv(file = file.path(mypath, "slf_regional_
 
 ```{r global model rasters}
 
+# historical 
 global_1995 <- terra::rast(
-  x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc")
+  x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc")
   )
 
-global_2055 <- terra::rast(
-  x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc")
+# CMIP6
+# ssp126
+global_2055_126 <- terra::rast(
+  x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp126_mean.asc")
+  )
+# ssp370
+global_2055_370 <- terra::rast(
+  x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc")
+  )
+# ssp126
+global_2055_585 <- terra::rast(
+  x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp585_mean.asc")
   )
 
-# change names
-names(global_1995) <- "global_suitability"
-names(global_2055) <- "global_suitability"
-
-# also convert to df
-global_1995_df <- terra::as.data.frame(global_1995, xy = TRUE)
-global_2055_df <- terra::as.data.frame(global_2055, xy = TRUE)
+# also import mean raster
+global_2055_mean <- terra::rast(
+  x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp_averaged.asc")
+  )
 
 ```
 
 ```{r summary file}
 
-summary_global <- read_csv(file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv")) %>%
+summary_global <- read_csv(file.path(mypath, "slf_global_v3", "global_summary_all_iterations.csv")) %>%
   dplyr::select(., statistic, mean)
 
 ```
 
+```{r change raster names and convert to df}
+
+# change names
+# historical
+names(global_1995) <- "global_suitability"
+# CMIP6
+names(global_2055_126) <- "global_suitability"
+names(global_2055_370) <- "global_suitability"
+names(global_2055_585) <- "global_suitability"
+names(global_2055_mean) <- "global_suitability"
+
+# also convert to df
+global_1995_df <- terra::as.data.frame(global_1995, xy = TRUE)
+# CMIP6
+global_2055_126_df <- terra::as.data.frame(global_2055_126, xy = TRUE)
+global_2055_370_df <- terra::as.data.frame(global_2055_370, xy = TRUE)
+global_2055_585_df <- terra::as.data.frame(global_2055_585, xy = TRUE)
+global_2055_mean_df <- terra::as.data.frame(global_2055_mean, xy = TRUE)
 
 
-# 1. Map regional ensemble
+```
 
-First, I will create general suitability maps of the regional ensemble I created in the previous vignette. These maps will depict the weighted suitability values, but will also threshold the map using the calculated MTP and MTSS thresholds. Anything unsuitable will be depicted in dark grey, anything suitable above the MTP threshold in light grey, and the suitable above the MTSS threshold in a color ramp.
+# 1. Map cloglog suitability
+
+First, I will create general suitability maps of the regional ensemble and global models I created in the previous vignettes. These maps will depict the weighted suitability values, but will also threshold the map using the calculated MTP and MTSS thresholds. Anything unsuitable will be depicted in dark grey, anything suitable above the MTP threshold in light grey, and the suitable above the MTSS threshold in a color ramp.
+
+## 1.1 Mapping helper function
+
+I will try to reduce the amount of repeated code by using a mapping helper function containing the body of the plotting code. This part will remain relatively unchanged each time.
+
+```{r mapping helper function}
+
+map_cloglog_output <- function(raster.df, raster.value.name, thresh.MTP, thresh.MTSS) {
+  
+  # raster.df = the dataframe of the raster
+  # raster.value.name = the name of the raster values
+  # thresh.MTP = the df cell coordinates of the MTP thresh
+  # thresh.MTSS = the df cell coordinates of the MTSS thresh
+  
+  ggplot() +
+    # default style object
+    map_style +
+    # plot raster
+    geom_raster(data = raster.df, aes(x = x, y = y, fill = raster.value.name)) +
+    # aesthetics
+    scale_fill_gradientn(
+      # the values of the color divisions: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
+      values = c(
+        0, # minimum
+        as.numeric(thresh.MTP), # MTP thresh
+        as.numeric(thresh.MTP) + 0.0000001, # some small amount more than the MTP
+        as.numeric(thresh.MTSS), # MTSS thresh
+        as.numeric(thresh.MTSS) + 0.0000001,
+        # the rest
+        0.5,
+        0.75,
+        1
+        ),
+      # these colors taken from viridis color scale D
+      # the colors for the divisions in the order: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
+      colors = c("azure4", "azure4", "azure2", "azure2", "#481567FF", "#2D708EFF", "#3CBB75FF", "#FDE725FF"),
+      # the tick marks
+      breaks = c(0, as.numeric(thresh.MTP), as.numeric(thresh.MTSS), 0.5, 0.75, 1.00),
+      # labels for the tick marks
+      labels = c("unsuitable", "", paste0(round(as.numeric(thresh.MTSS), 2), "\n(MTSS thresh)"), 0.5, 0.75, 1),
+      limits = c(0, 1.0),
+      guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
+      ) 
+  
+}
+
+```
+
+## 1.2 Map cloglog output of models- historical
 
 ```{r map regional ensemble: 1981-2010}
 
-regional_ensemble_1995_plot <- ggplot() +
-  # plot raster
-  geom_raster(data = regional_ensemble_1995_df, aes(x = x, y = y, fill = ensemble_suitability)) +
-  # aesthetics
-  scale_fill_gradientn(
-    # the values of the color divisions: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
-    values = c(
-      0, # minimum
-      as.numeric(regional_ensemble_thresholds[1, 4]), # MTP thresh
-      as.numeric(regional_ensemble_thresholds[1, 4]) + 0.0000001, # some small amount more than the MTP
-      as.numeric(regional_ensemble_thresholds[3, 4]), # MTSS thresh
-      as.numeric(regional_ensemble_thresholds[3, 4]) + 0.0000001,
-      # the rest
-      0.5,
-      0.75,
-      1
-      ),
-    # these colors taken from viridis color scale D
-    # the colors for the divisions in the order: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
-    colors = c("azure4", "azure4", "azure2", "azure2", "#481567FF", "#2D708EFF", "#3CBB75FF", "#FDE725FF"),
-    # the tick marks
-    breaks = c(0, as.numeric(regional_ensemble_thresholds[1, 4]), as.numeric(regional_ensemble_thresholds[3, 4]), 0.5, 0.75, 1.00),
-    # labels for the tick marks
-    labels = c("unsuitable", "", paste0(round(as.numeric(regional_ensemble_thresholds[3, 4]), 2), "\n(MTSS thresh)"), 0.5, 0.75, 1),
-    limits = c(0, 1.0),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
-    ) +
+regional_ensemble_1995_plot <- map_cloglog_output(
+  raster.df = regional_ensemble_1995_df, # the dataframe of the raster
+  raster.value.name = regional_ensemble_1995_df$ensemble_suitability, # the name of the raster values
+  thresh.MTP = regional_ensemble_thresholds[1, 4], # the df cell coordinates of the MTP thresh
+  thresh.MTSS = regional_ensemble_thresholds[5, 4] # the df cell coordinates of the MTSS thresh
+) +
   # labs
   labs(
     title = "Suitability for SLF in regional model ensemble",
-    subtitle = "",
+    subtitle = "1981-2010",
     caption = "MTP & MTSS thresholds | clamped"
-    ) +
-  # default style
-  map_style
+    ) 
 
 ```
 
@@ -216,7 +288,7 @@ regional_ensemble_1995_plot <- ggplot() +
 
 ggsave(
   regional_ensemble_1995_plot,
-  filename = file.path(mypath, "slf_regional_ensemble_v0", "plots", "regional_ensemble_pred_suit_globe_1981-2010.jpg"),
+  filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_1981-2010.jpg"),
   height = 8,
   width = 12,
   device = "jpeg",
@@ -225,55 +297,28 @@ ggsave(
 
 ```
 
-Now, I will map the predictions for 2041-2070
+```{r map global: 1981-2010}
 
-```{r map regional ensemble: 2041-2070}
-
-# I had to change the row call of the thresholds tibble to row 2 [2, x]
-
-regional_ensemble_2055_plot <- ggplot() +
-  # plot raster
-  geom_raster(data = regional_ensemble_2055_df, aes(x = x, y = y, fill = ensemble_suitability)) +
-  # aesthetics
-  scale_fill_gradientn(
-    # the values of the color divisions: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
-    values = c(
-      0, # minimum
-      as.numeric(regional_ensemble_thresholds[2, 4]), # MTP thresh
-      as.numeric(regional_ensemble_thresholds[2, 4]) + 0.0000001, # some small amount more than the MTP
-      as.numeric(regional_ensemble_thresholds[4, 4]), # MTSS thresh
-      as.numeric(regional_ensemble_thresholds[4, 4]) + 0.0000001,
-      # the rest
-      0.5,
-      0.75,
-      1
-      ),
-    # these colors taken from viridis color scale D
-    # the colors for the divisions in the order: 0, MTP, slightly above MTP, MTSS, slightly above MTSS, 0.5, 0.75, 1
-    colors = c("azure4", "azure4", "azure2", "azure2", "#481567FF", "#2D708EFF", "#3CBB75FF", "#FDE725FF"),
-    # the tick marks
-    breaks = c(0, as.numeric(regional_ensemble_thresholds[2, 3]), as.numeric(regional_ensemble_thresholds[4, 4]), 0.5, 0.75, 1.00),
-    # labels for the tick marks
-    labels = c("unsuitable", "", paste0(round(as.numeric(regional_ensemble_thresholds[4, 4]), 2), "\n(MTSS thresh)"), 0.5, 0.75, 1),
-    limits = c(0, 1.0),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
-    ) +
+global_1995_plot <- map_cloglog_output(
+  raster.df = global_1995_df, # the dataframe of the raster
+  raster.value.name = global_1995_df$global_suitability, # the name of the raster values
+  thresh.MTP = summary_global[30, 2], # the df cell coordinates of the MTP thresh
+  thresh.MTSS = summary_global[42, 2] # the df cell coordinates of the MTSS thresh
+) +
   # labs
   labs(
-    title = "Suitability for SLF in regional model ensemble",
-    subtitle = "projected to 2041-2070 | ssp3-70 | GFDL",
+    title = "Suitability for SLF in global model",
+    subtitle = "1981-2010",
     caption = "MTP & MTSS thresholds | clamped"
-    ) +
-  # default style
-  map_style
+    ) 
 
 ```
 
 ```{r save plot}
 
 ggsave(
-  regional_ensemble_2055_plot,
-  filename = file.path(mypath, "slf_regional_ensemble_v0", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
+  global_1995_plot,
+  filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_1981-2010.jpg"),
   height = 8,
   width = 12,
   device = "jpeg",
@@ -281,6 +326,83 @@ ggsave(
   )
 
 ```
+
+## 1.3 Map cloglog output of models- CMIP6
+
+Now, I will map the predictions for 2041-2070
+
+### ssp 126
+
+
+
+### ssp 370
+
+```{r map regional ensemble: ssp370}
+
+# I had to change the row call of the thresholds tibble to row 2 [2, x]
+
+regional_ensemble_2055_370_plot <- regional_ensemble_2055_370_plot <- map_cloglog_output(
+  raster.df = regional_ensemble_2055_370_df, # the dataframe of the raster
+  raster.value.name = regional_ensemble_2055_370_df$ensemble_suitability, # the name of the raster values
+  thresh.MTP = regional_ensemble_thresholds[3, 4], # the df cell coordinates of the MTP thresh
+  thresh.MTSS = regional_ensemble_thresholds[7, 4] # the df cell coordinates of the MTSS thresh
+) +
+  # labs
+  labs(
+    title = "Suitability for SLF in regional model ensemble",
+    subtitle = "2041-2070 | ssp370 GFDL-ESM4",
+    caption = "MTP & MTSS thresholds | clamped"
+    ) 
+
+```
+
+```{r save plot}
+
+ggsave(
+  regional_ensemble_2055_370_plot,
+  filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
+  height = 8,
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+```{r map global: ssp370}
+
+# I had to change the row call of the thresholds tibble to row 2 [2, x]
+
+global_2055_370_plot <- map_cloglog_output(
+  raster.df = global_2055_370_df, # the dataframe of the raster
+  raster.value.name = global_2055_370_df$global_suitability, # the name of the raster values
+  thresh.MTP = summary_global[30, 2], # the df cell coordinates of the MTP thresh
+  thresh.MTSS = summary_global[42, 2] # the df cell coordinates of the MTSS thresh
+) +
+  # labs
+  labs(
+    title = "Suitability for SLF in global model",
+    subtitle = "2041-2070 | ssp370 GFDL-ESM4",
+    caption = "MTP & MTSS thresholds | clamped"
+    ) 
+
+```
+
+```{r save plot}
+
+ggsave(
+  global_2055_370_plot,
+  filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
+  height = 8,
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### ssp 585
+
 
 # 2. Create binary threshold maps to infer range filling
 
@@ -365,7 +487,7 @@ if(FALSE) {
     rcl = regional_ensemble_classes,
     right = NA, # close both ends of the range of classification values
     others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_1981-2010.asc"), # also write to file
+    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_1981-2010.asc"), # also write to file
     filetype = "AAIGrid",
     overwrite = FALSE
     ) 
@@ -377,7 +499,7 @@ if(FALSE) {
     rcl = global_classes, 
     right = NA, 
     others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v2_binarized_1981-2010.asc"), 
+    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_1981-2010.asc"), 
     filetype = "AAIGrid",
     overwrite = FALSE
     ) 
@@ -413,7 +535,7 @@ Now that the rasters have been converted to binary, we will visualize them to en
 
 # load in binary raster just created and convert to df
 regional_ensemble_1995_classified_df <- terra::rast(
-  x = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_1981-2010.asc")
+  x = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_1981-2010.asc")
   ) %>%
   terra::as.data.frame(., xy = TRUE) #%>%
   #na.omit()
@@ -495,7 +617,7 @@ if(FALSE) {
     rcl = regional_ensemble_classes_2055,
     right = NA, # close both ends of the range of classification values
     others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_2041-2070_ssp370_GFDL.asc"), # also write to file
+    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp370_GFDL.asc"), # also write to file
     filetype = "AAIGrid",
     overwrite = FALSE
     ) 
@@ -507,7 +629,7 @@ if(FALSE) {
     rcl = global_classes_2055, 
     right = NA, 
     others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v2_binarized_2041-2070_ssp370_GFDL.asc"), 
+    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp370_GFDL.asc"), 
     filetype = "AAIGrid",
     overwrite = FALSE
     ) 
@@ -543,7 +665,7 @@ Now that the rasters have been converted to binary, we will visualize them to en
 
 # load in binary raster just created and convert to df
 regional_ensemble_2055_classified_df <- terra::rast(
-  x = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_2041-2070_ssp370_GFDL.asc")
+  x = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp370_GFDL.asc")
   ) %>%
   terra::as.data.frame(., xy = TRUE)
 
@@ -588,9 +710,9 @@ From the plots, we see that the binary conversion worked. Next, I will need to s
 
 ```{r import binarized rasters}
 
-global_1995_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_global_v2_binarized_1981-2010.asc"))
+global_1995_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_global_v3_binarized_1981-2010.asc"))
 
-regional_ensemble_1995_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_1981-2010.asc"))
+regional_ensemble_1995_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_1981-2010.asc"))
 
 ```
 
@@ -679,9 +801,9 @@ ggsave(
 
 ```{r import binarized rasters}
 
-global_2055_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_global_v2_binarized_2041-2070_ssp370_GFDL.asc"))
+global_2055_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp370_GFDL.asc"))
 
-regional_ensemble_2055_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_regional_ensemble_v0_binarized_2041-2070_ssp370_GFDL.asc"))
+regional_ensemble_2055_classified <- terra::rast(x = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp370_GFDL.asc"))
 
 ```
 
@@ -1279,7 +1401,7 @@ global_1995_plot <- ggplot() +
 
 ggsave(
   global_1995_plot,
-  filename = file.path(mypath, "slf_global_v2", "plots", "global_pred_suit_globe_1981-2010.jpg"),
+  filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_1981-2010.jpg"),
   height = 8,
   width = 12,
   device = "jpeg",
@@ -1336,7 +1458,7 @@ global_2055_plot <- ggplot() +
 
 ggsave(
   global_2055_plot,
-  filename = file.path(mypath, "slf_global_v2", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
+  filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
   height = 8,
   width = 12,
   device = "jpeg",
