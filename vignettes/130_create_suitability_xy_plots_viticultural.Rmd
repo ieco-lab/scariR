@@ -87,7 +87,7 @@ IVR_locations <- wineries %>%
     !is.na(y)
     ) %>%
   # de-duplicate
-  scrubr::dedup(how = "one", tolerance = 0.7) # change to 0.92 on laptop PC
+  scrubr::dedup(how = "one", tolerance = 0.92) # change to 0.92 on laptop PC
   # I chose the value of the tolerance that retrieved the number of records closest to the number of records in the xy_global_1995 (further down, 1064 records)
 
 # remove unnecessary obj

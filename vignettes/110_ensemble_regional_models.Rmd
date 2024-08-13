@@ -18,14 +18,8 @@ library(here)
 # spatial data handling
 library(terra)
 
-```
-
-```{r set wd}
-
-# output directory
-mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent")
+# aesthetics
+library(ggnewscale)
 
 ```
 
@@ -76,6 +70,15 @@ regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invad
 ## 1.1 MaxEnt Predictions
 
 First, I need to load in the rasters containing the predictions from each model. I will load in both the historical and climate change versions of these predictions.
+
+```{r set wd}
+
+# output directory
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent")
+
+```
 
 ```{r Rn regional_native model predictions historical}
 
@@ -599,19 +602,19 @@ The second step in this weighting process is to also weight each model by its go
 minmax(exdet_hist_stack)
 
 # layer 1
-exdet_hist_stack[[1]] <-terra::app(
+exdet_hist_stack[[1]] <- terra::app(
   x = exdet_hist_stack[[1]],
   fun = function(x) x * as.numeric(AUC_values[[1, 2]])
 )
 
 # layer 2
-exdet_hist_stack[[2]] <-terra::app(
+exdet_hist_stack[[2]] <- terra::app(
   x = exdet_hist_stack[[2]],
   fun = function(y) y * as.numeric(AUC_values[[2, 2]])
 )
 
 # layer 3
-exdet_hist_stack[[3]] <-terra::app(
+exdet_hist_stack[[3]] <- terra::app(
   x = exdet_hist_stack[[3]],
   fun = function(z) z * as.numeric(AUC_values[[3, 2]])
 )
@@ -814,8 +817,8 @@ I will take the weighted mean of the CMIP6 rasters as well, but will additionall
 pred_126_mean <- terra::weighted.mean(
   x = pred_126_stack,
   w = exdet_126_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.tif"),
-  filetype = "GTiff",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.asc"),
+  filetype = "AAIGrid",
   overwrite = FALSE
 )
 
@@ -823,8 +826,8 @@ pred_126_mean <- terra::weighted.mean(
 pred_370_mean <- terra::weighted.mean(
   x = pred_370_stack,
   w = exdet_370_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.tif"),
-  filetype = "GTiff",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
+  filetype = "AAIGrid",
   overwrite = FALSE
 )
 
@@ -832,8 +835,8 @@ pred_370_mean <- terra::weighted.mean(
 pred_585_mean <- terra::weighted.mean(
   x = pred_585_stack,
   w = exdet_585_stack,
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.tif"),
-  filetype = "GTiff",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.asc"),
+  filetype = "AAIGrid",
   overwrite = FALSE
 )
 
@@ -861,9 +864,14 @@ We now have a weighted mean raster for each of the historical and CMIP rasters, 
 
 # 4. Ensemble thresholds
 
-I also need to ensemble the thresholds that I will be using to create scatter plots and thresholded maps downstream. The ensemble will be performed using the same method as above, but slightly altered. I will use the pred rasters to extract the coordinates of locations that have the same suitability value as the threshold. Next, I will take these coordinates and extract the ExDet values from those same locations. I will take the mean or median of those values. Then, I will multiply the threshold by this value and the AUC for that model. Finally, I will take the weighted mean of the three modified thresh values. This will be repeated for the MTP threshold as well. Finally, this process will also be completed for the CC version of these models.
+I also need to ensemble the thresholds that I will be using to create scatter plots and thresholded maps downstream. The ensemble will be performed using the same method as above, but slightly altered. I will use the pred rasters to extract the coordinates of locations that have the same suitability value as the threshold. Next, I will take these coordinates and extract the ExDet values from those same locations. I will take the mean or median of those values. Then, I will multiply the threshold by this value and the AUC for that model. Finally, I will take the weighted mean of the three modified thresh values. This will be repeated for the MTP threshold as well. Finally, this process will also be completed for the CMIP6 version of these models.
 
-Per projected time period (historical and CC) and threshold value: 1. Extract all values from `pred` rasters that match the respective model threshold value. 2. Extract all values from the converted `exdet` rasters at those locations 3. Take mean of the exdet values at those locations. 4. Multiply this mean by the AUC value for that model. 5. Take the weighted mean of the three threshold values using these created weights.
+Per projected time period (historical and 2041-2070) and threshold value: 
+1. Extract all values from `pred` rasters that match the respective model threshold value. 
+2. Extract all values from the converted `exdet` rasters at those locations 
+3. Take mean of the exdet values at those locations.
+4. Multiply this mean by the AUC value for that model. 
+5. Take the weighted mean of the three threshold values using these created weights.
 
 ## 4.1 Import data
 
@@ -874,53 +882,83 @@ I will load in the results from the ExDet analysis to weight the ensemble.
 ```{r converted exdet values historical}
 
 exdet_weight_regional_native <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v2.tif")
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3.tif")
 )
 
 exdet_weight_regional_invaded <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v6.tif")
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7.tif")
 )
 
 exdet_weight_regional_invaded_asian <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v1.tif")
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2.tif")
 )
 
+```
+
+```{r stack hist exdet rasters}
+
+exdet_weight_hist_stack <- c(exdet_weight_regional_native, exdet_weight_regional_invaded, exdet_weight_regional_invaded_asian)
 
 ```
 
 ```{r converted exdet values 2041-2070}
 
-exdet_weight_regional_native_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v2_2041-2070_ssp370_GFDL.tif")
+# ssp126
+exdet_weight_regional_native_126 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp126_GFDL.tif")
+)
+exdet_weight_regional_invaded_126 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp126_GFDL.tif")
+)
+exdet_weight_regional_invaded_asian_126 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp126_GFDL.tif")
 )
 
-exdet_weight_regional_invaded_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v6_2041-2070_ssp370_GFDL.tif")
+# ssp370
+exdet_weight_regional_native_370 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp370_GFDL.tif")
+)
+exdet_weight_regional_invaded_370 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp370_GFDL.tif")
+)
+exdet_weight_regional_invaded_asian_370 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp370_GFDL.tif")
 )
 
-exdet_weight_regional_invaded_asian_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v1_2041-2070_ssp370_GFDL.tif")
+# ssp585
+exdet_weight_regional_native_585 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_native_v3_2041-2070_ssp585_GFDL.tif")
 )
+exdet_weight_regional_invaded_585 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_v7_2041-2070_ssp585_GFDL.tif")
+)
+exdet_weight_regional_invaded_asian_585 <- terra::rast(
+  x = file.path(mypath, "models", "working_dir", "exdet_weights_slf_regional_invaded_asian_v2_2041-2070_ssp585_GFDL.tif")
+)
+```
+
+```{r stack ExDet rasters CMIP6}
+
+exdet_weight_126_stack <- c(exdet_weight_regional_native_126, exdet_weight_regional_invaded_126, exdet_weight_regional_invaded_asian_126)
+
+exdet_weight_370_stack <- c(exdet_weight_regional_native_370, exdet_weight_regional_invaded_370, exdet_weight_regional_invaded_asian_370)
+
+exdet_weight_585_stack <- c(exdet_weight_regional_native_585, exdet_weight_regional_invaded_585, exdet_weight_regional_invaded_asian_585)
 
 ```
 
-```{r stack ExDet rasters}
-
-exdet_weight_hist_stack <- c(exdet_weight_regional_native, exdet_weight_regional_invaded, exdet_weight_regional_invaded_asian)
-
-exdet_weight_CMIP6_stack <- c(exdet_weight_regional_native_CMIP6, exdet_weight_regional_invaded_CMIP6, exdet_weight_regional_invaded_asian_CMIP6)
-
-```
-
-## Pred rasters
+## 4.2 Pred rasters
 
 I will also convert the pred rasters to dfs
 
 ```{r convert pred rasters to df}
 
+#hist
 pred_hist_stack_df <- terra::as.data.frame(pred_hist_stack, xy = TRUE)
-
-pred_CMIP6_stack_df <- terra::as.data.frame(pred_CMIP6_stack, xy = TRUE)
+# CMIP6
+pred_126_stack_df <- terra::as.data.frame(pred_126_stack, xy = TRUE)
+pred_370_stack_df <- terra::as.data.frame(pred_370_stack, xy = TRUE)
+pred_585_stack_df <- terra::as.data.frame(pred_585_stack, xy = TRUE)
 
 ```
 
@@ -931,17 +969,17 @@ The summary files contain the actual threshold values, so I will load each one i
 ```{r load in thresh values from summary files}
 
 # MTSS
-MTSS_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_summary.csv")) %>%
+MTSS_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(42) %>%
   as.numeric()
   
-MTSS_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_summary.csv")) %>%
+MTSS_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(42) %>%
   as.numeric()
 
-MTSS_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_summary.csv")) %>%
+MTSS_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(42) %>%
   as.numeric()
@@ -952,17 +990,17 @@ MTSS_all <- c(MTSS_regional_native, MTSS_regional_invaded, MTSS_regional_invaded
 
 
 # MTP
-MTP_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v2", "regional_native_summary.csv")) %>%
+MTP_regional_native <- read_csv(file = file.path(mypath, "models", "slf_regional_native_v3", "regional_native_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(30) %>%
   as.numeric()
 
-MTP_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v6", "regional_invaded_summary.csv")) %>%
+MTP_regional_invaded <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(30) %>%
   as.numeric()
 
-MTP_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "regional_invaded_asian_summary.csv")) %>%
+MTP_regional_invaded_asian <- read_csv(file = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "regional_invaded_asian_summary.csv")) %>%
   dplyr::select(statistic_value) %>%
   slice(30) %>%
   as.numeric()
@@ -972,9 +1010,11 @@ MTP_all <- c(MTP_regional_native, MTP_regional_invaded, MTP_regional_invaded_asi
 
 ```
 
-## Create weight for thresh
+## 4.3 Create weight for thresh
 
 ### MTSS
+
+#### historical
 
 First, I will perform these operations for the historical rasters.
 
@@ -1059,20 +1099,22 @@ MTSS_hist_thresh <- stats::weighted.mean(
 
 Next, I will perform this operation for the CMIP6 rasters
 
-```{r weights for CMIP6 rasters}
+#### ssp126
+
+```{r weights for CMIP6 rasters- ssp126}
 
 # 1. Extract all values from pred rasters that match the respective model threshold value.
 
-MTSS_regional_native_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTSS_regional_native_126_coords <- pred_126_stack_df %>%
   # filter out values with a tolerance
   dplyr::filter(near(dplyr::select(., 3), MTSS_all[[1]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTSS_regional_invaded_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTSS_regional_invaded_126_coords <- pred_126_stack_df %>%
   dplyr::filter(near(dplyr::select(., 4), MTSS_all[[2]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTSS_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTSS_regional_invaded_asian_126_coords <- pred_126_stack_df %>%
   dplyr::filter(near(dplyr::select(., 5), MTSS_all[[3]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
@@ -1083,26 +1125,26 @@ MTSS_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
 # 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
 
 # extract values of exdet raster that are at those coordinates
-MTSS_regional_native_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_native_CMIP6_coords)
+MTSS_regional_native_exdet_weight_126 <- terra::extract(exdet_weight_126_stack, y = MTSS_regional_native_126_coords)
 # tidy
-MTSS_regional_native_exdet_weight <- MTSS_regional_native_exdet_weight %>%
+MTSS_regional_native_exdet_weight_126 <- MTSS_regional_native_exdet_weight_126 %>%
   dplyr::select(., 2) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean(na.rm = TRUE)
 
 
-MTSS_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_invaded_CMIP6_coords)
+MTSS_regional_invaded_exdet_weight_126 <-  terra::extract(exdet_weight_126_stack, y = MTSS_regional_invaded_126_coords)
 # tidy
-MTSS_regional_invaded_exdet_weight <- MTSS_regional_invaded_exdet_weight %>%
+MTSS_regional_invaded_exdet_weight_126 <- MTSS_regional_invaded_exdet_weight_126 %>%
   dplyr::select(., 3) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean()
 
-MTSS_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTSS_regional_invaded_asian_CMIP6_coords) 
+MTSS_regional_invaded_asian_exdet_weight_126 <- terra::extract(exdet_weight_126_stack, y = MTSS_regional_invaded_asian_126_coords) 
 # tidy
-MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_weight %>%
+MTSS_regional_invaded_asian_exdet_weight_126 <- MTSS_regional_invaded_asian_exdet_weight_126 %>%
   dplyr::select(., 4) %>%
   # convert to matrix and take mean
   as.matrix() %>%
@@ -1113,27 +1155,189 @@ MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_we
 
 # 4. Multiply this mean or median by the AUC value for that model.
 
-MTSS_regional_native_exdet_weight <- MTSS_regional_native_exdet_weight * as.numeric(AUC_values[1, 2])
+MTSS_regional_native_exdet_weight_126 <- MTSS_regional_native_exdet_weight_126 * as.numeric(AUC_values[1, 2])
 
-MTSS_regional_invaded_exdet_weight <- MTSS_regional_invaded_exdet_weight * as.numeric(AUC_values[2, 2])
+MTSS_regional_invaded_exdet_weight_126 <- MTSS_regional_invaded_exdet_weight_126 * as.numeric(AUC_values[2, 2])
 
-MTSS_regional_invaded_asian_exdet_weight <- MTSS_regional_invaded_asian_exdet_weight * as.numeric(AUC_values[3, 2])
+MTSS_regional_invaded_asian_exdet_weight_126 <- MTSS_regional_invaded_asian_exdet_weight_126 * as.numeric(AUC_values[3, 2])
 
 
 # convert to vector
 
-MTSS_CMIP6_weights <- c(MTSS_regional_native_exdet_weight, MTSS_regional_invaded_exdet_weight, MTSS_regional_invaded_asian_exdet_weight)
+MTSS_126_weights <- c(MTSS_regional_native_exdet_weight_126, MTSS_regional_invaded_exdet_weight_126, MTSS_regional_invaded_asian_exdet_weight_126)
 
 
 ```
 
 Now, I will take the weighted mean
 
-```{r weighted mean of CMIP6 thresh values}
+```{r weighted mean of CMIP6 thresh values- ssp126}
 
-MTSS_CMIP6_thresh <- stats::weighted.mean(
+MTSS_126_thresh <- stats::weighted.mean(
   x = MTSS_all,
-  w = MTSS_CMIP6_weights
+  w = MTSS_126_weights
+)
+
+```
+
+#### ssp370
+
+```{r weights for CMIP6 rasters- ssp370}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTSS_regional_native_370_coords <- pred_370_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTSS_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_370_coords <- pred_370_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTSS_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_asian_370_coords <- pred_370_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTSS_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTSS_regional_native_exdet_weight_370 <- terra::extract(exdet_weight_370_stack, y = MTSS_regional_native_370_coords)
+# tidy
+MTSS_regional_native_exdet_weight_370 <- MTSS_regional_native_exdet_weight_370 %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTSS_regional_invaded_exdet_weight_370 <-  terra::extract(exdet_weight_370_stack, y = MTSS_regional_invaded_370_coords)
+# tidy
+MTSS_regional_invaded_exdet_weight_370 <- MTSS_regional_invaded_exdet_weight_370 %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTSS_regional_invaded_asian_exdet_weight_370 <- terra::extract(exdet_weight_370_stack, y = MTSS_regional_invaded_asian_370_coords) 
+# tidy
+MTSS_regional_invaded_asian_exdet_weight_370 <- MTSS_regional_invaded_asian_exdet_weight_370 %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTSS_regional_native_exdet_weight_370 <- MTSS_regional_native_exdet_weight_370 * as.numeric(AUC_values[1, 2])
+
+MTSS_regional_invaded_exdet_weight_370 <- MTSS_regional_invaded_exdet_weight_370 * as.numeric(AUC_values[2, 2])
+
+MTSS_regional_invaded_asian_exdet_weight_370 <- MTSS_regional_invaded_asian_exdet_weight_370 * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTSS_370_weights <- c(MTSS_regional_native_exdet_weight_370, MTSS_regional_invaded_exdet_weight_370, MTSS_regional_invaded_asian_exdet_weight_370)
+
+
+```
+
+Now, I will take the weighted mean
+
+```{r weighted mean of CMIP6 thresh values- ssp370}
+
+MTSS_370_thresh <- stats::weighted.mean(
+  x = MTSS_all,
+  w = MTSS_370_weights
+)
+
+```
+
+#### ssp585
+
+```{r weights for CMIP6 rasters- ssp585}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTSS_regional_native_585_coords <- pred_585_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTSS_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_585_coords <- pred_585_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTSS_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTSS_regional_invaded_asian_585_coords <- pred_585_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTSS_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTSS_regional_native_exdet_weight_585 <- terra::extract(exdet_weight_585_stack, y = MTSS_regional_native_585_coords)
+# tidy
+MTSS_regional_native_exdet_weight_585 <- MTSS_regional_native_exdet_weight_585 %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTSS_regional_invaded_exdet_weight_585 <-  terra::extract(exdet_weight_585_stack, y = MTSS_regional_invaded_585_coords)
+# tidy
+MTSS_regional_invaded_exdet_weight_585 <- MTSS_regional_invaded_exdet_weight_585 %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTSS_regional_invaded_asian_exdet_weight_585 <- terra::extract(exdet_weight_585_stack, y = MTSS_regional_invaded_asian_585_coords) 
+# tidy
+MTSS_regional_invaded_asian_exdet_weight_585 <- MTSS_regional_invaded_asian_exdet_weight_585 %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTSS_regional_native_exdet_weight_585 <- MTSS_regional_native_exdet_weight_585 * as.numeric(AUC_values[1, 2])
+
+MTSS_regional_invaded_exdet_weight_585 <- MTSS_regional_invaded_exdet_weight_585 * as.numeric(AUC_values[2, 2])
+
+MTSS_regional_invaded_asian_exdet_weight_585 <- MTSS_regional_invaded_asian_exdet_weight_585 * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTSS_585_weights <- c(MTSS_regional_native_exdet_weight_585, MTSS_regional_invaded_exdet_weight_585, MTSS_regional_invaded_asian_exdet_weight_585)
+
+
+```
+
+Now, I will take the weighted mean
+
+```{r weighted mean of CMIP6 thresh values- ssp585}
+
+MTSS_585_thresh <- stats::weighted.mean(
+  x = MTSS_all,
+  w = MTSS_585_weights
 )
 
 ```
@@ -1142,7 +1346,9 @@ I need to repeat the above operations for the MTP thresholds as well. I will the
 
 ### MTP
 
-```{r weights for hist rasters- MTP}
+#### historical
+
+```{r weights for hist rasters- MTP- hist}
 
 # 1. Extract all values from pred rasters that match the respective model threshold value.
 
@@ -1210,7 +1416,7 @@ MTP_hist_weights <- c(MTP_regional_native_exdet_weight, MTP_regional_invaded_exd
 
 ```
 
-```{r weighted mean of hist thresh values- MTP}
+```{r weighted mean of hist thresh values- MTP- hist}
 
 MTP_hist_thresh <- stats::weighted.mean(
   x = MTP_all,
@@ -1219,20 +1425,22 @@ MTP_hist_thresh <- stats::weighted.mean(
 
 ```
 
-```{r weights for CMIP6 rasters- MTP}
+#### ssp126
+
+```{r weights for CMIP6 rasters- MTP- ssp126}
 
 # 1. Extract all values from pred rasters that match the respective model threshold value.
 
-MTP_regional_native_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTP_regional_native_126_coords <- pred_126_stack_df %>%
   # filter out values with a tolerance
   dplyr::filter(near(dplyr::select(., 3), MTP_all[[1]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTP_regional_invaded_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTP_regional_invaded_126_coords <- pred_126_stack_df %>%
   dplyr::filter(near(dplyr::select(., 4), MTP_all[[2]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
-MTP_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
+MTP_regional_invaded_asian_126_coords <- pred_126_stack_df %>%
   dplyr::filter(near(dplyr::select(., 5), MTP_all[[3]], tol = 0.005)) %>%
   dplyr::select(x, y)
 
@@ -1243,26 +1451,26 @@ MTP_regional_invaded_asian_CMIP6_coords <- pred_CMIP6_stack_df %>%
 # 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
 
 # extract values of exdet raster that are at those coordinates
-MTP_regional_native_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_native_CMIP6_coords)
+MTP_regional_native_exdet_weight_126 <- terra::extract(exdet_weight_126_stack, y = MTP_regional_native_126_coords)
 # tidy
-MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight %>%
+MTP_regional_native_exdet_weight_126 <- MTP_regional_native_exdet_weight_126 %>%
   dplyr::select(., 2) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean(na.rm = TRUE)
 
 
-MTP_regional_invaded_exdet_weight <-  terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_invaded_CMIP6_coords)
+MTP_regional_invaded_exdet_weight_126 <-  terra::extract(exdet_weight_126_stack, y = MTP_regional_invaded_126_coords)
 # tidy
-MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight %>%
+MTP_regional_invaded_exdet_weight_126 <- MTP_regional_invaded_exdet_weight_126 %>%
   dplyr::select(., 3) %>%
   # convert to matrix and take mean
   as.matrix() %>%
   mean()
 
-MTP_regional_invaded_asian_exdet_weight <- terra::extract(exdet_weight_CMIP6_stack, y = MTP_regional_invaded_asian_CMIP6_coords) 
+MTP_regional_invaded_asian_exdet_weight_126 <- terra::extract(exdet_weight_126_stack, y = MTP_regional_invaded_asian_126_coords) 
 # tidy
-MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight %>%
+MTP_regional_invaded_asian_exdet_weight_126 <- MTP_regional_invaded_asian_exdet_weight_126 %>%
   dplyr::select(., 4) %>%
   # convert to matrix and take mean
   as.matrix() %>%
@@ -1273,47 +1481,205 @@ MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weig
 
 # 4. Multiply this mean or median by the AUC value for that model.
 
-MTP_regional_native_exdet_weight <- MTP_regional_native_exdet_weight * as.numeric(AUC_values[1, 2])
+MTP_regional_native_exdet_weight_126 <- MTP_regional_native_exdet_weight_126 * as.numeric(AUC_values[1, 2])
 
-MTP_regional_invaded_exdet_weight <- MTP_regional_invaded_exdet_weight * as.numeric(AUC_values[2, 2])
+MTP_regional_invaded_exdet_weight_126 <- MTP_regional_invaded_exdet_weight_126 * as.numeric(AUC_values[2, 2])
 
-MTP_regional_invaded_asian_exdet_weight <- MTP_regional_invaded_asian_exdet_weight * as.numeric(AUC_values[3, 2])
+MTP_regional_invaded_asian_exdet_weight_126 <- MTP_regional_invaded_asian_exdet_weight_126 * as.numeric(AUC_values[3, 2])
 
 
 # convert to vector
 
-MTP_CMIP6_weights <- c(MTP_regional_native_exdet_weight, MTP_regional_invaded_exdet_weight, MTP_regional_invaded_asian_exdet_weight)
+MTP_126_weights <- c(MTP_regional_native_exdet_weight_126, MTP_regional_invaded_exdet_weight_126, MTP_regional_invaded_asian_exdet_weight_126)
 
 
 ```
 
-```{r weighted mean of CMIP6 thresh values- MTP}
+```{r weighted mean of CMIP6 thresh values- MTP- ssp126}
 
-MTP_CMIP6_thresh <- stats::weighted.mean(
+MTP_126_thresh <- stats::weighted.mean(
   x = MTP_all,
-  w = MTP_CMIP6_weights
+  w = MTP_126_weights
 )
 
 ```
 
-## Combine in table and export
+#### ssp370
+
+```{r weights for CMIP6 rasters- MTP- ssp370}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTP_regional_native_370_coords <- pred_370_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTP_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_370_coords <- pred_370_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTP_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_asian_370_coords <- pred_370_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTP_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTP_regional_native_exdet_weight_370 <- terra::extract(exdet_weight_370_stack, y = MTP_regional_native_370_coords)
+# tidy
+MTP_regional_native_exdet_weight_370 <- MTP_regional_native_exdet_weight_370 %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTP_regional_invaded_exdet_weight_370 <-  terra::extract(exdet_weight_370_stack, y = MTP_regional_invaded_370_coords)
+# tidy
+MTP_regional_invaded_exdet_weight_370 <- MTP_regional_invaded_exdet_weight_370 %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTP_regional_invaded_asian_exdet_weight_370 <- terra::extract(exdet_weight_370_stack, y = MTP_regional_invaded_asian_370_coords) 
+# tidy
+MTP_regional_invaded_asian_exdet_weight_370 <- MTP_regional_invaded_asian_exdet_weight_370 %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTP_regional_native_exdet_weight_370 <- MTP_regional_native_exdet_weight_370 * as.numeric(AUC_values[1, 2])
+
+MTP_regional_invaded_exdet_weight_370 <- MTP_regional_invaded_exdet_weight_370 * as.numeric(AUC_values[2, 2])
+
+MTP_regional_invaded_asian_exdet_weight_370 <- MTP_regional_invaded_asian_exdet_weight_370 * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTP_370_weights <- c(MTP_regional_native_exdet_weight_370, MTP_regional_invaded_exdet_weight_370, MTP_regional_invaded_asian_exdet_weight_370)
+
+
+```
+
+```{r weighted mean of CMIP6 thresh values- MTP- ssp370}
+
+MTP_370_thresh <- stats::weighted.mean(
+  x = MTP_all,
+  w = MTP_370_weights
+)
+
+```
+
+#### ssp585
+
+```{r weights for CMIP6 rasters- MTP- ssp585}
+
+# 1. Extract all values from pred rasters that match the respective model threshold value.
+
+MTP_regional_native_585_coords <- pred_585_stack_df %>%
+  # filter out values with a tolerance
+  dplyr::filter(near(dplyr::select(., 3), MTP_all[[1]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_585_coords <- pred_585_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 4), MTP_all[[2]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+MTP_regional_invaded_asian_585_coords <- pred_585_stack_df %>%
+  dplyr::filter(near(dplyr::select(., 5), MTP_all[[3]], tol = 0.005)) %>%
+  dplyr::select(x, y)
+
+
+
+
+
+# 2, 3. Extract all values from the converted `exdet` rasters at those locations, Take mean of the exdet values at those locations.
+
+# extract values of exdet raster that are at those coordinates
+MTP_regional_native_exdet_weight_585 <- terra::extract(exdet_weight_585_stack, y = MTP_regional_native_585_coords)
+# tidy
+MTP_regional_native_exdet_weight_585 <- MTP_regional_native_exdet_weight_585 %>%
+  dplyr::select(., 2) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean(na.rm = TRUE)
+
+
+MTP_regional_invaded_exdet_weight_585 <-  terra::extract(exdet_weight_585_stack, y = MTP_regional_invaded_585_coords)
+# tidy
+MTP_regional_invaded_exdet_weight_585 <- MTP_regional_invaded_exdet_weight_585 %>%
+  dplyr::select(., 3) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+MTP_regional_invaded_asian_exdet_weight_585 <- terra::extract(exdet_weight_585_stack, y = MTP_regional_invaded_asian_585_coords) 
+# tidy
+MTP_regional_invaded_asian_exdet_weight_585 <- MTP_regional_invaded_asian_exdet_weight_585 %>%
+  dplyr::select(., 4) %>%
+  # convert to matrix and take mean
+  as.matrix() %>%
+  mean()
+
+
+
+
+# 4. Multiply this mean or median by the AUC value for that model.
+
+MTP_regional_native_exdet_weight_585 <- MTP_regional_native_exdet_weight_585 * as.numeric(AUC_values[1, 2])
+
+MTP_regional_invaded_exdet_weight_585 <- MTP_regional_invaded_exdet_weight_585 * as.numeric(AUC_values[2, 2])
+
+MTP_regional_invaded_asian_exdet_weight_585 <- MTP_regional_invaded_asian_exdet_weight_585 * as.numeric(AUC_values[3, 2])
+
+
+# convert to vector
+
+MTP_585_weights <- c(MTP_regional_native_exdet_weight_585, MTP_regional_invaded_exdet_weight_585, MTP_regional_invaded_asian_exdet_weight_585)
+
+
+```
+
+```{r weighted mean of CMIP6 thresh values- MTP- ssp585}
+
+MTP_585_thresh <- stats::weighted.mean(
+  x = MTP_all,
+  w = MTP_585_weights
+)
+
+```
+
+## 4.4 Combine in table and export
 
 Now, I can create a table for these thresholds and export these data.
 
 ```{r table of ensemble threshold values}
 
 ensemble_thresh_values <- tibble(
-  thresh = c("MTP", "MTP", "MTSS", "MTSS"),
-  time_period = c("1981-2010", "2041-2070", "1981-2010", "2041-2070"),
-  CMIP6_model = c(NA, "ssp370_GFDL", NA, "ssp370_GFDL"),
-  value = c(MTP_hist_thresh, MTP_CMIP6_thresh, MTSS_hist_thresh, MTSS_CMIP6_thresh)
+  thresh = c(rep("MTP", 4), rep("MTSS", 4)),
+  time_period = c("1981-2010", rep("2041-2070", 3), "1981-2010", rep("2041-2070", 3)),
+  CMIP6_model = c(NA, "ssp126_GFDL", "ssp370_GFDL", "ssp585_GFDL", NA, "ssp126_GFDL", "ssp370_GFDL", "ssp585_GFDL"),
+  value = c(MTP_hist_thresh, MTP_126_thresh, MTP_370_thresh, MTP_585_thresh, MTSS_hist_thresh, MTSS_126_thresh, MTSS_370_thresh, MTSS_585_thresh)
 )
 
 ```
 
 ```{r export table}
 
-write_csv(ensemble_thresh_values, file = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
+write_csv(ensemble_thresh_values, file = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
 
 # also write to .rds
 readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
@@ -1327,47 +1693,7 @@ Now that I have the suitability values and thresholds ensembled, I can begin to 
 
 As a final step, I will ensemble the ExDet and MIC rasters themselves for visualization. 
 
-## ExDet
-
-```{r ensemble ExDet rasters}
-
-# historical
-exdet_hist_mean <- terra::app(
-  x = exdet_hist_stack,
-  fun = "mean",
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ExDet_slf_regional_ensemble_v0_background_projGlobe.asc"),
-  filetype = "AAIGrid",
-  overwrite = FALSE
-)
-
-# CMIP6
-exdet_CMIP6_mean <- terra::app(
-  x = exdet_CMIP6_stack,
-  fun = "mean",
-  filename = file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "ExDet_slf_regional_ensemble_v0_background_projGlobe_2041-2070_GFDL_ssp370.asc"
-    ),
-  filetype = "AAIGrid",
-  overwrite = FALSE
-)
-
-```
-
-```{r re-load objects as df}
-
-exdet_hist_mean_df <- terra::rast(x =  file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "ExDet_slf_regional_ensemble_v0_background_projGlobe.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
-
-exdet_CMIP6_mean_df <- terra::rast(x =  file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "ExDet_slf_regional_ensemble_v0_background_projGlobe_2041-2070_GFDL_ssp370.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
-
-```
-
-### plot
+## 5.1 ExDet
 
 ```{r map style exdet}
 
@@ -1390,25 +1716,140 @@ map_style_exdet <- list(
 
 ```
 
+```{r exdet map function}
+
+map_exdet <- function(raster, raster.df) {
+  
+  ggplot() +
+    # default plot style
+    map_style_exdet +
+    # plot regular raster of values first
+    geom_raster(data = raster.df, aes(x = x, y = y, fill = mean)) +
+    # fill scale
+    scale_fill_gradientn(
+      name = "ExDet Score",
+      colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
+      values = scales::rescale(x = c(
+        min(values(raster), na.rm = TRUE), 
+        0, 1, 
+        max(values(raster), na.rm = TRUE)
+        )),
+      breaks = c(
+        format_decimal(min(values(raster), na.rm = TRUE)), 
+        0, 1, 
+        format_decimal(max(values(raster), na.rm = TRUE))
+        ),
+      limits = c(
+        format_decimal(min(values(raster), na.rm = TRUE)), 
+        format_decimal(max(values(raster), na.rm = TRUE))
+        ),
+      guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
+      ) 
+  
+}
+
+  
+```
+
+
+### prepare files
+
+```{r regional models exdet historical}
+
+exdet_regional_native <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "exdet_slf_regional_native_v3_background_projGlobe.tif")
+)
+
+exdet_regional_invaded <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "exdet_slf_regional_invaded_v7_background_projGlobe.tif")
+)
+
+exdet_regional_invaded_asian <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "exdet_slf_regional_invaded_asian_v2_background_projGlobe.tif")
+)
+
+```
+
+```{r regional models exdet 2041-2070}
+
+# ssp 126
+exdet_regional_native_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "exdet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+exdet_regional_invaded_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "exdet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+exdet_regional_invaded_asian_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "exdet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+
+# ssp 370 
+exdet_regional_native_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "exdet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+exdet_regional_invaded_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "exdet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+exdet_regional_invaded_asian_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "exdet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+
+# ssp 585
+exdet_regional_native_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "exdet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+exdet_regional_invaded_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "exdet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+exdet_regional_invaded_asian_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "exdet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+
+```
+
+```{r pred suitability}
+
+# hist
+exdet_hist_stack2 <- c(exdet_regional_native, exdet_regional_invaded, exdet_regional_invaded_asian)
+# CMIP6
+exdet_126_stack2 <- c(exdet_regional_native_126, exdet_regional_invaded_126, exdet_regional_invaded_asian_126)
+exdet_370_stack2 <- c(exdet_regional_native_370, exdet_regional_invaded_370, exdet_regional_invaded_asian_370)
+exdet_585_stack2 <- c(exdet_regional_native_585, exdet_regional_invaded_585, exdet_regional_invaded_asian_585)
+
+```
+
+### historical
+
+```{r ensemble ExDet rasters- hist}
+
+# historical
+exdet_hist_mean <- terra::app(
+  x = exdet_hist_stack2,
+  fun = "mean",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# re-load as df
+exdet_hist_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
 ```{r create hist exdet plot}
 
 # plot mean raster first
-exdet_regional_ensemble_hist_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
-  # plot regular raster of values first
-  geom_raster(data = exdet_hist_mean_df, aes(x = x, y = y, fill = mean)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_hist_mean), na.rm = TRUE), 0, 1, max(values(exdet_hist_mean), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_hist_mean), na.rm = TRUE)), 
-      0, 1 
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) +
+exdet_regional_ensemble_hist_plot <- map_exdet(
+  raster = exdet_hist_mean, 
+  raster.df = exdet_hist_mean_df
+  ) 
+
+# add background area shapes
+exdet_regional_ensemble_hist_plot <- exdet_regional_ensemble_hist_plot +
+  # new fill scale
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
   geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
@@ -1416,8 +1857,9 @@ exdet_regional_ensemble_hist_plot <- ggplot() +
   geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
    # scale 2
    scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
    labs(
-    title = "ExDet analysis: bio2, bio11, bio12, bio15",
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 1981-2010",
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
     ) 
 
@@ -1428,7 +1870,7 @@ exdet_regional_ensemble_hist_plot <- ggplot() +
 # save plot
 ggsave(
   exdet_regional_ensemble_hist_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v0_background_projGlobe.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1437,26 +1879,39 @@ ggsave(
 
 ```
 
-```{r create CMIP6 exdet plot}
+### ssp126
+
+```{r ensemble ExDet rasters- ssp 126}
+
+# CMIP6
+exdet_126_mean <- terra::app(
+  x = exdet_126_stack2,
+  fun = "mean",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# re-load object as df
+exdet_126_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create CMIP6 exdet plot- ssp 126}
 
 # plot mean raster first
-exdet_regional_ensemble_CMIP6_plot <- ggplot() +
-  # default plot style
-  map_style_exdet +
-  # plot regular raster of values first
-  geom_raster(data = exdet_CMIP6_mean_df, aes(x = x, y = y, fill = mean)) +
-  # fill scale
-  scale_fill_gradientn(
-    name = "ExDet Score",
-    colors = c("#67001f", "#f4a582", "white", "white", "white", "#92c5de", "#053061"),
-    values = scales::rescale(x = c(min(values(exdet_CMIP6_mean), na.rm = TRUE), 0, 1, max(values(exdet_CMIP6_mean), na.rm = TRUE))),
-    breaks = c(
-      format_decimal(min(values(exdet_CMIP6_mean), na.rm = TRUE)), 
-      0, 1,
-      format_decimal(max(values(exdet_CMIP6_mean), na.rm = TRUE))
-      ),
-    guide = guide_colorbar(frame.colour = "black", ticks.colour = "black", barwidth = 20, order = 1)
-    ) +
+exdet_regional_ensemble_126_plot <- map_exdet(
+  raster = exdet_126_mean, 
+  raster.df = exdet_126_mean_df
+  )
+
+# add background area shapes
+exdet_regional_ensemble_126_plot <- exdet_regional_ensemble_126_plot +
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
   geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
@@ -1464,8 +1919,9 @@ exdet_regional_ensemble_CMIP6_plot <- ggplot() +
   geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
    # scale 2
    scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
   labs(
-    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070, ssp370, GFDL",
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070 | ssp126 GFDL-ESM4",
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
   ) 
 
@@ -1475,8 +1931,8 @@ exdet_regional_ensemble_CMIP6_plot <- ggplot() +
 
 # save plot
 ggsave(
-  exdet_regional_ensemble_CMIP6_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v0_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
+  exdet_regional_ensemble_126_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1485,95 +1941,201 @@ ggsave(
 
 ```
 
+### ssp370
 
-## MIC
-
-I will also ensemble the MIC maps. These will be combined according to the mode (the most common value of the cell) among the 3 rasters.
-
-### prepare files
-
-```{r regional model mics historical}
-
-mic_regional_native <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v2", "mic_slf_regional_native_v2_background_projGlobe.tif")
-)
-
-mic_regional_invaded <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v6", "mic_slf_regional_invaded_v6_background_projGlobe.tif")
-)
-
-mic_regional_invaded_asian <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "mic_slf_regional_invaded_asian_v1_background_projGlobe.tif")
-)
-
-
-```
-
-```{r regional model mics 2041-2070}
-
-mic_regional_native_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_native_v2", "mic_slf_regional_native_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
-)
-
-mic_regional_invaded_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_v6", "mic_slf_regional_invaded_v6_background_projGlobe_2041-2070_ssp370_GFDL.tif")
-)
-
-mic_regional_invaded_asian_CMIP6 <- terra::rast(
-  x = file.path(mypath, "models", "slf_regional_invaded_asian_v1", "mic_slf_regional_invaded_asian_v1_background_projGlobe_2041-2070_ssp370_GFDL.tif")
-)
-
-```
-
-```{r pred suitability}
-
-mic_hist_stack <- c(mic_regional_native, mic_regional_invaded, mic_regional_invaded_asian)
-
-mic_CMIP6_stack <- c(mic_regional_native_CMIP6, mic_regional_invaded_CMIP6, mic_regional_invaded_asian_CMIP6)
-
-```
-
-### ensemble
-
-```{r ensemble mic rasters}
-
-# historical
-mic_hist_mean <- terra::app(
-  x = mic_hist_stack,
-  fun = "modal",
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "mic_slf_regional_ensemble_v0_background_projGlobe.asc"),
-  filetype = "AAIGrid",
-  overwrite = FALSE
-)
+```{r ensemble ExDet rasters- ssp 370}
 
 # CMIP6
-mic_CMIP6_mean <- terra::app(
-  x = mic_CMIP6_stack,
-  fun = "modal",
+exdet_370_mean <- terra::app(
+  x = exdet_370_stack2,
+  fun = "mean",
   filename = file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "mic_slf_regional_ensemble_v0_background_projGlobe_2041-2070_GFDL_ssp370.asc"
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
     ),
   filetype = "AAIGrid",
   overwrite = FALSE
 )
 
-```
-
-```{r re-load objects as df}
-
-mic_hist_mean_df <- terra::rast(x =  file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "mic_slf_regional_ensemble_v0_background_projGlobe.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
-
-mic_CMIP6_mean_df <- terra::rast(x =  file.path(
-    mypath, "models", "slf_regional_ensemble_v0", "mic_slf_regional_ensemble_v0_background_projGlobe_2041-2070_GFDL_ssp370.asc"
+# re-load object as df
+exdet_370_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
 ```
 
-## plot
+```{r create CMIP6 exdet plot- ssp 370}
+
+# plot mean raster first
+exdet_regional_ensemble_370_plot <- map_exdet(
+  raster = exdet_370_mean,
+  raster.df = exdet_370_mean_df
+)
+  
+# add background area shapes
+exdet_regional_ensemble_370_plot <- exdet_regional_ensemble_370_plot +
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070 | ssp370 GFDL-ESM4",
+    subtitle = "Global climate divergence from 'regional_ensemble' model training set"
+  ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  exdet_regional_ensemble_370_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### ssp585
+
+```{r ensemble ExDet rasters- ssp 585}
+
+# CMIP6
+exdet_585_mean <- terra::app(
+  x = exdet_585_stack2,
+  fun = "mean",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# re-load object as df
+exdet_585_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create CMIP6 exdet plot- ssp 585}
+
+# plot mean raster first
+exdet_regional_ensemble_585_plot <- map_exdet(
+  raster = exdet_585_mean,
+  raster.df = exdet_585_mean_df
+)
+# add background area shapes
+exdet_regional_ensemble_585_plot <- exdet_regional_ensemble_585_plot +
+  # new fill scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070 | ssp585 GFDL-ESM4",
+    subtitle = "Global climate divergence from 'regional_ensemble' model training set"
+  ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  exdet_regional_ensemble_585_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### ssp mean
+
+```{r stack exdet rasters}
+
+exdet_ssp_mean_stack <- c(exdet_126_mean, exdet_370_mean, exdet_585_mean)
+
+```
+
+```{r ensemble ExDet rasters- all ssp scenarios}
+
+# CMIP6
+exdet_ssp_mean <- terra::app(
+  x = exdet_ssp_mean_stack,
+  fun = "mean",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mean.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# re-load object as df
+exdet_ssp_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mean.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create CMIP6 exdet plot- ssp mean}
+
+# plot mean raster first
+exdet_regional_ensemble_mean_plot <- map_exdet(
+  raster = exdet_ssp_mean,
+  raster.df = exdet_ssp_mean_df
+)
+  
+# add background area shapes
+exdet_regional_ensemble_mean_plot <- exdet_regional_ensemble_mean_plot +
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "ExDet analysis | bio2, bio11, bio12, bio15 | 2041-2070 | mean of ssp126, 370, 585 | GFDL-ESM4",
+    subtitle = "Global climate divergence from 'regional_ensemble' model training set"
+  ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  exdet_regional_ensemble_mean_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp_mean_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+## 5.2 MIC
+
+I will also ensemble the MIC maps. These will be combined according to the mode (the most common value of the cell) among the 3 rasters.
 
 ```{r map style MIC}
 
@@ -1596,6 +2158,93 @@ map_style_MIC <- list(
 
 ```
 
+### prepare files
+
+```{r regional models mics historical}
+
+mic_regional_native <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "mic_slf_regional_native_v3_background_projGlobe.tif")
+)
+
+mic_regional_invaded <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "mic_slf_regional_invaded_v7_background_projGlobe.tif")
+)
+
+mic_regional_invaded_asian <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "mic_slf_regional_invaded_asian_v2_background_projGlobe.tif")
+)
+
+```
+
+```{r regional models mics 2041-2070}
+
+# ssp 126
+mic_regional_native_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "mic_slf_regional_native_v3_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+mic_regional_invaded_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "mic_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+mic_regional_invaded_asian_126 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "mic_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp126_GFDL.tif")
+)
+
+# ssp 370
+mic_regional_native_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "mic_slf_regional_native_v3_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+mic_regional_invaded_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "mic_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+mic_regional_invaded_asian_370 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "mic_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp370_GFDL.tif")
+)
+
+# ssp 585
+mic_regional_native_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_native_v3", "mic_slf_regional_native_v3_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+mic_regional_invaded_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_v7", "mic_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+mic_regional_invaded_asian_585 <- terra::rast(
+  x = file.path(mypath, "models", "slf_regional_invaded_asian_v2", "mic_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp585_GFDL.tif")
+)
+
+```
+
+```{r pred suitability}
+
+# historical
+mic_hist_stack2 <- c(mic_regional_native, mic_regional_invaded, mic_regional_invaded_asian)
+# CMIP6
+mic_126_stack2 <- c(mic_regional_native_126, mic_regional_invaded_126, mic_regional_invaded_asian_126)
+mic_370_stack2 <- c(mic_regional_native_370, mic_regional_invaded_370, mic_regional_invaded_asian_370)
+mic_585_stack2 <- c(mic_regional_native_585, mic_regional_invaded_585, mic_regional_invaded_asian_585)
+
+```
+
+### historical
+
+```{r ensemble mic rasters and make data frame- historical}
+
+# historical
+mic_hist_mean <- terra::app(
+  x = mic_hist_stack2,
+  fun = "modal",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# make df
+mic_hist_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
 ```{r create MIC plot}
 
 # plot mean raster first
@@ -1606,9 +2255,18 @@ mic_hist_mean_plot <- ggplot() +
   geom_raster(data = mic_hist_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
   # fill scale 1
   viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
+  # new scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  # scale 2
+  scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
   labs(
-    title = "Most Influential Covariate (MIC) for 'regional_ensemble' model",
-    subtitle = "Covariate causing most extrapolation from model training set"
+    title = "Most Influential Covariate (MIC) analysis | 1981-2010",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
     ) 
 
 ```
@@ -1618,7 +2276,7 @@ mic_hist_mean_plot <- ggplot() +
 # save plot
 ggsave(
   mic_hist_mean_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v0_background_projGlobe.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1627,18 +2285,50 @@ ggsave(
 
 ```
 
+### ssp 126
+
+```{r ensemble mic rasters and make data frame- ssp126}
+
+mic_126_mean <- terra::app(
+  x = mic_126_stack2,
+  fun = "modal",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# make df
+mic_126_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
 ```{r create MIC plot}
 
 # plot mean raster first
-mic_CMIP6_mean_plot <- ggplot() +
+mic_126_mean_plot <- ggplot() +
   # default plot style
   map_style_MIC +
   # plot regular raster of values first
-  geom_raster(data = mic_CMIP6_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  geom_raster(data = mic_126_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  # scale 1
   viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
+  # new scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
   labs(
-    title = "Most Influential Covariate (MIC) for 'regional_ensemble' model",
-    subtitle = "Covariate causing most extrapolation from model training set, projected for 2041-2070, ssp370, GFDL"
+    title = "Most Influential Covariate (MIC) analysis | 2041-2070 | ssp126 GFDL-ESM4",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
     ) 
 
 ```
@@ -1647,8 +2337,200 @@ mic_CMIP6_mean_plot <- ggplot() +
 
 # save plot
 ggsave(
-  mic_CMIP6_mean_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v0_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
+  mic_126_mean_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### ssp 370
+
+```{r ensemble mic rasters and make data frame- ssp370}
+
+mic_370_mean <- terra::app(
+  x = mic_370_stack2,
+  fun = "modal",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# make df
+mic_370_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create MIC plot}
+
+# plot mean raster first
+mic_370_mean_plot <- ggplot() +
+  # default plot style
+  map_style_MIC +
+  # plot regular raster of values first
+  geom_raster(data = mic_370_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  # scale 1
+  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
+  # new scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "Most Influential Covariate (MIC) analysis | 2041-2070 | ssp370 GFDL-ESM4",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
+    ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  mic_370_mean_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### ssp 585
+
+```{r ensemble mic rasters and make data frame- ssp585}
+
+mic_585_mean <- terra::app(
+  x = mic_585_stack2,
+  fun = "modal",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# make df
+mic_585_mean_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create MIC plot}
+
+# plot mean raster first
+mic_585_mean_plot <- ggplot() +
+  # default plot style
+  map_style_MIC +
+  # plot regular raster of values first
+  geom_raster(data = mic_585_mean_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  # scale 1
+  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
+  # new scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "Most Influential Covariate (MIC) analysis | 2041-2070 | ssp585 GFDL-ESM4",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
+    ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  mic_585_mean_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### mic- mode of all ssp scenarios
+
+```{r stack mic rasters}
+
+mic_ssp_mode_stack <- c(mic_126_mean, mic_370_mean, mic_585_mean)
+
+```
+
+```{r ensemble MIC rasters- all ssp scenarios}
+
+# CMIP6
+mic_ssp_mode <- terra::app(
+  x = mic_ssp_mode_stack,
+  fun = "modal",
+  filename = file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mode.asc"
+    ),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# re-load object as df
+mic_ssp_mode_df <- terra::rast(x =  file.path(
+    mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mode.asc"
+    )) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r create CMIP6 exdet plot- ssp mean}
+
+mic_ssp_mode_plot <- ggplot() +
+  # default plot style
+  map_style_MIC +
+  # plot regular raster of values first
+  geom_raster(data = mic_ssp_mode_df, aes(x = x, y = y, fill = as.factor(modal))) +
+  # scale 1
+  viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
+  # new scale
+  ggnewscale::new_scale_fill() +
+   # add layer for bg point area
+  geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+  geom_raster(data = regional_invaded_asian_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.75) +
+   # scale 2
+   scale_fill_manual(name = "", values = c("Background" = "azure4"), guide = guide_legend(order = 2)) +
+  # labels
+  labs(
+    title = "Most Influential Covariate (MIC) analysis | mode of ssp126, 370, 585 | GFDL-ESM4",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
+  ) 
+
+```
+
+```{r save plot}
+
+# save plot
+ggsave(
+  mic_ssp_mode_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp_mode_GFDL.jpg"),
   height = 8, 
   width = 12,
   device = "jpeg",
@@ -1663,11 +2545,12 @@ This bar chart will show the relative weights of each of the three regional mode
 
 ```{r load in data}
 
-ensemble_weight_regional_native_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_native_v2.tif"))
+# native
+ensemble_weight_regional_native_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3.tif"))
 # invaded
-ensemble_weight_regional_invaded_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_v6.tif"))
+ensemble_weight_regional_invaded_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_v7.tif"))
 # invaded_asian
-ensemble_weight_regional_invaded_asian_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_weights_slf_regional_invaded_asian_v1.tif"))
+ensemble_weight_regional_invaded_asian_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_invaded_asian_v2.tif"))
 
 # stack
 ensemble_weights_stack <- c(ensemble_weight_regional_native_hist, ensemble_weight_regional_invaded_hist, ensemble_weight_regional_invaded_asian_hist)
@@ -1692,12 +2575,15 @@ relative_weights_sum <- sum(relative_weights)
 relative_weights_prop <- relative_weights / relative_weights_sum %>%
   as.vector() 
 
+# change names of weights
+names(relative_weights_prop) <- c("Rn (native)", "Ri.NAmerica", "Ri.Asia")
+
 
 # plotting colors
 ensemble_colors <- c(
-  "invaded" =  "#e41a1c",
-  "invaded_asian" = "#377eb8",
-  "native" = "#4daf4a"
+  "Ri.NAmerica" =  "#e41a1c",
+  "Ri.ASia" = "#377eb8",
+  "Rn (native)" = "#4daf4a"
 )
 
 ```
@@ -1716,7 +2602,7 @@ ensemble_relative_cont_plot <- ggplot() +
   geom_text(aes(x = names(relative_weights_prop), y = relative_weights_prop - 0.05), label = scales::percent(relative_weights_prop)) +
   # percent scale
   scale_y_continuous(labels = scales::percent) +
-  scale_fill_manual(name = "model", values = c("#e41a1c", "#377eb8", "#4daf4a"), labels = c("invaded", "invaded_asian", "native"))
+  scale_fill_manual(name = "model", values = c("#e41a1c", "#377eb8", "#4daf4a"), labels = c("Ri.NAmerica", "Ri.Asia", "Rn (native)"))
 
 ```
 
@@ -1745,19 +2631,38 @@ The weighted mean ensemble is more rigorous because it considers climatic extrap
 pred_hist_mean <- terra::app(
   x = pred_hist_stack,
   fun = "mean",
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_1981-2010.asc"),
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_unweighted_mean_globe_1981-2010.asc"),
   filetype = "AAIGrid",
   overwrite = FALSE
 )
 
 # CMIP6
-pred_CMIP6_mean <- terra::app(
-  x = pred_CMIP6_stack,
+# ssp126
+pred_126_mean <- terra::app(
+  x = pred_126_stack,
   fun = "mean",
-  filename = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp126.asc"),
   filetype = "AAIGrid",
   overwrite = FALSE
 )
+# ssp126
+pred_370_mean <- terra::app(
+  x = pred_370_stack,
+  fun = "mean",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp370.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
+# ssp585
+pred_585_mean <- terra::app(
+  x = pred_585_stack,
+  fun = "mean",
+  filename = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_regional_unweighted_mean_globe_2041-2070_GFDL_ssp585.asc"),
+  filetype = "AAIGrid",
+  overwrite = FALSE
+)
+
 
 ```
 
@@ -1779,7 +2684,7 @@ ensemble_thresh_values_unweighted <- tibble(
 
 ```{r export table}
 
-write_csv(ensemble_thresh_values_unweighted, file = file.path(mypath, "models", "slf_regional_ensemble_v0", "ensemble_threshold_values_unweighted.csv"))
+write_csv(ensemble_thresh_values_unweighted, file = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_threshold_values_unweighted.csv"))
 
 ```
 
@@ -1843,11 +2748,13 @@ I think they do because the weighted.mean was the same as the mean when the weig
 
 ```{r patchwork regional_native}
 
+# historical
 mic_hist_mean_plot <- mic_hist_mean_plot + 
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(tag = "A") +
   scale_x_continuous(expand = c(0, 0)) +
@@ -1859,11 +2766,14 @@ mic_hist_mean_plot <- mic_hist_mean_plot +
     )
 
 
-mic_CMIP6_mean_plot <- mic_CMIP6_mean_plot + 
+# CMIP6
+# ssp 126
+mic_126_mean_plot <- mic_126_mean_plot + 
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
-    plot.caption = element_blank()
+    plot.caption = element_blank(),
+    axis.title = element_blank()
     ) +
   labs(tag = "B") +
   scale_x_continuous(expand = c(0, 0)) +
@@ -1873,14 +2783,48 @@ mic_CMIP6_mean_plot <- mic_CMIP6_mean_plot +
     plot.tag.position = c(0.05, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
   )
+# ssp 370
+mic_370_mean_plot <- mic_370_mean_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))  +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
+# ssp 585
+mic_585_mean_plot <- mic_585_mean_plot + 
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "D") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))  +
+  theme(
+    plot.tag.location = "panel",
+    plot.tag.position = c(0.05, 0.1),
+    plot.tag = element_text(face = "bold", size = 25)
+  )
 
-
-
-mic_regional_ensemble_patchwork <- (mic_hist_mean_plot / mic_CMIP6_mean_plot) +
+# patch together
+mic_regional_ensemble_patchwork <- (
+  mic_hist_mean_plot / mic_126_mean_plot /
+  mic_370_mean_plot / mic_585_mean_plot
+) +
   plot_layout(axes = "collect", axis_titles = "collect", guides = "collect") +
   plot_annotation(
-    title = "Most Influential Covariate (MIC) for 'regional_ensemble' model A) Present B) 2055",
-    subtitle = "Covariate causing most extrapolation from model training sets"
+    title = "Most Influential Covariate (MIC) analysis | (A) Present and 2055 climate change scnerios\n(B) ssp126 (C) ssp370 (D) ssp585",
+    subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training sets"
     ) &
   theme(legend.position = "bottom")
 
@@ -1891,7 +2835,7 @@ mic_regional_ensemble_patchwork <- (mic_hist_mean_plot / mic_CMIP6_mean_plot) +
 ggsave(
   mic_regional_ensemble_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_regional_ensemble_background_projGlobe_patchwork.jpg"),
-  height = 12, 
+  height = 14, 
   width = 12,
   device = "jpeg",
   dpi = "retina"
