@@ -1669,10 +1669,17 @@ Now, I can create a table for these thresholds and export these data.
 ```{r table of ensemble threshold values}
 
 ensemble_thresh_values <- tibble(
-  thresh = c(rep("MTP", 4), rep("MTSS", 4)),
-  time_period = c("1981-2010", rep("2041-2070", 3), "1981-2010", rep("2041-2070", 3)),
-  CMIP6_model = c(NA, "ssp126_GFDL", "ssp370_GFDL", "ssp585_GFDL", NA, "ssp126_GFDL", "ssp370_GFDL", "ssp585_GFDL"),
-  value = c(MTP_hist_thresh, MTP_126_thresh, MTP_370_thresh, MTP_585_thresh, MTSS_hist_thresh, MTSS_126_thresh, MTSS_370_thresh, MTSS_585_thresh)
+  thresh = c(rep("MTP", 5), rep("MTSS", 5)),
+  time_period = c("1981-2010", rep("2041-2070", 4), "1981-2010", rep("2041-2070", 4)),
+  CMIP6_model = c(NA, "ssp126_GFDL-ESM4", "ssp370_GFDL-ESM4", "ssp585_GFDL-ESM4", "ssp_mean_GFDL-ESM4", NA, "ssp126_GFDL-ESM4", "ssp370_GFDL-ESM4", "ssp585_GFDL-ESM4", "ssp_mean_GFDL-ESM4"),
+  value = c(
+    MTP_hist_thresh, # hist
+    MTP_126_thresh, MTP_370_thresh, MTP_585_thresh, # the three ssp scenarios
+    mean(c(MTP_126_thresh, MTP_370_thresh, MTP_585_thresh)), # the mean of the ssp scenarios
+    MTSS_hist_thresh, 
+    MTSS_126_thresh, MTSS_370_thresh, MTSS_585_thresh, 
+    mean(c(MTSS_126_thresh, MTSS_370_thresh, MTSS_585_thresh))
+    )
 )
 
 ```

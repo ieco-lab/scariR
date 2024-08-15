@@ -2,19 +2,13 @@
 title: "Plot stability of known SLF populations due climate change effects"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-05-06"
+date: "2024-08-15"
 output: html_document
 ---
 
 # Overview
 
-EDIT
 
-This vignette will compare the invaded region model for SLF, which was created in `050_run_easternUSA_MaxEnt_models.Rmd`, with the global version of this model, which was created in `070_run_global_historical_MaxEnt_model.Rmd`. First, I will compare these models using flexible AUC. Second, I will also project these models to N. America and compare the proportion of suitable area. Third, I will calculate suitability values for all SLF points and IVR regions. Finally, I will perform an invasion stage analysis following the methods of Gallien et.al, 2012.
-
-In step 1, I tested the best fit background data using SLF occurrences and climate data only from the SLF invaded range (the eastern half of the United States).
-
-(THEORY)
 
 # Setup
 
@@ -28,7 +22,7 @@ library(devtools)
 
 # spatial data handling
 library(terra)
-library(scrubr)
+library(CoordinateCleaner)
 
 # plot aesthetics
 library(scales)
@@ -49,13 +43,9 @@ mypath <- file.path(here::here() %>%
 
 I will load in some aesthetic objects, including for breaks.
 
-```{r axis breaks}
+```{r axis breaks and labels}
 
 breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
-
-```
-
-```{r axis labels}
 
 labels <- c(0, 2, 4, 6, 8, 10)
 
@@ -67,9 +57,9 @@ Load in summary files for the global and regional ensemble models, which contain
 # summary file to extract thresholds from
 
 # global
-summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
+summary_global <- read_csv(file = file.path(mypath, "slf_global_v3", "global_summary_all_iterations.csv"))
 
-summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
+summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
 
 
 ```
@@ -78,7 +68,7 @@ I will load in the dataset containing SLF populations.
 
 ```{r load in SLF dataset}
 
-slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds"))
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
 
 ```
 
@@ -88,18 +78,32 @@ Finally, I will load in the global and regional ensemble suitability maps. These
 ```{r load in suitability rasters}
 
 # global
-global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
+global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
 
-global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc"))
+global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp_averaged.asc"))
 
 
 # regional_ensemble
+# historical
 regional_ensemble_1995 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
   )
-
-regional_ensemble_2055 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+# CMIP6
+## ssp 126
+regional_ensemble_2055_126 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.asc")
+  )
+# ssp 370
+regional_ensemble_2055_370 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  )
+# ssp 585
+regional_ensemble_2055_585 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.asc")
+  )
+# ssp mean
+regional_ensemble_2055_ssp_mean <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc")
   )
 
 ```
@@ -112,17 +116,28 @@ I will load in the global model datasets and create the regional_ensemble datase
 
 ```{r import global suitability}
 
+# historical
 xy_global_1995 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
   ) 
 
-xy_global_2055 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
+# CMIP6
+## ssp 126
+xy_global_2055_126 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp126_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+## ssp 370
+xy_global_2055_370 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+## ssp 585
+xy_global_2055_585 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp585_xy_pred_suit_clamped_cloglog_mean.csv")
   ) 
 
 ```
 
-The xy_suitabilities for the global models also contain a few less records than the IVR regions. To ensure that I am retrieving the suitability values for the exact same vineyards in the regional_ensemble, I will perform a filtering join. The IVR dataset should now contain the same records as the global suitability values do
+I will take steps to deduplicate the slf dataset before 
 
 ```{r de-duplicate and filter join}
 
@@ -148,7 +163,7 @@ if (FALSE) {
   readr::write_rds(slf_populations, file.path(here::here(), "data", "slf_all_final_coords_2024-02-01_tidied.rds"))
   
   #read it back in
-  slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_final_coords_2024-02-01_tidied.rds"))
+  slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
   
 }
 
@@ -233,12 +248,12 @@ xy_regional_ensemble_2055 <- xy_regional_ensemble_2055 %>%
 # 1995
 write_csv(
   x = xy_regional_ensemble_1995, 
-  file = file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.csv")
+  file = file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.csv")
   )
 # 2055
 write_csv(
   x =  xy_regional_ensemble_2055,
-  file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
+  file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
   )
 
 # also save to .rds

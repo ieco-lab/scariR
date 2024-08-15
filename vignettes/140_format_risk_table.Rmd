@@ -26,6 +26,7 @@ library(scales)
 library(grid)
 library(formattable)
 library(kableExtra)
+library(webshot2)
 
 ```
 
@@ -74,11 +75,11 @@ For reporting purposes, we see that about 69.7% of the 1063 IVRs experience no c
 if(TRUE) {
   
   # make kable
-  IVR_shift_prop_table <- kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
-    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  IVR_shift_prop_table <- knitr::kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:2, width_min = '4cm') %>%
-    add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
+    kableExtra::add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
 
   
   # save as .html
@@ -95,6 +96,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"))
     
 }
 
@@ -122,10 +126,10 @@ IVR_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(IVR_risk_table[1:4
 
 # print table, e.g., in html format
 IVR_risk_table <- kable(IVR_risk_table, "html", escape = FALSE) %>% 
-  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
   # standardize col width
   kableExtra::column_spec(1:5, width_min = '4cm') %>%
-  add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
+  kableExtra::add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
 
   
 ```
@@ -148,6 +152,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"))
     
 }
 

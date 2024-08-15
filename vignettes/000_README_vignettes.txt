@@ -178,7 +178,7 @@ v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP sce
 
 ## About
 
-
+This vignette intersects the global and regional_ensemble model predictions into categorized suitability maps based on the MTSS threshold.
 
 ## Changelog
 
@@ -200,6 +200,8 @@ This vignette begins data analysis for our MaxEnt by creating suitability scatte
 
 v0- initial version- in sandbox/vignettes_old
 v1- using function to transform scatter plot axes
+v2-
+v3- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 

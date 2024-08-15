@@ -149,10 +149,11 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   cli::cli_alert_info("extracting covariate data for xy coordinates")
 
   # get SWD object containing point location data from rasters
-  xy_import_withdata_SWD <- SDMtune::prepareSWD(species = xy.type,
-                                            env = env.covar.obj,
-                                            p = xy_import,
-                                            verbose = TRUE # print helpful messages
+  xy_import_withdata_SWD <- SDMtune::prepareSWD(
+    species = xy.type,
+    env = env.covar.obj,
+    p = xy_import,
+    verbose = TRUE # print helpful messages
   )
 
   # save to file
