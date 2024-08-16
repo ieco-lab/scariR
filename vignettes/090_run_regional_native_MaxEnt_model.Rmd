@@ -205,6 +205,13 @@ rm(x_global_585_env_covariates_list)
 
 ```
 
+```{r reset wd}
+
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_native_v3")
+
+```
 
 ## 1.2 Input data- presences / absences (training and testing)
 
@@ -283,6 +290,9 @@ if (FALSE) {
   regional_native_test@coords # coordinates
   regional_native_test@pa # presence / absence (background counted as absence)
   regional_native_test@data # extracted data from 
+  
+  # also write to file
+  readr::write_rds(x = regional_native_test, file = file.path(mypath, "regional_native_test.rds"))
 
 }
 

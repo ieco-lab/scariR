@@ -205,6 +205,16 @@ rm(x_global_585_env_covariates_list)
 
 ```
 
+```{r reset wd}
+
+# output directory
+mypath <- file.path(here::here() %>% 
+                       dirname(),
+                     "maxent/models/slf_regional_invaded_asian_v2")
+
+```
+
+
 ## 1.2 Input data- presences / absences (training and testing)
 
 I need to also load in the SLF presence dataset created in vignette 030 and the background points dataset created in vignette 040.
@@ -285,6 +295,9 @@ if (TRUE) {
   regional_invaded_asian_test@coords # coordinates
   regional_invaded_asian_test@pa # presence / absence (background counted as absence)
   regional_invaded_asian_test@data # extracted data from 
+  
+  # write to file
+  readr::write_rds(x = regional_invaded_asian_test, file = file.path(mypath, "regional_invaded_asian_test.rds"))
 
 }
 

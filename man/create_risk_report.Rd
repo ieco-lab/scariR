@@ -10,6 +10,7 @@ create_risk_report(
   locality.type,
   save.report = FALSE,
   mypath,
+  raster.path = file.path(here::here(), "vignette-outputs", "rasters"),
   create.dir = FALSE,
   map.style = NA
 )
@@ -37,6 +38,10 @@ output will be stored. Should be used with the \code{\link[=file.path]{file.path
 (i.e. with '/' instead of '\\'). If this sub directory does not already exist
 and should be created by the function, set \code{create.dir} = TRUE. This will
 create a folder from the last part of the filepath in \code{mypath}.}
+
+\item{raster.path}{Character. A file path to the directory containing the rasters
+necessary to build this function. See details for the rasters that should be
+included with this data input and for the default path.}
 
 \item{create.dir}{Logical. Should the last element of \code{mypath} create a sub
 directory for the report? If TRUE, the main folder will be created for
@@ -98,7 +103,15 @@ Additionally, 3 rasters are used to create maps. These rasters are located in
 \item slf_binarized_summed_2041-2070_ssp370_GFDL.asc                      | created in vignette 120
 \item slf_range_shift_summed.asc                                          | created in vignette 120
 }
-\subsection{locality}{
+\subsection{raster.path}{
+
+Here is a list of the rasters that should be included in this data import.
+These rasters are located in \code{root/vignette-outputs/rasters}, These are the files:
+\itemize{
+\item slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
+\item slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
+\item slf_range_shift_2041-2070_ssp_mean_GFDL.asc                         | created in vignette 120
+}
 }
 }
 \examples{

@@ -147,7 +147,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
     cli::cli_alert_danger("MTP.CC can only be used with a thresh imported for the 'regional_ensemble' model")
     stop()
 
-  } else if (thresh == "MTSS.CC" && str_detect(summary.file, "_iteration") == TRUE) {
+  } else if (length(thresh) == 1 && thresh == "MTSS.CC" && any(str_detect(summary.file, "_iteration"))) {
     cli::cli_alert_danger("MTSS.CC can only be used with a thresh imported for the 'regional_ensemble' model")
     stop()
   }
@@ -155,6 +155,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
   # conditional for presets import.
   # if the thresh import fits the specification of the global model output, import these values
   if(nrow(thresh_preset_import) == 52 && colnames(thresh_preset_import)[1] == "statistic") {
+
     thresh_presets <- c(
       "MTP" = as.numeric(thresh_preset_import[30, ncol(thresh_preset_import)]), # Minimum.training.presence.Cloglog.threshold
       "MTSS" = as.numeric(thresh_preset_import[42, ncol(thresh_preset_import)]) # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
@@ -162,22 +163,41 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
 
     # else if the thresh import fits the specifications of the regional_ensemble output, import these values
   } else if (nrow(thresh_preset_import) > 6 & nrow(thresh_preset_import) < 52 && ncol(thresh_preset_import) < 7) {
+
     thresh_presets <- c(
-      "MTP" = as.numeric(thresh_preset_import[1, 4]), # Minimum.training.presence.Cloglog.threshold
-      "MTSS" = as.numeric(thresh_preset_import[6, 4]), # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-      # only used for format of thresh file from regional_ensemble model
-      "MTP.CC" = as.numeric(thresh_preset_import[5, 4]), # MTP transformed for climate change
-      "MTSS.CC" = as.numeric(thresh_preset_import[10, 4]) # MTP transformed for climate change
+      "MTP" = (dplyr::filter(thresh_preset_import, thresh == "MTP") %>%  # Minimum.training.presence.Cloglog.threshold
+                 # above: filter out MTP rows
+                 # below: select first row (hist value)
+                dplyr::slice_head() %>%
+                 # get the value col
+                dplyr::select(4) %>%
+                as.numeric()),
+      "MTSS" = (dplyr::filter(thresh_preset_import, thresh == "MTSS") %>%  # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+                  dplyr::slice_head() %>%
+                  dplyr::select(4) %>%
+                  as.numeric()),
+      # only used for format of thresh file from regional_ensemble model- this the MTSS for the historical data
+      "MTP.CC" = (dplyr::filter(thresh_preset_import, thresh == "MTP") %>%  # MTP transformed for climate change- this is the MTP for the mean ssp scenario
+                    dplyr::slice_tail() %>%
+                    # select the last row (the CC mean value)
+                    dplyr::select(4) %>%
+                    as.numeric()),
+      "MTSS.CC" = (dplyr::filter(thresh_preset_import, thresh == "MTSS") %>%  # MTSS transformed for climate change- this is the MTSS for the mean ssp scenario
+                     dplyr::slice_tail() %>%
+                     dplyr::select(4) %>%
+                     as.numeric())
     )
+
+    # DEPRECATED
     # else if the thresh import fits the specifications of the regional_ensemble output, import these values
-  } else if (nrow(thresh_preset_import) <= 2 && ncol(thresh_preset_import) < 7) {
-    thresh_presets <- c(
-      "MTP" = as.numeric(thresh_preset_import[1, 2]), # Minimum.training.presence.Cloglog.threshold
-      "MTSS" = as.numeric(thresh_preset_import[2, 2]) # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
-    )
+ # } else if (nrow(thresh_preset_import) <= 2 && ncol(thresh_preset_import) < 7) {
+   # thresh_presets <- c(
+  #    "MTP" = as.numeric(thresh_preset_import[1, 2]), # Minimum.training.presence.Cloglog.threshold
+   #   "MTSS" = as.numeric(thresh_preset_import[2, 2]) # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
+   # )
     # else, print a warning message
   } else {
-    cli::cli_alert_danger("'summary.file' import does not fit the expected parameters. A summary.file output from slfSpread::compute_MaxEnt_summary_statistics() should be length == 52.")
+    cli::cli_alert_danger("'summary.file' import does not fit the expected parameters. The summary file for a global-scale model should be nrow == 52 and a summary file for a regional-scale model should be nrow = 10")
     stop()
 
   }
@@ -201,9 +221,14 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
   thresh_value <- as.double(format(thresh_value, digits = 10))
 
   # ensure thresh isnt 0
-  if (thresh_value == 0) {
+  if (thresh_value <= 0) {
     cli::cli_alert_danger("The value of parameter 'thresh' must be greater than 0")
     stop()
+
+  } else if (is.na(thresh_value)) {
+    cli::cli_alert_danger("The imported summary file is likely formatted incorrectly (the number of rows should equal 10)")
+    stop()
+
   }
 
 
