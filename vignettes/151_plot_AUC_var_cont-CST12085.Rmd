@@ -2,7 +2,7 @@
 title: "Plot AUC curves, variable contribution graphs and jackknife plots"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-05-09"
+date: "2024-08-16"
 ---
 
 THEORY
@@ -42,25 +42,32 @@ mypath <- file.path(here::here() %>%
 ```{r style object}
 
 ensemble_colors <- c(
-  "native" = "#4daf4a",
-  "invaded" =  "#e41a1c",
-  "invaded_asian" = "#377eb8"
+  "Rn (native)" = "#4daf4a",
+  "Ri.NAmerica" =  "#e41a1c",
+  "Ri.Asia" = "#377eb8"
 )
 
 ```
 
 ```{r load model objects}
 
-regional_native_model <- read_rds(file = file.path(mypath, "slf_regional_native_v2", "regional_native_model.rds"))
+regional_native_model <- read_rds(file = file.path(mypath, "slf_regional_native_v3", "regional_native_model.rds"))
 
-regional_invaded_model <- read_rds(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_model.rds"))
+regional_invaded_model <- read_rds(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_model.rds"))
 
-regional_invaded_asian_model <- read_rds(file = file.path(mypath, "slf_regional_invaded_asian_v1", "regional_invaded_asian_model.rds"))
+regional_invaded_asian_model <- read_rds(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_model.rds"))
 
 ```
 
+```{r load testing objects}
 
-*note* the testing datasets were loaded into my globalenv by running the first parts of vignettes 070, 080 and 090.
+regional_native_test <- read_rds(file = file.path(mypath, "slf_regional_native_v3", "regional_native_test.rds"))
+
+regional_invaded_test <- read_rds(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_test.rds"))
+
+regional_invaded_asian_test <- read_rds(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_test.rds"))
+
+```
 
 # ROC regional ensemble
 
@@ -92,11 +99,11 @@ regional_invaded_asian_ROC <- SDMtune::plotROC(
 
 ROC_ensemble <- ggplot() +
   # native model data
-  geom_line(data = regional_native_ROC$data[[1]], aes(x = x, y = y, color = "native", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_native_ROC$data[[1]], aes(x = x, y = y, color = "Rn (native)", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # invaded model data
-  geom_line(data = regional_invaded_ROC$data[[1]], aes(x = x, y = y, color = "invaded", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_invaded_ROC$data[[1]], aes(x = x, y = y, color = "Ri.NAmerica", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # invaded_asian model data
-  geom_line(data = regional_invaded_asian_ROC$data[[1]], aes(x = x, y = y, color = "invaded_asian", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_invaded_asian_ROC$data[[1]], aes(x = x, y = y, color = "Ri.Asia", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # midpoint line
   geom_abline(slope = 1, linetype = "dashed") +
   # scales
@@ -142,11 +149,11 @@ ggsave(
 
 ```{r load var imp files}
 
-regional_native_var_imp <- read.csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_variable_importance.csv"))
+regional_native_var_imp <- read.csv(file = file.path(mypath, "slf_regional_native_v3", "regional_native_variable_importance.csv"))
 
-regional_invaded_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_variable_importance.csv"))
+regional_invaded_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_variable_importance.csv"))
 
-regional_invaded_asian_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_asian_v1", "regional_invaded_asian_variable_importance.csv"))
+regional_invaded_asian_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_variable_importance.csv"))
 
 ```
 
@@ -186,11 +193,11 @@ regional_invaded_asian_var_imp_plot[["data"]][[1]][["x"]] <- c(1, 2, 4, 3)
 
 var_imp_ensemble <- ggplot() +
   # native model data
-  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "native"), color = "black", width = 0.2) +
+  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "Rn (native)"), color = "black", width = 0.2) +
   # invaded model data
-  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "invaded"), color = "black", width = 0.2) +
+  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "Ri.NAmerica"), color = "black", width = 0.2) +
   # invaded_asian model data
-  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "invaded_asian"), color = "black", width = 0.2) +
+  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "Ri.Asia"), color = "black", width = 0.2) +
   labs(
     title = "Variable Importance for 'regional_ensemble' models",
     x = "",
@@ -234,12 +241,13 @@ ggsave(
 
 ```{r load plotting objects}
 
-global_model <- read_rds(file = file.path(mypath, "slf_global_v2", "global_model.rds"))
+global_model <- read_rds(file = file.path(mypath, "slf_global_v3", "global_model.rds"))
+global_test <- read_rds(file = file.path(mypath, "slf_global_v3", "global_test.rds"))
 
 ensemble_colors <- c(
-  "native" = "#4daf4a",
-  "invaded" =  "#e41a1c",
-  "invaded_asian" = "#377eb8",
+  "Rn (native)" = "#4daf4a",
+  "Ri.NAmerica" =  "#e41a1c",
+  "Ri.Asia" = "#377eb8",
   "global" = "black"
 )
 
@@ -262,11 +270,11 @@ ROC_ensemble_global <- ggplot() +
   # global
   geom_line(data = global_ROC$data[[1]], aes(x = x, y = y, color = "global", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # native model data
-  geom_line(data = regional_native_ROC$data[[1]], aes(x = x, y = y, color = "native", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_native_ROC$data[[1]], aes(x = x, y = y, color = "Rn (native)", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # invaded model data
-  geom_line(data = regional_invaded_ROC$data[[1]], aes(x = x, y = y, color = "invaded", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_invaded_ROC$data[[1]], aes(x = x, y = y, color = "Ri.NAmerica", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # invaded_asian model data
-  geom_line(data = regional_invaded_asian_ROC$data[[1]], aes(x = x, y = y, color = "invaded_asian", group = group, linetype = as.factor(group)), linewidth = 0.8) +
+  geom_line(data = regional_invaded_asian_ROC$data[[1]], aes(x = x, y = y, color = "Ri.Asia", group = group, linetype = as.factor(group)), linewidth = 0.8) +
   # midpoint line
   geom_abline(slope = 1, linetype = "dashed") +
   # scales
@@ -312,7 +320,7 @@ ggsave(
 
 ```{r load var imp files}
 
-global_var_imp <- read.csv(file = file.path(mypath, "slf_global_v2", "global_variable_importance.csv"))
+global_var_imp <- read.csv(file = file.path(mypath, "slf_global_v3", "global_variable_importance.csv"))
 
 ```
 
@@ -332,11 +340,11 @@ var_imp_ensemble <- ggplot() +
   # native model data
   geom_col(data = global_var_imp_plot$data[[1]], aes(x = x - 0.4, y = y, fill = "global"), color = "black", width = 0.2) +
   # native model data
-  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "native"), color = "black", width = 0.2) +
+  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "Rn (native)"), color = "black", width = 0.2) +
   # invaded model data
-  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "invaded"), color = "black", width = 0.2) +
+  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "Ri.NAmerica"), color = "black", width = 0.2) +
   # invaded_asian model data
-  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "invaded_asian"), color = "black", width = 0.2) +
+  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "Ri.Asia"), color = "black", width = 0.2) +
   labs(
     title = "Variable Importance for 'regional_ensemble' and 'global' models",
     x = "",
@@ -399,11 +407,11 @@ jk_patterns <- c(
 ```{r import jackknife test outputs}
 
 
-regional_native_jk <- read.csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_jackknife_training_testing.csv"))
+regional_native_jk <- read.csv(file = file.path(mypath, "slf_regional_native_v3", "regional_native_jackknife_training_testing.csv"))
 
-regional_invaded_jk <- read.csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_jackknife_training_testing.csv"))
+regional_invaded_jk <- read.csv(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_jackknife_training_testing.csv"))
 
-regional_invaded_asian_jk <- read.csv(file = file.path(mypath, "slf_regional_invaded_asian_v1", "regional_invaded_asian_jackknife_training_testing.csv"))
+regional_invaded_asian_jk <- read.csv(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_jackknife_training_testing.csv"))
 
 
 ```
@@ -475,11 +483,11 @@ regional_invaded_asian_jk_test_plot[["data"]][[1]][["group"]] <- c(1, 2, 1, 2, 1
 
 jk_train_ensemble <- ggplot() +
   # native model data
-  geom_col_pattern(data = regional_native_jk_train_plot$data[[1]], aes(x = x - 0.1, y = y, fill = "native", group = group, pattern = as.factor(group)), pattern_fill = "black", pattern_angle = 45, pattern_density = 0.1, pattern_spacing = 0.025, pattern_key_scale_factor = 0.6, width = 0.1, color = "black") +
+  geom_col_pattern(data = regional_native_jk_train_plot$data[[1]], aes(x = x - 0.1, y = y, fill = "Rn (native)", group = group, pattern = as.factor(group)), pattern_fill = "black", pattern_angle = 45, pattern_density = 0.1, pattern_spacing = 0.025, pattern_key_scale_factor = 0.6, width = 0.1, color = "black") +
   # invaded model data
- # geom_col(data = regional_invaded_jk_train_plot$data[[1]], aes(x = x + 0.1, y = y, fill = "invaded"), color = "black", width = 0.1) +
+ # geom_col(data = regional_invaded_jk_train_plot$data[[1]], aes(x = x + 0.1, y = y, fill = "Ri.NAmerica"), color = "black", width = 0.1) +
   # invaded_asian model data
-  #geom_col(data = regional_invaded_asian_jk_train_plot$data[[1]], aes(x = x, y = y, fill = "invaded_asian"), color = "black", width = 0.1) +
+  #geom_col(data = regional_invaded_asian_jk_train_plot$data[[1]], aes(x = x, y = y, fill = "Ri.Asia"), color = "black", width = 0.1) +
   labs(
     title = "Jackknife 'regional_ensemble' models",
     x = "",

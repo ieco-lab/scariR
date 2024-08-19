@@ -26,6 +26,7 @@ library(scales)
 library(grid)
 library(formattable)
 library(kableExtra)
+library(webshot2)
 
 ```
 
@@ -74,11 +75,11 @@ For reporting purposes, we see that about 69.7% of the 1063 IVRs experience no c
 if(TRUE) {
   
   # make kable
-  IVR_shift_prop_table <- kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
-    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  IVR_shift_prop_table <- knitr::kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:2, width_min = '4cm') %>%
-    add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
+    kableExtra::add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
 
   
   # save as .html
@@ -95,6 +96,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"))
     
 }
 
@@ -114,18 +118,32 @@ IVR_risk_table[2:4, 1] <- sprintf("%+.0f", IVR_risk_table[2:4, 1])
 IVR_risk_table[3:4, 2] <- sprintf("%+.0f", IVR_risk_table[3:4, 2])
 IVR_risk_table[4, 3] <- sprintf("%+.0f", IVR_risk_table[4, 3])
 
-# add html formatting
-IVR_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(IVR_risk_table[1:4, 1])
-IVR_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(IVR_risk_table[1:4, 2])
-IVR_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(IVR_risk_table[1:4, 3])
-IVR_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(IVR_risk_table[1:4, 4])
+# add color formatting to totals
+# extreme risk
+IVR_risk_table[1, 5] <- cell_spec(IVR_risk_table[1, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+IVR_risk_table[5, 1] <- cell_spec(IVR_risk_table[5, 1], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+# high risk
+IVR_risk_table[2, 5] <- cell_spec(IVR_risk_table[2, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+IVR_risk_table[5, 2] <- cell_spec(IVR_risk_table[5, 2], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+# moderate risk
+IVR_risk_table[3, 5] <- cell_spec(IVR_risk_table[3, 5], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+IVR_risk_table[5, 3] <- cell_spec(IVR_risk_table[5, 3], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+# low risk
+IVR_risk_table[4, 5] <- cell_spec(IVR_risk_table[4, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+IVR_risk_table[5, 4] <- cell_spec(IVR_risk_table[5, 4], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+
+# bold total
+IVR_risk_table[5, 5] <- cell_spec(IVR_risk_table[5, 5], format = "html", bold = TRUE, escape = FALSE)
 
 # print table, e.g., in html format
-IVR_risk_table <- kable(IVR_risk_table, "html", escape = FALSE) %>% 
-  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+IVR_risk_table <- kable(IVR_risk_table, format = "html", escape = FALSE) %>% 
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
   # standardize col width
   kableExtra::column_spec(1:5, width_min = '4cm') %>%
-  add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
+  # add footnotes
+  kableExtra::add_footnote("number signs indicate whether climate change is increasing (+) or decreasing (-) risk", notation = "alphabet") %>%
+  # add header
+  kableExtra::add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
 
   
 ```
@@ -148,6 +166,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"))
     
 }
 
@@ -198,10 +219,10 @@ if(TRUE) {
   
   # make kable
   slf_shift_prop_table <- kable(slf_shift_prop_table, "html", escape = FALSE) %>% 
-    kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
     # standardize col width
     kableExtra::column_spec(1:2, width_min = '4cm') %>%
-    add_header_above(., header = c("SLF risk table shift proportions" = 2), bold = TRUE)
+    kableExtra::add_header_above(., header = c("SLF risk table shift proportions" = 2), bold = TRUE)
   
   
   # save as .html
@@ -218,6 +239,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"))
     
 }
 
@@ -235,17 +259,31 @@ slf_risk_table[2:4, 1] <- sprintf("%+.0f", slf_risk_table[2:4, 1])
 slf_risk_table[3:4, 2] <- sprintf("%+.0f", slf_risk_table[3:4, 2])
 slf_risk_table[4, 3] <- sprintf("%+.0f", slf_risk_table[4, 3])
 
-# add html formatting
-slf_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(slf_risk_table[1:4, 1])
-slf_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(slf_risk_table[1:4, 2])
-slf_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(slf_risk_table[1:4, 3])
-slf_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(slf_risk_table[1:4, 4])
+# add color formatting to totals
+# extreme risk
+slf_risk_table[1, 5] <- cell_spec(slf_risk_table[1, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+slf_risk_table[5, 1] <- cell_spec(slf_risk_table[5, 1], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+# high risk
+slf_risk_table[2, 5] <- cell_spec(slf_risk_table[2, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+slf_risk_table[5, 2] <- cell_spec(slf_risk_table[5, 2], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+# moderate risk
+slf_risk_table[3, 5] <- cell_spec(slf_risk_table[3, 5], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+slf_risk_table[5, 3] <- cell_spec(slf_risk_table[5, 3], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+# low risk
+slf_risk_table[4, 5] <- cell_spec(slf_risk_table[4, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+slf_risk_table[5, 4] <- cell_spec(slf_risk_table[5, 4], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+
+# bold total
+slf_risk_table[5, 5] <- cell_spec(slf_risk_table[5, 5], format = "html", bold = TRUE, escape = FALSE)
 
 # print table, e.g., in html format
 slf_risk_table <- kable(slf_risk_table, "html", escape = FALSE) %>% 
   kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
   # standardize col width
   kableExtra::column_spec(1:5, width_min = '4cm') %>%
+  # add footnotes
+  kableExtra::add_footnote("number signs indicate whether climate change is increasing (+) or decreasing (-) risk", notation = "alphabet") %>%
+  # add header
   add_header_above(., header = c("Risk of persistence for known L delicatula populations" = 6), bold = TRUE)
 
   
@@ -270,6 +308,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"))
     
 }
 

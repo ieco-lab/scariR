@@ -2,19 +2,13 @@
 title: "Plot stability of known SLF populations due climate change effects"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-05-06"
+date: "2024-08-15"
 output: html_document
 ---
 
 # Overview
 
-EDIT
 
-This vignette will compare the invaded region model for SLF, which was created in `050_run_easternUSA_MaxEnt_models.Rmd`, with the global version of this model, which was created in `070_run_global_historical_MaxEnt_model.Rmd`. First, I will compare these models using flexible AUC. Second, I will also project these models to N. America and compare the proportion of suitable area. Third, I will calculate suitability values for all SLF points and IVR regions. Finally, I will perform an invasion stage analysis following the methods of Gallien et.al, 2012.
-
-In step 1, I tested the best fit background data using SLF occurrences and climate data only from the SLF invaded range (the eastern half of the United States).
-
-(THEORY)
 
 # Setup
 
@@ -28,7 +22,7 @@ library(devtools)
 
 # spatial data handling
 library(terra)
-library(scrubr)
+library(CoordinateCleaner)
 
 # plot aesthetics
 library(scales)
@@ -49,13 +43,9 @@ mypath <- file.path(here::here() %>%
 
 I will load in some aesthetic objects, including for breaks.
 
-```{r axis breaks}
+```{r axis breaks and labels}
 
 breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
-
-```
-
-```{r axis labels}
 
 labels <- c(0, 2, 4, 6, 8, 10)
 
@@ -67,72 +57,110 @@ Load in summary files for the global and regional ensemble models, which contain
 # summary file to extract thresholds from
 
 # global
-summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
+summary_global <- read_csv(file = file.path(mypath, "slf_global_v3", "global_summary_all_iterations.csv"))
 
-summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
+summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
 
-
-```
-
-I will load in the dataset containing SLF populations.
-
-```{r load in SLF dataset}
-
-slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds"))
 
 ```
 
+## load rasters
 
 Finally, I will load in the global and regional ensemble suitability maps. These will be used both for extracting the new xy suitability values and for plotting.
 
 ```{r load in suitability rasters}
 
 # global
-global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
+global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
 
-global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc"))
+global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp_averaged.asc"))
 
 
 # regional_ensemble
+# historical
 regional_ensemble_1995 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
   )
-
-regional_ensemble_2055 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+# CMIP6
+## ssp 126
+regional_ensemble_2055_126 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp126.asc")
+  )
+# ssp 370
+regional_ensemble_2055_370 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  )
+# ssp 585
+regional_ensemble_2055_585 <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp585.asc")
+  )
+# ssp mean
+regional_ensemble_2055_ssp_mean <- terra::rast(
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp_averaged.asc")
   )
 
 ```
 
-# 1. Retrieve/Import xy suitability
+## tidy slf populations dataset
 
-These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `slfSpread::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
+I will load in the dataset containing SLF populations.
 
-I will load in the global model datasets and create the regional_ensemble datasets. I will also do some tidying of my datasets for the plots I will create.
+```{r load in SLF dataset}
 
-```{r import global suitability}
-
-xy_global_1995 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
-  ) 
-
-xy_global_2055 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
-  ) 
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
 
 ```
 
-The xy_suitabilities for the global models also contain a few less records than the IVR regions. To ensure that I am retrieving the suitability values for the exact same vineyards in the regional_ensemble, I will perform a filtering join. The IVR dataset should now contain the same records as the global suitability values do
+I will take steps to de-duplicate the slf populations dataset before retrieving suitability values for it. 
 
 ```{r de-duplicate and filter join}
 
+slf_populations <- slf_populations %>%
+  # filter out NAs
+  dplyr::filter(
+    !is.na(x),
+    !is.na(y)
+    ) %>% 
+  # remove duplicate coordinates
+  CoordinateCleaner::clean_coordinates(
+    x = .,
+    lon = "x",
+    lat = "y",
+    species = "species",
+    tests = "duplicates",
+    value = "clean" # just return same df without duplicates
+  ) 
+
+```
+
+I will load in one of the xy_suitability files to compare with the slf populations dataset because some points were lost in the predict step, so now the slf populations dataset has more data points than the xy_suitability versions.
+
+```{r import historical xy suitability dataset}
+
+# historical
+xy_global_1995 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+
+```
+
+```{r join xy_suit with populations dataset}
+
 # de-duplicate just to make sure
-xy_global_1995 <- scrubr::dedup(xy_global_1995, how = "one", tolerance = 0.99) 
-xy_global_2055 <- scrubr::dedup(xy_global_2055, how = "one", tolerance = 0.99) 
+xy_global_1995 <- xy_global_1995 %>%
+  CoordinateCleaner::clean_coordinates(
+    x = .,
+    lon = "x",
+    lat = "y",
+    species = "Species",
+    tests = "duplicates",
+    value = "clean"
+  ) %>%
+  dplyr::select(x, y, cloglog_suitability) %>%
+  # rename
+  dplyr::rename("cloglog_suit_hist" = "cloglog_suitability") 
 
-
-# edits to IVR dataset
-# filter join of IVRs
+# filter join of populations dataset
 slf_populations <- semi_join(slf_populations, xy_global_1995, by = c("x", "y")) 
 # add ID column
 slf_populations <- slf_populations %>%
@@ -141,20 +169,119 @@ slf_populations <- slf_populations %>%
 
 ```
 
+Now that the records have been harmonized between the datasets, I will save to file for use downstream. This will be the main file for predicting slf population suitability.
+
 ```{r save tidied data}
 
 if (FALSE) {
 
-  readr::write_rds(slf_populations, file.path(here::here(), "data", "slf_all_final_coords_2024-02-01_tidied.rds"))
+  readr::write_rds(slf_populations, file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
   
   #read it back in
-  slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_final_coords_2024-02-01_tidied.rds"))
+  slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
   
 }
 
 ```
 
-Now, I will retrieve the suitability values for the regional_ensemble. Instead of returning the coordinates from the map, I will join the coordinates from the original slf_populations dataset so that the coordinates are exact for joining with other datasets.
+##  import and tidy xy suitability
+
+These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `slfSpread::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
+
+I will load in the global model datasets and create the regional_ensemble datasets. I will also do some tidying of my datasets for the plots I will create.
+
+```{r import other global suitability datasets}
+
+# CMIP6
+## ssp 126
+xy_global_2055_126 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp126_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+## ssp 370
+xy_global_2055_370 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+## ssp 585
+xy_global_2055_585 <- read_csv(
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp585_xy_pred_suit_clamped_cloglog_mean.csv")
+  ) 
+
+```
+
+```{r remove duplicates of other datasets}
+
+# ssp 126
+xy_global_2055_126 <- xy_global_2055_126 %>%
+  CoordinateCleaner::clean_coordinates(
+    x = .,
+    lon = "x",
+    lat = "y",
+    species = "Species",
+    tests = "duplicates",
+    value = "clean"
+  ) %>%
+  # tidy
+  dplyr::select(-Species) %>%
+  dplyr::rename("cloglog_suit_ssp126" = "cloglog_suitability") 
+
+# ssp 370
+xy_global_2055_370 <- xy_global_2055_370 %>%
+  CoordinateCleaner::clean_coordinates(
+    x = .,
+    lon = "x",
+    lat = "y",
+    species = "Species",
+    tests = "duplicates",
+    value = "clean"
+  ) %>%
+  # tidy
+  dplyr::select(-Species) %>%
+  dplyr::rename("cloglog_suit_ssp370" = "cloglog_suitability") 
+
+# ssp 585
+xy_global_2055_585 <- xy_global_2055_585 %>%
+  CoordinateCleaner::clean_coordinates(
+    x = .,
+    lon = "x",
+    lat = "y",
+    species = "Species",
+    tests = "duplicates",
+    value = "clean"
+  ) %>%
+  # tidy
+  dplyr::select(-Species) %>%
+  dplyr::rename("cloglog_suit_ssp585" = "cloglog_suitability") 
+
+```
+
+## take mean of global model ssp scenarios 
+
+I will take the mean of the suitability value within each of these predicted suitability datasets to create a single prediction for the three ssp scenarios.
+
+```{r mean global ssp predictions}
+
+# first join datasets
+xy_global_2055_ssp_mean <- xy_global_2055_126 %>%
+  left_join(., xy_global_2055_370, join_by(x, y)) %>%
+  left_join(., xy_global_2055_585, join_by(x, y)) %>%
+  # take mean of columns
+  dplyr::mutate(suit_ssp_averaged = rowMeans(.[, 3:5])) %>%
+  dplyr::select(x, y, suit_ssp_averaged)
+
+```
+
+```{r write as csv}
+
+write_csv(
+  x = xy_global_2055_ssp_mean,
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_clamped_cloglog_mean.csv")
+    )
+
+```
+
+## retrieve suitability values for regional_ensemble
+
+Now, I will retrieve the suitability values for the regional_ensemble. Instead of returning the coordinates from the map, I will join the coordinates from the original slf_populations dataset so that the coordinates are exact for joining with other datasets. This step is much simpler than in the last vignette because I will be using a simple point-wise prediction method, instead of the buffer method used on the wineries datasets, as these coordinates represent exact population locations, rather than the centroid of a region.
 
 ```{r retrieve xy suitability for regional_ensemble}
 
@@ -167,121 +294,172 @@ xy_regional_ensemble_1995 <- terra::extract(
   ID = TRUE
 )
 
-
-# 2055
-xy_regional_ensemble_2055 <- terra::extract(
-  x = regional_ensemble_2055,
+# CMIP6
+# ssp126
+xy_regional_ensemble_2055_126 <- terra::extract(
+  x = regional_ensemble_2055_126,
+  y = dplyr::select(slf_populations, x, y), # points
+  method = "simple",
+  xy = FALSE, # dont return coordinates 
+  ID = TRUE
+) 
+# ssp370
+xy_regional_ensemble_2055_370 <- terra::extract(
+  x = regional_ensemble_2055_370,
+  y = dplyr::select(slf_populations, x, y), # points
+  method = "simple",
+  xy = FALSE, # dont return coordinates 
+  ID = TRUE
+) 
+# ssp126
+xy_regional_ensemble_2055_585 <- terra::extract(
+  x = regional_ensemble_2055_585,
   y = dplyr::select(slf_populations, x, y), # points
   method = "simple",
   xy = FALSE, # dont return coordinates 
   ID = TRUE
 ) 
 
+
 ```
 
-```{r join xy coordinates}
+```{r join xy coordinates and tidy}
 
 # joining object
 slf_coordinates <- dplyr::select(slf_populations, ID, x, y)
 
 # perform join
-xy_regional_ensemble_1995 <- left_join(xy_regional_ensemble_1995, slf_coordinates, by = "ID") %>%
-  dplyr::select(-ID)
-
-xy_regional_ensemble_2055 <- left_join(xy_regional_ensemble_2055, slf_coordinates, by = "ID") %>%
-  dplyr::select(-ID)
+xy_regional_ensemble_1995 <- left_join(xy_regional_ensemble_1995, slf_coordinates, by = "ID") %>% 
+  # tidy
+  dplyr::relocate(ID, x, y) %>%
+  dplyr::rename("cloglog_suit_hist" = "sum")
+# CMIP6
+## ssp 126
+xy_regional_ensemble_2055_126 <- left_join(xy_regional_ensemble_2055_126, slf_coordinates, by = "ID") %>%
+  dplyr::relocate(ID, x, y) %>%
+  dplyr::rename("cloglog_suit_ssp126" = "sum")
+## ssp370
+xy_regional_ensemble_2055_370 <- left_join(xy_regional_ensemble_2055_370, slf_coordinates, by = "ID") %>%
+  dplyr::relocate(ID, x, y) %>%
+  dplyr::rename("cloglog_suit_ssp370" = "sum")
+## ssp 585
+xy_regional_ensemble_2055_585 <- left_join(xy_regional_ensemble_2055_585, slf_coordinates, by = "ID") %>%
+  dplyr::relocate(ID, x, y) %>%
+  dplyr::rename("cloglog_suit_ssp585" = "sum")
 
 ```
 
-Now, I will tidy and save the datasets
+### take mean of ssps
+
+```{r mean regional ensemble ssp predictions}
+
+# first join datasets
+xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_126 %>%
+  left_join(., xy_regional_ensemble_2055_370, join_by(ID, x, y)) %>%
+  left_join(., xy_regional_ensemble_2055_585, join_by(ID, x, y)) %>%
+  # take mean of columns
+  dplyr::mutate(suit_ssp_averaged = rowMeans(.[, 4:6])) %>%
+  dplyr::select(ID, x, y, suit_ssp_averaged)
+
+```
+
+```{r write as csv}
+
+write_csv(
+  x = xy_regional_ensemble_2055_ssp_mean,
+  file = file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.csv")
+  )
+
+```
+
+## write to file
+
+Now, I will tidy and save the datasets to .rds for our analysis.
 
 ```{r tidy datasets}
 
 # global model datasets
 xy_global_1995 <- xy_global_1995 %>%
-  dplyr::select(-Species) %>%
+  # add ID column
+  cbind(., slf_populations[, 1]) %>%
   # rename the column for future joining
-  dplyr::rename("xy_global_1995" = "cloglog_suitability") %>%
-  dplyr::filter(!is.na(xy_global_1995))
+  dplyr::rename(
+    "ID" = "slf_populations[, 1]",
+    "xy_global_1995" = "cloglog_suit_hist"
+    ) %>%
+  dplyr::relocate(ID) 
 
-xy_global_2055 <- xy_global_2055 %>%
-  dplyr::select(-Species) %>%
-  dplyr::rename("xy_global_2055" = "cloglog_suitability") %>%
-  dplyr::filter(!is.na(xy_global_2055))
+  
+xy_global_2055_ssp_mean <- xy_global_2055_ssp_mean %>%
+  # add ID column
+  cbind(., slf_populations[, 1]) %>%
+  dplyr::rename(
+    "ID" = "slf_populations[, 1]",
+    "xy_global_2055" = "suit_ssp_averaged"
+    ) %>%
+  dplyr::relocate(ID)
 
 
 
 # regional_ensemble datasets
 xy_regional_ensemble_1995 <- xy_regional_ensemble_1995 %>%
   # rename the column for future joining
-  dplyr::rename("xy_regional_ensemble_1995" = "sum") %>%
-  dplyr::filter(!is.na(xy_regional_ensemble_1995)) %>%
-  dplyr::relocate(x, y)
+  dplyr::rename("xy_regional_ensemble_1995" = "cloglog_suit_hist") 
 
-xy_regional_ensemble_2055 <- xy_regional_ensemble_2055 %>%
+xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_ssp_mean %>%
   # rename the column for future joining
-  dplyr::rename("xy_regional_ensemble_2055" = "sum") %>%
-  dplyr::filter(!is.na(xy_regional_ensemble_2055)) %>%
-  dplyr::relocate(x, y)
-
-# we lost 1 record because of the NA removal, but that is OK
+  dplyr::rename("xy_regional_ensemble_2055" = "suit_ssp_averaged") 
 
 ```
 
-```{r save regional_ensemble predicted suitability}
+```{r save main suitability datasets as .rds}
 
-# 1995
-write_csv(
-  x = xy_regional_ensemble_1995, 
-  file = file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.csv")
-  )
-# 2055
-write_csv(
-  x =  xy_regional_ensemble_2055,
-  file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
-  )
-
-# also save to .rds
-readr::write_rds(
-  xy_regional_ensemble_1995,  
-  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.rds")
-  )
-
-readr::write_rds(
-  xy_regional_ensemble_2055,  
-  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.rds")
-  )
-
-
-# finally, save global datasets
+# save global datasets
 readr::write_rds(
   xy_global_1995,  
   file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit.rds")
   )
 
 readr::write_rds(
-  xy_global_2055,  
-  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.rds")
+  xy_global_2055_ssp_mean,  
+  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
   )
 
 
+# regional_ensemble
+readr::write_rds(
+  xy_regional_ensemble_1995,  
+  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.rds")
+  )
+
+readr::write_rds(
+  xy_regional_ensemble_2055_ssp_mean,  
+  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
+  )
+
 ```
 
-# 2. Transform xy suitability
+# 1. Transform xy suitability
 
 I will plot the suitability values in two different ways- I will plot the raw xy suitability and I will transform the data so that the MTSS threshold is the center of the scatter plot. This way, movement across the minimum suitability threshold is more easily visualized. I will transform all 4 vectors of suitability values, 2 per model, in preparation for plotting.
 
 I created the function `slfSpread::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
 
+```{r re-laod slf populations dataset}
+
+slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
+
+```
+
 ```{r re-load pred suit datasets}
 
 # global
 xy_global_1995 <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit.rds"))
-xy_global_2055 <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+xy_global_2055 <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds"))
 
 # regional
 xy_regional_ensemble_1995 <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.rds"))
-xy_regional_ensemble_2055 <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+xy_regional_ensemble_2055 <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds"))
 
 ```
 
@@ -354,7 +532,7 @@ write_rds(
   )
 write_rds(
   xy_global_2055_rescaled, 
-  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds")
+  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds")
   )
 
 # regional
@@ -364,7 +542,7 @@ write_rds(
   )
 write_rds(
   xy_regional_ensemble_2055_rescaled, 
-  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds")
+  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds")
   )
 
 ```
@@ -378,7 +556,7 @@ write_rds(
   )
 write_rds(
   xy_global_2055_rescaled_thresholds, 
-  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds")
+  file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds")
   )
 
 # regional
@@ -388,12 +566,12 @@ write_rds(
   )
 write_rds(
   xy_regional_ensemble_2055_rescaled_thresholds, 
-  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds")
+  file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds")
   )
 
 ```
 
-# 3. Plot untransformed suitability values
+# 2. Plot untransformed suitability values
 
 We need a baseline for visualizing the trends in these scatter plots, so I will first plot the un-transformed datasets.
 
@@ -419,7 +597,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
    # threshold lines
    # MTSS thresholds
    geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", linewidth = 0.7) + # global
-   geom_hline(yintercept = as.numeric(summary_regional_ensemble[3, 4]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   geom_hline(yintercept = as.numeric(summary_regional_ensemble[6, 4]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
@@ -427,7 +605,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
      ) +
    # GFDL ssp370 data
    geom_point(
-     aes(x = xy_global_2055, y = xy_regional_ensemble_2055, shape = "2041-2070\nGFDL ssp370"), 
+     aes(x = xy_global_2055, y = xy_regional_ensemble_2055, shape = "2041-2070\nGFDL-ESM4\nmean ssp126/370/585"), 
      size = 2, stroke = 0.7, color = "black", fill = "wheat3"
      ) +
    # axes scaling
@@ -448,7 +626,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 ggsave(
   xy_joined_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "slf_xy_suitability_slf_populations_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "slf_populations_xy_suitability_global_regional_ensemble.jpg"
     ),
   height = 8, 
   width = 8,
@@ -458,7 +636,7 @@ ggsave(
 
 ```
 
-# 4. plot transformed suitability values
+# 3. plot transformed suitability values
 
 I will manually change the scale of these values to a 1-10 scale so that this plot of risk is not confused for a measure of suitability from the model.
 
@@ -467,12 +645,12 @@ I will manually change the scale of these values to a 1-10 scale so that this pl
 # global
 xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
 
-xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
 
 # regional
 xy_regional_ensemble_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
 
-xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
 
 ```
 
@@ -481,12 +659,12 @@ xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "d
 # global
 xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
 
-xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
 
 # regional
 xy_regional_ensemble_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
 
-xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
 
 ```
 
@@ -508,13 +686,15 @@ I will need to create a second dataset for the arrow segments indicating change.
 
 First, I need to isolate the MTSS threshold values.
 
+## find points that shift across thresholds
+
 ```{r retrieve threshold values}
 
 # global
 global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
 # regional ensemble
 regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
-regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_2055_rescaled_thresholds[4, 2])
 
 ```
 
@@ -542,6 +722,8 @@ xy_joined_rescaled_intersects <- dplyr::filter(
 )
 
 ```
+
+## plot
 
 Now lets plot the data.
 
@@ -574,7 +756,7 @@ Now lets plot the data.
      ) +
    # GFDL ssp370 data
    geom_point(
-     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL-ESM4\nmean ssp126/370/585"), 
      size = 2, stroke = 0.7, color = "black", fill = "wheat3"
      ) +
    # axes scaling
@@ -615,13 +797,12 @@ ggsave(
 # also save to rds
 write_rds(
   xy_joined_rescaled_plot,
-  file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot.rds")
+  file = file.path(here::here(), "vignette-outputs", "figures", "figures-rds", "slf_risk_plot.rds")
 )
 
 ```
 
-
-# 5. Create summary table of transformed plot
+#4. Create summary table of transformed plot
 
 I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `slfSpread::calculate_risk_quadrant()`. 
 
@@ -680,7 +861,7 @@ slf_risk_table <- slf_risk_table %>%
   # add totals column
   tibble::add_column("total_present" = rowSums(.[, 2:5])) %>%
   # add row totals
-  tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = 769) 
+  tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = 803) 
 
 ```
 
@@ -693,7 +874,7 @@ write_csv(
 
 ```
 
-# 6. global risk shift vs regional risk shift
+# 5. global risk shift vs regional risk shift
 
 I will create a table to sum the number of points in three different groups.  My goal is to understand how the regional model adds resolution to our calculation of risk. So, I will look at how
 
@@ -726,7 +907,7 @@ global_regional_risk_shift <- tibble(
 
 ```{r add proportions and make specific calculations}
 
-# total # IVRs
+# total # slf populations
 total_slf <- sum(global_regional_risk_shift[1:2, 5])
 
 global_regional_risk_shift <- mutate(
@@ -777,6 +958,10 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg")
   )
+  
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"))
     
 }
 

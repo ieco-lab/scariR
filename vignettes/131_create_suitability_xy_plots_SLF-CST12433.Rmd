@@ -28,7 +28,7 @@ library(devtools)
 
 # spatial data handling
 library(terra)
-library(scrubr)
+library(CoordinateCleaner)
 
 # plot aesthetics
 library(scales)
@@ -49,13 +49,9 @@ mypath <- file.path(here::here() %>%
 
 I will load in some aesthetic objects, including for breaks.
 
-```{r axis breaks}
+```{r axis breaks and labels}
 
 breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
-
-```
-
-```{r axis labels}
 
 labels <- c(0, 2, 4, 6, 8, 10)
 
@@ -67,9 +63,9 @@ Load in summary files for the global and regional ensemble models, which contain
 # summary file to extract thresholds from
 
 # global
-summary_global <- read_csv(file = file.path(mypath, "slf_global_v2", "global_summary_all_iterations.csv"))
+summary_global <- read_csv(file = file.path(mypath, "slf_global_v3", "global_summary_all_iterations.csv"))
 
-summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_threshold_values.csv"))
+summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
 
 
 ```
@@ -78,7 +74,7 @@ I will load in the dataset containing SLF populations.
 
 ```{r load in SLF dataset}
 
-slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_final_coords_2024-02-01.rds"))
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
 
 ```
 
@@ -88,18 +84,18 @@ Finally, I will load in the global and regional ensemble suitability maps. These
 ```{r load in suitability rasters}
 
 # global
-global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
+global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
 
-global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v2", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp370_mean.asc"))
+global_2055 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_2041-2070_GFDL_ssp_averaged.asc"))
 
 
 # regional_ensemble
 regional_ensemble_1995 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_1981-2010.asc")
   )
 
 regional_ensemble_2055 <- terra::rast(
-  x = file.path(mypath, "slf_regional_ensemble_v0", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
+  x = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_regional_weighted_mean_globe_2041-2070_GFDL_ssp370.asc")
   )
 
 ```
@@ -113,11 +109,11 @@ I will load in the global model datasets and create the regional_ensemble datase
 ```{r import global suitability}
 
 xy_global_1995 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_1981-2010_xy_pred_suit_clamped_cloglog_mean.csv")
   ) 
 
 xy_global_2055 <- read_csv(
-  file = file.path(mypath, "slf_global_v2", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_clamped_cloglog_mean.csv")
+  file = file.path(mypath, "slf_global_v3", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_clamped_cloglog_mean.csv")
   ) 
 
 ```
@@ -233,12 +229,12 @@ xy_regional_ensemble_2055 <- xy_regional_ensemble_2055 %>%
 # 1995
 write_csv(
   x = xy_regional_ensemble_1995, 
-  file = file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.csv")
+  file = file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit.csv")
   )
 # 2055
 write_csv(
   x =  xy_regional_ensemble_2055,
-  file.path(mypath, "slf_regional_ensemble_v0", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
+  file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit.csv")
   )
 
 # also save to .rds
