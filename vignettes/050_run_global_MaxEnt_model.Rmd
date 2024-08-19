@@ -217,15 +217,6 @@ rm(x_global_585_env_covariates_list)
 
 ```
 
-```{r reset wd}
-
-mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent/models/slf_global_v3")
-
-```
-
-
 ## 1.2 create input data objects
 
 I will need to combine the above covariate, presence and background point datasets into a single dataset to feed into MaxEnt. This dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model, so I will create this now.
@@ -281,9 +272,6 @@ global_test <- global_trainTest[[2]]
 global_train@coords # coordinates
 global_train@pa # presence / absence (background counted as absence)
 global_train@data # extracted data from
-
-# save test set to file
-readr::write_rds(x = global_test, file = file.path(mypath, "global_test.rds"))
 
 ```
 
@@ -729,11 +717,9 @@ In the next vignette, I will set up for training each of the 3 regional models.
 
 ```{r save global_summary to rds}
 
-# write to rds for use downstream
-
 summary_global <- read_csv(file.path(mypath, "global_summary_all_iterations.csv"))
 
-readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_threshold_values.rds"))
+readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v3.rds"))
 
 ```
 

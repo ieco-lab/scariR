@@ -25,6 +25,10 @@
 #'and should be created by the function, set `create.dir` = TRUE. This will
 #'create a folder from the last part of the filepath in `mypath`.
 #'
+#'@param raster.path Character. A file path to the directory containing the rasters
+#'necessary to build this function. See details for the rasters that should be
+#'included with this data input and for the default path.
+#'
 #'@param create.dir Logical. Should the last element of `mypath` create a sub
 #'directory for the report? If TRUE, the main folder will be created for
 #'the model output. If FALSE (ie, the sub directory already exists), no directory
@@ -66,7 +70,15 @@
 #'* slf_binarized_summed_2041-2070_ssp370_GFDL.asc                      | created in vignette 120
 #'* slf_range_shift_summed.asc                                          | created in vignette 120
 #'
-#'## locality
+#'## raster.path
+#'
+#'Here is a list of the rasters that should be included in this data import.
+#'These rasters are located in `root/vignette-outputs/rasters`, These are the files:
+#'
+#'* slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
+#'* slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
+#'* slf_range_shift_2041-2070_ssp_mean_GFDL.asc                         | created in vignette 120
+#'
 #'
 #'@return
 #'
@@ -107,7 +119,7 @@
 #'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 #'
 #'@export
-create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, create.dir = FALSE, map.style = NA) {
+create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -131,6 +143,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     cli::cli_alert_danger("Parameter 'mypath' must be of type character")
     stop()
   }
+
+  if (is.character(raster.path) == FALSE) {
+    cli::cli_alert_danger("Parameter 'raster.path' must be of type character")
+    stop()
+  }
+
 
   if (is.logical(save.report) == FALSE) {
     cli::cli_alert_danger("Parameter 'save.report' must be of type character")
@@ -168,13 +186,13 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # Data and argument import----------------------------------------------------
 
-  # dataset generated in vignette 010
+  # dataset generated in vignette 160
   load(file.path(here::here(), "R", "sysdata.rda"))
 
   # import rasters
-  slf_binarized_1995 <- terra::rast(file.path(here::here(), "vignette-outputs", "rasters", "slf_binarized_summed_1981-2010.asc"))
-  slf_binarized_2055 <- terra::rast(file.path(here::here(), "vignette-outputs", "rasters", "slf_binarized_summed_2041-2070_ssp370_GFDL.asc"))
-  slf_range_shift <- terra::rast(file.path(here::here(), "vignette-outputs", "rasters", "slf_range_shift_summed.asc"))
+  slf_binarized_1995 <- terra::rast(file.path(raster.path, "slf_binarized_summed_1981-2010.asc"))
+  slf_binarized_2055 <- terra::rast(file.path(raster.path, "slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc"))
+  slf_range_shift <- terra::rast(file.path(raster.path, "slf_range_shift_2041-2070_ssp_mean_GFDL.asc"))
 
   # map.style
   # if it is not changed from NA, import default style
@@ -345,10 +363,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       Region = gsub(Region, pattern = "-", replacement = "_"),
       Region = gsub(Region, pattern = ".", replacement = "", fixed = TRUE),
       Region = gsub(Region, pattern = "–", replacement = "", fixed = TRUE)
-    ) %>%
-    # get rid of NA last line
-    dplyr::slice(-1064)
-
+    )
 
 
   # check for existence of locality name in shapefiles--------------------------
@@ -477,7 +492,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   if(locality.type == "country") {
 
   slf_binarized_1995_plot <- ggplot() +
-    # default style input
     map_style +
     # data layer
     geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
@@ -709,7 +723,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guides(fill = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
       labs(
-        title = "Projected areas suitable for Lycorma delicatula range expansion by 2055",
+        title = "Projected areas suitable for Lycorma delicatula range expansion | 2041-2070",
         subtitle = stringr::str_to_title(locality_name_internal)
       ) +
       theme(legend.title = element_text(hjust = 1)) +
@@ -717,10 +731,11 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   }
 
-
-
   # success message
   cli::cli_alert_success("Range shift map plotted")
+
+
+
 
   ## return IVR_locations selected for locality---------------------------------
 
@@ -813,7 +828,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
   # regional ensemble
   regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
-  regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
+  regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_2055_rescaled_thresholds[4, 2])
 
 
 
@@ -876,7 +891,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
      ) +
      # GFDL ssp370 data
      geom_point(
-       aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"),
+       aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL-ESM4\nmean ssp126/370/585"),
        size = 2, stroke = 0.7, color = "black", fill = "purple3"
      ) +
      # axes scaling
@@ -984,11 +999,23 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   IVR_risk_table[3:4, 2] <- sprintf("%+.0f", IVR_risk_table[3:4, 2])
   IVR_risk_table[4, 3] <- sprintf("%+.0f", IVR_risk_table[4, 3])
 
-  # make nice .html table
-  IVR_risk_table[1:4, 1] <- formattable::proportion_bar("darkred")(IVR_risk_table[1:4, 1])
-  IVR_risk_table[1:4, 2] <- formattable::proportion_bar("darkorange")(IVR_risk_table[1:4, 2])
-  IVR_risk_table[1:4, 3] <- formattable::proportion_bar("gold")(IVR_risk_table[1:4, 3])
-  IVR_risk_table[1:4, 4] <- formattable::proportion_bar("gray")(IVR_risk_table[1:4, 4])
+  # add color formatting to totals
+  # extreme risk
+  IVR_risk_table[1, 5] <- cell_spec(IVR_risk_table[1, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+  IVR_risk_table[5, 1] <- cell_spec(IVR_risk_table[5, 1], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+  # high risk
+  IVR_risk_table[2, 5] <- cell_spec(IVR_risk_table[2, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+  IVR_risk_table[5, 2] <- cell_spec(IVR_risk_table[5, 2], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+  # moderate risk
+  IVR_risk_table[3, 5] <- cell_spec(IVR_risk_table[3, 5], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+  IVR_risk_table[5, 3] <- cell_spec(IVR_risk_table[5, 3], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+  # low risk
+  IVR_risk_table[4, 5] <- cell_spec(IVR_risk_table[4, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+  IVR_risk_table[5, 4] <- cell_spec(IVR_risk_table[5, 4], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+
+  # bold total
+  IVR_risk_table[5, 5] <- cell_spec(IVR_risk_table[5, 5], format = "html", bold = TRUE, escape = FALSE)
+
 
   # print table, e.g., in html format
   IVR_risk_kable <- knitr::kable(IVR_risk_table, "html", escape = FALSE) %>%
@@ -997,7 +1024,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     kableExtra::column_spec(1:5, width_min = '4cm') %>%
     # add footnotes
     kableExtra::add_footnote("number signs indicate whether climate change is increasing or decreasing risk", notation = "alphabet") %>%
-    kableExtra::add_footnote("bars indicate the porportion of points in each current risk category that are a part of each 2055 risk category", notation = "alphabet") %>%
     # styling
     kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 6), bold = TRUE)
 
@@ -1048,11 +1074,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # .html formatting
   # format row colors
   slf_range_shift_table <- slf_range_shift_table %>%
-    dplyr::mutate(Ld_range_shift_type = kableExtra::cell_spec(Ld_range_shift_type, format = "html", background = dplyr::case_when(
+    dplyr::mutate(Ld_range_shift_type = kableExtra::cell_spec(Ld_range_shift_type, format = "html", escape = FALSE, background = dplyr::case_when(
       Ld_range_shift_type == "remains_unsuitable" ~ "azure4",
       Ld_range_shift_type == "contraction" ~ "darkred",
       Ld_range_shift_type == "expansion" ~ "darkgreen",
-      Ld_range_shift_type == "retained_suitability" ~ "azure"
+      Ld_range_shift_type == "retained_suitability" ~ "azure",
+      is.na(Ld_range_shift_type) ~ "white"
     )
     ))
 
@@ -1146,7 +1173,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     )
     ggsave(
       slf_binarized_2055_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_2055_ssp370_GFDL-ESM4.jpg")),
+      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_2055_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
       device = "jpeg",
@@ -1156,7 +1183,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # range shift map
     ggsave(
       slf_range_shift_plot,
-      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_map_2055_ssp370_GFDL-ESM4.jpg")),
+      filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_map_2055_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
       device = "jpeg",

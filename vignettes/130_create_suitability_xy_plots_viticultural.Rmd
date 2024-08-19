@@ -168,7 +168,7 @@ The xy_suitabilities for the global models also contain a few less records than 
 
 # de-duplicate just to make sure
 xy_global_1995 <- xy_global_1995 %>%
-  dplyr::mutate(species = "IVR location") %>%
+  dplyr::mutate(species = "Lycorma delicatula") %>%
   CoordinateCleaner::clean_coordinates(
     x = .,
     lon = "x",
@@ -390,7 +390,7 @@ xy_regional_ensemble_2055_585 <- read_csv(file = file.path(mypath, "slf_regional
 # first join datasets
 xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_126 %>%
   left_join(., xy_regional_ensemble_2055_370, join_by(ID, x, y)) %>%
-  left_join(., xy_regional_ensemble_2055_585, join_by(ID, x, y)) %>%
+  left_join(., xy_regional_ensemble_2055_370, join_by(ID, x, y)) %>%
   # take mean of columns
   dplyr::mutate(max_suit_ssp_averaged = rowMeans(.[, 4:6])) %>%
   dplyr::select(ID, x, y, max_suit_ssp_averaged)
@@ -401,7 +401,7 @@ xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_126 %>%
 
 write_csv(
   x = xy_regional_ensemble_2055_ssp_mean,
-  file = file.path(mypath, "slf_regional_ensemble_v1", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.csv")
+  file = file.path(mypath, "slf_global_v3", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.csv")
   )
 
 ```
@@ -442,18 +442,6 @@ xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_ssp_mean %>%
 
 ```{r save main suitability datasets as .rds}
 
-# save global datasets
-readr::write_rds(
-  xy_global_1995,  
-  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds")
-  )
-
-readr::write_rds(
-  xy_global_2055_ssp_mean,  
-  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
-  )
-
-
 # regional_ensemble
 readr::write_rds(
   xy_regional_ensemble_1995,  
@@ -463,6 +451,18 @@ readr::write_rds(
 readr::write_rds(
   xy_regional_ensemble_2055_ssp_mean,  
   file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
+  )
+
+
+# save global datasets
+readr::write_rds(
+  xy_global_1995,  
+  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds")
+  )
+
+readr::write_rds(
+  xy_global_2055_ssp_mean,  
+  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
   )
 
 ```
@@ -628,7 +628,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
    # threshold lines
    # MTSS thresholds
    geom_vline(xintercept = as.numeric(summary_global[42, ncol(summary_global)]), linetype = "dashed", linewidth = 0.7) + # global
-   geom_hline(yintercept = as.numeric(summary_regional_ensemble[6, 4]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   geom_hline(yintercept = as.numeric(summary_regional_ensemble[3, 4]), linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
    # historical data
    geom_point(
      aes(x = xy_global_1995, y = xy_regional_ensemble_1995, shape = "Present"), 
@@ -657,7 +657,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 ggsave(
   xy_joined_plot, 
   filename = file.path(
-    here::here(), "vignette-outputs", "figures", "IVR_regions_xy_suitability_global_regional_ensemble.jpg"
+    here::here(), "vignette-outputs", "figures", "IVR_xy_suitability_IVR_regions_global_regional_ensemble.jpg"
     ),
   height = 8, 
   width = 8,
@@ -714,8 +714,6 @@ xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_19
 
 ```
 
-## find points that shift across thresholds
-
 I will need to create a second dataset for the arrow segments indicating change. I will filter out only the segments that cross either threshold and then plot these arrows.
 
 First, I need to isolate the MTSS threshold values.
@@ -726,7 +724,7 @@ First, I need to isolate the MTSS threshold values.
 global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
 # regional ensemble
 regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
-regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_2055_rescaled_thresholds[4, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[4, 2])
 
 ```
 
@@ -756,8 +754,6 @@ xy_joined_rescaled_intersects <- dplyr::filter(
 )
 
 ```
-
-## plot
 
 Now lets plot the data.
 
@@ -1013,8 +1009,7 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.jpg")
   )
-  
-  # rm html
+    
   file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_plot_quadrant_props.html"))
   
 }

@@ -2,7 +2,7 @@
 title: "Example usage of create_risk_report.R to create reports of key viticultural areas"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-05-13"
+date: "2024-08-16"
 format: html
 editor: visual
 ---
@@ -47,13 +47,13 @@ library(gginnards)
 threshold_exponential_values <- read.csv(file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"))
 # .rds files
 IVR_locations <- readr::read_rds(file = file.path(here::here(), "data", "wineries_tidied.rds"))
-summary_global <- readr::read_rds(file = file.path(here::here(), "data", "global_summary_all_iterations_v2.rds"))
+summary_global <- readr::read_rds(file = file.path(here::here(), "data", "global_threshold_values.rds"))
 summary_regional_ensemble <- readr::read_rds(file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
 # predicted xy suitability
 xy_global_1995 <- readr::read_rds(file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds"))
-xy_global_2055 <- readr::read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+xy_global_2055 <- readr::read_rds(file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds"))
 xy_regional_ensemble_1995 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit.rds"))
-xy_regional_ensemble_2055 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds"))
+xy_regional_ensemble_2055 <- readr::read_rds(file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds"))
 
 ```
 
