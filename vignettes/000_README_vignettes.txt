@@ -218,6 +218,7 @@ v0- initial version- in sandbox/vignettes_old
 v1- using function to transform scatter plot axes
 v2
 v3- re-created workflow according to vig 130_v2
+v4- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 
@@ -226,11 +227,12 @@ v3- re-created workflow according to vig 130_v2
 
 ## About
 
-This vignette formats risk tables from vignettes 130 and 131
+This vignette formats risk tables from vignettes 130 and 131 by adding colors and headers.
 
 ## changelog
 
 v0- initial version
+v1- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 
@@ -244,6 +246,7 @@ This vignette plots the response curve outputs from SDMtune as ggplots and adds 
 ## changelog
 
 v0- initial version
+v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
 ----------160_generate_risk_report.Rmd----------
@@ -255,3 +258,17 @@ v0- initial version
 ## changelog
 
 v0- initial version
+v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP scenarios
+
+
+----------161_generate_extra_plots.Rmd----------
+
+## About
+
+
+
+## changelog
+
+v0- initial version- 08-12-2024
+
+

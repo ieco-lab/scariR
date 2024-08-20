@@ -454,6 +454,8 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
+# Appendix
+
 ## 3.2 Predict suitability for all SLF presences
 
 I will get projected suitability values, calculated on the cloglog scale (between 0 and 1) for each of the SLF presence points. These suitability values will be added back to the original data frame and saved. First, I will use `SDMtune::prepareSWD()` to extract raster values from each layer used to build the model. I will save this output.

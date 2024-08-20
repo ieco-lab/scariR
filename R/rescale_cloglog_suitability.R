@@ -171,17 +171,20 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
                 dplyr::slice_head() %>%
                  # get the value col
                 dplyr::select(4) %>%
-                as.numeric()),
+                as.numeric()
+               ),
       "MTSS" = (dplyr::filter(thresh_preset_import, thresh == "MTSS") %>%  # Maximum.training.sensitivity.plus.specificity.Cloglog.threshold
                   dplyr::slice_head() %>%
                   dplyr::select(4) %>%
-                  as.numeric()),
+                  as.numeric()
+                ),
       # only used for format of thresh file from regional_ensemble model- this the MTSS for the historical data
       "MTP.CC" = (dplyr::filter(thresh_preset_import, thresh == "MTP") %>%  # MTP transformed for climate change- this is the MTP for the mean ssp scenario
                     dplyr::slice_tail() %>%
                     # select the last row (the CC mean value)
                     dplyr::select(4) %>%
-                    as.numeric()),
+                    as.numeric()
+                  ),
       "MTSS.CC" = (dplyr::filter(thresh_preset_import, thresh == "MTSS") %>%  # MTSS transformed for climate change- this is the MTSS for the mean ssp scenario
                      dplyr::slice_tail() %>%
                      dplyr::select(4) %>%
@@ -213,7 +216,8 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
 
     # otherwise, stop and give warning
   } else {
-    stop(paste0("'thresh' must be numeric or one of: \n    ", paste(names(thresh_presets), collapse = ' | ')))
+    cli::cli_alert_info(paste0("'thresh' must be numeric or one of: \n    ", paste(names(thresh_presets), collapse = ' | ')))
+    stop()
 
   }
 

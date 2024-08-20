@@ -12,7 +12,8 @@ create_risk_report(
   mypath,
   raster.path = file.path(here::here(), "vignette-outputs", "rasters"),
   create.dir = FALSE,
-  map.style = NA
+  map.style = NA,
+  buffer.dist = NA
 )
 }
 \arguments{
@@ -52,6 +53,12 @@ will be created.}
 to the mapped outputs. If specified, the given value should be a list of
 ggplot aesthetic options. If not, the built-in default list will be used
 (see details). See examples for usage.}
+
+\item{buffer.dist}{Numeric. The distance (in meters) from each IVR coordinate
+at which to draw buffers zones on risk maps. Should be the same distance that
+was used to calculate the predicted suitability for each IVR region.
+See \code{predict.xy.suitability.R} for details. If not specified, buffers are not
+drawn and suitabiltiy prediction method is assumed to be simple (point-wise).}
 }
 \value{
 returns a report in list format. If save.report = TRUE, will also save the
@@ -83,24 +90,24 @@ containing the shapefiles.
 This function depends on certain files that have been distributed with this
 package, which will be imported from \code{root/R/sysdata.rda} when the function
 is run. The code to create \code{sysdata.rda} can be found in
-\verb{root/vignettes/010_initialize_pkg.R}.
+\verb{root/vignettes/160_generate_risk_report.qmd}.
 
-Here is a list of the files included in \code{create_risk_report_import.RData}:
+Here is a list of the files included in \code{sysdata.rda}:
 \itemize{
 \item global_model_summary.rds                                            | created in vignette 050
 \item ensemble_thresh_values.rds                                          | created in vignette 110
 \item wineries_tidied.rds                                                 | created in vignette 130
 \item regional_ensemble_wineries_1981-2010_xy_pred_suit.rds               | created in vignette 130
-\item regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds   | created in vignette 130
+\item regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds | created in vignette 130
 \item global_wineries_1981-2010_xy_pred_suit.rds                          | created in vignette 130
-\item global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds              | created in vignette 130
+\item global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds            | created in vignette 130
 }
 
 Additionally, 3 rasters are used to create maps. These rasters are located in
 \code{root/vignette-outputs/rasters}, These are the files:
 \itemize{
 \item slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
-\item slf_binarized_summed_2041-2070_ssp370_GFDL.asc                      | created in vignette 120
+\item slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
 \item slf_range_shift_summed.asc                                          | created in vignette 120
 }
 \subsection{raster.path}{
@@ -110,7 +117,7 @@ These rasters are located in \code{root/vignette-outputs/rasters}, These are the
 \itemize{
 \item slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
 \item slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
-\item slf_range_shift_2041-2070_ssp_mean_GFDL.asc                         | created in vignette 120
+\item slf_range_shift_summed_ssp_mean_GFDL.asc                            | created in vignette 120
 }
 }
 }

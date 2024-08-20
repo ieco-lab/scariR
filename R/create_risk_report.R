@@ -39,6 +39,12 @@
 #'ggplot aesthetic options. If not, the built-in default list will be used
 #'(see details). See examples for usage.
 #'
+#'@param buffer.dist Numeric. The distance (in meters) from each IVR coordinate
+#'at which to draw buffers zones on risk maps. Should be the same distance that
+#'was used to calculate the predicted suitability for each IVR region.
+#'See `predict.xy.suitability.R` for details. If not specified, buffers are not
+#'drawn and suitabiltiy prediction method is assumed to be simple (point-wise).
+#'
 #'@details
 #'
 #'Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
@@ -50,24 +56,24 @@
 #'This function depends on certain files that have been distributed with this
 #'package, which will be imported from `root/R/sysdata.rda` when the function
 #'is run. The code to create `sysdata.rda` can be found in
-#'`root/vignettes/010_initialize_pkg.R`.
+#'`root/vignettes/160_generate_risk_report.qmd`.
 #'
-#'Here is a list of the files included in `create_risk_report_import.RData`:
+#'Here is a list of the files included in `sysdata.rda`:
 #'
 #'* global_model_summary.rds                                            | created in vignette 050
 #'* ensemble_thresh_values.rds                                          | created in vignette 110
 #'
 #'* wineries_tidied.rds                                                 | created in vignette 130
 #'* regional_ensemble_wineries_1981-2010_xy_pred_suit.rds               | created in vignette 130
-#'* regional_ensemble_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds   | created in vignette 130
+#'* regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds | created in vignette 130
 #'* global_wineries_1981-2010_xy_pred_suit.rds                          | created in vignette 130
-#'* global_wineries_2041-2070_GFDL_ssp370_xy_pred_suit.rds              | created in vignette 130
+#'* global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds            | created in vignette 130
 #'
 #'Additionally, 3 rasters are used to create maps. These rasters are located in
 #'`root/vignette-outputs/rasters`, These are the files:
 #'
 #'* slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
-#'* slf_binarized_summed_2041-2070_ssp370_GFDL.asc                      | created in vignette 120
+#'* slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
 #'* slf_range_shift_summed.asc                                          | created in vignette 120
 #'
 #'## raster.path
@@ -77,7 +83,7 @@
 #'
 #'* slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
 #'* slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
-#'* slf_range_shift_2041-2070_ssp_mean_GFDL.asc                         | created in vignette 120
+#'* slf_range_shift_summed_ssp_mean_GFDL.asc                            | created in vignette 120
 #'
 #'
 #'@return
@@ -119,47 +125,49 @@
 #'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 #'
 #'@export
-create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA) {
+create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA, buffer.dist = NA) {
 
   # Error checks----------------------------------------------------------------
 
   if (is.character(locality.iso) == FALSE) {
-    cli::cli_alert_danger("Parameter 'locality.iso' must be of type character")
+    cli::cli_alert_info("Parameter 'locality.iso' must be of type character")
     stop()
+
   }
 
   if (is.character(locality.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'locality.name' must be of type character")
+    cli::cli_abort("Parameter 'locality.name' must be of type character")
     stop()
   }
 
 
   if (is.character(locality.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'locality.type' must be of type character")
+    cli::cli_abort("Parameter 'locality.type' must be of type character")
     stop()
   }
 
   if (is.character(mypath) == FALSE) {
-    cli::cli_alert_danger("Parameter 'mypath' must be of type character")
+    cli::cli_abort("Parameter 'mypath' must be of type character")
     stop()
   }
 
   if (is.character(raster.path) == FALSE) {
-    cli::cli_alert_danger("Parameter 'raster.path' must be of type character")
+    cli::cli_abort("Parameter 'raster.path' must be of type character")
     stop()
   }
 
 
+  # other errors
   if (is.logical(save.report) == FALSE) {
-    cli::cli_alert_danger("Parameter 'save.report' must be of type character")
+    cli::cli_abort("Parameter 'save.report' must be of type logical")
     stop()
   }
-
 
   if (stringr::str_length(locality.iso) != 3) {
-    cli::cli_alert_danger("Parameter 'locality.iso' must consist of the alpha-3 country code.")
+    cli::cli_abort("Parameter 'locality.iso' must consist of the alpha-3 country code.")
     stop()
   }
+
 
 
   ## Create sub directory for files---------------------------------------------
@@ -173,11 +181,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     dir.create(mypath)
     # print message
     cli::cli_alert_info(paste0("sub directory for files created at:\n", mypath))
-    # create plots folder within
-    dir.create(mypath)
 
   } else {
-    cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+    cli::cli_abort("'create.dir' must be of type 'logical'")
     stop()
 
   }
@@ -192,7 +198,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # import rasters
   slf_binarized_1995 <- terra::rast(file.path(raster.path, "slf_binarized_summed_1981-2010.asc"))
   slf_binarized_2055 <- terra::rast(file.path(raster.path, "slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc"))
-  slf_range_shift <- terra::rast(file.path(raster.path, "slf_range_shift_2041-2070_ssp_mean_GFDL.asc"))
+  slf_range_shift <- terra::rast(file.path(raster.path, "slf_range_shift_summed_ssp_mean_GFDL.asc"))
 
   # map.style
   # if it is not changed from NA, import default style
@@ -220,7 +226,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
     # otherwise, warn that given values must be a list
   } else {
-    cli::cli_alert_danger("parameter 'map.style' must be of type 'list'")
+    cli::cli_abort("parameter 'map.style' must be of type 'list'")
     stop()
 
   }
@@ -255,11 +261,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   rnaturalearth::check_rnaturalearthdata()
   rnaturalearth::check_rnaturalearthhires()
 
-  # create directories for shapefiles
-  dir.create(here::here(), "data-raw", "ne_countries")
-  dir.create(here::here(), "data-raw", "ne_states_provinces")
-
-
   # import countries, first checking if the file already exists
   if(file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) == TRUE) {
 
@@ -273,8 +274,13 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
     cli::cli_alert_info(paste0("Importing shapefiles from: ", file.path(here::here(), "data-raw")))
 
+    # if it doesnt exist, create directories and download it
   } else if (file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) == FALSE) {
 
+    # create directories for shapefiles
+    dir.create(here::here(), "data-raw", "ne_countries")
+
+    # retrieve data
     countries_sf <- rnaturalearth::ne_download(
       scale = 10, # highest resolution
       type = "admin_0_countries", # countries
@@ -299,8 +305,13 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       returnclass = "sf"
     )
 
+    # if it doesnt exist, download it
   } else if (file.exists(file.path(here::here(), "data-raw", "ne_states_provinces", "ne_10m_admin_1_states_provinces.shp")) == FALSE) {
 
+    # create directory for file
+    dir.create(here::here(), "data-raw", "ne_states_provinces")
+
+    # download
     states_provinces_sf <- rnaturalearth::ne_download(
       scale = 10, # highest resolution
       type = "admin_1_states_provinces", # states and provinces
@@ -365,6 +376,10 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       Region = gsub(Region, pattern = "–", replacement = "", fixed = TRUE)
     )
 
+  # convert to df
+  # DEPRECATED
+  #IVR_locations <- as.data.frame(IVR_locations)
+
 
   # check for existence of locality name in shapefiles--------------------------
 
@@ -381,7 +396,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
       # if no records, warn
     } else if(nrow(country.name.check) == 0) {
-      cli::cli_alert_danger("Data do not exist for locality. Check spelling or try another locality.")
+      cli::cli_abort("Data do not exist for locality. Check spelling or try another locality.")
       stop()
 
     }
@@ -397,13 +412,13 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
       # if no records, warn
     } else if(nrow(state.name.check) == 0) {
-      cli::cli_alert_danger("Data do not exist for locality. Check spelling or try another locality.")
+      cli::cli_abort("Data do not exist for locality. Check spelling or try another locality.")
       stop()
 
     }
 
   } else {
-    cli::cli_alert_danger("'locality.type' must be one of: 'country' | 'states_provinces'")
+    cli::cli_abort("'locality.type' must be one of: 'country' | 'states_provinces'")
     stop()
   }
 
@@ -447,8 +462,46 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   IVR_locations_plot_layer <- terra::as.data.frame(IVR_locations_masked) %>%
     dplyr::select(-c(geom, part, hole))
 
+
   # will not need this object again
   rm(IVR_locations_masked)
+
+
+  ## create polygon of buffer zones around IVRs---------------------------------
+
+  # if no buffer zones, just use point-wise predictions
+  if (is.na(buffer.dist)) {
+    # alert
+    cli::cli_alert_info("Suitability prediction type for IVR regions: simple")
+
+
+
+    # if buffer zones, use buffer style predictions
+  } else if (!is.na(buffer.dist) & is.numeric(buffer.dist)) {
+    # alert
+    cli::cli_alert_info(paste0("Suitability prediction type for IVR regions: buffer of ", buffer.dist, "m around points"))
+
+    # convert IVR points to spatvector
+    IVR_locations_sf <- sf::st_as_sf(
+      x = IVR_locations_plot_layer,
+      crs = "EPSG:4326",
+      coords = c("x", "y")
+    )
+    # use sv to create buffers
+    IVR_buffers_plot_layer <- sf::st_buffer(
+      x = IVR_locations_sf,
+      dist = buffer.dist
+    )
+
+
+
+    # otherwise, stop
+  } else {
+
+    cli::cli_abort("Parameter 'buffer.dist' must be of type numeric")
+    stop()
+
+  }
 
 
   ## plot binarized rasters-----------------------------------------------------
@@ -507,8 +560,24 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
     # new scale
-    ggnewscale::new_scale_fill() +
-    # IVRs
+    ggnewscale::new_scale_fill()
+
+  # whether or not to plot buffer layer
+
+  if (!is.na(buffer.dist)) {
+
+    slf_binarized_1995_plot <- slf_binarized_1995_plot +
+      # underlying buffer layer
+      geom_sf(data = IVR_buffers_plot_layer, aes(geometry = geometry, fill = "viticultural\narea"), color = "black", alpha = 0.35)
+
+    # otherwise, plot without buffers
+  } else if (is.na(buffer.dist)) {
+    slf_binarized_1995_plot <- slf_binarized_1995_plot
+
+  }
+
+  slf_binarized_1995_plot <- slf_binarized_1995_plot +
+    # points
     geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
     # fill scale for points
     scale_fill_manual(name = "", values = c("viticultural\narea" = "orchid1")) +
@@ -517,9 +586,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # other stuff
     labs(
       title = "Current projected risk of Lycorma delicatula establishment",
-      subtitle = stringr::str_to_title(locality_name_internal)
-      ) +
+      subtitle = stringr::str_to_title(locality_name_internal),
+      caption = ifelse(!is.na(buffer.dist), paste0(buffer.dist, "m buffer used for suitability of viticultural areas"), "")
+    ) +
     coord_sf()
+
+
 
 
   # otherwise, plot without a state_province layer
@@ -541,7 +613,22 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # new scale
-      ggnewscale::new_scale_fill() +
+      ggnewscale::new_scale_fill()
+
+    # whether or not to plot buffer layer
+    if (!is.na(buffer.dist)) {
+
+      slf_binarized_1995_plot <- slf_binarized_1995_plot +
+        # underlying buffer layer
+        geom_sf(data = IVR_buffers_plot_layer, aes(geometry = geometry, fill = "viticultural\narea"), color = "black", alpha = 0.35)
+
+      # dont plot
+    } else if (is.na(buffer.dist)) {
+      slf_binarized_1995_plot <- slf_binarized_1995_plot
+
+    }
+
+    slf_binarized_1995_plot <- slf_binarized_1995_plot +
       # IVRs
       geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
       # fill scale for points
@@ -551,14 +638,17 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Current projected risk of Lycorma delicatula establishment",
-        subtitle = stringr::str_to_title(locality_name_internal)
+        subtitle = stringr::str_to_title(locality_name_internal),
+        caption = ifelse(!is.na(buffer.dist), paste0(buffer.dist, "m buffer used for suitability of viticultural areas"), "")
       ) +
       coord_sf()
 
   }
 
 
-  ### CC
+
+
+  ### CMIP6 mean projection
 
   # plot with state_province layer if plotting at country level
   if(locality.type == "country") {
@@ -579,7 +669,21 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # new scale
-      ggnewscale::new_scale_fill() +
+      ggnewscale::new_scale_fill()
+
+    # whether or not to plot buffer layer
+    if (!is.na(buffer.dist)) {
+
+      slf_binarized_2055_plot <- slf_binarized_2055_plot +
+        # underlying buffer layer
+        geom_sf(data = IVR_buffers_plot_layer, aes(geometry = geometry, fill = "viticultural\narea"), color = "black", alpha = 0.35)
+
+    } else if (is.na(buffer.dist)) {
+      slf_binarized_2055_plot <- slf_binarized_2055_plot
+
+    }
+
+    slf_binarized_2055_plot <- slf_binarized_2055_plot +
       # IVRs
       geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
       # fill scale for points
@@ -589,9 +693,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Projected risk of Lycorma delicatula establishment under climate change",
-        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2041-2070 | mean of ssp126/370/585 | GFDL-ESM4")
+        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2041-2070 | mean of ssp126/370/585 | GFDL-ESM4"),
+        caption = ifelse(!is.na(buffer.dist), paste0(buffer.dist, "m buffer used for suitability of viticultural areas"), "")
       ) +
       coord_sf()
+
+
 
 
     # otherwise, plot without a state_province layer
@@ -613,7 +720,23 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
       # new scale
-      ggnewscale::new_scale_fill() +
+      ggnewscale::new_scale_fill()
+
+
+    # whether or not to plot buffer layer
+    if (!is.na(buffer.dist)) {
+
+      slf_binarized_2055_plot <- slf_binarized_2055_plot +
+        # underlying buffer layer
+        geom_sf(data = IVR_buffers_plot_layer, aes(geometry = geometry, fill = "viticultural\narea"), color = "black", alpha = 0.35)
+
+    } else if (is.na(buffer.dist)) {
+      slf_binarized_2055_plot <- slf_binarized_2055_plot
+
+    }
+
+
+    slf_binarized_2055_plot <- slf_binarized_2055_plot +
       # IVRs
       geom_point(data = IVR_locations_plot_layer, aes(x = x, y = y, fill = "viticultural\narea"), size = 2.5, shape = 21) +
       # fill scale for points
@@ -623,7 +746,8 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # other stuff
       labs(
         title = "Projected risk of Lycorma delicatula establishment under climate change",
-        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2041-2070 | mean of ssp126/370/585 | GFDL-ESM4")
+        subtitle = paste(stringr::str_to_title(locality_name_internal), "| 2041-2070 | mean of ssp126/370/585 | GFDL-ESM4"),
+        caption = ifelse(!is.na(buffer.dist), paste0(buffer.dist, "m buffer used for suitability of viticultural areas"), "")
       ) +
       coord_sf()
 
@@ -652,11 +776,11 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # now, create vectors of values used to manually edit the scale of the plot
   # the possible values of the scale and their order
-  breaks.obj <- c(5, 10, 6, 9) # i manually ordered these
+  breaks.obj2 <- c(5, 10, 6, 9) # i manually ordered these
   # labels for the values
-  labels.obj <- c("unsuitable area\nretained", "suitabile area\nretained", "contraction\nof suitable area", "expansion\nof suitable area")
+  labels.obj2 <- c("unsuitable area\nretained", "suitabile area\nretained", "contraction\nof suitable area", "expansion\nof suitable area")
   # vector of colors to classify scale
-  values.obj <- c("azure4", "azure", "darkred", "darkgreen")
+  values.obj2 <- c("azure4", "azure", "darkred", "darkgreen")
 
 
 
@@ -672,9 +796,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # fill scale
     scale_discrete_manual(
       name = "suitability for\nL delicatula",
-      values = values.obj,
-      breaks = breaks.obj,
-      labels = labels.obj,
+      values = values.obj2,
+      breaks = breaks.obj2,
+      labels = labels.obj2,
       aesthetics = "fill",
       guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
     ) +
@@ -688,8 +812,8 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     guides(fill = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
     # other stuff
     labs(
-      title = "Projected areas suitable for Lycorma delicatula range expansion | 2041-2070",
-      subtitle = stringr::str_to_title(locality_name_internal)
+      title = "Projected areas suitable for Lycorma delicatula range expansion",
+      subtitle = paste0(stringr::str_to_title(locality_name_internal), " | 2041-2070")
     ) +
     theme(legend.title = element_text(hjust = 1)) +
     coord_sf()
@@ -707,9 +831,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       # fill scale
       scale_discrete_manual(
         name = stringr::str_wrap("suitability for L delicatula"),
-        values = values.obj,
-        breaks = breaks.obj,
-        labels = labels.obj,
+        values = values.obj2,
+        breaks = breaks.obj2,
+        labels = labels.obj2,
         aesthetics = "fill",
         guide = guide_colorsteps(frame.colour = "black", ticks.colour = "black", barwidth = 20, draw.ulim = TRUE, draw.llim = TRUE)
       ) +
@@ -723,8 +847,8 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       guides(fill = guide_legend(ncol = 2, byrow = TRUE, override.aes = list(size = 3))) +
       # other stuff
       labs(
-        title = "Projected areas suitable for Lycorma delicatula range expansion | 2041-2070",
-        subtitle = stringr::str_to_title(locality_name_internal)
+        title = "Projected areas suitable for Lycorma delicatula range expansion",
+        subtitle = paste0(stringr::str_to_title(locality_name_internal), " | 2041-2070")
       ) +
       theme(legend.title = element_text(hjust = 1)) +
       coord_sf()
@@ -806,17 +930,17 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   ### join datasets--------------------------------------------------------------
 
   # join datasets for plotting
-  xy_joined_rescaled <-  dplyr::full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
+  xy_joined_rescaled <-  dplyr::full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("ID", "x", "y")) %>%
     # join CC datasets
-    dplyr::full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
-    dplyr::full_join(., xy_regional_ensemble_2055_rescaled, by = c("x", "y")) %>%
+    dplyr::full_join(., xy_global_2055_rescaled, by = c("ID", "x", "y")) %>%
+    dplyr::full_join(., xy_regional_ensemble_2055_rescaled, by = c("ID", "x", "y")) %>%
     # order
-    dplyr::relocate(x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
+    dplyr::relocate(ID, x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
     dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055))
 
 
   # filter out only records from locality
-  xy_joined_rescaled <-  dplyr::semi_join(xy_joined_rescaled, IVR_locations_locality, by = c("x", "y"))
+  xy_joined_rescaled <-  dplyr::semi_join(xy_joined_rescaled, IVR_locations_locality, by = c("ID", "x", "y"))
 
 
 
@@ -915,7 +1039,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     labs(
       title = "Projected risk of Lycorma delicatula establishment under climate change",
       subtitle = paste0(stringr::str_to_title(locality_name_internal), ": important viticultural regions"),
-      caption = "arrows indicate a region is crossing a risk threshold (dashed lines, MTSS thresh)"
+      caption = paste0("arrows indicate a region is crossing a risk threshold (dashed lines, MTSS thresh)", ifelse(!is.na(buffer.dist), paste0("\n", buffer.dist, "m buffer used for suitability of viticultural areas"), ""))
     )
 
 
@@ -924,8 +1048,8 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   ## create IVR summary table---------------------------------------------------
 
-  # join rescaled suitability values witu IVR locations
-  IVR_locations_joined <- dplyr::left_join(IVR_locations_locality, xy_joined_rescaled, by = c("x", "y")) %>%
+  # join rescaled suitability values with IVR locations
+  IVR_locations_joined <- dplyr::left_join(IVR_locations_locality, xy_joined_rescaled, by = c("ID", "x", "y")) %>%
     dplyr::relocate(ID, x, y)
 
 
@@ -982,10 +1106,21 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     tibble::add_column("total_present" = rowSums(dplyr::select(., 2:5))) %>%
     tibble::add_row(rows_1995_cols_2055 = "total_2055", extreme = colSums(dplyr::select(., 2)), high = colSums(dplyr::select(., 3)), moderate = colSums(dplyr::select(., 4)), low = colSums(dplyr::select(., 5)), total_present = nrow(IVR_locations_locality)) %>%
     as.data.frame()
+
+  # edit column of rownames
+  IVR_risk_table[1:4, 1] <- str_c(IVR_risk_table[1:4, 1], "present", sep = "_")
   # add rownames
   rownames(IVR_risk_table) <- IVR_risk_table[, 1]
   # get rid of names column
   IVR_risk_table <- dplyr::select(IVR_risk_table, -rows_1995_cols_2055)
+  # edit column names
+  IVR_risk_table <- dplyr::rename(
+    IVR_risk_table,
+    "extreme_2055" = "extreme",
+    "high_2055" = "high",
+    "moderate_2055" = "moderate",
+    "low_2055" = "low"
+  )
 
 
   # begin formatting
@@ -1025,8 +1160,9 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # add footnotes
     kableExtra::add_footnote("number signs indicate whether climate change is increasing or decreasing risk", notation = "alphabet") %>%
     # styling
-    kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 6), bold = TRUE)
-
+    kableExtra::add_header_above(., header = c("Risk of L delicatula establishment for important viticultural regions" = 6), bold = TRUE)  %>%
+    # conditional addition of footnote about buffer area
+    kableExtra::add_footnote(ifelse(!is.na(buffer.dist), paste0(buffer.dist, "m buffer used for suitability of viticultural areas"), ""), notation = "alphabet")
 
   ## create range shift table---------------------------------------------------
 
@@ -1078,8 +1214,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       Ld_range_shift_type == "remains_unsuitable" ~ "azure4",
       Ld_range_shift_type == "contraction" ~ "darkred",
       Ld_range_shift_type == "expansion" ~ "darkgreen",
-      Ld_range_shift_type == "retained_suitability" ~ "azure",
-      is.na(Ld_range_shift_type) ~ "white"
+      Ld_range_shift_type == "retained_suitability" ~ "azure"
     )
     ))
 
@@ -1097,7 +1232,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # create .csv output
   IVR_locations_output <- IVR_locations_locality %>%
-    dplyr::left_join(., xy_joined_rescaled, by = c("x", "y")) %>%
+    dplyr::left_join(., xy_joined_rescaled, by = c("ID", "x", "y")) %>%
     dplyr::rename(
       "global_model_risk_present" = "xy_global_1995_rescaled",
       "regional_ensemble_risk_present" = "xy_regional_ensemble_1995_rescaled",
@@ -1154,7 +1289,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {
 
-      cli::cli_alert_danger(paste0("Report output could not be saved because directory does not exist:\n", mypath))
+      cli::cli_abort(paste0("Report output could not be saved because directory does not exist:\n", mypath))
       stop()
     }
 

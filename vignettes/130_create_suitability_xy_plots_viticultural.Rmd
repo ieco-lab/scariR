@@ -248,16 +248,13 @@ xy_global_2055_585 <- xy_global_2055_585 %>%
 
 # also rename columns
 xy_global_2055_126 <- xy_global_2055_126 %>%
-  dplyr::rename("max_cloglog_suit_ssp126" = "max_cloglog_suitability_20000m_buffer") %>%
-  select(-c(mean_cloglog_suitability_20000m_buffer, min_cloglog_suitability_20000m_buffer))
+  dplyr::rename("max_cloglog_suit_ssp126" = "max_cloglog_suitability_20000m_buffer") 
 
 xy_global_2055_370 <- xy_global_2055_370 %>%
-  dplyr::rename("max_cloglog_suit_ssp370" = "max_cloglog_suitability_20000m_buffer") %>%
-  select(-c(mean_cloglog_suitability_20000m_buffer, min_cloglog_suitability_20000m_buffer))
+  dplyr::rename("max_cloglog_suit_ssp370" = "max_cloglog_suitability_20000m_buffer") 
 
 xy_global_2055_585 <- xy_global_2055_585 %>%
-  dplyr::rename("max_cloglog_suit_ssp585" = "max_cloglog_suitability_20000m_buffer") %>%
-  select(-c(mean_cloglog_suitability_20000m_buffer, min_cloglog_suitability_20000m_buffer))
+  dplyr::rename("max_cloglog_suit_ssp585" = "max_cloglog_suitability_20000m_buffer") 
 
 ```
 

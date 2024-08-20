@@ -21,6 +21,7 @@ library(common)
 
 # spatial data
 library(terra)
+library(sf)
 library(rnaturalearth)
 # remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
@@ -30,7 +31,8 @@ library(kableExtra)
 library(formattable)
 library(webshot2)
 # devtools::install_github("eliocamp/ggnewscale")
-library(ggnewscale)
+library(ggnewscale) ## MUST use version 0.4.10- 0.5.0 has a bug that breaks this function
+
 
 # for analysis
 library(patchwork)
@@ -70,6 +72,82 @@ usethis::use_data(
 
 # Apply function
 
+## loop to apply function to wineries dataset
+
+Primarily, I would like to use the wineries dataset to create a report for each unique country on the list. Our winery records contain 64 unique countries that I will create reports for.
+
+```{r get country iso codes}
+
+# import wineries dataset
+IVR_locations <- readr::read_rds(file = file.path(here::here(), "data", "wineries_tidied.rds"))
+
+
+n_distinct(IVR_locations$Country)
+# there are 64 unique countries on the list
+
+# get iso codes using rnaturalearth data
+admin_0_countries <- read_sf(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) %>%
+  dplyr::select(ADMIN, ADM0_A3)
+
+# replace names in sf
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "United States of America", "United States")
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "South Korea", "Republic of Korea")
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "Palestine", "Palestinian territories")
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "Cabo Verde", "Cape Verde")
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "Czechia", "Czech Republic")
+admin_0_countries$ADMIN <- stringr::str_replace_all(admin_0_countries$ADMIN, "Republic of Serbia", "Serbia")
+
+# correct misspelling
+IVR_locations$Country <- stringr::str_replace_all(IVR_locations$Country, "Algiera", "Algeria")
+
+# join
+IVR_locations_iso <- left_join(IVR_locations, admin_0_countries, join_by(Country == ADMIN)) %>%
+  dplyr::rename("iso_a3" = "ADM0_A3")
+  
+  
+# check 
+n_distinct(IVR_locations_iso$iso_a3)
+# it was successful, 64 unique iso codes
+
+# sort dataset
+unique_iso <- sort(unique(IVR_locations_iso$iso_a3))
+# paired country names
+unique_name <- IVR_locations_iso %>%
+  group_by(iso_a3) %>%
+  summarize(country = unique(Country)) %>%
+  dplyr::select(country) %>%
+  as.matrix() %>%
+  as.character()
+
+```
+
+```{r test loop}
+
+for (i in seq_along(unique_iso)){
+  print(c(unique_name[i],unique_iso[i]))
+}
+
+```
+
+```{r loop for report}
+
+# loop thru country iso codes and names together
+for (a in seq_along(unique_iso)) {
+  
+  slfSpread::create_risk_report(
+    locality.iso = unique_iso[a], # iso codes
+    locality.name = unique_name[a], # names
+    locality.type = "country",
+    mypath = file.path(here::here(), "vignette-outputs", "reports", unique_name[a]),
+    create.dir = TRUE, # create subdirectory for plots
+    save.report = TRUE,
+    buffer.dist = 20000 # distance at which buffers should be drawn on maps to indicate IVR suitability predictions
+    )
+  
+}
+
+```
+
 ## USA
 
 ```{r USA reports}
@@ -79,7 +157,7 @@ slfSpread::create_risk_report(
   locality.name = "united states",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
-  create.dir = FALSE,
+  create.dir = TRUE,
   save.report = TRUE
 )
 
@@ -3078,31 +3156,6 @@ ggsave(
   device = "jpeg",
   dpi = "retina"
   )
-
-```
-
-## DEPRECATED
-
-```{r bbox cropping in function}
-# inclusion of bbox cropping in function
-
-library(sf)
-library(cartographer)
-
-# I originally included package cargtographer in the dependencies, but decided
-# against it because it depends on some superceded packages. I only need the data object called
-# countries_bbox from the package, so I downloaded it from the
-# package and will include it in the import for my function.
-# info retrieved from: https://gist.github.com/graydon/11198540
-
- bbox_list <- countries_bbox
-
-# append france because that is absent for some reason
-# it was causing issues because of its territories
-# info from http://bboxfinder.com/#42.240307,-5.075684,51.171134,8.336426
-# xmin and ymin edited slightly for visualization
- 
- bbox_list <- tibble::add_row(bbox_list, iso = "FR", name = "France", x_min = -5.000, x_max = 8.336426, y_min = 42.00, y_max = 51.171134)
 
 ```
 

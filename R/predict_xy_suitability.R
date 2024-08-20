@@ -82,39 +82,39 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
 
   # ensure objects are character type
   if (is.character(predict.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'predict.type' must be of type 'character'")
+    cli::cli_abort("Parameter 'predict.type' must be of type 'character'")
     stop()
   }
   if (is.character(xy.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'xy.type' must be of type 'character'")
+    cli::cli_abort("Parameter 'xy.type' must be of type 'character'")
     stop()
   }
   if (is.character(mypath) == FALSE) {
-    cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
+    cli::cli_abort("Parameter 'mypath' must be of type 'character'")
     stop()
   }
   if (is.character(output.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'output.name' must be of type 'character'")
+    cli::cli_abort("Parameter 'output.name' must be of type 'character'")
     stop()
   }
   if (is.character(buffer.fun) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.fun' must be of type 'character'")
+    cli::cli_abort("Parameter 'buffer.fun' must be of type 'character'")
     stop()
   }
 
   # ensure objects are logical type
   if (is.logical(clamp.pred) == FALSE) {
-    cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
+    cli::cli_abort("Parameter 'clamp.pred' must be of type 'logical'")
     stop()
   }
   if (is.logical(buffer.pred) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.pred' must be of type 'logical'")
+    cli::cli_abort("Parameter 'buffer.pred' must be of type 'logical'")
     stop()
   }
 
   # ensure objects are numeric type
   if (is.numeric(buffer.dist) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.dist' must be of type 'numeric'")
+    cli::cli_abort("Parameter 'buffer.dist' must be of type 'numeric'")
     stop()
   }
 
@@ -137,7 +137,7 @@ predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, my
   if (ncol(xy_import) == 2 & is.numeric(xy_import[, 1]) & is.numeric(xy_import[, 2])) {
     cli::cli_alert_success("importing xy coordinate data")
   } else {
-    cli::cli_alert_danger("Data import must contain only coordinates in decimal degree. Columns must be longitude (column label 'x') and latitude (column label 'y'), in that order")
+    cli::cli_abort("Data import must contain only coordinates in decimal degree. Columns must be longitude (column label 'x') and latitude (column label 'y'), in that order")
     stop()
   }
 

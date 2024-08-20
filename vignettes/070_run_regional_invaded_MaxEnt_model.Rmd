@@ -465,6 +465,8 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
+# Appendix
+
 ## 3.2 Predict suitability for known SLF presences
 
 ```{r data import}
