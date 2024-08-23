@@ -606,12 +606,12 @@ We need a baseline for visualizing the trends in these scatter plots, so I will 
 ```{r join datasets}
 
 # join datasets for plotting
-xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y")) %>%
+xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, join_by(ID, x, y)) %>%
   # join CC datasets
-  full_join(., xy_global_2055, by = c("x", "y")) %>%
-  full_join(., xy_regional_ensemble_2055, by = c("x", "y")) %>%
+  full_join(., xy_global_2055, join_by(ID, x, y)) %>%
+  full_join(., xy_regional_ensemble_2055, join_by(ID, x, y)) %>%
   # order
-  dplyr::relocate(x, y, xy_global_1995, xy_global_2055)
+  dplyr::relocate(ID, x, y, xy_global_1995, xy_global_2055)
 
 ```
 
@@ -700,12 +700,12 @@ xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here:
 ```{r join datasets}
 
 # join datasets for plotting
-xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
+xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, join_by(ID, x, y)) %>%
   # join CC datasets
-  full_join(., xy_global_2055_rescaled, by = c("x", "y")) %>%
-  full_join(., xy_regional_ensemble_2055_rescaled, by = c("x", "y")) %>%
+  full_join(., xy_global_2055_rescaled, join_by(ID, x, y)) %>%
+  full_join(., xy_regional_ensemble_2055_rescaled, join_by(ID, x, y)) %>%
   # order
-  dplyr::relocate(x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
+  dplyr::relocate(ID, x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
   dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055))
 
 
@@ -730,8 +730,8 @@ Next, I will use case_when() (a vectorized ifelse) to calculate when a point shi
 ```{r filter segments that cross thresholds}
 
 xy_joined_rescaled_intersects <- xy_joined_rescaled %>%
-  mutate(
-    crosses_threshold = case_when(
+  dplyr::mutate(
+    crosses_threshold = dplyr::case_when(
       # conditional for starting and ending points that overlap a the threshold
       # x-axis
       xy_global_1995_rescaled > global_MTSS & xy_global_2055_rescaled < global_MTSS ~ "crosses",
@@ -838,12 +838,12 @@ I will create a summary table of the quadrant placement (and thus the level of r
 ```{r summary IVRs}
 
 # create dataset and tidy
-IVR_locations_joined <- left_join(IVR_locations, xy_joined_rescaled, by = c("x", "y")) %>%
+IVR_locations_joined <- left_join(IVR_locations, xy_joined_rescaled, join_by(ID, x, y)) %>%
   relocate(ID, x, y) 
   
 # calculate risk quadrants
 IVR_locations_risk <- IVR_locations_joined %>%
-  mutate(
+  dplyr::mutate(
     risk_1995 = slfSpread::calculate_risk_quadrant(
       suit.x = IVR_locations_joined$xy_global_1995_rescaled,
       suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
@@ -1012,6 +1012,70 @@ if(TRUE) {
 }
 
 ```
+
+# 6. Save wineries with pred suitability
+
+```{r load in final winery pred suit files}
+
+xy_regional_ensemble_1995 <- readr::read_rds(
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_1981-2010_xy_pred_suit.rds")
+  )
+
+ xy_regional_ensemble_2055_ssp_mean <- readr::read_rds(
+  file = file.path(here::here(), "data", "regional_ensemble_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
+  )
+
+
+# save global datasets
+xy_global_1995 <- readr::read_rds(
+  file = file.path(here::here(), "data", "global_wineries_1981-2010_xy_pred_suit.rds")
+  )
+
+xy_global_2055_ssp_mean <- readr::read_rds(
+  file = file.path(here::here(), "data", "global_wineries_2041-2070_GFDL_ssp_mean_xy_pred_suit.rds")
+  )
+
+```
+
+```{r create and save dataset}
+
+# join all wineries with suitability values per model
+wineries_tidied_suit <- IVR_locations %>%
+  left_join(xy_global_1995, join_by(ID, x, y)) %>%
+  left_join(xy_regional_ensemble_1995, join_by(ID, x, y)) %>%
+  left_join(xy_global_2055, join_by(ID, x, y)) %>%
+  left_join(xy_regional_ensemble_2055, join_by(ID, x, y)) 
+
+# join with risk levels
+wineries_tidied_suit <- wineries_tidied_suit %>%
+  left_join(IVR_locations_risk, join_by(ID, x, y, Continent, Country, Region, `Sub-Region`)) %>%
+  dplyr::select(-c(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, xy_global_2055_rescaled, xy_regional_ensemble_2055_rescaled, risk_shift))
+  
+
+# rename columns
+wineries_tidied_suit <- wineries_tidied_suit %>%
+  dplyr::rename(
+    "global_model_suit_hist" = "xy_global_1995",
+    "regional_ensemble_model_suit_hist" = "xy_regional_ensemble_1995",
+    "global_model_suit_2041-2070" = "xy_global_2055",
+    "regional_ensemble_model_suit_2041-2070" = "xy_regional_ensemble_2055",
+    "risk_level_hist" = "risk_1995",
+    "risk_level_2041-2070" = "risk_2055"
+  )
+
+# save 
+write_csv(
+  x = wineries_tidied_suit,
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "wineries_tidied_with_suit_risk.csv")
+  )
+
+readr::write_rds(
+  x = wineries_tidied_suit,
+  file = file.path(here::here(), "data", "wineries_tidied_with_suit_risk.rds")
+  )
+
+```
+
 
 # Appendix
 

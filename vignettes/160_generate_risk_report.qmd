@@ -148,6 +148,8 @@ for (a in seq_along(unique_iso)) {
 
 ```
 
+# Appendix
+
 ## USA
 
 ```{r USA reports}
@@ -181,7 +183,7 @@ slfSpread::create_risk_report(
 )
 
 # save USA report for other uses
-readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_slf_risk_report.rds"))
+readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_slf_risk_report.rds"))
 
 ```
 
@@ -206,7 +208,7 @@ USA_shift <- united_states_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   USA_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states__risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -215,7 +217,7 @@ ggsave(
 
 ggsave(
   USA_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -224,7 +226,7 @@ ggsave(
 
 ggsave(
   USA_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "USA", "united_states_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",

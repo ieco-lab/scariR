@@ -482,18 +482,24 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     cli::cli_alert_info(paste0("Suitability prediction type for IVR regions: buffer of ", buffer.dist, "m around points"))
 
     # convert IVR points to spatvector
-    IVR_locations_sf <- sf::st_as_sf(
+    IVR_buffers_sv <- terra::vect(
       x = IVR_locations_plot_layer,
       crs = "EPSG:4326",
-      coords = c("x", "y")
+      geom = c("x", "y")
     )
     # use sv to create buffers
-    IVR_buffers_plot_layer <- sf::st_buffer(
-      x = IVR_locations_sf,
-      dist = buffer.dist
+    IVR_buffers_sv <- terra::buffer(
+      x = IVR_buffers_sv,
+      width = buffer.dist
+    )
+    # mask buffers using locality sv
+    IVR_buffers_sv <- terra::mask(
+      x = IVR_buffers_sv,
+      mask = locality_sv
     )
 
-
+    # convert to sf object for plotting
+    IVR_buffers_plot_layer <- sf::st_as_sf(IVR_buffers_sv)
 
     # otherwise, stop
   } else {
