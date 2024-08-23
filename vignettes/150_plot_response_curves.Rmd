@@ -2,9 +2,8 @@
 title: "Plot response curves"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-16"
-format: html
-editor: visual
+date: "2024-08-23"
+output: html_document
 ---
 
 Theory

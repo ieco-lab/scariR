@@ -839,7 +839,7 @@ I will create a summary table of the quadrant placement (and thus the level of r
 
 # create dataset and tidy
 IVR_locations_joined <- left_join(IVR_locations, xy_joined_rescaled, join_by(ID, x, y)) %>%
-  relocate(ID, x, y) 
+  dplyr::relocate(ID, x, y) 
   
 # calculate risk quadrants
 IVR_locations_risk <- IVR_locations_joined %>%
@@ -1015,6 +1015,8 @@ if(TRUE) {
 
 # 6. Save wineries with pred suitability
 
+I will now join the risk levels dataset I have created with the original wineries_tidied dataset and save this. I will also add a count of the risk levels so they can be compared quantitatively. I will code extreme risk = 4, high = 3, moderate = 2, and low = 1. Then, I will subtract the risk level in 1995 from the risk level in 2055 to quantify the change in risk level over time and calculate summary stats.
+
 ```{r load in final winery pred suit files}
 
 xy_regional_ensemble_1995 <- readr::read_rds(
@@ -1043,14 +1045,32 @@ xy_global_2055_ssp_mean <- readr::read_rds(
 wineries_tidied_suit <- IVR_locations %>%
   left_join(xy_global_1995, join_by(ID, x, y)) %>%
   left_join(xy_regional_ensemble_1995, join_by(ID, x, y)) %>%
-  left_join(xy_global_2055, join_by(ID, x, y)) %>%
-  left_join(xy_regional_ensemble_2055, join_by(ID, x, y)) 
+  left_join(xy_global_2055_ssp_mean, join_by(ID, x, y)) %>%
+  left_join(xy_regional_ensemble_2055_ssp_mean, join_by(ID, x, y)) 
 
 # join with risk levels
 wineries_tidied_suit <- wineries_tidied_suit %>%
   left_join(IVR_locations_risk, join_by(ID, x, y, Continent, Country, Region, `Sub-Region`)) %>%
-  dplyr::select(-c(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, xy_global_2055_rescaled, xy_regional_ensemble_2055_rescaled, risk_shift))
+  dplyr::select(-c(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, xy_global_2055_rescaled, xy_regional_ensemble_2055_rescaled))
   
+
+# add risk level counts
+wineries_tidied_suit <- wineries_tidied_suit %>%
+  dplyr::mutate(
+    risk_1995_count = dplyr::case_when(
+      risk_1995 == "extreme" ~ 4,
+      risk_1995 == "high" ~ 3,
+      risk_1995 == "moderate" ~ 2,
+      risk_1995 == "low" ~ 1
+    ),
+    risk_2055_count = dplyr::case_when(
+      risk_2055 == "extreme" ~ 4,
+      risk_2055 == "high" ~ 3,
+      risk_2055 == "moderate" ~ 2,
+      risk_2055 == "low" ~ 1
+    ),
+    risk_shift_count = risk_2055_count - risk_1995_count
+  )
 
 # rename columns
 wineries_tidied_suit <- wineries_tidied_suit %>%
@@ -1060,11 +1080,23 @@ wineries_tidied_suit <- wineries_tidied_suit %>%
     "global_model_suit_2041-2070" = "xy_global_2055",
     "regional_ensemble_model_suit_2041-2070" = "xy_regional_ensemble_2055",
     "risk_level_hist" = "risk_1995",
-    "risk_level_2041-2070" = "risk_2055"
+    "risk_level_2041-2070" = "risk_2055",
+    "risk_count_hist" = "risk_1995_count",
+    "risk_count_2041-2070" = "risk_2055_count"
   )
 
+# rearrange columns
+wineries_tidied_suit <- wineries_tidied_suit %>%
+  dplyr::relocate(risk_count_hist, .after = risk_level_hist) %>%
+  dplyr::relocate(`risk_count_2041-2070`, .after = `risk_level_2041-2070`) %>%
+  dplyr::relocate(risk_shift_count, .after = risk_shift) 
+
+```
+
+``` {r save wineries_tidied with risk and suitability values}
+
 # save 
-write_csv(
+readr::write_csv(
   x = wineries_tidied_suit,
   file = file.path(here::here(), "vignette-outputs", "data-tables", "wineries_tidied_with_suit_risk.csv")
   )
@@ -1075,7 +1107,6 @@ readr::write_rds(
   )
 
 ```
-
 
 # Appendix
 

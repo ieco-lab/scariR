@@ -176,6 +176,12 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     # print message
     cli::cli_alert_info("proceeding without creating report output subdirectory folder")
 
+    # check if directory exists
+    if(dir.exists(mypath) == FALSE) {
+
+      cli::cli_alert_danger(paste0("Report output will not be saved because directory does not exist:\n", mypath))
+    }
+
   } else if (create.dir == TRUE) {
     # create sub directory from ending of mypath object
     dir.create(mypath)
@@ -570,7 +576,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # whether or not to plot buffer layer
 
-  if (!is.na(buffer.dist)) {
+  if (!is.na(buffer.dist) && nrow(IVR_buffers_plot_layer) > 0) {
 
     slf_binarized_1995_plot <- slf_binarized_1995_plot +
       # underlying buffer layer
@@ -622,7 +628,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       ggnewscale::new_scale_fill()
 
     # whether or not to plot buffer layer
-    if (!is.na(buffer.dist)) {
+    if (!is.na(buffer.dist) && nrow(IVR_buffers_plot_layer) > 0) {
 
       slf_binarized_1995_plot <- slf_binarized_1995_plot +
         # underlying buffer layer
@@ -678,7 +684,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       ggnewscale::new_scale_fill()
 
     # whether or not to plot buffer layer
-    if (!is.na(buffer.dist)) {
+    if (!is.na(buffer.dist) && nrow(IVR_buffers_plot_layer) > 0) {
 
       slf_binarized_2055_plot <- slf_binarized_2055_plot +
         # underlying buffer layer
@@ -730,7 +736,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
 
     # whether or not to plot buffer layer
-    if (!is.na(buffer.dist)) {
+    if (!is.na(buffer.dist) && nrow(IVR_buffers_plot_layer) > 0) {
 
       slf_binarized_2055_plot <- slf_binarized_2055_plot +
         # underlying buffer layer
@@ -1236,29 +1242,64 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   # format IVR table------------------------------------------------------------
 
-  # create .csv output
+  ## create .csv output
   IVR_locations_output <- IVR_locations_locality %>%
-    dplyr::left_join(., xy_joined_rescaled, by = c("ID", "x", "y")) %>%
-    dplyr::rename(
-      "global_model_risk_present" = "xy_global_1995_rescaled",
-      "regional_ensemble_risk_present" = "xy_regional_ensemble_1995_rescaled",
-      "global_model_risk_2055" = "xy_global_2055_rescaled",
-      "regional_ensemble_risk_2055" = "xy_regional_ensemble_2055_rescaled"
-    ) %>%
+    # join rescaled suitability values
+    dplyr::left_join(., xy_joined_rescaled, join_by(ID, x, y)) %>%
+    # round to 2 decimal places
     dplyr::mutate(
-      global_model_risk_present = round((global_model_risk_present * 10), 2),
-      regional_ensemble_risk_present = round((regional_ensemble_risk_present * 10), 2),
-      global_model_risk_2055 = round((global_model_risk_2055 * 10), 2),
-      regional_ensemble_risk_2055 = round((regional_ensemble_risk_2055 * 10), 2)
-    ) %>%
-    dplyr::relocate(ID, x, y, Continent, Country, Region, `Sub-Region`, global_model_risk_present, regional_ensemble_risk_present, global_model_risk_2055, regional_ensemble_risk_2055)
+      xy_global_1995_rescaled = round((xy_global_1995_rescaled * 10), 2),
+      xy_regional_ensemble_1995_rescaled = round((xy_regional_ensemble_1995_rescaled * 10), 2),
+      xy_global_2055_rescaled = round((xy_global_2055_rescaled * 10), 2),
+      xy_regional_ensemble_2055_rescaled = round((xy_regional_ensemble_2055_rescaled * 10), 2)
+    )
 
+
+  ## tidy IVR_locations_risk to join with IVR_locations_output
+  IVR_locations_risk_join <- dplyr::select(IVR_locations_risk, ID, x, y, risk_1995, risk_2055, risk_shift)
+  ## join IVR_locations_risk with IVR_locations_output
+  IVR_locations_output <- left_join(IVR_locations_output, IVR_locations_risk_join, join_by(ID, x, y)) %>%
+    # mutate to also add count of risk levels for quantification and statistics
+    # extreme = 4, high = 3, moderate = 2, low = 1
+    # risk_shift_count = risk_2055_count - risk_1995_count
+    dplyr::mutate(
+      risk_1995_count = dplyr::case_when(
+        risk_1995 == "extreme" ~ 4,
+        risk_1995 == "high" ~ 3,
+        risk_1995 == "moderate" ~ 2,
+        risk_1995 == "low" ~ 1
+      ),
+      risk_2055_count = dplyr::case_when(
+        risk_2055 == "extreme" ~ 4,
+        risk_2055 == "high" ~ 3,
+        risk_2055 == "moderate" ~ 2,
+        risk_2055 == "low" ~ 1
+      ),
+      risk_shift_count = risk_2055_count - risk_1995_count
+    )
+
+  # rename columns
+  IVR_locations_output <- IVR_locations_output %>%
+    dplyr::rename(
+      "global_model_risk_hist" = "xy_global_1995_rescaled",
+      "regional_ensemble_model_risk_hist" = "xy_regional_ensemble_1995_rescaled",
+      "global_model_risk_2041-2070" = "xy_global_2055_rescaled",
+      "regional_ensemble_model_risk_2041-2070" = "xy_regional_ensemble_2055_rescaled",
+      "risk_level_hist" = "risk_1995",
+      "risk_level_2041-2070" = "risk_2055",
+      "risk_count_hist" = "risk_1995_count",
+      "risk_count_2041-2070" = "risk_2055_count"
+    ) %>%
+    # rearrange columns
+    dplyr::relocate(risk_count_hist, .after = risk_level_hist) %>%
+    dplyr::relocate(`risk_count_2041-2070`, .after = `risk_level_2041-2070`) %>%
+    dplyr::relocate(risk_shift_count, .after = risk_shift)
 
 
   # format as .html
   IVR_locations_output_kable <- knitr::kable(IVR_locations_output, "html", escape = FALSE) %>%
     kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    kableExtra::add_header_above(., header = c("L delicatula risk to important viticultural regions" = 11), bold = TRUE)
+    kableExtra::add_header_above(., header = c("L delicatula risk to important viticultural regions" = 17), bold = TRUE)
 
   # success message
   cli::cli_alert_success("Viticultural risk table created")
@@ -1291,6 +1332,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
     # return output
     assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+
 
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {

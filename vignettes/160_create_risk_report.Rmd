@@ -2,9 +2,8 @@
 title: "Example usage of create_risk_report.R to create reports of key viticultural areas"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2024-08-16"
-format: html
-editor: visual
+date: "2024-08-23"
+output: html_document
 ---
 
 INTRO
@@ -148,7 +147,11 @@ for (a in seq_along(unique_iso)) {
 
 ```
 
-# Appendix
+Some of these maps might need to be edited to zoom in on the countries, because some countries have geographically separated territories that are not relevant to the analysis. The code to zoom in on those plots will be in the following section.
+
+# Generate Individual country and state/province reports
+
+Alternatively, I will create individualized reports and maps for key viticultural areas of interest. I will group these regions by expeted gain or loss in viticultural risk, and by geography.
 
 ## USA
 
@@ -158,9 +161,10 @@ slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "united states",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # try state level
@@ -168,18 +172,20 @@ slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "california",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "pennsylvania",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # save USA report for other uses
@@ -243,9 +249,10 @@ slfSpread::create_risk_report(
   locality.iso = "chn", 
   locality.name = "china",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # this report should have 2 IVR points
@@ -253,9 +260,10 @@ slfSpread::create_risk_report(
   locality.iso = "chn",
   locality.name = "shandong",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # this report should have no IVR records
@@ -263,15 +271,16 @@ slfSpread::create_risk_report(
   locality.iso = "chn",
   locality.name = "yunnan",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "china"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 # it worked still so thats good
 
 
 # save report for other uses
-readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "china", "china_slf_risk_report.rds"))
+readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "China", "china_slf_risk_report.rds"))
 
 ```
 
@@ -316,7 +325,8 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "spain"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # italy
@@ -324,9 +334,10 @@ slfSpread::create_risk_report(
   locality.iso = "ita",
   locality.name = "italy",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "italy"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Italy"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # portugal
@@ -334,9 +345,10 @@ slfSpread::create_risk_report(
   locality.iso = "prt",
   locality.name = "portugal",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "portugal"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Portugal"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # türkiye
@@ -344,9 +356,10 @@ slfSpread::create_risk_report(
   locality.iso = "tur",
   locality.name = "türkiye",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "türkiye"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Turkey"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
@@ -355,9 +368,10 @@ slfSpread::create_risk_report(
   locality.iso = "zaf",
   locality.name =  "south africa",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "south_africa"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "South Africa"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # mexico
@@ -365,9 +379,10 @@ slfSpread::create_risk_report(
   locality.iso = "mex",
   locality.name = "mexico",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "mexico"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Mexico"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
@@ -395,7 +410,7 @@ spain_shift <- spain_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   spain_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -404,7 +419,7 @@ ggsave(
 
 ggsave(
   spain_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -413,7 +428,7 @@ ggsave(
 
 ggsave(
   spain_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "Spain_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -440,7 +455,7 @@ canary_shift <- spain_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   canary_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -449,7 +464,7 @@ ggsave(
 
 ggsave(
   canary_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -458,7 +473,7 @@ ggsave(
 
 ggsave(
   canary_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "spain", "canary_islands_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -490,7 +505,7 @@ portugal_shift <- portugal_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   portugal_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -499,7 +514,7 @@ ggsave(
 
 ggsave(
   portugal_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -508,7 +523,7 @@ ggsave(
 
 ggsave(
   portugal_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "portugal", "portugal_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -519,9 +534,6 @@ ggsave(
 
 ```{r edit south_africa maps}
 
-# the spain report came out with the the maps needing some work.
-# The map is zoomed very far out because of some territories belonging to spain.
-# I will try to limiting the x and y coordinates of the plot to zoom in.
 
 south_africa_current <- south_africa_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
   xlim(15, 35) +
@@ -539,7 +551,7 @@ south_africa_shift <- south_africa_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   south_africa_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -548,7 +560,7 @@ ggsave(
 
 ggsave(
   south_africa_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -557,7 +569,7 @@ ggsave(
 
 ggsave(
   south_africa_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "south_africa", "south_africa_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -575,9 +587,10 @@ slfSpread::create_risk_report(
   locality.iso = "gbr",
   locality.name = "united kingdom",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "UK"),
-  create.dir = FALSE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United Kingdom"),
+  create.dir = TRUE,
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # Ireland
@@ -586,8 +599,9 @@ slfSpread::create_risk_report(
   locality.name = "Ireland",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Ireland"),
-  create.dir = FALSE,
-  save.report = TRUE
+  create.dir = TRUE,
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # New zealand
@@ -595,9 +609,10 @@ slfSpread::create_risk_report(
   locality.iso = "nzl",
   locality.name = "new zealand",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "new_zealand"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "New Zealand"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # sweden
@@ -607,7 +622,8 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "sweden"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 ```
@@ -619,9 +635,10 @@ slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "michigan",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # oregon
@@ -629,9 +646,10 @@ slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "oregon",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # washington
@@ -639,9 +657,10 @@ slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "washington",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "USA"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # tasmania
@@ -649,9 +668,10 @@ slfSpread::create_risk_report(
   locality.iso = "aus",
   locality.name = "tasmania",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 
@@ -680,7 +700,7 @@ new_zealand_shift <- new_zealand_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   new_zealand_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -689,7 +709,7 @@ ggsave(
 
 ggsave(
   new_zealand_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -698,7 +718,7 @@ ggsave(
 
 ggsave(
   new_zealand_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "new_zealand", "new_zealand_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -717,9 +737,10 @@ slfSpread::create_risk_report(
   locality.iso = "chl",
   locality.name = "chile",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "chile"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Chile"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # australia
@@ -727,9 +748,10 @@ slfSpread::create_risk_report(
   locality.iso = "aus",
   locality.name = "australia",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "australia"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # romania
@@ -737,9 +759,10 @@ slfSpread::create_risk_report(
   locality.iso = "rou",
   locality.name = "romania",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "romania"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Romania"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # argentina
@@ -747,9 +770,10 @@ slfSpread::create_risk_report(
   locality.iso = "arg",
   locality.name = "argentina",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "argentina"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Argentina"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # georgia
@@ -757,9 +781,10 @@ slfSpread::create_risk_report(
   locality.iso = "geo",
   locality.name = "georgia",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "georgia"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Georgia"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # russia
@@ -767,9 +792,10 @@ slfSpread::create_risk_report(
   locality.iso = "rus",
   locality.name = "russia",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "russia"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Russia"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 # no shapefile data exist
 
@@ -794,7 +820,7 @@ australia_shift <- australia_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   australia_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -803,7 +829,7 @@ ggsave(
 
 ggsave(
   australia_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -812,7 +838,7 @@ ggsave(
 
 ggsave(
   australia_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "australia", "australia_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -836,7 +862,7 @@ russia_shift <- russia_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   russia_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -845,7 +871,7 @@ ggsave(
 
 ggsave(
   russia_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -854,7 +880,7 @@ ggsave(
 
 ggsave(
   russia_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "russia", "russia_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -878,7 +904,7 @@ chile_shift <- chile_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   chile_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -887,7 +913,7 @@ ggsave(
 
 ggsave(
   chile_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -896,7 +922,7 @@ ggsave(
 
 ggsave(
   chile_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "chile", "chile_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -919,14 +945,11 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "finland"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 
-
-## ESTONIA
-##LATVIA
-## LITHUANIA
 
 ```
 
@@ -941,9 +964,10 @@ slfSpread::create_risk_report(
   locality.iso = "DEU",
   locality.name = "germany",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "germany"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Germany"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
@@ -952,9 +976,10 @@ slfSpread::create_risk_report(
   locality.iso = "fra",
   locality.name = "france",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "france"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "France"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
@@ -980,7 +1005,7 @@ france_shift <- france_slf_risk_report[["range_shift_map"]] +
 #save
 ggsave(
   france_current,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_present_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -989,7 +1014,7 @@ ggsave(
 
 ggsave(
   france_future,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_risk_map_2055_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -998,7 +1023,7 @@ ggsave(
 
 ggsave(
   france_shift,
-  filename = file.path(here::here(), "vignette-outputs", "reports", "france", "france_range_shift_map_edited.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
   device = "jpeg",
@@ -1018,7 +1043,8 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "greece"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
@@ -1027,9 +1053,10 @@ slfSpread::create_risk_report(
   locality.iso = "AUT",
   locality.name = "austria",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "austria"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Austria"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # hungary
@@ -1037,9 +1064,10 @@ slfSpread::create_risk_report(
   locality.iso = "HUN",
   locality.name = "hungary",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "hungary"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Hungary"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # czech republic (Czechia)
@@ -1047,9 +1075,10 @@ slfSpread::create_risk_report(
   locality.iso = "CZE",
   locality.name = "Czechia",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "czechia"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Czechia"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # other
@@ -1058,9 +1087,10 @@ slfSpread::create_risk_report(
   locality.iso = "est",
   locality.name = "estonia",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "estonia"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Estonia"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # latvia
@@ -1068,9 +1098,10 @@ slfSpread::create_risk_report(
   locality.iso = "lva",
   locality.name = "lativa",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "lativa"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Lativa"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # lithuania
@@ -1078,9 +1109,10 @@ slfSpread::create_risk_report(
   locality.iso = "ltu",
   locality.name = "lithuania",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "lithuania"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Lithuania"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # denmark
@@ -1088,9 +1120,10 @@ slfSpread::create_risk_report(
   locality.iso = "dnk",
   locality.name = "denmark",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "denmark"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Denmark"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 # poland
@@ -1098,9 +1131,10 @@ slfSpread::create_risk_report(
   locality.iso = "pol",
   locality.name = "poland",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "poland"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Poland"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 ```
@@ -1114,9 +1148,10 @@ slfSpread::create_risk_report(
   locality.iso = "DZA",
   locality.name = "algeria",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "algeria"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Algeria"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 ## south africa above
@@ -1132,9 +1167,10 @@ slfSpread::create_risk_report(
   locality.iso = "CAN",
   locality.name = "canada",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "canada"),
-  create.dir = TRUE,
-  save.report = TRUE
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Canada"),
+  create.dir = FALSE,
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # mexico above
@@ -1150,9 +1186,10 @@ slfSpread::create_risk_report(
   locality.iso = "TUR",
   locality.name = "turkey",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "turkey"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Turkey"),
   create.dir = TRUE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 
@@ -1171,9 +1208,10 @@ slfSpread::create_risk_report(
   locality.iso = "KOR",
   locality.name = "south korea",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "south_korea"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "South Korea"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 # japan
@@ -1181,16 +1219,17 @@ slfSpread::create_risk_report(
   locality.iso = "JPN",
   locality.name = "japan",
   locality.type = "country",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "japan"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "Japan"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = FALSE,
+  buffer.dist = 20000
 )
 
 
 # save reports for other uses
-readr::write_rds(japan_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "japan", "japan_slf_risk_report.rds"))
+readr::write_rds(japan_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "Japan", "japan_slf_risk_report.rds"))
 
-readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "south_korea", "south_korea_slf_risk_report.rds"))
+readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "Republic of Korea", "south_korea_slf_risk_report.rds"))
 
 ```
 
@@ -1198,14 +1237,17 @@ readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vi
 
 ```{r other regions}
 
+## doesnt work for some reason
+
 # New zealand
 slfSpread::create_risk_report(
   locality.iso = "nzl",
   locality.name = "marlborough",
   locality.type = "states_provinces",
-  mypath = file.path(here::here(), "vignette-outputs", "reports", "new_zealand"),
+  mypath = file.path(here::here(), "vignette-outputs", "reports", "New Zealand"),
   create.dir = FALSE,
-  save.report = TRUE
+  save.report = TRUE,
+  buffer.dist = 20000
 )
 
 ```
@@ -1215,6 +1257,8 @@ slfSpread::create_risk_report(
 ## Create faceted maps
 
 First I will facet some examples of different risk scenarios for SLF with their respective risk maps. I will use Romania, the USA and Spain. Romania is an example of a country with a high shift toward the regional model predictions because almost all viticultural regions shift from extreme to high suitability, highlighting the importance of the regional model. The USA exhibits this same trend, but not with the same strength that Romania does. Viticultural regions in spain exhibit a general shift to unsuitability in both models. The regional model seems to display risk under the current climate, but that risk disappears with climate change.
+
+Before I perform this operation, I will save reports as a .Rdata file so that I can reuse them later as needed, without running the entire script again. 
 
 ### Example countries
 
