@@ -10,7 +10,7 @@ editor_options:
 
 # Overview
 
-In the last vignette, [020_retrieve_SLF_records](URL), we downloaded and tided Lycorma delicatula occurrence data from multiple sources. We tidied, harmonized and took measures to reduce spatial autocorrelation without sacrificing spread in our dataset. We also combined these data into a single presence dataset will be used to perform SDM. We now need to retrieve the other type of data that is necessary for SDM, environmental covariates. We are specifically interested in the effects of climate change, so we will be focusing heavily on derivatives of temperature and precipitation to explain Lycorma delicatula distributions.
+In the last vignette, we downloaded and tided *Lycorma delicatula* occurrence data from multiple sources. We tidied, harmonized and took measures to reduce spatial autocorrelation without sacrificing spread in our dataset. We also combined these data into a single presence dataset will be used to perform SDM. We now need to retrieve the other type of data that is necessary for SDM, environmental covariates. We are specifically interested in the effects of climate change, so we will be focusing heavily on derivatives of temperature and precipitation to explain *Lycorma delicatula* distributions.
 
 This vignette will walk through the process of downloading and tidying these climate data. We will be downloading the data from [CHELSA](https://chelsa-climate.org/), which is a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables. These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
 
@@ -40,13 +40,13 @@ library(patchwork)
 First, I will download the bioclim data into a local directory. I recommend downloading these data into a separate directory from this package. Since I am using a directory outside of the immediate package, I will create an object to define the file path at the beginning of each chunk. This pathing will still use `here::here()` to start at the package root folder. First, I will download the historical climate data from CHELSA. The URLs to the bioclim data that were downloaded from CHELSA are stored in `data-raw/CHELSA` within the package directory. I will be using two different versions of the CHELSA bioclim variables for my analysis: 
 
 1. Historical- time period 1981-2010
-2. Climate change predictions- time period 2041-2070, GFDL-ESM4 model, SSP3-70
+2. Climate change predictions- time period 2041-2070, GFDL-ESM4 model, Ssp scenarios 126, 370, and 585.
 
-The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27 other distinct climatologies, available for both historical datasets and climate change models. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will download the 19 bioclim variables. We will also download and include four metrics of the Degree Day with a 10C threshold. If you would like to download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
+The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27 other distinct climatologies, available for both historical datasets and climate change models. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will download the 19 bioclim variables. If you would like to download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
 
 ## 1.1 Historical
 
-My first approach to downloading these data was to create a loop to open each URL in a web browser (be ready, as it literally just opens whatever URLs are selected from the list in a browser). Later, I will functionalize this so that the download can be more flexible. 
+The best approach I found to download these data was to create a loop to open each URL in a web browser (be ready, as it literally just opens whatever URLs are selected from the list in a browser). 
 
 ```{r download historical CHELSA data}
 
@@ -79,7 +79,9 @@ With the current loop construction, these files can only be downloaded to my PC'
 
 ## 1.2 CMIP6
 
-Next, I will download data from the provided CMIP6 models. I will be downloading data for different [SSP scenarios](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change/) (see link for an explanation of these scenarios). I will use the [GFDL-ESM4](https://www.wdc-climate.de/ui/cmip6?input=CMIP6.CMIP.NOAA-GFDL.GFDL-ESM4) CMIP6 model from NOAA. According to the CHELSA documentation, if all five available models are not used together, then CMIP6 model usage should follow the given priority (see documentation linked above). These climate rasters should be moved to their respective folders within `maxent/future_climate_rasters/chelsa2.1_30arcsec` once the download is complete.
+Next, I will download data from the provided CMIP6 models. I will be downloading data for different [SSP scenarios](https://www.carbonbrief.org/explainer-how-shared-socioeconomic-pathways-explore-future-climate-change/) (see link for an explanation of these scenarios). These ssp scenarios represent different assumptions about global development and greenhouse gas emissions. I will be using the ssp scenarios 126, 370, and 585. 126 represents a more ideal scenario where all countries are cooperating to reduce emissions. 370 represents a middle-high emissions scenario, coupled with an emphasis on regional rivalry and global conflict (which reduce cooperation and drive up emissions). 585 represents a high greenhouse gas emissions scenario where countries are cooperating and improving infrastructure, but there is no emphasis on reducing emissions.
+
+I will use the [GFDL-ESM4](https://www.wdc-climate.de/ui/cmip6?input=CMIP6.CMIP.NOAA-GFDL.GFDL-ESM4) CMIP6 model from NOAA. According to the CHELSA documentation, if all five available models are not used together, then CMIP6 model usage should follow the given priority (see documentation linked above). These climate rasters should be moved to their respective folders within `maxent/future_climate_rasters/chelsa2.1_30arcsec` once the download is complete.
 
 ### SSP126
 
@@ -177,7 +179,7 @@ if(FALSE) {
 
 # 2. Tidy for MaxEnt
 
-Next, I need to tidy these rasters for MaxEnt. I will need to mask any data that is over the oceans or other bodies of water. I will also need to create downsized versions of these variables that can be used in step 4 to assess the level of correlation between the different variables. Lastly, I will rename the files and convert them to the required `.ascii` format for MaxEnt.
+Next, I need to tidy these rasters for MaxEnt. I will need to mask any data that is over the oceans or other bodies of water. I will also need to create downsized versions of these variables that can be used in step 3 to assess the level of correlation between the different variables. Lastly, I will rename the files and convert them to the required `.ascii` format for MaxEnt.
 
 I will mask the CHELSA rasters using a dataset called ["global access to cities"](http://www.nature.com/articles/nature25181), which is a proxy for human impact and will be used in the final anaylsis. This dataset contains high-resolution mapping of the continents, so it is a good choice as a reference layer for the masking. I will use `bio1` (annual mean temperature) as a reference to resample the new layers after setting the CRS and extent.
 
@@ -231,7 +233,7 @@ Now that we have our files and reference layers loaded in and names chosen, we c
 
 ## 2.2 Prepare reference layers
 
-The first step is to tidy the reference layers `global_atc` and `global_bio1`. These need to be cropped to the same extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) is expiring. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. The EPSG number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. Lastly, I need to ensure the origins are the same. 
+The first step is to tidy the reference layers `global_atc` and `global_bio1`. These need to be cropped to the same extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) has since expired. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. The EPSG number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. Lastly, I need to ensure the origins are the same. 
 
 In this chunk, we will create 2 reference layers. The `main_layer (global_bio1)` will be used for resampling the data, while the `mask_layer (global_atc)` will be used for masking.
 
@@ -296,6 +298,13 @@ Here is where we get into tidying the data. We will crop the rasters using the e
 
 ```
 
+In this first chunk, I will:
+
+* crop the layers to the correct extent
+* mask the layers to the outlines of the continents
+* set the CRS to `EPSG:4326`
+* set the origin to match the reference layers
+* crop the layers again to ensure the aggregation doesn't increase the extent
 
 This chunk will take a very long time to run... so maybe find a good book to read.
 
@@ -353,7 +362,7 @@ if(FALSE) {
 
 ```
 
-Finally, we will convert the rasters to the `.ascii` format required by MaxEnt. 
+We will convert the rasters to the `.ascii` format required by MaxEnt. 
 
 ```{r get file names}
 
@@ -368,7 +377,6 @@ Finally, we will convert the rasters to the `.ascii` format required by MaxEnt.
     gsub(pattern = ".tif", replacement = ".asc")
 
 ```
-
 
 ```{r conversion of .tif to .asc files}
 
@@ -397,9 +405,9 @@ if(FALSE){
 
 ```
 
-This additional step can be run on-demand. I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
+Finally, I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
 
-```{r on-demand aggregation of rasters}
+```{r aggregation of rasters to 10km}
 
 if (FALSE) {
   
@@ -963,7 +971,7 @@ Now that these different climatologies have been tidied for use, we need to deci
 
 Before using any of these climatologies in a MaxEnt model, we need to assess their level of co-linearity (the amount the layers are correlated to each other). I expect that most of them will be, as they are all derived from either temperature or precipitation. I will be using a threshold of 0.7 pearson's correlation or lower to select which variables I use in downstream models. I will only perform a correlation analysis on the historical versions of the rasters, as the climate change versions of the variables are likely to display the same trends. I will use this analysis to decide what covariates go into both the historical and interpolated (climate change) models. 
 
-While it is very important to reduce co-linearity, this cannot be the only metric used to select covariates for species distribution models. The biology of the target species is arguably more important than reducing co-linearity. A MaxEnt model that has not been informed by the biology of *Lycorma delicatula* will likely produce misleading or wrong predictions of its realized niche. Our process of selecting covariates will also need to be informed by the literature. Fox example, there is evidence that minimum winter temperature has a significantly negative impact on egg survival (Lee et.al, 2011). 
+While it is very important to reduce co-linearity, this cannot be the only metric used to select covariates for species distribution models. The biology of the target species is arguably more important than reducing co-linearity. A MaxEnt model that has not been informed by the biology of *Lycorma delicatula* will likely produce misleading or wrong predictions of its realized niche. Our process of selecting covariates will also need to be informed by the literature. For example, there is evidence that minimum winter temperature has a significantly negative impact on egg survival (Lee et.al, 2011). 
 
 We will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables. We will be using `terra::aggregate()` to combine cells in a 2x2 grid fashion and take the mean of the 4 cells.
 
@@ -987,12 +995,14 @@ if(FALSE) {
     # holding object
     rast.hold <- terra::rast(env.files[a])
     
-    rast.hold <- terra::aggregate(rast.hold, 
-                                  fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
-                                  fun = "mean", # take mean of these cells
-                                  # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
-                                  na.rm = TRUE, 
-                                  filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE)
+    rast.hold <- terra::aggregate(
+      rast.hold, 
+      fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
+      fun = "mean", # take mean of these cells
+      # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
+      na.rm = TRUE, 
+      filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE
+      )
     
     # remove object once its done
     rm(rast.hold)
@@ -1009,7 +1019,7 @@ We will use `ENMTools::raster.cor.matrix()` to perform the correlation analysis.
 
 ```{r Take pearson correlation of raster layers}
 
-if(FALSE){
+if(TRUE){
   
   mypath <- file.path(here::here() %>% 
                         dirname(),
@@ -1018,7 +1028,10 @@ if(FALSE){
   # load downsampled layers and stack for raster.cor.matrix command
 
   # list of layer paths
-  env.files <- list.files(path = file.path(mypath, "v1_downsampled"), pattern = "\\.tif$", full.names = TRUE)
+  env.files <- list.files(path = file.path(mypath, "v1_downsampled"), pattern = "\\.tif$", full.names = TRUE) %>%
+    # only grab bioclim variables
+    grep(pattern = "bio", value = TRUE)
+    
   
   # stack downsampled layers
   env <- c(x = terra::rast(env.files))
@@ -1030,7 +1043,7 @@ if(FALSE){
   env.cor <- ENMTools::raster.cor.matrix(env = env, method = "pearson")
   
   # write out correlations as .csv.
-  write.csv(x = env.cor, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv"), col.names = TRUE, row.names = TRUE)
+  write.csv(x = env.cor, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v2.csv"), col.names = TRUE, row.names = TRUE)
   
 }
 
@@ -1040,7 +1053,7 @@ The correlation values have been saved as a 24x24 matrix. Now that the values ha
 
 ```{r tidy env.cor}
 
-env.cor2 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled.csv")) 
+env.cor2 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v2.csv")) 
 
 env.cor2 <- as.data.frame(env.cor2) 
 # convert rownames column to rownames
@@ -1057,26 +1070,24 @@ env.cor3 <- env.cor2 %>%
 colnames(env.cor3) <- gsub(pattern = "_V.2.1", replacement = "", x = colnames(env.cor3))
 colnames(env.cor3) <- gsub(pattern = "_1981.2010", replacement = "", x = colnames(env.cor3))
 colnames(env.cor3) <- gsub(pattern = "CHELSA_", replacement = "", x = colnames(env.cor3))
-colnames(env.cor3) <- gsub(pattern = "X2015_accessibility_to_cities_v1.0", replacement = "atc", x = colnames(env.cor3))
 # simplify rownames
 rownames(env.cor3) <- gsub(pattern = "_V.2.1", replacement = "", x = rownames(env.cor3))
 rownames(env.cor3) <- gsub(pattern = "_1981.2010", replacement = "", x = rownames(env.cor3))
 rownames(env.cor3) <- gsub(pattern = "CHELSA_", replacement = "", x = rownames(env.cor3))
-rownames(env.cor3) <- gsub(pattern = "2015_accessibility_to_cities_v1.0", replacement = "atc", x = rownames(env.cor3))
 
 # factor levels to order row names
-var.names <- c(x = "bio1", "bio2", "bio3", "bio4", "bio5", "bio6", "bio7", "bio8", "bio9", "bio10", "bio11", "bio12", "bio13", "bio14", "bio15", "bio16", "bio17", "bio18", "bio19", "gdd10", "gdgfgd10", "gddlgd10", "ngd10", "atc")
+var.names <- c(x = "bio1", "bio2", "bio3", "bio4", "bio5", "bio6", "bio7", "bio8", "bio9", "bio10", "bio11", "bio12", "bio13", "bio14", "bio15", "bio16", "bio17", "bio18", "bio19")
 
 # reorder columns 
 env.cor4 <- env.cor3 %>%
-  dplyr::select(bio1, bio2:bio9, bio10:bio19, gdd10, gdgfgd10, gddlgd10, ngd10, atc) %>%
+  dplyr::select(bio1, bio2:bio9, bio10:bio19) %>%
   # reorder rows
   mutate(var = rownames(.)) %>% # add column of row names to reorder
   arrange(factor(var, levels = var.names)) %>%
   dplyr::select(!var) # take out temp column
 
 # write tidied data
-write.csv(x = env.cor4, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"), col.names = TRUE, row.names = TRUE)
+write.csv(x = env.cor4, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v2.csv"), col.names = TRUE, row.names = TRUE)
 
 ```
 
@@ -1088,7 +1099,7 @@ Now that they are in a more readable format and have been converted to an absolu
 
 ```{r prepare data to visualize}
 
-env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs.csv"))
+env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v2.csv"))
 
 row.names(env.cor5) <- env.cor5$X
 
@@ -1109,14 +1120,13 @@ env.cor5 <- env.cor5 %>%
 
 I need to set factor levels for the variable names and how to rename them.
 
-```{r}
+```{r factor levels for plot}
 
 # factor levels to order row names
-var.names <- c(x = "bio1", "bio2", "bio3", "bio4", "bio5", "bio6", "bio7", "bio8", "bio9", "bio10", "bio11", "bio12", "bio13", "bio14", "bio15", "bio16", "bio17", "bio18", "bio19", "gdd10", "gdgfgd10", "gddlgd10", "ngd10", "atc")
+var.names <- c(x = "bio1", "bio2", "bio3", "bio4", "bio5", "bio6", "bio7", "bio8", "bio9", "bio10", "bio11", "bio12", "bio13", "bio14", "bio15", "bio16", "bio17", "bio18", "bio19")
 
 # factor levels to rename abbreviations to actual names
 var.renames <- c( 
-  "atc" = "access to cities",
   "bio1" = "annual mean temperature",
   "bio2" = "mean diurnal range",
   "bio3" = "isothermality",
@@ -1136,10 +1146,6 @@ var.renames <- c(
   "bio17"	= "precip of driest quarter",
   "bio18" = "precip of warmest quarter",
   "bio19" = "precip of coldest quarter",
-  "gdd10" = "growing DD heat sum above 10°C",
-  "gddlgd10" = "last growing DD above 10°C",
-  "gdgfgd10" = "first growing DD above 10°C",
-  "ngd10" = "# growing DD above 10°C"
 )
 
 ```
@@ -1163,18 +1169,14 @@ var.renames <- c(
 
 ```
 
-I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature, precipitation and degree-day) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power (SOURCE), and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). 
-
-According to this methodology, I might also have chosen access to cities (atc) because it is not correlated with any other variables. I will be using this variable in a later model of human impacts, but not in my historical and climate change models. This is because ATC is a static variable and I have no way to project it for climate change, while the bioclim variables come with climate change versions.
-
-None of the GDD variables were chosen because they were all highly correlated with bio 11 or each other.
+I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature and precipitation) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power, and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). 
 
 I will save this plot and produce a binarized version before I continue choosing variables. This way, the cutoff is clearer and the choice is more obvious.
 
 ```{r save correlation heatmap}
 
 # save correlation heatmap
-ggsave(env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v1.jpg"),
+ggsave(env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -1212,7 +1214,7 @@ Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarte
 
 ```{r save binary heatmap}
 
-ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v1_binary.jpg"),
+ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2_binary.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -1259,83 +1261,9 @@ bio1_plot / gdd10_plot
 
 ```
 
-The final 4 variables have been selected for SDM of Lycorma delicatula, which include "mean diurnal range", "mean temperature of the coldest quarter", "annual precipitation", and "precipitation seasonality". These covariates can be projected for climate change and are biologically relevant to our target species. In the next vignette, we will crop these covariates to the appropriate spatial scale to run regional models. We will also use these rasters to create background point sets, which MaxEnt uses to sample the environmental covariates. 
-
-
+The final 4 variables have been selected for SDM of Lycorma delicatula, which include "mean diurnal range", "mean temperature of the coldest quarter", "annual precipitation", and "precipitation seasonality". These covariates can be projected for climate change and are biologically relevant to our target species. In the next vignette, we will crop these covariates to the appropriate spatial scale to run a global-scale model. We will also create other necessary datasets for this model.
 
 # Appendix
-
-## Bioclim Layers for MaxEnt Java
-
-These chunks are identical to chunks 8 and 11, except these chunks convert NA values to -9999 in the rasters created. This is the default value for NA taken by the Java version of Maxent, but this can also be changed in the app.
-
-```{r conversion of .tif to .asc files}
-
-if(FALSE){
-  
-  mypath <- file.path(here::here() %>% 
-                        dirname(),
-                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-  
-  # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
-  
-  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
-  for(a in seq_along(env.files)){
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # convert NAs to -9999
-    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
-    # write output
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_java", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
-
-```
-
-```{r conversion of .tif to .asc files CMIP6}
-
-if(TRUE){
-  
-  mypath <- file.path(here::here() %>%
-                        dirname(),
-                      "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
-  
-  # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
-  
-  # loop to convert to .ascii, set NAs equal to -9999 as required by Maxent
-  for(a in seq_along(env.files)) {
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # convert NAs to -9999
-    rast.hold <- terra::subst(x = rast.hold, from = NA, to = -9999)
-    # write output
-    terra::writeRaster(x = rast.hold, filename = file.path(mypath, "v1_maxent_java", output.files[a]), filetype = "AAIGrid", overwrite = FALSE)
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
-
-```
 
 ## Additional environmental covariates  
 
@@ -1376,100 +1304,6 @@ if(FALSE) {
 ```
 
 Files were placed in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals"`.
-
-```{r get file names}
- 
-# file path to directory
-mypath <- file.path(here::here() %>% 
-                      dirname(),
-                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-# I will load in the files and then get the new names I would like to give them
-
-# load in bioclim layers to be cropped- the original .tif files
-env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = T) %>%
-  # extract the DD variables
-    grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE)
-
-# output file names
-output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = F) %>%
-  # extract the DD variables
-  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE) %>%
-  # get rid of filetype endings
-  gsub(pattern = ".tif", replacement = "") %>%
-  # crop off ending 
-  gsub(pattern = "_V.2.1", replacement = "") %>%
-  tolower()
-
-# more edits to file names
-output.files <- output.files %>%
-  gsub(pattern = "chelsa_", replacement = "") 
-
-```
-
-### Download CMIP6 DD variables
-
-```{r download CMIP6 CHELSA data}
-
-if(FALSE) {
-
-  # ssp370 data
-  chelsa_370_URLs <- read_table(file = file.path(here::here(), "data-raw", "CHELSA", "chelsa_2041-2070_GFDL-ESM4_ssp370_bioclim_URLs.txt"),
-                                col_names = FALSE) %>%
-    as.data.frame() %>%
-    dplyr::select("X1") %>%
-    dplyr::rename("URL" = "X1")
-  
-  
-  # select only DD URLs 
-  chelsa_370_URLs <- slice(.data = chelsa_370_URLs, c(23, 26, 29, 42))
-  
-  # loop to download ssp370 URLs
-  for(i in 1:nrow(chelsa_370_URLs)) {
-    
-    file.tmp <- chelsa_370_URLs[i, ]
-    
-    utils::browseURL(url = file.tmp)
-    
-  }
-
-}
-
-```
-
-These files were stored manually in `"maxent/future_climate_rasters/chelsa2.1_30arcsec/originals"`.
-
-```{r get file names}
- 
-# file path to directory
-mypath <- file.path(here::here() %>%
-                      dirname(),
-                    "maxent/future_climate_rasters/chelsa2.1_30arcsec/2041-2070_ssp370_GFDL")
-
-# I will load in the files and then get the new names I would like to give them
-
-# load in bioclim layers to be cropped- the original .tif files
-env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = T) %>%
-  # extract the DD variables
-  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE)
-
-# output file names
-output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = F) %>%
-  # extract the DD variables
-  grep("gdd10|gddlgd10|gdgfgd10|ngd10", ., value = TRUE) %>%
-  # get rid of endings
-  gsub(pattern = "_V.2.1.tif", replacement = "") %>%
-  # crop out some detail
-  gsub(pattern = "-esm4_ssp", replacement = "_") %>%
-  tolower()
-
-# more edits to file names
-output.files <- output.files %>%
-  gsub(pattern = "chelsa_", replacement = "") 
-
-```
-
-
 
 # References
 

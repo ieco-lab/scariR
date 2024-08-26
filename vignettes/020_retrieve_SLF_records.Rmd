@@ -8,15 +8,15 @@ output: html_document
 
 # Overview
 
-This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.csv` file of SLF presence records that can be loaded into MaxEnt.
+This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.rds` file of SLF presence records that can be loaded into MaxEnt.
 
-The first step will be to retrieve data from `GBIF` and `lydemapR`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The [lyde()] function within the `Lydemapr` package gives access to nearly one million SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 
+The first step will be to retrieve data from `GBIF` and `lydemapR`. `GBIF` is an open-access platform for biodiversity data that gathers from various databases and citizen science platforms. Data from this source represents globally distributed presences of SLF. The `lyde()` function within the `Lydemapr` package gives access to nearly one million SLF presence records within the United States, largely obtained from biological field surveys by various state and federal departments of agriculture. 
 
 These data will need to be cleaned and tidied during this step. To get to this tidy dataset, the data will be checked for inconsistent and false records. The data will also be spatially thinned so that points are no less than 10km (the resolution of the climate data, 5 arcminutes) to eliminate the effects of sampling bias.
 
 The second step will be to combine these records with data gathered from peer-reviewed literature and from natural history notes. A majority of these records are from established populations of SLF within China, South Korea and southeast Asia. These records are especially important because China and southeast Asia represent the native range for SLF, and there is very little data on the extent of its native range. These records are also important because MaxEnt correlates presence records with the local climate; thus, if there is very little characterization of the native range for this species, it is unlikely that models for SLF will make realistic predictions for its potential niche elsewhere.
 
-The final step of this analysis will be to organize the different datasets into a single `.csv` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined. 
+The final step of this analysis will be to organize the different datasets into a single `.rds` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined. 
 
 Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.  
 
@@ -48,7 +48,7 @@ library(knitr) # nice rmd tables
 
 ```
 
-Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). Package `taxize` will allow the retrieval of taxonomic IDs within `GBIF`. Lastly, `scrubr` allows for easier cleaning of presence records.
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). Package `taxize` will allow the retrieval of taxonomic IDs within `GBIF`. 
 
 # 1. Retrieve data from GBIF and lydemapR and tidy
 
@@ -304,7 +304,9 @@ if (FALSE) {
 
 ```
 
-The raw dataset is composed of over 658,000 records of SLF in the USA alone. Most of these records are concentrated in the mid-atlantic region where the invasion front is progressing. This dataset will also need a run of spatial thinning. First, we will need to narrow these records to fit our needs. At the time of writing this, I am only interested in records that were collected during field surveys, but this can be tuned to the needs of the analysis. So, I will set the collection method equal to the value of "field_survey/management". Obviously, I am also interested in presence records only. Lastly, I will pull records only from areas where SLF have established a population. LydemapR defines an established population as either 2+ adults or the presence of 1 egg mass. 
+The raw dataset is composed of over 658,000 records of SLF in the USA alone. Most of these records are concentrated in the mid-atlantic region where the invasion front is progressing. This dataset will also need a run of spatial thinning. First, we will need to narrow these records to fit our needs. At the time of writing this, I am only interested in records that were collected during field surveys, but this can be tuned to the needs of the analysis. So, I will set the collection method equal to the value of "field_survey/management". Obviously, I am also interested in presence records only. 
+
+Lastly, I will pull records only from areas where SLF have established a population. LydemapR defines an established population as either 2+ adults or the presence of 1 egg mass. 
 
 ```{r select only desired records}
 
@@ -617,9 +619,9 @@ write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs",
 
 ## 3.1- Final spatial thinning
 
-The last step of tidying these data is to perform a second round of spatial thinning. We need to do this again because after joining 3 different datasets together, some of the points may be within 1km of each other. We will still use `scrubr::dedup`, but this time we will ditch `Humboldt` and use `spThin::thin` to spatially thin the occurrence data. `spThin::thin` has a more refined process for spatial thinning and tools for analyzing the output. 
+The last step of tidying these data is to perform a second round of spatial thinning. We need to do this again because after joining 3 different datasets together, some of the points may be within 1km of each other. We will still use `CoordinateCleaner`, but this time we will ditch `Humboldt` and use `spThin::thin` to spatially thin the occurrence data. `spThin::thin` has a more refined process for spatial thinning and tools for analyzing the output. 
 
-The data will be rarefied to 1km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. Again, we will thin to a minimum of 1km distance between points. The results of the run should return the thinned dataset and a text log file of the thinning run.
+The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. Again, we will thin to a minimum of 1km distance between points. The results of the run should return the thinned dataset and a text log file of the thinning run.
 
 Both files will be written to the `vignettes-outputs` folder, which holds intermediate data objects that are not the final versions of the data. 
 
@@ -824,7 +826,3 @@ if(FALSE) {
 3. Huron, N. A., J. E. Behm, and M. R. Helmus. 2022. Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology 5:655.
 
 4. Lin, Y.-S., and J.-R. Liao. 2024, August 1. Multifaceted Investigation into the Absence and Potential Invasion of Spotted Lanternfly (Lycorma delicatula) in Taiwan. Research Square.
-
-
-
-

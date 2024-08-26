@@ -111,7 +111,7 @@ if (FALSE) {
   # initialize webshot by 
  # webshot::install_phantomjs()
   # convert to pdf
-  webshot::webshot(
+  webshot2::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "global_model_info.png")
   )

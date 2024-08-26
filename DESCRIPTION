@@ -3,9 +3,9 @@ Type: Package
 Title: 
 Version: 0.1.0
 Authors@R: c(
-    person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut"),
-    person("Matthew", "Helmus", email = "mrhelmus@temple.edu", role = c("aut", "cre")))
-Description: blarg
+    person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut", "cre"),
+    person("Matthew", "Helmus", email = "mrhelmus@temple.edu", role = c("aut")))
+Description: 
 License: MIT
 Encoding: UTF-8
 LazyData: true
@@ -13,3 +13,57 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Depends: 
     R (>= 2.10)
+Imports:
+    cli,
+    common,
+    CoordinateCleaner,
+    devtools,
+    dismo,
+    dplyr,
+    dsmextra,
+    ENMTools,
+    formattable,
+    gginnards,
+    ggnewscale(== 0.4.10),
+    ggpattern,
+    ggrepel,
+    grid,
+    here,
+    humboldt,
+    kableExtra,
+    kgc,
+    knitr,
+    lydemapr,
+    patchwork,
+    pkgdown,
+    plotROC,
+    pROC,
+    raster,
+    rasterVis,
+    readr,
+    renv,
+    rgbif,
+    rJava,
+    rmarkdown,
+    rnaturalearth,
+    rnaturalearthhires,
+    scales,
+    SDMtune,
+    sf,
+    sp,
+    spThin,
+    stats,
+    stringr,
+    taxize,
+    terra,
+    tibble,
+    tidyr,
+    tidyverse,
+    usethis,
+    utils,
+    viridis,
+    webshot2 
+Suggests:
+    blockCV,
+    tcltk,
+    tidygeocoder
