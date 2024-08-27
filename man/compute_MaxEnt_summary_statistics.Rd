@@ -84,20 +84,31 @@ for a list of summary statistics outputs.
 }
 \details{
 The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC', 'cli', and 'terra'.
-
-model.obj <- entire_easternUSA_model
-model.name <- "entire_easternUSA_model"
-mypath <- file.path(here() \%>\%
-dirname(),
-"maxent/models/slf_easternUSA_entire_step1")
-env.covar.obj <- x_env_covariates
-train.obj <- entire_easternUSA_train
-test.obj <- entire_easternUSA_test
-jk.test.type <- c("train", "test") # used to produce jackknife plots
-plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 }
 \examples{
 
-TBD
+ARGUMENT USAGE:
+model.obj = regional_native_model
+model.name = "regional_native"
+
+mypath <- file.path(here::here() \%>\%
+                    dirname(),
+                     "maxent/models/slf_regional_native_v3")
+
+jk.test.type <- c("train", "test") # used to produce jackknife plots
+plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+
+# EXAMPLE USAGE:
+slfSpread::compute_MaxEnt_summary_statistics(
+model.obj = regional_native_model,
+model.name = "regional_native",
+mypath = mypath,
+create.dir = TRUE, # create subdirectory
+env.covar.obj = x_native_env_covariates, # env covariates raster stacked
+train.obj = regional_native_train, # training data used to create model
+test.obj = regional_native_test, # data you wish to use to test the model
+plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
+jk.test.type = c("train", "test") # types of jackknife curves to be created
+)
 
 }

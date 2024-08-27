@@ -2,22 +2,26 @@
 % Please edit documentation in R/calculate_risk_quadrant.R
 \name{calculate_risk_quadrant}
 \alias{calculate_risk_quadrant}
-\title{Calculate placement on risk quadrant plot}
+\title{Calculate placement of point-wise suitability values on risk quadrant plot}
 \usage{
 calculate_risk_quadrant(suit.x, suit.y, thresh.x, thresh.y)
 }
 \arguments{
-\item{suit.x}{Suitability values comprising the x-axis.}
+\item{suit.x}{Suitability values comprising the x-axis. Global-scale model is
+usually placed along the x-axis.}
 
-\item{suit.y}{Suitability values comprising the y-axis.}
+\item{suit.y}{Suitability values comprising the y-axis. Regional-scale ensemble
+model is usually placed along the x-axis.}
 
-\item{thresh.x}{The threshold for suitability along the x-axis.}
+\item{thresh.x}{The threshold for suitability accompanying the x-axis model
+values.}
 
-\item{thresh.y}{The threshold for suitability along the y-axis.}
+\item{thresh.y}{The threshold for suitability accompanying the y-axis model
+values.}
 }
 \value{
-One of: "extreme", "high", "moderate", or "low". These correspond with our
-interpretation of the risk quadrant plots we have created:
+Returns a data frame. Values will be one of: "extreme", "high", "moderate",
+or "low". These correspond with our interpretation of the risk quadrant plots we have created:
 \itemize{
 \item extreme risk = quadrant 4 (upper right)
 \item high risk = quadrant 3 (upper left)
@@ -26,16 +30,32 @@ interpretation of the risk quadrant plots we have created:
 }
 }
 \description{
-This function calculates the risk of establishment by Lycorma
-delicatula according to our risk quadrant framework (which quadrant a suitability
-value will fall into on an xy-scatter). It requires the input of a matrix of
-suitability values and a corresponding suitability threshold for each of the x
-and y axes for this plot.
+This function categorizes the risk of establishment by Lycorma
+delicatula according to our risk quadrant framework, which is the intersection
+between predictions made by the global and regional-scale models. It will return
+which quadrant a suitability value will fall into on an xy-scatter.
 }
 \details{
-details
+#'The function requires the packages 'dplyr' and 'cli'.
+
+Input data formats:
+\itemize{
+\item param "suit" = matrix of suitability values
+\item param "thresh" = numeric
+}
+
+Input suitability data can be created using the function \code{predict_xy_suitability},
+or extracted from a raster using \code{terra::extract()}, as needed.
 }
 \examples{
-example
+
+I typically use it with dplyr::mutate() to create a new column in a data frame.
+
+IVR_locations_risk <- dplyr::mutate(IVR_locations_risk, risk_1995 = slfSpread::calculate_risk_quadrant(
+ suit.x = IVR_locations_joined$xy_global_1995_rescaled,
+   suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
+   thresh.x = global_MTSS, # this threshold remains the same
+   thresh.y = regional_ensemble_MTSS_1995
+   ))
 
 }

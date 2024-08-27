@@ -97,14 +97,26 @@ order: descriptive columns, x (longitude), y (latitude), cloglog suitability
 Thresh presets list:
 \itemize{
 \item \code{MTP} = Minimum Training Presence
-\item \code{MTP.CC} = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions. Should be the second row in the data frame
+\item \code{MTP.CC} = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions.
 \item \code{MTSS} = Maximum training sensitivity plus specificity
-\item \code{MTSS.CC} = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.  Should be the second row in the data frame
+\item \code{MTSS.CC} = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.
 }
 }
 }
 \examples{
 
-example
+EXAMPLE USAGE:
+xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
+xy.predicted = xy_regional_ensemble_1995,
+thresh = "MTSS", # max training and sensitivity plus specificity
+exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+summary.file = summary_regional_ensemble,
+rescale.name = "xy_regional_ensemble_1995",
+rescale.thresholds = TRUE
+)
+
+# if rescale.thresholds = TRUE, the output will be a list of two data frames that will need to be separated
+xy_regional_ensemble_1995_rescaled_thresholds <- xy_regional_ensemble_1995_rescaled[[2]]
+xy_regional_ensemble_1995_rescaled <- xy_regional_ensemble_1995_rescaled[[1]]
 
 }

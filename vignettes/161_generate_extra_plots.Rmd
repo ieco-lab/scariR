@@ -6,7 +6,7 @@ date: "2024-05-11"
 output: html_document
 ---
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
@@ -16,7 +16,6 @@ library(devtools)
 
 # spatial data handling
 library(terra)
-library(scrubr)
 library(tidygeocoder) # analysis 7
 
 # plot aesthetics
@@ -59,21 +58,7 @@ global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")
 
 
 # load wineries
-load(file.path(here::here(), "data", "wineries.rda"))
-
-IVR_locations <- wineries %>%
-  # tidy
-  dplyr::select(-c(Latitude, Longitude)) %>%
-  dplyr::filter(
-    !is.na(x),
-    !is.na(y)
-    ) %>%
-  # de-duplicate
-  scrubr::dedup(how = "one", tolerance = 0.7) 
-  # I chose the value of the tolerance that retrieved the number of records closest to the number of records in the xy_global_1995 (further down, 1064 records)
-
-# remove unnecessary obj
-rm(wineries)
+IVR_locations <- readr::read_rds(file.path(here::here(), "data", "wineries_tidied.rds"))
 
 ```
 
@@ -153,8 +138,19 @@ if(TRUE) {
     x = slf_populations_geocoded_tidy, 
     file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05_withCountries.csv")
     )
-
+  
+  # also write to rds
+  readr::write_rds(
+    x = slf_populations_geocoded_tidy, 
+    file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_withCountries.rds")
+  )
 }
+
+```
+
+```{r re-import geocoded data}
+
+slf_populations_geocoded_tidy <- readr::read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_withCountries.rds"))
 
 ```
 
@@ -196,6 +192,9 @@ if(TRUE) {
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"),
     file = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.jpg")
   )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"))
     
 }
 
@@ -208,12 +207,12 @@ if(TRUE) {
 # global
 xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
 
-xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
 
 # regional
 xy_regional_ensemble_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
 
-xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled.rds"))
+xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
 
 ```
 
@@ -222,12 +221,12 @@ xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "d
 # global
 xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
 
-xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
 
 # regional
 xy_regional_ensemble_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
 
-xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp370_xy_pred_suit_rescaled_thresholds.rds"))
+xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
 
 ```
 

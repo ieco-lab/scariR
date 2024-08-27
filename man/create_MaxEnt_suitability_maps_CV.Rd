@@ -170,11 +170,31 @@ Map style default options:
 }
 }
 \examples{
-# x---------------------------------------------------------------------------
 
+# ARGUMENT USAGE:
+mypath <- file.path(here::here() \%>\%
+                    dirname(),
+                     "maxent/models/slf_global_v3")
 
-# troubleshooting-------------------------------------------------------------
+map_style <- list(
+xlab("longitude"),
+ylab("latitude"),
+theme_classic()
+)
 
-
+# EXAMPLE USAGE:
+slfSpread::create_MaxEnt_suitability_maps_CV(
+model.obj = global_model,
+model.name = "global",
+mypath = mypath,
+create.dir = FALSE,
+env.covar.obj = x_global_126_env_covariates,
+describe.proj = "globe_2041-2070_GFDL_ssp126", # name of area or time period projected to
+clamp.pred = TRUE,
+thresh = c("MTP", "MTSS"),
+map.thresh = TRUE, # whether thresholded versions of these maps should be created
+map.thresh.extra = "MTP",
+summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+)
 
 }

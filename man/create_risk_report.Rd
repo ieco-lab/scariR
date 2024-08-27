@@ -2,7 +2,7 @@
 % Please edit documentation in R/create_risk_report.R
 \name{create_risk_report}
 \alias{create_risk_report}
-\title{Creates}
+\title{Creates a localized report on the risk of establishment of Lycorma delicatula}
 \usage{
 create_risk_report(
   locality.iso,
@@ -23,13 +23,13 @@ and supply the name of that province in \code{locality.name}}
 
 \item{locality.name}{The name of the country, state or province for which to
 generate the report. This is optional if the report is for a country, but
-required if the report is for a state or province. Avoid special characters,
+required if the report is for a state/province. Avoid special characters,
 but please include those used used in the ethnic naming (ex: Côte d'Ivoire).}
 
 \item{locality.type}{One of "country" or "states_provinces". If you do
 not know the state or province you are looking for, you might create a report
-at the country level and then look at the return for the name of the provinces
-/ states included.}
+at the country level and then look at the return for the name of the state/province
+included.}
 
 \item{save.report}{Logical. Should the report be saved to file? File location
 specified by \code{mypath}.}
@@ -49,7 +49,7 @@ directory for the report? If TRUE, the main folder will be created for
 the model output. If FALSE (ie, the sub directory already exists), no directory
 will be created.}
 
-\item{map.style}{List, default is NA. This is used to apply ggplot aesthetics
+\item{map.style}{List. This is used to apply ggplot aesthetics
 to the mapped outputs. If specified, the given value should be a list of
 ggplot aesthetic options. If not, the built-in default list will be used
 (see details). See examples for usage.}
@@ -62,35 +62,39 @@ drawn and suitabiltiy prediction method is assumed to be simple (point-wise).}
 }
 \value{
 returns a report in list format. If save.report = TRUE, will also save the
-report to file at destination specified by \code{mypath}. The outputs in the returned list
-object include:
+report to file at destination specified by \code{mypath}. The outputs returned to
+the global env in a list object include:
 \itemize{
-\item viticultural_regions_list - a list of known important wine regions within the locality
-\item risk_maps - a current and future map of risk for L delicatula establishment based on 4 climate models
+\item viticultural_regions_list - a list of known important wine regions within the locality with predicted suitability values and levels.
+\item risk_maps - a current and future map of risk for L delicatula establishment. The CMIP6 predictions are based on the mean of the three ssp scenarios
 \item viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality.
 \item viticultural_risk_table = a table quantifying the risk plot for viticultural areas
 \item range_shift_map = a map of potential range expansion for L delicatula under climate change
 }
 
 Some maps may be formatted strangely because of a country's outlying territories.
-You may need to further crop the plot using xlim and ylim (see examples).
+You may need to further crop the plot using \code{xlim()} and \code{ylim()} (see examples).
 
 Use caution, this function will overwrite previous files output for the same locality.
 }
 \description{
-blarg
+This function creates a report at the country or state/province level
+for the risk of establishment of Lycorma delicatula. The report covers the major
+data outputs from this R package analysis, including current and future risk maps,
+range shift maps, risk plots and risk tables.
 }
 \details{
 Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 
-Note that this function performs downloads from \href{https://www.naturalearthdata.com/}{naturalearthdata.com}.
-The function will automatically create subfolders in \code{root/data-raw}
-containing the shapefiles.
+Note that this function performs downloads from
+\href{https://www.naturalearthdata.com/}{naturalearthdata.com}, if the data do not
+already exist in \code{root/data-raw}.The function will automatically create
+subfolders in \code{root/data-raw} containing the downloaded shapefiles.
 
 This function depends on certain files that have been distributed with this
 package, which will be imported from \code{root/R/sysdata.rda} when the function
 is run. The code to create \code{sysdata.rda} can be found in
-\verb{root/vignettes/160_generate_risk_report.qmd}.
+\verb{root/vignettes/160_generate_risk_report.Rmd}.
 
 Here is a list of the files included in \code{sysdata.rda}:
 \itemize{
@@ -122,6 +126,24 @@ These rasters are located in \code{root/vignette-outputs/rasters}, These are the
 }
 }
 \examples{
+
+# EXAMPLE USAGE:
+slfSpread::create_risk_report(
+locality.iso = "aus",
+locality.name = "australia",
+locality.type = "country",
+mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
+create.dir = FALSE,
+save.report = FALSE,
+buffer.dist = 20000 # this is only used for buffered predictions, default is NA for simple predictions.
+)
+
+# ARGUMENT USAGE:
+map_style <- list(
+xlab("longitude"),
+ylab("latitude"),
+theme_classic()
+)
 
 The output is in list format, so it should be called using this notation:
 

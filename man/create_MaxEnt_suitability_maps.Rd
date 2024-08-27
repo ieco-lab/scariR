@@ -163,11 +163,31 @@ Map style default options:
 }
 }
 \examples{
-# x---------------------------------------------------------------------------
 
+# ARGUMENT USAGE:
+mypath <- file.path(here::here() \%>\%
+                    dirname(),
+                     "maxent/models/slf_regional_native_v3")
 
-# troubleshooting-------------------------------------------------------------
+map_style <- list(
+xlab("longitude"),
+ylab("latitude"),
+theme_classic()
+)
 
-
+# EXAMPLE USAGE:
+slfSpread::create_MaxEnt_suitability_maps(
+ model.obj = regional_native_model,
+ model.name = "regional_native",
+ mypath = mypath,
+ create.dir = FALSE,
+ env.covar.obj = x_global_370_env_covariates,
+ describe.proj = "globe_2041-2070_GFDL_ssp370", # name of area or time period projected to
+ clamp.pred = TRUE,
+ thresh = c("MTP", "10_percentile", "MTSS"),
+ map.thresh = TRUE, # whether thresholded versions of these maps should be created
+ map.thresh.extra = "MTP",
+ summary.file = file.path(mypath, "regional_native_summary.csv")
+)
 
 }

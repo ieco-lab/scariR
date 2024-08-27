@@ -98,7 +98,34 @@ The xy coordinates do not need to be within the training area for the model, but
 clamping should be applied if they are not within the training are (clamp.pred = TRUE).
 }
 \examples{
-examples
 
+EXAMPLE USAGE:
+
+# simple predict method
+slfSpread::predict_xy_suitability_CV(
+xy.obj = IVR_regions,
+xy.type = "IVR regions",
+env.covar.obj = x_global_hist_env_covariates,
+model.obj = global_model,
+mypath = mypath,
+clamp.pred = TRUE,
+predict.type = c("cloglog", "logistic"),
+output.name = "global_wineries_1981-2010"
+)
+
+# buffered predict method
+slfSpread::predict_xy_suitability_CV(
+xy.obj = IVR_regions,
+xy.type = "IVR regions",
+env.covar.obj = x_global_hist_env_covariates,
+model.obj = global_model,
+mypath = mypath,
+clamp.pred = TRUE,
+predict.type = c("cloglog", "logistic"),
+output.name = "global_wineries_1981-2010",
+buffer.pred = TRUE,
+buffer.dist = 20000, # in meters
+buffer.fun = c("min", "max")
+)
 
 }
