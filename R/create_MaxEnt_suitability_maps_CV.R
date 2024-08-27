@@ -143,12 +143,32 @@
 #'Use caution: will overwrite previous files by default.
 #'
 #'@examples
-#'# x---------------------------------------------------------------------------
 #'
+#'# ARGUMENT USAGE:
+#'mypath <- file.path(here::here() %>%
+#'                     dirname(),
+#'                      "maxent/models/slf_global_v3")
 #'
-#'# troubleshooting-------------------------------------------------------------
+#'map_style <- list(
+#' xlab("longitude"),
+#' ylab("latitude"),
+#' theme_classic()
+#' )
 #'
-#'
+#'# EXAMPLE USAGE:
+#'slfSpread::create_MaxEnt_suitability_maps_CV(
+#'model.obj = global_model,
+#'model.name = "global",
+#'mypath = mypath,
+#'create.dir = FALSE,
+#'env.covar.obj = x_global_126_env_covariates,
+#'describe.proj = "globe_2041-2070_GFDL_ssp126", # name of area or time period projected to
+#'clamp.pred = TRUE,
+#'thresh = c("MTP", "MTSS"),
+#'map.thresh = TRUE, # whether thresholded versions of these maps should be created
+#'map.thresh.extra = "MTP",
+#'summary.file = file.path(mypath, "global_summary_all_iterations.csv")
+#')
 #'
 #'@export
 create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, thresh = NA, map.thresh = FALSE, map.thresh.extra = NA, map.style = NA, summary.file = NA) {
@@ -157,33 +177,33 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
   # ensure objects are character type
   if (is.character(model.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'model.name' must be of type 'character'")
+    cli::cli_abort("Parameter 'model.name' must be of type 'character'")
     stop()
   }
   if (is.character(predict.fun) == FALSE) {
-    cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
+    cli::cli_abort("Parameter 'predict.fun' must be of type 'character'")
     stop()
   }
   if (is.character(predict.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'predict.type' must be of type 'character'")
+    cli::cli_abort("Parameter 'predict.type' must be of type 'character'")
     stop()
   }
   if (is.character(mypath) == FALSE) {
-    cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
+    cli::cli_abort("Parameter 'mypath' must be of type 'character'")
     stop()
   }
   if (is.character(describe.proj) == FALSE) {
-    cli::cli_alert_danger("Parameter 'describe.proj' must be of type 'character'")
+    cli::cli_abort("Parameter 'describe.proj' must be of type 'character'")
     stop()
   }
 
   # ensure objects are logical type
   if (is.logical(clamp.pred) == FALSE) {
-    cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
+    cli::cli_abort("Parameter 'clamp.pred' must be of type 'logical'")
     stop()
   }
   if (is.logical(map.thresh) == FALSE) {
-    cli::cli_alert_danger("Parameter 'map.thresh' must be of type 'logical'")
+    cli::cli_abort("Parameter 'map.thresh' must be of type 'logical'")
     stop()
   }
 
@@ -192,7 +212,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
     predict_type <- predict.type
 
   } else {
-    cli::cli_alert_danger("Parameter 'predict.type' must at least contain 'cloglog'")
+    cli::cli_abort("Parameter 'predict.type' must at least contain 'cloglog'")
     stop()
   }
 
@@ -213,7 +233,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
     dir.create(mypath, "plots")
 
   } else {
-    cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+    cli::cli_abort("'create.dir' must be of type 'logical'")
     stop()
 
   }
@@ -250,7 +270,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
 
     # otherwise, warn that given values must be a list
   } else {
-    cli::cli_alert_danger("parameter 'map.style' must be of type 'list'")
+    cli::cli_abort("parameter 'map.style' must be of type 'list'")
     stop()
 
   }
@@ -264,7 +284,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
     for (b in predict_type) {
 
       # initialization message
-      print(paste0("predicting raster: ", a, " | ", b))
+      cli::cli_alert_info(paste0("predicting raster: ", a, " | ", b))
 
       # use predict function
       SDMtune::predict(
@@ -282,7 +302,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
       )
 
       # message of completion
-      print(paste0(a, " | ", b, " raster created and saved at: ", mypath))
+      cli::cli_alert_success(paste0(a, " | ", b, " raster created and saved at: ", mypath))
 
 
       # load in predictions
@@ -310,7 +330,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
       # end of loop-------------------------------------------------------------
 
       # message of completion
-      print(paste0("figure created for raster: ", a, " | ", b))
+      cli::cli_alert_success(paste0("figure created for raster: ", a, " | ", b))
 
       # remove raster objects
       rm(model_suit)
@@ -397,9 +417,9 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         # print messages--------------------------------------------------------
 
         # loop start
-        print(paste0("begin threshold raster and map: ", i, " | ", thresh_name))
+        cli::cli_alert_info(paste0("begin threshold raster and map: ", i, " | ", thresh_name))
         # thresh value
-        print(paste0("threshold value for ", thresh_name, ": ", thresh_value))
+        cli::cli_alert_info(paste0("threshold value for ", thresh_name, ": ", thresh_value))
 
         # Create binary raster with threshold-----------------------------------
 
@@ -423,7 +443,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
         )
 
         # message of completion
-        print(paste0(i, " | ", thresh_name, " binary raster created and saved at: ", mypath))
+        cli::cli_alert_success(paste0(i, " | ", thresh_name, " binary raster created and saved at: ", mypath))
 
         # Create mask raster for thresholded raster figure----------------------
 
@@ -447,7 +467,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
           )
 
         # message of completion
-        print(paste0(i, " | ", thresh_name, " mask layer raster created and saved at: ", mypath))
+        cli::cli_alert_success(paste0(i, " | ", thresh_name, " mask layer raster created and saved at: ", mypath))
 
 
         # Create thresholded suitability map------------------------------------
@@ -527,14 +547,14 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
             )
 
           # message of completion
-          print(paste0("Figure created for raster: ", i, " | ", thresh_name, "\nExtra threshold layer: ", map.thresh.extra_name))
+          cli::cli_alert_success(paste0("Figure created for raster: ", i, " | ", thresh_name, "\nExtra threshold layer: ", map.thresh.extra_name))
 
 
           # otherwise, plot as normal and without that extra threshold in the map
         } else {
 
 
-          cli::cli_alert_danger("Extra threshold not mapped. If additional threshold desired, parameter 'map.thresh.extra' must be defined and an element present in argument 'thresh'.")
+          cli::cli_abort("Extra threshold not mapped. If additional threshold desired, parameter 'map.thresh.extra' must be defined and an element present in argument 'thresh'.")
 
           ## plot---------------------------------------------------------------
 
@@ -560,7 +580,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
                  dpi = "retina")
 
           # message of completion
-          print(paste0("figure created for raster: ", i, " | ", thresh_name))
+          cli::cli_alert_success(paste0("figure created for raster: ", i, " | ", thresh_name))
 
         }
 

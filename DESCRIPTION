@@ -1,6 +1,6 @@
 Package: slfSpread
 Type: Package
-Title: 
+Title: "Research Compendium: Multi-scale modeling of the spotted lanternfly Lycorma delicatula (Hemiptera: Fulgoridae) reveals displaced risk to viticulture and regional range expansion due to climate change"
 Version: 0.1.0
 Authors@R: c(
     person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut", "cre"),
@@ -62,6 +62,7 @@ Imports:
     usethis,
     utils,
     viridis,
+    webshot,
     webshot2 
 Suggests:
     blockCV,

@@ -72,7 +72,33 @@
 #'be returned per predict.type, predict.fun and buffer.fun combination.
 #'
 #'@examples
-#'examples
+#'
+#'#'# simple predict method
+#'slfSpread::predict_xy_suitability(
+#' xy.obj = IVR_regions,
+#' xy.type = "IVR regions",
+#' env.covar.obj = x_regional_native_hist_env_covariates,
+#' model.obj = regional_native,
+#' mypath = mypath,
+#' clamp.pred = TRUE,
+#' predict.type = c("cloglog", "logistic"),
+#' output.name = "regional_native_wineries_1981-2010"
+#' )
+#'
+#' # buffered predict method
+#'slfSpread::predict_xy_suitability(
+#' xy.obj = IVR_regions,
+#' xy.type = "IVR regions",
+#' env.covar.obj = x_regional_native_hist_env_covariates,
+#' model.obj = regional_native,
+#' mypath = mypath,
+#' clamp.pred = TRUE,
+#' predict.type = c("cloglog", "logistic"),
+#' output.name = "regional_native_wineries_1981-2010",
+#' buffer.pred = TRUE,
+#' buffer.dist = 20000, # in meters
+#' buffer.fun = c("min", "max")
+#' )
 #'
 #'
 #'@export

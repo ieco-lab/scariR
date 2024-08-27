@@ -12,13 +12,13 @@ editor_options:
 
 In the last vignette, we downloaded and tided *Lycorma delicatula* occurrence data from multiple sources. We tidied, harmonized and took measures to reduce spatial autocorrelation without sacrificing spread in our dataset. We also combined these data into a single presence dataset will be used to perform SDM. We now need to retrieve the other type of data that is necessary for SDM, environmental covariates. We are specifically interested in the effects of climate change, so we will be focusing heavily on derivatives of temperature and precipitation to explain *Lycorma delicatula* distributions.
 
-This vignette will walk through the process of downloading and tidying these climate data. We will be downloading the data from [CHELSA](https://chelsa-climate.org/), which is a high-resolution (30 arc-seconds, ~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables. These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. 
+This vignette will walk through the process of downloading and tidying these climate data. We will be downloading the data from [CHELSA](https://chelsa-climate.org/), which is a high-resolution (30 arc-seconds, \~1km) land surface dataset provided by the Swiss Federal Institute for Forest, Snow and Landscape Research. The specific data we are interested in is the suite of 19 "bioclimatic" variables. These [bioclim variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) are biologically relevant climate features derived from temperature and precipitation. CHELSA also makes the same variables available as climate change predictions, using a subset of the available [CMIP6](https://pcmdi.llnl.gov/CMIP6/) models. I will use 3 ssp scenarios (126, 370, 585) from the GFDL-ESM4 model (read ahead for an explanation of these).
 
 First, I will download the data from CHELSA into a local library. I will then tidy, harmonize and put the datasets in the proper format for MaxEnt. We will then choose the covariates for our models via an assessment of the level of co-linearity between the rasters. I will also consider biological relevance in selecting the final set of covariates.
 
 # Setup
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 library(tidyverse)  #data manipulation
 
@@ -37,16 +37,16 @@ library(patchwork)
 
 # 1. Retrieve CHELSA bioclim rasters
 
-First, I will download the bioclim data into a local directory. I recommend downloading these data into a separate directory from this package. Since I am using a directory outside of the immediate package, I will create an object to define the file path at the beginning of each chunk. This pathing will still use `here::here()` to start at the package root folder. First, I will download the historical climate data from CHELSA. The URLs to the bioclim data that were downloaded from CHELSA are stored in `data-raw/CHELSA` within the package directory. I will be using two different versions of the CHELSA bioclim variables for my analysis: 
+First, I will download the bioclim data into a local directory. I recommend downloading these data into a separate directory from this package. Since I am using a directory outside of the immediate package, I will create an object to define the file path at the beginning of each chunk. This pathing will still use `here::here()` to start at the package root folder. First, I will download the historical climate data from CHELSA. The URLs to the bioclim data that were downloaded from CHELSA are stored in `data-raw/CHELSA` within the package directory. I will be using two different versions of the CHELSA bioclim variables for my analysis:
 
-1. Historical- time period 1981-2010
-2. Climate change predictions- time period 2041-2070, GFDL-ESM4 model, Ssp scenarios 126, 370, and 585.
+1.  Historical- time period 1981-2010
+2.  Climate change predictions- time period 2041-2070, GFDL-ESM4 model, Ssp scenarios 126, 370, and 585.
 
 The CHELSA download directory for each group of [bioclim variables](https://envicloud.wsl.ch/#/?prefix=chelsa%2Fchelsa_V2%2FGLOBAL%2F) also contains 27 other distinct climatologies, available for both historical datasets and climate change models. The URLs for these were also downloaded, as some of them might be applicable to this analysis. For now, we will download the 19 bioclim variables. If you would like to download any of the additional climatologies available from CHELSA, see code for this in the Appendix section of this vignette. Those chunks should be run after the initial run of all chunks before section 2.2. After running these chunks, continue from chunk "loop to tidy rasters" in section 2.2.
 
 ## 1.1 Historical
 
-The best approach I found to download these data was to create a loop to open each URL in a web browser (be ready, as it literally just opens whatever URLs are selected from the list in a browser). 
+The best approach I found to download these data was to create a loop to open each URL in a web browser (be ready, as it literally just opens whatever URLs are selected from the list in a browser).
 
 ```{r download historical CHELSA data}
 
@@ -185,7 +185,7 @@ I will mask the CHELSA rasters using a dataset called ["global access to cities"
 
 ## 2.1 Load in files
 
-```{r set wd}
+```{r set wd 1}
 
 # set path to external directory
 mypath <- file.path(here::here() %>% 
@@ -206,7 +206,7 @@ global_bio1 <- terra::rast(x = file.path(mypath, "originals", "CHELSA_bio1_1981-
 
 We will get a list of the files that I need to modify. We will also create an object containing the new names assigned to the files to simplify the naming.
 
-```{r get file names}
+```{r get file names 1}
 
 # I will load in the files and then get the new names I would like to give them
 
@@ -233,7 +233,7 @@ Now that we have our files and reference layers loaded in and names chosen, we c
 
 ## 2.2 Prepare reference layers
 
-The first step is to tidy the reference layers `global_atc` and `global_bio1`. These need to be cropped to the same extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) has since expired. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. The EPSG number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. Lastly, I need to ensure the origins are the same. 
+The first step is to tidy the reference layers `global_atc` and `global_bio1`. These need to be cropped to the same extent. We will use the smallest extent shared between both layers. We also need to check on the correct CRS to use because the `proj4` string notation (which I had previously used) has since expired. The `proj4` string I had previously been using was `"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"`. The EPSG number that matches the previous `proj4` string is `EPSG:4326`. We will use this notation from now on. Lastly, I need to ensure the origins are the same.
 
 In this chunk, we will create 2 reference layers. The `main_layer (global_bio1)` will be used for resampling the data, while the `mask_layer (global_atc)` will be used for masking.
 
@@ -288,9 +288,9 @@ terra::crs(main_layer)
 
 ## 2.3 Tidying historical data
 
-Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326`, and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`. 
+Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also set the CRS to `EPSG:4326`, and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`.
 
-```{r set wd}
+```{r set wd 2}
 
   mypath <- file.path(here::here() %>% 
                         dirname(),
@@ -300,15 +300,15 @@ Here is where we get into tidying the data. We will crop the rasters using the e
 
 In this first chunk, I will:
 
-* crop the layers to the correct extent
-* mask the layers to the outlines of the continents
-* set the CRS to `EPSG:4326`
-* set the origin to match the reference layers
-* crop the layers again to ensure the aggregation doesn't increase the extent
+-   crop the layers to the correct extent
+-   mask the layers to the outlines of the continents
+-   set the CRS to `EPSG:4326`
+-   set the origin to match the reference layers
+-   crop the layers again to ensure the aggregation doesn't increase the extent
 
 This chunk will take a very long time to run... so maybe find a good book to read.
 
-```{r loop to tidy rasters}
+```{r loop to tidy rasters- historical}
 
 if(FALSE) {
   
@@ -362,9 +362,9 @@ if(FALSE) {
 
 ```
 
-We will convert the rasters to the `.ascii` format required by MaxEnt. 
+We will convert the rasters to the `.ascii` format required by MaxEnt.
 
-```{r get file names}
+```{r get file names 2}
 
 # directory of files to modify
   env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
@@ -378,7 +378,7 @@ We will convert the rasters to the `.ascii` format required by MaxEnt.
 
 ```
 
-```{r conversion of .tif to .asc files}
+```{r conversion of .tif to .asc files- hist}
 
 if(FALSE){
   
@@ -445,9 +445,9 @@ These data can now be used in a MaxEnt model!
 
 ## 2.4 Tidying CMIP6 data
 
-Here, we will go through all of the above steps in section 2.3 for the CMIP6 versions of the rasters. 
+Here, we will go through all of the above steps in section 2.3 for the CMIP6 versions of the rasters.
 
-```{r set wd}
+```{r set wd 3}
  
 # file path to directory
 mypath <- file.path(here::here() %>% 
@@ -460,7 +460,7 @@ mypath <- file.path(here::here() %>%
 
 First, I will get the file names and create folders to hold the new copies per ssp scenario.
 
-```{r create subdirectories}
+```{r create subdirectories- ssp126}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp126_GFDL", "v1"))
@@ -473,7 +473,7 @@ dir.create(file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names}
+```{r get file names 3}
 
 # I will load in the files and then get the new names I would like to give them
 
@@ -496,7 +496,7 @@ output.files <- output.files %>%
 
 #### tidy
 
-```{r loop to tidy rasters}
+```{r loop to tidy rasters- ssp126}
 
 if(FALSE) {
   
@@ -554,7 +554,7 @@ if(FALSE) {
 
 ```
 
-```{r get file names}
+```{r get file names 4}
 
  # directory of files to modify
   env.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
@@ -569,7 +569,7 @@ if(FALSE) {
 
 This code chunk was added later so I will only grab the rasters I need downstream.
 
-```{r conversion of .tif to .asc files}
+```{r conversion of .tif to .asc files- ssp126}
 
 if(FALSE){
   
@@ -596,7 +596,7 @@ if(FALSE){
 
 ```
 
-```{r on-demand aggregation of rasters}
+```{r on-demand aggregation of rasters- ssp126}
 
 if (FALSE) {
   
@@ -629,9 +629,9 @@ if (FALSE) {
 
 ```
 
-### SSP370
+### SSP370 {.hidden}
 
-```{r create subdirectories}
+```{r create subdirectories- ssp370}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1"))
@@ -644,7 +644,7 @@ dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names}
+```{r get file names 5}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -667,7 +667,7 @@ output.files <- output.files %>%
 
 #### tidy
 
-```{r loop to tidy rasters}
+```{r loop to tidy rasters- ssp370}
 
 if(FALSE) {
   
@@ -722,7 +722,7 @@ if(FALSE) {
 
 ```
 
-```{r get file names}
+```{r get file names 6}
 
   # directory of files to modify
   env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
@@ -735,7 +735,7 @@ if(FALSE) {
 
 ```
 
-```{r conversion of .tif to .asc files}
+```{r conversion of .tif to .asc files- ssp370}
 
 if(FALSE){
   
@@ -762,7 +762,7 @@ if(FALSE){
 
 ```
 
-```{r on-demand aggregation of rasters}
+```{r on-demand aggregation of rasters- ssp370}
 
 if (FALSE) {
   
@@ -797,9 +797,9 @@ if (FALSE) {
 
 ```
 
-### SSP585
+### SSP585 {.hidden}
 
-```{r create subdirectories}
+```{r create subdirectories- ssp585}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1"))
@@ -812,7 +812,7 @@ dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names}
+```{r get file names 7}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -833,7 +833,7 @@ output.files <- output.files %>%
 
 ```
 
-```{r loop to tidy rasters}
+```{r loop to tidy rasters- ssp 585}
 
 if(FALSE) {
   
@@ -890,7 +890,7 @@ if(FALSE) {
 
 #### tidy
 
-```{r get file names}
+```{r get file names 8}
 
   # directory of files to modify
   env.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
@@ -903,7 +903,7 @@ if(FALSE) {
 
 ```
 
-```{r conversion of .tif to .asc files}
+```{r conversion of .tif to .asc files- ssp585}
 
 if(TRUE){
   
@@ -930,7 +930,7 @@ if(TRUE){
 
 ```
 
-```{r on-demand aggregation of rasters}
+```{r on-demand aggregation of rasters- ssp585}
 
 if (FALSE) {
   
@@ -969,9 +969,9 @@ if (FALSE) {
 
 Now that these different climatologies have been tidied for use, we need to decide which variables are the most logical to use in a model for *Lycorma delicatula*. This can be done by assessing the level of co-linearity between the variables and assessing their biological relevance to SLF.
 
-Before using any of these climatologies in a MaxEnt model, we need to assess their level of co-linearity (the amount the layers are correlated to each other). I expect that most of them will be, as they are all derived from either temperature or precipitation. I will be using a threshold of 0.7 pearson's correlation or lower to select which variables I use in downstream models. I will only perform a correlation analysis on the historical versions of the rasters, as the climate change versions of the variables are likely to display the same trends. I will use this analysis to decide what covariates go into both the historical and interpolated (climate change) models. 
+Before using any of these climatologies in a MaxEnt model, we need to assess their level of co-linearity (the amount the layers are correlated to each other). I expect that most of them will be, as they are all derived from either temperature or precipitation. I will be using a threshold of 0.7 pearson's correlation or lower to select which variables I use in downstream models. I will only perform a correlation analysis on the historical versions of the rasters, as the climate change versions of the variables are likely to display the same trends. I will use this analysis to decide what covariates go into both the historical and interpolated (climate change) models.
 
-While it is very important to reduce co-linearity, this cannot be the only metric used to select covariates for species distribution models. The biology of the target species is arguably more important than reducing co-linearity. A MaxEnt model that has not been informed by the biology of *Lycorma delicatula* will likely produce misleading or wrong predictions of its realized niche. Our process of selecting covariates will also need to be informed by the literature. For example, there is evidence that minimum winter temperature has a significantly negative impact on egg survival (Lee et.al, 2011). 
+While it is very important to reduce co-linearity, this cannot be the only metric used to select covariates for species distribution models. The biology of the target species is arguably more important than reducing co-linearity. A MaxEnt model that has not been informed by the biology of *Lycorma delicatula* will likely produce misleading or wrong predictions of its realized niche. Our process of selecting covariates will also need to be informed by the literature. For example, there is evidence that minimum winter temperature has a significantly negative impact on egg survival (Lee et.al, 2011).
 
 We will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables. We will be using `terra::aggregate()` to combine cells in a 2x2 grid fashion and take the mean of the 4 cells.
 
@@ -1093,9 +1093,9 @@ write.csv(x = env.cor4, file = file.path(here::here(), "vignette-outputs", "data
 
 The correlations are now more intuitive to read, so they are ready to be analyzed.
 
-### 3.2 Covariate selection. 
+### 3.2 Covariate selection.
 
-Now that they are in a more readable format and have been converted to an absolute scale, we can create heatmaps to display these values and look for trends. I will create a heatmap of both the raw values and of a threshold of any above 0.7. 
+Now that they are in a more readable format and have been converted to an absolute scale, we can create heatmaps to display these values and look for trends. I will create a heatmap of both the raw values and of a threshold of any above 0.7.
 
 ```{r prepare data to visualize}
 
@@ -1169,7 +1169,7 @@ var.renames <- c(
 
 ```
 
-I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature and precipitation) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power, and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011). 
+I have found that choosing covariates can be rather ad-hoc, so I developed what I believe is the best-fit methodology for choosing covariates out of much practice. First, I look at the different groupings of covariates (those based on temperature and precipitation) and choose a representative from each group. The ideal representative is highly correlated with most of the others in the group, which indicates its predictive power, and represents a generality of its group (ie, the mean yearly average). In this case, I chose mean temperature of the coldest quarter and precip (bio 11 and 12). Besides its correlation values, mean temp of the coldest quarter is highly impactful for the survival of SLF eggs (Lee et.al, 2011).
 
 I will save this plot and produce a binarized version before I continue choosing variables. This way, the cutoff is clearer and the choice is more obvious.
 
@@ -1210,7 +1210,7 @@ env.cor6$value <- cut(env.cor6$value, breaks = c(0, 0.709, 1), labels = c("0.7 o
 
 ```
 
-Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarter (bio 11) is above 0.7 correlated with all other temp-based variables, except mean diurnal range (bio 2). Meanwhile, annual precipitation is highly correlated with all precipitation based variables, except precipitation seasonality (bio 12). These two variables were also chosen. 
+Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarter (bio 11) is above 0.7 correlated with all other temp-based variables, except mean diurnal range (bio 2). Meanwhile, annual precipitation is highly correlated with all precipitation based variables, except precipitation seasonality (bio 12). These two variables were also chosen.
 
 ```{r save binary heatmap}
 
@@ -1263,20 +1263,36 @@ bio1_plot / gdd10_plot
 
 The final 4 variables have been selected for SDM of Lycorma delicatula, which include "mean diurnal range", "mean temperature of the coldest quarter", "annual precipitation", and "precipitation seasonality". These covariates can be projected for climate change and are biologically relevant to our target species. In the next vignette, we will crop these covariates to the appropriate spatial scale to run a global-scale model. We will also create other necessary datasets for this model.
 
+# References
+
+Huron, N. A., Behm, J. E. & Helmus, M. R. 2022. Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5:1–11. <https://doi.org/10.1038/s42003-022-03580-w>
+
+Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. <https://doi.org/10.1038/sdata.2017.122>
+
+Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. <https://doi.org/10.16904/envidat.228.v2.1>
+
+Krasting, John P.; John, Jasmin G; Blanton, Chris; McHugh, Colleen; Nikonov, Serguei; Radhakrishnan, Aparna; Rand, Kristopher; Zadeh, Niki T.; Balaji, V; Durachta, Jeff; Dupuis, Christopher; Menzel, Raymond; Robinson, Thomas; Underwood, Seth; Vahlenkamp, Hans; Dunne, Krista A.; Gauthier, Paul PG; Ginoux, Paul; Griffies, Stephen M.; Hallberg, Robert; Harrison, Matthew; Hurlin, William; Malyshev, Sergey; Naik, Vaishali; Paulot, Fabien; Paynter, David J; Ploshay, Jeffrey; Reichl, Brandon G; Schwarzkopf, Daniel M; Seman, Charles J; Silvers, Levi; Wyman, Bruce; Zeng, Yujin; Adcroft, Alistair; Dunne, John P.; Dussin, Raphael; Guo, Huan; He, Jian; Held, Isaac M; Horowitz, Larry W.; Lin, Pu; Milly, P.C.D; Shevliakova, Elena; Stock, Charles; Winton, Michael; Wittenberg, Andrew T.; Xie, Yuanyu; Zhao, Ming (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP. Version YYYYMMDD[1].Earth System Grid Federation. <https://doi.org/10.22033/ESGF/CMIP6.1407>
+
+Lee, J.-S., I.-K. Kim, S.-H. Koh, S. J. Cho, S.-J. Jang, S.-H. Pyo, and W. I. Choi. 2011. Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology 14:123–125.
+
+Maino, J. L., R. Schouten, J. C. Lye, P. A. Umina, and O. L. Reynolds. 2022. Mapping the life-history, development, and survival of spotted lantern fly in occupied and uninvaded ranges. Biological Invasions 24:2155–2167. 10.1007/s10530-022-02764-z
+
+Weiss, D. J., A. Nelson, H. S. Gibson, W. Temperley, S. Peedell, A. Lieber, M. Hancher, et al. 2018. “A Global Map of Travel Time to Cities to Assess Inequalities in Accessibility in 2015.” Nature 553 (7688): 333–36. <https://doi.org/10.1038/nature25181>.
+
 # Appendix
 
-## Additional environmental covariates  
+## Additional environmental covariates
 
 Along with the 19 traditional bioclimatic variables, CHELSA has created about [29 additional variables](https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf) that may help to explain the SLF invasion in N. America. I will include 4 metrics of growing degree day. Several studies have attempted to characterize the lower threshold for egg development and have found numbers between 8-13C (Maino et.al, 2022). Maino et.al also found that egg mortality increased significantly under 10C (Maino et.al, 2022). We will include various measures of degree day with a 10C threshold. Here are the additional variables I will add to the models:
 
-* `GDD10`: Growing degree days heat sum above 10°C
-* `NGD10`: Number of growing degree days above 10°C
-* `GDGFGD10`: First growing degree day above 10°C
-* `GDDLGD10`: Last growing degree day above 10°C
+-   `GDD10`: Growing degree days heat sum above 10°C
+-   `NGD10`: Number of growing degree days above 10°C
+-   `GDGFGD10`: First growing degree day above 10°C
+-   `GDDLGD10`: Last growing degree day above 10°C
 
 ### Download historical DD variables
 
-```{r download historical CHELSA data}
+```{r download historical CHELSA data- DD variables}
 
 if(FALSE) {
 
@@ -1304,21 +1320,3 @@ if(FALSE) {
 ```
 
 Files were placed in `"maxent/historical_climate_rasters/chelsa2.1_30arcsec/originals"`.
-
-# References
-
-Huron, N. A., Behm, J. E. & Helmus, M. R. 2022. Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5:1–11. https://doi.org/10.1038/s42003-022-03580-w
-
-Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. https://doi.org/10.1038/sdata.2017.122
-
-Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. https://doi.org/10.16904/envidat.228.v2.1
-
-Krasting, John P.; John, Jasmin G; Blanton, Chris; McHugh, Colleen; Nikonov, Serguei; Radhakrishnan, Aparna; Rand, Kristopher; Zadeh, Niki T.; Balaji, V; Durachta, Jeff; Dupuis, Christopher; Menzel, Raymond; Robinson, Thomas; Underwood, Seth; Vahlenkamp, Hans; Dunne, Krista A.; Gauthier, Paul PG; Ginoux, Paul; Griffies, Stephen M.; Hallberg, Robert; Harrison, Matthew; Hurlin, William; Malyshev, Sergey; Naik, Vaishali; Paulot, Fabien; Paynter, David J; Ploshay, Jeffrey; Reichl, Brandon G; Schwarzkopf, Daniel M; Seman, Charles J; Silvers, Levi; Wyman, Bruce; Zeng, Yujin; Adcroft, Alistair; Dunne, John P.; Dussin, Raphael; Guo, Huan; He, Jian; Held, Isaac M; Horowitz, Larry W.; Lin, Pu; Milly, P.C.D; Shevliakova, Elena; Stock, Charles; Winton, Michael; Wittenberg, Andrew T.; Xie, Yuanyu; Zhao, Ming (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP. Version YYYYMMDD[1].Earth System Grid Federation. https://doi.org/10.22033/ESGF/CMIP6.1407
-
-Lee, J.-S., I.-K. Kim, S.-H. Koh, S. J. Cho, S.-J. Jang, S.-H. Pyo, and W. I. Choi. 2011. Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology 14:123–125.
-
-Maino, J. L., R. Schouten, J. C. Lye, P. A. Umina, and O. L. Reynolds. 2022. Mapping the life-history, development, and survival of spotted lantern fly in occupied and uninvaded ranges. Biological Invasions 24:2155–2167. 10.1007/s10530-022-02764-z
-
-Weiss, D. J., A. Nelson, H. S. Gibson, W. Temperley, S. Peedell, A. Lieber, M. Hancher, et al. 2018. “A Global Map of Travel Time to Cities to Assess Inequalities in Accessibility in 2015.” Nature 553 (7688): 333–36. https://doi.org/10.1038/nature25181.
-
-

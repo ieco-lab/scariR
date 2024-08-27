@@ -20,11 +20,16 @@ packages <- renv::dependencies() %>%
   as.matrix() %>%
   as.character()
 
-# if scrubr, webshot or geodata show up on this list, ignore these as they are no longer needed.
+# if scrubr or geodata show up on this list, ignore these as they are no longer needed.
 
 # renv initialization-----------------------------------------------------------
 
 # Only run this section if you need to
+
+
+
+
+
 
 # renv initialization-----------------------------------------------------------
 

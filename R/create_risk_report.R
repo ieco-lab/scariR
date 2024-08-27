@@ -1,6 +1,9 @@
-#'Creates
+#'Creates a localized report on the risk of establishment of Lycorma delicatula
 #'
-#'@description blarg
+#'@description This function creates a report at the country or state/province level
+#'for the risk of establishment of Lycorma delicatula. The report covers the major
+#'data outputs from this R package analysis, including current and future risk maps,
+#'range shift maps, risk plots and risk tables.
 #'
 #'@param locality.iso The [alpha-3 ISO code](https://www.iso.org/obp/ui/#search) corresponding to the country of interest.
 #'If the desired locality is a state or province, please still enter the ISO code
@@ -8,13 +11,13 @@
 #'
 #'@param locality.name The name of the country, state or province for which to
 #'generate the report. This is optional if the report is for a country, but
-#'required if the report is for a state or province. Avoid special characters,
+#'required if the report is for a state/province. Avoid special characters,
 #'but please include those used used in the ethnic naming (ex: Côte d'Ivoire).
 #'
 #'@param locality.type One of "country" or "states_provinces". If you do
 #'not know the state or province you are looking for, you might create a report
-#'at the country level and then look at the return for the name of the provinces
-#'/ states included.
+#'at the country level and then look at the return for the name of the state/province
+#'included.
 #'
 #'@param save.report Logical. Should the report be saved to file? File location
 #'specified by `mypath`.
@@ -34,7 +37,7 @@
 #'the model output. If FALSE (ie, the sub directory already exists), no directory
 #'will be created.
 #'
-#'@param map.style List, default is NA. This is used to apply ggplot aesthetics
+#'@param map.style List. This is used to apply ggplot aesthetics
 #'to the mapped outputs. If specified, the given value should be a list of
 #'ggplot aesthetic options. If not, the built-in default list will be used
 #'(see details). See examples for usage.
@@ -49,14 +52,15 @@
 #'
 #'Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
 #'
-#'Note that this function performs downloads from [naturalearthdata.com](https://www.naturalearthdata.com/).
-#'The function will automatically create subfolders in `root/data-raw`
-#'containing the shapefiles.
+#'Note that this function performs downloads from
+#'[naturalearthdata.com](https://www.naturalearthdata.com/), if the data do not
+#'already exist in `root/data-raw`.The function will automatically create
+#'subfolders in `root/data-raw` containing the downloaded shapefiles.
 #'
 #'This function depends on certain files that have been distributed with this
 #'package, which will be imported from `root/R/sysdata.rda` when the function
 #'is run. The code to create `sysdata.rda` can be found in
-#'`root/vignettes/160_generate_risk_report.qmd`.
+#'`root/vignettes/160_generate_risk_report.Rmd`.
 #'
 #'Here is a list of the files included in `sysdata.rda`:
 #'
@@ -89,21 +93,39 @@
 #'@return
 #'
 #'returns a report in list format. If save.report = TRUE, will also save the
-#'report to file at destination specified by `mypath`. The outputs in the returned list
-#'object include:
+#'report to file at destination specified by `mypath`. The outputs returned to
+#'the global env in a list object include:
 #'
-#'* viticultural_regions_list - a list of known important wine regions within the locality
-#'* risk_maps - a current and future map of risk for L delicatula establishment based on 4 climate models
+#'* viticultural_regions_list - a list of known important wine regions within the locality with predicted suitability values and levels.
+#'* risk_maps - a current and future map of risk for L delicatula establishment. The CMIP6 predictions are based on the mean of the three ssp scenarios
 #'* viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality.
 #'* viticultural_risk_table = a table quantifying the risk plot for viticultural areas
 #'* range_shift_map = a map of potential range expansion for L delicatula under climate change
 #'
 #'Some maps may be formatted strangely because of a country's outlying territories.
-#'You may need to further crop the plot using xlim and ylim (see examples).
+#'You may need to further crop the plot using `xlim()` and `ylim()` (see examples).
 #'
 #'Use caution, this function will overwrite previous files output for the same locality.
 #'
 #'@examples
+#'
+#'# EXAMPLE USAGE:
+#'slfSpread::create_risk_report(
+#' locality.iso = "aus",
+#' locality.name = "australia",
+#' locality.type = "country",
+#' mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
+#' create.dir = FALSE,
+#' save.report = FALSE,
+#' buffer.dist = 20000 # this is only used for buffered predictions, default is NA for simple predictions.
+#')
+#'
+#'# ARGUMENT USAGE:
+#'map_style <- list(
+#' xlab("longitude"),
+#' ylab("latitude"),
+#' theme_classic()
+#')
 #'
 #'The output is in list format, so it should be called using this notation:
 #'
@@ -575,7 +597,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     ggnewscale::new_scale_fill()
 
   # whether or not to plot buffer layer
-
   if (!is.na(buffer.dist) && nrow(IVR_buffers_plot_layer) > 0) {
 
     slf_binarized_1995_plot <- slf_binarized_1995_plot +

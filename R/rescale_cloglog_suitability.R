@@ -75,9 +75,9 @@
 #'
 #'Thresh presets list:
 #'* `MTP` = Minimum Training Presence
-#'* `MTP.CC` = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions. Should be the second row in the data frame
+#'* `MTP.CC` = (regional_ensemble model only) Minimum Training Presence, transformed for climate predictions.
 #'* `MTSS` = Maximum training sensitivity plus specificity
-#'* `MTSS.CC` = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.  Should be the second row in the data frame
+#'* `MTSS.CC` = (regional_ensemble model only) Maximum training sensitivity plus specificity, transformed for climate predictions.
 #'
 #'@return
 #'
@@ -90,7 +90,19 @@
 #'
 #'@examples
 #'
-#'example
+#'EXAMPLE USAGE:
+#'xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
+#' xy.predicted = xy_regional_ensemble_1995,
+#' thresh = "MTSS", # max training and sensitivity plus specificity
+#' exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
+#' summary.file = summary_regional_ensemble,
+#' rescale.name = "xy_regional_ensemble_1995",
+#' rescale.thresholds = TRUE
+#')
+#'
+#'# if rescale.thresholds = TRUE, the output will be a list of two data frames that will need to be separated
+#'xy_regional_ensemble_1995_rescaled_thresholds <- xy_regional_ensemble_1995_rescaled[[2]]
+#'xy_regional_ensemble_1995_rescaled <- xy_regional_ensemble_1995_rescaled[[1]]
 #'
 #'@export
 rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {
@@ -99,13 +111,13 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
 
   # ensure objects are character type
   if (!is.na(rescale.name) & is.character(rescale.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'rescale.name' must be of type 'character'")
+    cli::cli_abort("Parameter 'rescale.name' must be of type 'character'")
     stop()
   }
 
   # ensure objects are logical type
   if (is.logical(rescale.thresholds) == FALSE) {
-    cli::cli_alert_danger("Parameter 'rescale.thresholds' must be of type 'logical'")
+    cli::cli_abort("Parameter 'rescale.thresholds' must be of type 'logical'")
     stop()
   }
 
@@ -144,11 +156,11 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
   # thresh presets--------------------------------------------------------------
   # conditional import to ensure proper thresh preset is used
   if (thresh == "MTP.CC" && str_detect(summary.file, "_summary.csv") == TRUE) {
-    cli::cli_alert_danger("MTP.CC can only be used with a thresh imported for the 'regional_ensemble' model")
+    cli::cli_abort("MTP.CC can only be used with a thresh imported for the 'regional_ensemble' model")
     stop()
 
   } else if (length(thresh) == 1 && thresh == "MTSS.CC" && any(str_detect(summary.file, "_iteration"))) {
-    cli::cli_alert_danger("MTSS.CC can only be used with a thresh imported for the 'regional_ensemble' model")
+    cli::cli_abort("MTSS.CC can only be used with a thresh imported for the 'regional_ensemble' model")
     stop()
   }
 
@@ -200,7 +212,7 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
    # )
     # else, print a warning message
   } else {
-    cli::cli_alert_danger("'summary.file' import does not fit the expected parameters. The summary file for a global-scale model should be nrow == 52 and a summary file for a regional-scale model should be nrow = 10")
+    cli::cli_abort("'summary.file' import does not fit the expected parameters. The summary file for a global-scale model should be nrow == 52 and a summary file for a regional-scale model should be nrow = 10")
     stop()
 
   }
@@ -226,11 +238,11 @@ rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, 
 
   # ensure thresh isnt 0
   if (thresh_value <= 0) {
-    cli::cli_alert_danger("The value of parameter 'thresh' must be greater than 0")
+    cli::cli_abort("The value of parameter 'thresh' must be greater than 0")
     stop()
 
   } else if (is.na(thresh_value)) {
-    cli::cli_alert_danger("The imported summary file is likely formatted incorrectly (the number of rows should equal 10)")
+    cli::cli_abort("The imported summary file is likely formatted incorrectly (the number of rows should equal 10)")
     stop()
 
   }

@@ -5,25 +5,26 @@ contact: "sam.owens@temple.edu"
 date: "2024-08-05"
 output: html_document
 ---
+
 # Overview
 
-In the previous vignette, I ran the global model, which was an important first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run three regional-scale models, one for each region where SLF is found. I will run three models, based on SLF presence data from the native range (China), the invaded region in Asia (Japan and South Korea), and the invaded region in North America. I hypothesize that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change. I believe the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could.
+In the previous vignette, I ran the global model, which was the first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run three regional-scale models, one for each geographical region where SLF is found. I will run a model based on SLF presence data from the native range (China), the invaded region in Asia (Japan and South Korea), and the invaded region in North America. I hypothesize that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change. I also hypothesize that the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could.
 
-This vignette will set up for these regional-scale models in a similar fashion to the setup I created for the global model in vignette 040, but with some additional steps. I will choose the background training area of each model using the [Köppen-Geiger climate zones](https://koeppen-geiger.vu-wien.ac.at/). If a presence point intersects with a zone, it will be included in the area used to choose background points. I will also use country shapefiles to limit these K-G zones using countries that should be included in this background selection area per regional-scale model. 
+This vignette will set up for these regional-scale models in a similar fashion to the setup I created for the global model in vignette 040, but with some additional steps. First, I will use geopolitical boundaries or bounding boxes to select a broad area for each regional model's background points. I will choose a much broader area than SLF currently occupies in each area so that I can further reduce this area based on climate. I will then narrow this area for each model using the [Köppen-Geiger climate zones](https://koeppen-geiger.vu-wien.ac.at/). If a presence point within each region intersects with a zone, that zone will be included in the area used to choose background points.
 
 For each regional-scale model, I will:
 
-1. Select the countries or bounding box that will represent that regional-scale model area
-2. Select the SLF presences that fall into that region. These will be used to train the model.
-3. Intersect these SLF presences with the K-G climate zones 
-4. Keep the zones that intersect, combine their area and use this area to crop the bioclim layers we tidied in vignette 020
-5. Use the masked bioclim layers to select the background points
-6. Choose the test/validation presences, which will come from a different region than the training points
-7. Plot the chosen training and test presence per model.
+1.  Select the countries or bounding box that will represent that regional-scale model area
+2.  Select the SLF presences that fall into that region. These will be used to train the model.
+3.  Intersect these SLF presences with the K-G climate zones
+4.  Keep the zones that intersect, combine their area and use this area to crop the bioclim layers we tidied in vignette 020
+5.  Use the masked bioclim layers to select the background points
+6.  Choose the test/validation presences, which will come from a different region than the training points
+7.  Plot the chosen training and test presence per model.
 
 Here is a table summarizing the model structures:
 
-```{r model_info table}
+```{r model_info table, echo = FALSE}
 
 model_info <- data.frame(
   "model" = c(
@@ -59,7 +60,7 @@ model_info <- data.frame(
 )
 
 # convert to kable
-model_info_kable <- knitr::kable(x = model_info) %>%
+model_info_kable <- knitr::kable(x = model_info) |>
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE)
 
 ```
@@ -68,7 +69,7 @@ model_info_kable <- knitr::kable(x = model_info) %>%
 
 I will prepare for this vignette by loading the necessary packages to run this script. I will also be creating maps during this analysis, so I will create a list object containing a standardized map style that I will continue to use.
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
@@ -147,11 +148,11 @@ map_style <- list(
 
 # 1. Retrieve K-G climate zones
 
-First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.html) package to retrieve the Köppen-Geiger climate zones.
+First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.html) package to retrieve a global raster of the Köppen-Geiger climate zones.
 
 I need to set up a path to my directory and the necessary bioclimatic raster layers.
 
-```{r set wd}
+```{r set wd 1}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
@@ -165,7 +166,7 @@ I need to set up a path to my directory and the necessary bioclimatic raster lay
 # lists of target files in the directory
 # load in bioclim layers to be cropped- the 10km .asc files
 env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. Access to cities will not be used until later models
+# extract the 4 bioclim layers I will be using in my models. 
   grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
 
@@ -182,7 +183,7 @@ kmz_data <- kgc::kmz
 kmz_lat <- kgc::genCoords(latlon = "lat", full = TRUE)
 kmz_lon <- kgc::genCoords(latlon = "lon", full = TRUE)
 
-# join
+# join data and coordinates
 kmz_data <- cbind(kmz_lat, kmz_lon) %>%
   cbind(., kmz_data) %>%
   as.data.frame() %>%
@@ -205,9 +206,9 @@ minmax(kmz_data_rast)
 
 ```
 
-```{r retrieve names for codes and make factor}
+```{r retrieve names for zones and make factor}
 
-# retrieve names
+# retrieve names of zones
 kmz_names <- kgc::getZone(1:32)
 # make facor levels
 kmz_names_factor <- factor(
@@ -217,7 +218,6 @@ kmz_names_factor <- factor(
 )
 
 ```
-
 
 I will need to tidy these data by aggregating them to spatial scale I use for the bioclim variables. I will do this using the mode, because this variable is a set of numbers representing a categorical, so I do not want to average or take the median.
 
@@ -281,7 +281,7 @@ KG_climate_map <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save K-G plot}
 
 ggsave(
   KG_climate_map, 
@@ -301,8 +301,8 @@ I will also write this raster to a shapefile for easy selection of climate zones
 # next, convert raster to polygon
 KG_zones_invaded_poly <- terra::as.polygons(
   x = koeppen_zones_rast,
-  aggregate = TRUE,
-  values = TRUE,
+  aggregate = TRUE, # combine cells with the same value into one area
+  values = TRUE, # include cell values as attributes
   crs = "EPSG:4326"
 ) 
 
@@ -327,7 +327,7 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 ```
 
-# 2. Trim bioclim layers 
+# 2. Trim bioclim layers
 
 ## 2.1 invaded region in North America (Ri.NAmerica model)
 
@@ -359,7 +359,7 @@ Now we will intersect the points with the shapefile. I need to crop the shapefil
 
 ### Intersect points and KG zones
 
-```{r intersect slf points with shapefile}
+```{r intersect slf points with shapefile- Ri.NAmerica}
 
 # load in shapefile again
 KG_zones_invaded_poly <- sf::read_sf(dsn = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp")) %>%
@@ -388,7 +388,7 @@ sf::st_write(
 
 ```
 
-```{r re-load}
+```{r re-load K-G zones Ri.NAmerica}
 
 regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
@@ -424,7 +424,7 @@ Now lets plot it for a sanity check.
 
 ```
 
-```{r save plot}
+```{r save invaded K-G plot}
 
 ggsave(
   regional_invaded_withSLF_plot, 
@@ -443,7 +443,7 @@ So when we mask the bioclim layers, we should see something similar to this.
 
 I will start the masking process by importing the bioclim layers and reference layer I need. I will also crop this layer to only N America, so I will need a bounding box for that.
 
-```{r setup for cropping bioclim layers}
+```{r setup for cropping bioclim layers- Ri.NAmerica}
 
 # import layers
 env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_NAmerica.asc$", full.names = TRUE) 
@@ -519,7 +519,7 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
 ```
 
-```{r remove objects}
+```{r remove objects- Ri.NAmerica}
 
 rm(ext.obj)
 rm(ext.obj.vect)
@@ -527,13 +527,15 @@ rm(ext.obj.crop)
 
 ```
 
-## Invaded region in South Korea and Japan (Ri.Asia model)
+Now that the bioclim layers have been trimmed, I can use these rasters downstream to choose the background points for this model. I will repeat this process for the other two regional models.
+
+## 2.2 Invaded region in South Korea and Japan (Ri.Asia model)
 
 I need to find a way to clip the climate zones by native vs invaded region, because the same climate zones are likely present in Japan and Korea as in the native range. However, I want to segment the data by region. I would normally use the country administrative borders, but there are many contested islands that would be left out. So, I will obtain the bounding box for Japan and South Korea and use that to geographically segment the KG climate zones before masking.
 
 ### Intersect points and KG zones
 
-```{r import datasets}
+```{r import datasets- Ri.Asia}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
@@ -542,9 +544,9 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 ```
 
-I just want the presences from the invaded range. I will manually filter out some points that accidentally got into both the native and Ri.Asia models.
+I just want the presences from the invaded east asian range. I will manually filter out some points that accidentally got into both the native and Ri.Asia models.
 
-```{r filter presences from invaded range}
+```{r filter presences from Ri.Asia range}
 
 # extent object for Japan and SK
 ext.obj <- terra::ext(122.93816, 153.98561, 24.21210, 45.52041)
@@ -571,7 +573,7 @@ rm(slf_points_vect)
 
 Now we will intersect the points with the shapefile. I need to crop the shapefile to the the same extent as the presences and then intersect them to keep the climate zones that contain presences. The resulting shapefile will be used to crop the bioclim data and choose background points for that specific model.
 
-```{r intersect slf points with shapefile}
+```{r intersect slf points with shapefile- Ri.Asia}
 
 # load in shapefile again
 KG_zones_invaded_asian_poly <- sf::read_sf(dsn = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp")) %>%
@@ -600,7 +602,7 @@ sf::st_write(
 
 ```
 
-```{r re-load}
+```{r re-load K-G zones Ri.Asia}
 
 regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
@@ -635,7 +637,7 @@ Now lets plot it for a sanity check.
 
 ```
 
-```{r save plot}
+```{r save Ri.Asia K-G plot}
 
 ggsave(
   regional_invaded_asian_withSLF_plot, 
@@ -723,7 +725,8 @@ bio11_invaded_asian_df <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
 # the cropping worked
 
 ```
-```{r remove objects}
+
+```{r remove objects- Ri.Asia}
 
 rm(ext.obj)
 rm(ext.obj.vect)
@@ -731,16 +734,15 @@ rm(ext.obj.crop)
 
 ```
 
-
 Looks good!
 
-## Native region in Southeast Asia (Rn model)
+## 2.3 Native region in Southeast Asia (Rn model)
 
 The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east and southeast Asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
 
 ### Get shapefile for native range
 
-I will retrieve the shapefile data from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called rnaturalearth to access this database. 
+I will retrieve the shapefile data from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called rnaturalearth to access this database.
 
 ```{r rnaturalearth download}
 
@@ -772,7 +774,7 @@ asia_sf <- rnaturalearth::ne_download(
 
 ```
 
-Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply retrieve the countries we want. We will keep all countries in southeast asia, plus countries in south asia excluding Pakistan and Afghanistan and east asia excluding the invaded range in asia (Japan, SK, NK) (Wikipedia, see references). We are using a much larger extent because there is a lot of conjecture about the true native range of SLF, and we want those climate zones to be considered. 
+Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply retrieve the countries we want. We will keep all countries in southeast Asia, plus countries in south Asia excluding Pakistan and Afghanistan and east Asia excluding the invaded range in Asia (Japan, SK, NK) (Wikipedia, see references). We are using a much larger extent because there is a lot of conjecture about the true native range of SLF, and we want those climate zones to be considered.
 
 ```{r select countries and save}
 
@@ -806,9 +808,9 @@ We will use this shapefile to cut out the KG climate zones, then will intersect 
 
 ### Select KG regions
 
-I will import the slf presences and KG shapefile first. 
+I will import the SLF presences and KG shapefile first.
 
-```{r import datasets}
+```{r import datasets- Rn}
 
 # slf presences
 slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
@@ -822,7 +824,7 @@ asia_vect <- terra::vect(file.path(here::here(), "vignette-outputs", "shapefiles
 
 ```
 
-Next, I will crop the SLF presences and the KG shapefile datasets using the asias range shapefile.
+Next, I will crop the SLF presences and the KG shapefile datasets using the Asian range shapefile.
 
 ```{r crop KG sf by asian sf}
 
@@ -927,7 +929,7 @@ Now lets plot it for a sanity check.
 )
 ```
 
-```{r save plot}
+```{r save Rn K-G plot}
 
 ggsave(
   regional_native_withSLF_plot, 
@@ -942,7 +944,7 @@ ggsave(
 
 ### Mask bioclim layers
 
-```{r setup for cropping bioclim layers}
+```{r setup for cropping bioclim layers- Rn}
 
 # import layers
 env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE) 
@@ -960,7 +962,7 @@ ext.obj.crop <- terra::ext(72.666527, -9.666806, 140.999860, 53.249861, xy = TRU
 
 I will now mask these rasters using the shapefile created above
 
-```{r loop to crop bioclim layers to NAmerica invaded range}
+```{r loop to crop bioclim layers to Rn range}
 
 if(TRUE) {
   
@@ -1017,7 +1019,7 @@ bio11_native_df <- terra::as.data.frame(bio11_native, xy = TRUE)
 
 ```
 
-```{r remove objects}
+```{r remove objects- Rn}
 
 rm(ext.obj.crop)
 
@@ -1027,17 +1029,17 @@ rm(ext.obj.crop)
 
 Now, I need to use the rasters I just created to choose the background points, which are used by MaxEnt to sample the climate and compare that sample with known SLF presences. The background points should be randomized because they are a stand-in for true absences, so I will generate them using `dismo::randomPoints()`.
 
-```{r set wd}
+```{r set wd 2}
 
-  mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
 
 ## 3.1 invaded region of North America (Ri.NAmerica model)
 
-```{r load datasets}
+```{r load datasets- Ri.NAmerica}
 
 # load in raster to choose points from
 regional_invaded_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) 
@@ -1051,7 +1053,7 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 Create 10,000 random background points. These will be corrected for the latitudinal stretching and will not be selected from presence locations, like with the global model.
 
-```{r random points}
+```{r random points- Ri.NAmerica}
 
 # set seed
 set.seed(5)
@@ -1107,8 +1109,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 
 ```
 
-
-```{r plot}
+```{r plot Ri.NAmerica background}
 
 # plot at the continental scale
 (regional_invaded_background_plot <- ggplot() +
@@ -1135,7 +1136,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 
 We can see that the background points are isolated to the area selected using the K-G climate zones in North America, so our operation was successful.
 
-```{r save plot}
+```{r save Ri.Namerica background plot}
 
 ggsave(
   regional_invaded_background_plot, 
@@ -1148,11 +1149,11 @@ ggsave(
 
 ```
 
-Now, I will repeat this process for the next two models. 
+Now, I will repeat this process for the next two models.
 
 ## 3.2 invaded region of Asia (South Korea and Japan, Ri.Asia model)
 
-```{r load datasets}
+```{r load datasets- Ri.Asia}
 
 # load in raster to choose points from
 invaded_asian_bio11 <- raster::raster(x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")) 
@@ -1164,7 +1165,7 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 ```
 
-```{r random points}
+```{r random points- Ri.Asia}
 
 # set seed
 set.seed(7)
@@ -1223,7 +1224,7 @@ regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignet
 
 ```
 
-```{r save plot}
+```{r save plot- Ri.Asia bg}
 
 ggsave(regional_invaded_asian_points_plot, 
        filename = file.path(
@@ -1237,10 +1238,9 @@ ggsave(regional_invaded_asian_points_plot,
 
 ```
 
-
 ## 3.3 Native region (Rn model)
 
-```{r set wd}
+```{r set wd 3}
 
 # path to directory
 mypath <- file.path(here::here() %>% 
@@ -1298,8 +1298,6 @@ if (FALSE) {
   
 ```
 
-Now, I will plot these points for visualization purposes.
-
 ```{r load in files for plotting}
 
 regional_native_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
@@ -1326,7 +1324,7 @@ global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
 
 ```
 
-```{r save plot}
+```{r save plot- Rn bg}
 
 ggsave(regional_native_points_plot, 
        filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v3.jpg"),
@@ -1339,18 +1337,19 @@ ggsave(regional_native_points_plot,
 
 # 4. Choose and plot training points
 
-Next, I will use bounding boxes to isolate SLF presences from each major region. This would not normally be sufficient to select the correct points, but each region is isolated from the others in a fashion that a bounding box easily separates the points by region in this case. 
+Next, I will use bounding boxes to isolate SLF presences from each major region. This would not normally be sufficient to select the correct points, but each region is isolated from the others in a fashion that a bounding box easily separates the points by region in this case.
 
-```{r set wd}
+```{r set wd 4}
 
-  mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent")
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent")
 
 ```
 
 ```{r read in data}
 
+# background raster for plotting
 global_atc_df <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
   ) %>%
@@ -1366,7 +1365,7 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 I will convert the SLF points dataset to a spatial vector object so that it can be filtered using a bounding box, then transform it back to a dataframe.
 
-```{r filter presences from invaded range}
+```{r filter presences from Ri.NAmerica range}
 
 # extent object for N America
 ext.obj <- terra::ext(-96.503906, -59.589844, 23.5, 47.457809)
@@ -1387,7 +1386,7 @@ rm(slf_points_vect)
 
 ```
 
-```{r save presences}
+```{r save presences- Ri.NAmerica}
 
 write_csv(
   x = slf_points_invaded,
@@ -1396,7 +1395,9 @@ write_csv(
 
 ```
 
-```{r plot model presences}
+Now I will plot these points on the raster to ensure that the bounding box worked.
+
+```{r plot model presences- Ri.NAmerica}
 
 # load in raster
 regional_invaded <- terra::rast(
@@ -1426,7 +1427,7 @@ regional_invaded_slf_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save Ri.NAmerica presence plot}
 
 ggsave(
   regional_invaded_slf_plot, 
@@ -1463,7 +1464,7 @@ rm(slf_points_masked)
 
 ```
 
-```{r save presences}
+```{r save presences- Ri.Asia}
 
 write_csv(
   x = slf_points_invaded_asian,
@@ -1472,7 +1473,7 @@ write_csv(
 
 ```
 
-```{r plot model presences}
+```{r plot model presences- Ri.Asia}
 
 invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
@@ -1500,7 +1501,7 @@ regional_invaded_asian_slf_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save Ri.Asia presence plot}
 
 ggsave(
   regional_invaded_asian_slf_plot, 
@@ -1537,7 +1538,7 @@ rm(mask_layer)
 
 ```
 
-```{r save presences}
+```{r save presences- Rn}
 
 write_csv(
   x = slf_points_native,
@@ -1546,7 +1547,7 @@ write_csv(
 
 ```
 
-```{r plot model presences}
+```{r plot model presences- Rn}
 
 regional_native <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_native_KG.asc")
@@ -1574,7 +1575,7 @@ regional_native_slf_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save Rn presence plot}
 
 ggsave(
   regional_native_slf_plot, 
@@ -1655,11 +1656,31 @@ write_csv(
 
 Now we are ready to run all 3 regional models!
 
-# Appendix
+# References
+
+Calvin, D. D., J. Rost, J. Keller, S. Crawford, B. Walsh, M. Bosold, and J. Urban. 2023. Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology 52:1108–1125.
+
+Du, Z., Y. Wu, Z. Chen, L. Cao, T. Ishikawa, S. Kamitani, T. Sota, F. Song, L. Tian, W. Cai, and H. Li. 2021. Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications.
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
+
+Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
+
+East Asia. 2024, March 6. Wikipedia.
+
+South Asia. 2024, March 27. Wikipedia.
+
+Southeast Asia. 2024, March 27. Wikipedia.
+
+Xin, B., Y. Zhang, X. Wang, L. Cao, K. A. Hoelmer, H. J. Broadley, and J. R. Gould. 2020. Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology 50:36–45.
+
+# Appendix  {.hidden}
 
 ## Patchwork together figures for publication
 
-```{r set wd}
+```{r set wd 5}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
@@ -1679,7 +1700,7 @@ global_atc_df <- terra::rast(
 
 These chunks will splice together the plots from above as summary plots.
 
-```{r load necessary datasets}
+```{r load necessary datasets- Ri.NAmerica}
 
 # validation dataset
 slf_points_invaded_test <- read.csv(
@@ -1695,7 +1716,6 @@ invaded_asian <- terra::rast(
 invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
 
 ```
-
 
 ```{r plot validation region for Ri.NAmerica model}
 
@@ -1717,7 +1737,6 @@ regional_invaded_test_plot <- ggplot() +
   coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
 
 ```
-
 
 ```{r Ri.NAmerica model elements}
 # change axis labels
@@ -1818,7 +1837,7 @@ regional_invaded_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot Ri.NAmerica patchwork}
 
 ggsave(
   regional_invaded_patchwork, 
@@ -1833,7 +1852,7 @@ ggsave(
 
 ### Ri.Asia Model
 
-```{r load necessary datasets}
+```{r load necessary datasets- Ri.Asia}
 
 # validation dataset
 slf_points_invaded_asian_test <- read.csv(
@@ -1848,7 +1867,6 @@ regional_invaded <- terra::rast(
 regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
 
 ```
-
 
 ```{r plot validation region for Ri.Asia model}
 
@@ -1966,7 +1984,7 @@ regional_invaded_asian_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save Ri.Asia patchwork plot}
 
 ggsave(
   regional_invaded_asian_patchwork, 
@@ -1981,7 +1999,7 @@ ggsave(
 
 ### Rn model
 
-```{r load necessary datasets}
+```{r load necessary datasets- Rn}
 
 # validation dataset
 slf_points_native_test <- read.csv(
@@ -1998,8 +2016,7 @@ regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
 
 ```
 
-
-```{r plot validation region for Ri.Asia model}
+```{r plot validation region for Rn model}
 
 regional_native_test_plot <- ggplot() +
   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
@@ -2116,7 +2133,7 @@ regional_native_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save Rn patchwork plot}
 
 ggsave(
   regional_native_patchwork, 
@@ -2128,27 +2145,3 @@ ggsave(
   )
 
 ```
-
-# References
-
-Calvin, D. D., J. Rost, J. Keller, S. Crawford, B. Walsh, M. Bosold, and J. Urban. 2023. Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology 52:1108–1125.
-
-Du, Z., Y. Wu, Z. Chen, L. Cao, T. Ishikawa, S. Kamitani, T. Sota, F. Song, L. Tian, W. Cai, and H. Li. 2021. Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications.
-
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
-
-Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
-
-Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
-
-East Asia. 2024, March 6. Wikipedia.
-
-South Asia. 2024, March 27. Wikipedia.
-
-Southeast Asia. 2024, March 27. Wikipedia.
-
-Xin, B., Y. Zhang, X. Wang, L. Cao, K. A. Hoelmer, H. J. Broadley, and J. R. Gould. 2020. Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology 50:36–45.
-
-
-
-

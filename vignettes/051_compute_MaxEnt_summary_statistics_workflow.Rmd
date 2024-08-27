@@ -2,48 +2,50 @@
 title: "MaxEnt Summary Statistics Output- workflow"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
-date: "2023-09-28"
+date: "2024-08-27"
 output: html_document
 ---
 
-*Note* This vignette is an example of the workflow for the function within this package called `slfSpread::compute_MaxEnt_summary_statistics()`, which is used in vignette 050 to obtain the final results. This vignette does not need to be run to obtain the final results of the workflow. 
+*Note* This vignette is an example of the workflow for the function within this package called `compute_MaxEnt_summary_statistics()`, which is used in vignette 050 to obtain the final results. This vignette does not need to be run to obtain the final results of the workflow.
 
 # Overview
 
-This vignette gives an example of the workflow for producing a MaxEnt model in R and all of its associated outputs. Chunks 1-10 are shared with vignette 050, which is the parent of this vignette. This vignette was created to isolate the entire workflow for creating a model. Some processes in this vignette are not used for all models produced, such as a rasterized predictions of suitability.
+This vignette gives an example of the workflow for producing a MaxEnt model in R and all of its associated outputs. Chunks 1-10 share the same formatting as with vignette 050, which is the parent of this vignette. This vignette was created to isolate the entire workflow for creating a model. Some processes in this vignette are not used for all models produced, such as a rasterized predictions of suitability.
 
-The workflow depends heavily on the R package [SDMtune](https://consbiol-unibern.github.io/SDMtune/). The workflow is designed for the first model I ran in my analysis, the eastern USA model with the entire area used as the background (entire_easternUSA_model). However, this workflow can be used for any dataset to train a maxent model, extract the summary statistics and make predictions for pointwise species presence data or entire areas (both are exemplified in this workflow). Here is a list of the outputs and summary statistics that will be obtained from the models produced by this vignette:
+The workflow depends heavily on the R package [SDMtune](https://consbiol-unibern.github.io/SDMtune/). This workflow can be used for any dataset to train a maxent model, extract the summary statistics and make predictions for pointwise species presence data or entire areas (both are exemplified in this workflow). Here is a list of the outputs and summary statistics that will be obtained from the models produced by this vignette:
 
 \strong{Model Outputs}
-* .RDS file of the MaxEnt model
-* Presence data used to train and test the model
-* suitability map projected to the area of interest
-* presence/absence map generated using the Maximum Sensitivity plus specificity threshold produced by the model
-* point-wise predictions for species presence data
+
+-   .RDS file of the MaxEnt model
+-   Presence data used to train and test the model
+-   suitability map projected to the area of interest
+-   presence/absence map generated using the Maximum Sensitivity plus specificity threshold produced by the model
+-   point-wise predictions for species presence data
 
 \strong{Summary Statistics}
-* AUC
-* ROC plot
-* TSS
-* Suitability thresholds (including minimum training presence, 10% training presence, etc)
-* Marginal response curves
-* Uni-variate response curves
-* Variable permutation importance
-* Jackknife leave-one-out test and plot
-* Other model settings
 
-Most of these can also be obtained using a function in this package called `compute_MaxEnt_summary_statistics`, which creates outputs of the summary statistics, writes the .RDS file and records the presence data used to train and test the model (so it does NOT create a suitability map, presence/absence map or point-wise predictions).
+-   AUC
+-   ROC plot
+-   TSS
+-   Suitability thresholds (including minimum training presence, 10% training presence, etc)
+-   Marginal response curves
+-   Uni-variate response curves
+-   Variable permutation importance
+-   Jackknife leave-one-out test and plot
+-   Other model settings
 
-Additionally, the appendices contain code that can be used to iteratively tune the model and get a model report output in a similar style to the original MaxEnt output.
+Most of these can also be obtained using a function in this package called `compute_MaxEnt_summary_statistics()`, which creates outputs of the summary statistics, writes the .RDS file and records the presence data used to train and test the model (so it does NOT create a suitability map, presence/absence map or point-wise predictions).
+
+To run this vignette, first run up until step 2 of vig 050. This will create the necessary files and objects to run this vignette.
 
 # Setup
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here()
+here::here()
 # here() starts at the root folder of this package.
 library(devtools)
 library(rJava) # for running MaxEnt
@@ -59,7 +61,6 @@ library(rasterVis)
 library(viridis)
 
 # spatial data handling
-library(raster) 
 library(terra) 
 
 library(pROC)
@@ -81,236 +82,34 @@ map_style <- list(
 
 ```
 
-`SDMtune` will run Maxent through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
-
-```{r check maxent installation}
-
-checkMaxentInstallation(verbose = TRUE)
-
-```
-
-This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory. 
-
-```{r control MaxEnt settings}
-
-# xss sets java stack size
-# xmx sets java memory allocation
-options(java.parameters = "-Xmx2048m")
-
-# options(java.parameters = c("-Xss2560k", "-Xmx2048m"))
-
-```
-
-# Tidy datasets for MaxEnt
-
-First, I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used for in the `maxent()` function. 
-
-```{r load in files for all maxent models}
-
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-
-# environmental and human impact covariates.
-# the env covariates used to train the model
-x_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = '\\_easternUSA.asc$', full.names = TRUE)
-# the same covariates, but on a global scale (used to make predictions)
-x_global_env_covariates_list <- list.files(path = file.path(mypath, "v1_maxent"), pattern = "\\.asc$", full.names = TRUE) %>%
-  grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
-
-
-# slf presences
-p_slf_points <- read.csv(file = file.path(here(), "vignette-outputs", "data-tables", "slf_all_final_coords_v1_2023-08.csv")) %>%
-  dplyr::select(-species)
-
-# background point sets
-# entire eastern USA
-a_entire_easternUSA_background_points <- read.csv(file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_flexible_area_points.csv"))
-
-```
-
-I will load in the environmental covariates and stack them. I will also shorten their names and exclude possible operators from layer names (for example, using the dash symbol was found to interfere with SDMtune's ability to make predictions for tables downstream).
-
-```{r stack env covariates and make naming consistent}
-
-# stack env covariates
-x_env_covariates <- terra::rast(x = x_env_covariates_list)
-# stack global versions
-x_global_env_covariates <- terra::rast(x = x_global_env_covariates_list)
-
-# attributes
-nlyr(x_env_covariates)
-names(x_env_covariates)
-minmax(x_env_covariates)
-# ext(x_env_covariates)
-# crs(x_env_covariates)
-
-
-# layer name object
-env_layer_names <- c("atc_2015", "bio11_1981_2010", "bio12_1981_2010", "bio15_1981_2010", "bio2_1981_2010")
-
-
-
-# I will change the name of the variables because they are throwing errors in SDMtune
-names(x_env_covariates) <- env_layer_names
-# confirmed- SDMtune doesnt like dashes in column names (it is read as a mathematical operation)
-
-# rename raster layers to be the same as the input layers
-names(x_global_env_covariates)
-# I will change the name of the variables because they are throwing errors in SDMtune
-names(x_global_env_covariates) <- env_layer_names
-
-```
-
-I will make some quick edits to the SLF presence data as well. These need to be cropped to the extent of the the background area (in this case, the Eastern USA).
-
-```{r crop presences to rasters}
-
-# extent object for eastern USA
-ext.obj <- terra::ext(-96.503906, -59.589844, 28.304381, 47.457809)
-
-# conert to vector
-p_slf_points_vect <- terra::vect(x = p_slf_points, geom = c("x", "y"), crs = "EPSG:4326") %>%
-  # crop by extent area of interest
-  terra::crop(., y = ext.obj) %>%
-  # convert to geom, which gets coordinates of a spatVector
-  terra::geom() 
-
-# convert back to data frame
-p_slf_points <- terra::as.data.frame(p_slf_points_vect) %>%
-  dplyr::select(-c(geom, part, hole))
-
-```
-
-Finally, I will create an output directory folder to hold the model and its output data.
-
 ```{r create directory for file}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
                      "maxent/models")
 
 # create directory for model
-dir.create(path = file.path(mypath, "slf_easternUSA_entire_step1", "plots"))
+dir.create(path = file.path(mypath, "slf_global_v3_TEST"))
+dir.create(path = file.path(mypath, "slf_global_v3_TEST", "plots"))
 
 ```
 
-# create input data object
-
-I need to create a dataset of presences and background points. This dataset will need to contain point-wise values for each of the predictor covariates. `SDMtune` takes an SWD (sample with data) object for this purpose, containing the presences and background points with associated covariate data to be fed into the model.
-
-```{r prepare SWD data object}
-
-if (FALSE) {
-
-  entire_easternUSA_SWD <- SDMtune::prepareSWD(species = "Lycorma delicatula",
-                                               env = x_env_covariates,
-                                               p = p_slf_points,
-                                               a = a_entire_easternUSA_background_points,
-                                               verbose = TRUE # print helpful messages
-                                               )
-  
-  entire_easternUSA_SWD@coords # coordinates
-  entire_easternUSA_SWD@pa # presence / absence (background counted as absence)
-  entire_easternUSA_SWD@data # extracted data from 
-
-}
-
-```
-
-I will also save the output to be used later.
-
-```{r save SWD file}
-
-SDMtune::swd2csv(swd = entire_easternUSA_SWD, file_name = c(
-  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_slf_presences_with_data.csv"),
-  file.path(here(), "vignette-outputs", "data-tables", "easternUSA_entire_absences_with_data.csv")
-  ))
-
-```
-
-# Create training / test split
-
-I will split the presences into training and testing, using 80% of the points for training and 20% for testing. I will then use `SDMtune::randomFold()` to split the training data into 5 partitions for cross-validation. This method was loosely adapted from Srivastava et.al, 2021. 
-
-```{r split data for training and testing}
-
-set.seed(4)
-
-entire_easternUSA_trainTest <-  SDMtune::trainValTest(
-  x = entire_easternUSA_SWD,
-  test = 0.2,
-  only_presence = TRUE
-)
-
-# separate off training data
-entire_easternUSA_train <- entire_easternUSA_trainTest[[1]]
-entire_easternUSA_test <- entire_easternUSA_trainTest[[2]]
-
-entire_easternUSA_train@coords # coordinates
-entire_easternUSA_train@pa # presence / absence (background counted as absence)
-entire_easternUSA_train@data # extracted data from
-
-```
-
-```{r split data into k folds}
-
-# create random folds
-entire_easternUSA_trainFolds <- SDMtune::randomFolds(
-  data = entire_easternUSA_train,
-  k = 5, # 5 folds
-  only_presence = TRUE,
-  seed = 5 
-)
-
-```
-
-# Train Maxent model
-
-First, I will train a model with 5 cross-validated replicates. The model will only be trained on 80% of the slf presence data, with the other 20% being used downstream for analysis. The default settings will be used for Maxent, apart from the following changes:
-
-* ALL feature types used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
-* replicates = 5
-* iterations = 5000. This is the max number of iterations of optimization algorithm to perform before stopping training. Increasing this number allows the algorithm to make more refined predictions.
-
-Other changes to the default will be used, but are not relevant for training the model.
-
-```{r train maxent model}
-
-entire_easternUSA_model <- SDMtune::train(
-  method = "Maxent",
-  data = entire_easternUSA_train,
-  folds = entire_easternUSA_trainFolds, # 5 folds for dataset
-  fc = "lqpht", # feature classes set to ALL
-  iter = 5000, # number of iterations
-  progress = TRUE
-)
-
-```
-
-
-
-
-*NOTE* the output created from this point to the end of the vignette can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`. 
+*NOTE* the output created from this point to the end of the vignette can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`.
 
 ```{r save model as RDS file}
 
-mypath <- file.path(here() %>% 
+mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
+                     "maxent/models/slf_global_v3_TEST")
 
 # save model 
-saveRDS(object = entire_easternUSA_model, file = file.path(mypath, "entire_easternUSA_model.rds"))
+saveRDS(object = global_model, file = file.path(mypath, "global_model.rds"))
 
 ```
 
-From here, the analysis is performed in `SDMtune`. If you wanted to perform your analysis in `dismo`, the function `SDMtune::SDMmodel2MaxEnt()` will convert the above model object into a MaxEnt object in the dismo package.
+From here::here, the analysis is performed in `SDMtune`. If you wanted to perform your analysis in `dismo`, the function `SDMtune::SDMmodel2MaxEnt()` will convert the above model object into a MaxEnt object in the dismo package.
 
-# Evaluate maxent model and make predictions
-
-## Get AUC, TSS, and variable contributions
+# Get AUC, TSS, and variable contributions
 
 I will retrieve AUC and TSS values for both training and test data and save this output as a .csv.
 
@@ -319,66 +118,57 @@ I will retrieve AUC and TSS values for both training and test data and save this
 # vector of AUC values
 AUC <- c(
   # get training AUC value
-  SDMtune::auc(entire_easternUSA_model),
+  SDMtune::auc(global_model),
   # get test AUC value
-  SDMtune::auc(entire_easternUSA_model, test = entire_easternUSA_test)
+  SDMtune::auc(global_model, test = global_test)
 )
 
 # vector of TSS values
 TSS <- c(
    # get training TSS value
-  SDMtune::tss(entire_easternUSA_model),
+  SDMtune::tss(global_model),
   # get test TSS value
-  SDMtune::tss(entire_easternUSA_model, test = entire_easternUSA_test)
+  SDMtune::tss(global_model, test = global_test)
 )
 
 # compile to data frame
 auc_tss <- data.frame(AUC, TSS, row.names = c("Training", "Test"))
 
-# write to .csv
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
 # write csv
-write.csv(auc_tss, file = file.path(mypath, "entire_easternUSA_model_auc_tss.csv"), row.names = TRUE)
+write.csv(auc_tss, file = file.path(mypath, "global_model_auc_tss.csv"), row.names = TRUE)
 
 ```
 
-The relative contribution and permutation importance of each environmental covariate is also available via the `SDMtune::maxentVarImp()` function. These will be put into a table. 
+The relative contribution and permutation importance of each environmental covariate is also available via the `SDMtune::maxentVarImp()` function. These will be put into a table.
 
 ```{r Variable contributions to model}
 
 # variable importance
-var_imp <- SDMtune::maxentVarImp(entire_easternUSA_model)
+var_imp <- SDMtune::maxentVarImp(global_model)
 # write to csv
-write.csv(var_imp, file = file.path(mypath, "entire_easternUSA_model_var_contrib.csv"), row.names = FALSE)
+write.csv(var_imp, file = file.path(mypath, "global_model_var_contrib.csv"), row.names = FALSE)
 
 ```
 
-## Plot ROC, univariate and marginal response curves
- 
-First, I will plot the ROC curves, which show the true positive vs false positive rates. This will be done for each iteration of the model. An AUC of 0.5 or better is desirable. 
+# Plot ROC, univariate and marginal response curves
+
+First, I will plot the ROC curves, which show the true positive vs false positive rates. This will be done for each iteration of the model. An AUC of 0.5 or better is desirable.
 
 ```{r plot ROC}
 
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # loop that plots an ROC curve for each model iteration
-for (a in seq(length(entire_easternUSA_model@models))) {
+for (a in seq(length(global_model@models))) {
   
   # load in temp plot object 
-  plot.ROC <- SDMtune::plotROC(entire_easternUSA_model@models[[a]], test = entire_easternUSA_test)
+  plot.ROC <- SDMtune::plotROC(global_model@models[[a]], test = global_test)
   
   # add title
   plot.ROC <- plot.ROC +
-    ggtitle(paste("ROC curve (sensitivity  vs 1 - Specificity) for", "entire_easternUSA_model", "iteration", a))  
+    ggtitle(paste("ROC curve (sensitivity  vs 1 - Specificity) for", "global_model", "iteration", a))  
   
   # save output
   ggsave(plot.ROC, 
-         filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_", "iter", a, "_ROC.jpg")),
+         filename = file.path(mypath, "plots", paste0("global_model_", "iter", a, "_ROC.jpg")),
          height = 8, 
          width = 10,
          device = "jpeg",
@@ -391,7 +181,7 @@ for (a in seq(length(entire_easternUSA_model@models))) {
 
 ```
 
-Next, I will plot both the univariate and marginal response curves. 
+Next, I will plot both the univariate and marginal response curves.
 
 According to the MaxEnt output, the univariate response curves "represent a different model, namely, a Maxent model created using only the corresponding variable" (Phillips et.al, 2006). These models were trained with each variable alone, to show how that variable affects the probability of presence.
 
@@ -403,16 +193,12 @@ threshold.types <- c("cloglog", "logistic")
 
 ```{r plot univariate curves}
 
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # for each variable used in the model, create a response curve
 for (a in names(x_env_covariates)) {
   
   # load in temp plot object 
   plot.univar <- SDMtune::plotResponse(
-    model = entire_easternUSA_model,
+    model = global_model,
     var = a,
     type = "cloglog",
     fun = "mean",
@@ -421,11 +207,11 @@ for (a in names(x_env_covariates)) {
   
   # add title
   plot.univar <- plot.univar +
-    ggtitle(paste("entire_easternUSA_model", a, "univariate response curve- cloglog output"))  
+    ggtitle(paste("global_model", a, "univariate response curve- cloglog output"))  
   
   # save output
   ggsave(plot.univar, 
-         filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_", a, "_univar_resp_curve_cloglog", ".jpg")),
+         filename = file.path(mypath, "plots", paste0("global_model_", a, "_univar_resp_curve_cloglog", ".jpg")),
          height = 8, 
          width = 10,
          device = "jpeg",
@@ -438,13 +224,9 @@ for (a in names(x_env_covariates)) {
 
 ```
 
-Meanwhile, the marginal response curves "show how each environmental variable affects the Maxent prediction. The curves show how the predicted probability of presence changes as each environmental variable is varied, keeping all other environmental variables at their average sample value" (Phillips et.al, 2006). The marginal response curves show the effects of changing that variable. 
+Meanwhile, the marginal response curves "show how each environmental variable affects the Maxent prediction. The curves show how the predicted probability of presence changes as each environmental variable is varied, keeping all other environmental variables at their average sample value" (Phillips et.al, 2006). The marginal response curves show the effects of changing that variable.
 
 ```{r plot marginal response curves}
-
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
 
 # for each variable used in the model, create a response curve
 for (a in names(x_env_covariates)) {
@@ -454,7 +236,7 @@ for (a in names(x_env_covariates)) {
   
     # load in temp plot object 
     plot.response <- SDMtune::plotResponse(
-      model = entire_easternUSA_model,
+      model = global_model,
       var = a,
       type = b,
       marginal = TRUE,
@@ -464,11 +246,11 @@ for (a in names(x_env_covariates)) {
     
     # add title
     plot.response <- plot.response +
-      ggtitle(paste("entire_easternUSA_model", a, "marginal response curve-", b, "output"))  
+      ggtitle(paste("global_model", a, "marginal response curve-", b, "output"))  
     
     # save output
     ggsave(plot.response, 
-           filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_", a, "_marg_resp_curve_", b, ".jpg")),
+           filename = file.path(mypath, "plots", paste0("global_model_", a, "_marg_resp_curve_", b, ".jpg")),
            height = 8, 
            width = 10,
            device = "jpeg",
@@ -483,41 +265,37 @@ for (a in names(x_env_covariates)) {
 
 ```
 
-## Extract summary statistics
+# Extract summary statistics
 
 Next, I will extract the summary statistics from each model that include the presence/absence thresholds, training statistics and other useful metrics. Specifically, I am interested in extracting particular thresholds (minimum training presence, 10 percentile training presence and maximum training sensitivity plus specificity) so that I can create presence/absence maps based on these. I will save each of the individual tables. I will also extract the results of each model iteration into a table, take the mean of those statistics, and save it.
 
 ```{r extract summary statistics into a table}
 
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # create empty date frame for joining
-empty.table <- as.data.frame(entire_easternUSA_model@models[[1]]@model@results) %>%
-  mutate(statistic = row.names(entire_easternUSA_model@models[[1]]@model@results)) %>% # add column of statistic names
+empty.table <- as.data.frame(global_model@models[[1]]@model@results) %>%
+  mutate(statistic = row.names(global_model@models[[1]]@model@results)) %>% # add column of statistic names
   dplyr::select(statistic) 
 
 # loop to write summary statistics for each iteration of the model
-for (i in seq(length(entire_easternUSA_model@models))) {
+for (i in seq(length(global_model@models))) {
   
   # load in temp object 
-  data.obj <- as.data.frame(entire_easternUSA_model@models[[i]]@model@results)
+  data.obj <- as.data.frame(global_model@models[[i]]@model@results)
   
   # change colname
   colnames(data.obj) <- paste0("iter_", i, "_summary")
   # write to csv
   write.csv(
     x = data.obj, 
-    file = file.path(mypath, paste0("entire_easternUSA_model_summary_iter", i, ".csv")), 
+    file = file.path(mypath, paste0("global_model_summary_iter", i, ".csv")), 
     row.names = TRUE
     )
   
   # add column name to data object
-  data.obj <- mutate(data.obj, statistic = row.names(entire_easternUSA_model@models[[1]]@model@results))
+  data.obj <- mutate(data.obj, statistic = row.names(global_model@models[[1]]@model@results))
   
   # while i has not reached the length of the model replicates, append the summary statistics to the empty table
-  while (i < length(entire_easternUSA_model@models)) {
+  while (i < length(global_model@models)) {
     # join data.obj temporary object to empty table
     empty.table <- right_join(empty.table, data.obj, by = "statistic")
     
@@ -526,13 +304,13 @@ for (i in seq(length(entire_easternUSA_model@models))) {
   }
   
   # if i has reached the length of the model replicates, compute a mean and write the final table to .csv
-  if (i == length(entire_easternUSA_model@models)) {
+  if (i == length(global_model@models)) {
      # compute the mean of the 5 columns     
      empty.table <- mutate(empty.table, mean = rowMeans(empty.table[, -1]))
      # write to csv
      write.csv(
        x = empty.table, 
-       file = file.path(mypath, paste0("entire_easternUSA_model_summary_all_iterations.csv")),
+       file = file.path(mypath, paste0("global_model_summary_all_iterations.csv")),
        row.names = FALSE
        )
       
@@ -547,62 +325,53 @@ for (i in seq(length(entire_easternUSA_model@models))) {
 
 ```
 
-## Write training and testing data to file
+# Write training and testing data to file
 
 It is always a good idea to have the exact data used to train and test a model on hand, so I will write these to the same directory.
 
 ```{r write training and test data}
 
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # write training data to csv
-SDMtune::swd2csv(swd = entire_easternUSA_train, file_name = file.path(mypath, "easternUSA_entire_train_Kfold.csv"))
+SDMtune::swd2csv(swd = global_train, file_name = file.path(mypath, "global_train_Kfold.csv"))
 # load csv in again
-entire_easternUSA_train_Folds <- read.csv(file = file.path(mypath, "easternUSA_entire_train_Kfold.csv"))
+global_train_Folds <- read.csv(file = file.path(mypath, "global_train_Kfold.csv"))
 # bind training data with folds
-entire_easternUSA_train_Folds <- cbind(entire_easternUSA_train_Folds, entire_easternUSA_trainFolds)
+global_train_Folds <- cbind(global_train_Folds, global_trainFolds)
 # overwrite csv for training 
-write_csv(x = entire_easternUSA_train_Folds, file = file.path(mypath, "easternUSA_entire_train_Kfold.csv"))
+write_csv(x = global_train_Folds, file = file.path(mypath, "global_train_Kfold.csv"))
 
 # write testing data to csv
-SDMtune::swd2csv(swd = entire_easternUSA_test, file_name = file.path(mypath, "easternUSA_entire_test.csv"))
+SDMtune::swd2csv(swd = global_test, file_name = file.path(mypath, "global_test.csv"))
 
 ```
 
-## Jackknife test for variable importance
+# Jackknife test for variable importance
 
 The jackknife test is a leave-one-out test that iteratively leaves out each predictor variable and produces a model with all other variables. It also has the option to create a model for that predictor variable alone. It then records the gain or loss in AUC value. This is very informative test and is designed to test variable importance. I will perform a jackknife for the entire model's training data alone. I will also create one for each model iteration using both training and testing data.
 
 ```{r jackknife for the entire model}
 
-# path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # jackknife
-entire_easternUSA_JK <- SDMtune::doJk(
-  model = entire_easternUSA_model,
-  # test = entire_easternUSA_test, # not used for models with replicates
+global_JK <- SDMtune::doJk(
+  model = global_model,
+  # test = global_test, # not used for models with replicates
   metric = "auc",
   with_only = TRUE, # also run test for each variable alone
   progress = TRUE
   )
 
 # write raw data to csv
-write_csv(x = entire_easternUSA_JK, file = file.path(mypath, "entire_easternUSA_model_jackknife_all_iterations_training.csv"))
+write_csv(x = global_JK, file = file.path(mypath, "global_model_jackknife_all_iterations_training.csv"))
 
 # plot jackknife
-entire_easternUSA_JK_plot <- plotJk(jk = entire_easternUSA_JK, type = "train")
+global_JK_plot <- plotJk(jk = global_JK, type = "train")
 
-entire_easternUSA_JK_plot <- entire_easternUSA_JK_plot +
-  ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
+global_JK_plot <- global_JK_plot +
+  ggtitle(paste("global_entire- jackknife test")) +
   labs(subtitle = "all iterations, training data")
 
-ggsave(entire_easternUSA_JK_plot, 
-           filename = file.path(mypath, "plots", "entire_easternUSA_model_jackknife_all_iterations_training.jpg"),
+ggsave(global_JK_plot, 
+           filename = file.path(mypath, "plots", "global_model_jackknife_all_iterations_training.jpg"),
            height = 8, 
            width = 10,
            device = "jpeg",
@@ -621,25 +390,20 @@ plot.types <- c("train", "test")
 
 ```{r jackknife test for each model iteration}
 
- # path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # for loop to output csv file of jackknife test, one per model iteration
-for (a in seq(length(entire_easternUSA_model@models))) {
+for (a in seq(length(global_model@models))) {
   
   # jackknife
   jk.obj <- SDMtune::doJk(
-    model = entire_easternUSA_model@models[[a]],
-    test = entire_easternUSA_test, 
+    model = global_model@models[[a]],
+    test = global_test, 
     metric = "auc",
     with_only = TRUE, # also run test for each variable alone
     progress = TRUE
     )
   
   # write raw data to csv
-  write_csv(x = jk.obj, file = file.path(mypath, paste0("entire_easternUSA_model_jackknife_iter", a, "_training_testing.csv")))
+  write_csv(x = jk.obj, file = file.path(mypath, paste0("global_model_jackknife_iter", a, "_training_testing.csv")))
     
   # sub-loop to output 2 types of plots per test, training and testing
     for(b in plot.types) {
@@ -649,11 +413,11 @@ for (a in seq(length(entire_easternUSA_model@models))) {
       
       # modify objects to add titles and subtitles
       jk.obj_plot <- jk.obj_plot +
-        ggtitle(paste("entire_easternUSA_entire- jackknife test")) +
+        ggtitle(paste("global_entire- jackknife test")) +
         labs(subtitle = paste0("iter ", a, ", ", b, "ing data"))
       
       ggsave(jk.obj_plot, 
-             filename = file.path(mypath, "plots", paste0("entire_easternUSA_model_jackknife_iter", a, "_", b, "ing.jpg")),
+             filename = file.path(mypath, "plots", paste0("global_model_jackknife_iter", a, "_", b, "ing.jpg")),
              height = 8, 
              width = 10,
              device = "jpeg",
@@ -671,30 +435,25 @@ for (a in seq(length(entire_easternUSA_model@models))) {
 
 ```
 
-## Variable importance
+# Variable importance
 
-Lastly, the variable importance will be calculated as a percentage probability. 
+Lastly, the variable importance will be calculated as a percentage probability.
 
 ```{r variable importance}
-  
- # path to directory
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
 
 # calculate variable importance
-var_imp <- SDMtune::varImp(model = entire_easternUSA_model, progress = TRUE)
+var_imp <- SDMtune::varImp(model = global_model, progress = TRUE)
 # write to csv
-write_csv(x = var_imp, file = file.path(mypath, "entire_easternUSA_model_variable_importance.csv"))
+write_csv(x = var_imp, file = file.path(mypath, "global_model_variable_importance.csv"))
 
 # plot
 var_imp_plot <- SDMtune::plotVarImp(df = var_imp)
 
 var_imp_plot <- var_imp_plot +
-  ggtitle("Variable importance for entire_easternUSA_model")  
+  ggtitle("Variable importance for global_model")  
 
 ggsave(var_imp_plot, 
-       filename = file.path(mypath, "plots", "entire_easternUSA_model_variable_importance.jpg"),
+       filename = file.path(mypath, "plots", "global_model_variable_importance.jpg"),
        height = 8, 
        width = 10,
        device = "jpeg",
@@ -703,18 +462,14 @@ ggsave(var_imp_plot,
 
 ```
 
-## Confusion Matrix for common threshold values
+# Confusion Matrix for common threshold values
 
 Lastly, I will pick out the mean cloglog threshold values for each type of threshold used in the model and run a confusion matrix for each value. A confusion matrix will show the number of true positives, false positives, true negatives and false negatives per threshold value and will help to determine which threshold makes the most sense, given our data. I will need to create a vector of these values, which can be found in the model_summary_all_iterations file created by this workflow.
 
 ```{r create data frame for confusion matrix}
 
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1")
-
 # load in summary file and slice the threshold values
-conf.matr.data <- read.csv(file.path(mypath, "entire_easternUSA_model_summary_all_iterations.csv")) %>%
+conf.matr.data <- read.csv(file.path(mypath, "global_model_summary_all_iterations.csv")) %>%
   dplyr::slice(20, 24, 28, 32, 36, 40, 44, 48, 52)
 
 ```
@@ -725,11 +480,11 @@ conf.matr.data <- read.csv(file.path(mypath, "entire_easternUSA_model_summary_al
   conf.matr.output <- as.data.frame(conf.matr.data[, 1]) %>%
     rename("hold_type" = "conf.matr.data[, 1]")
 
-for (a in seq(length(entire_easternUSA_model@models))) {
+for (a in seq(length(global_model@models))) {
 
   conf.matr.hold <- SDMtune::confMatrix(
-    model = entire_easternUSA_model@models[[a]],
-    test = entire_easternUSA_test,
+    model = global_model@models[[a]],
+    test = global_test,
     type = "cloglog",
     th = conf.matr.data[, 6] # the mean value for all cloglog thresholds
     ) 
@@ -743,13 +498,13 @@ for (a in seq(length(entire_easternUSA_model@models))) {
    write.table(
     x = conf.matr.hold, 
     sep = ",",
-    file = file.path(mypath, paste0("entire_easternUSA_model_thresh_confusion_matrix_iter", a, ".csv")), 
+    file = file.path(mypath, paste0("global_model_thresh_confusion_matrix_iter", a, ".csv")), 
     row.names = FALSE,
     col.names = c("threshold_type", "threshold_value", "tp", "fp", "fn", "tn")
     )
   
    # before all model iterations have been summarized, append to empty table
-   while (a < length(entire_easternUSA_model@models)) {
+   while (a < length(global_model@models)) {
       # join conf.matr.hold temporary object to empty table
       conf.matr.output <- right_join(conf.matr.output, conf.matr.hold, by = "hold_type")
       
@@ -758,7 +513,7 @@ for (a in seq(length(entire_easternUSA_model@models))) {
       }
     
      # when all model iterations have been appended, take the mean threshold value and write to csv
-    if (a == length(entire_easternUSA_model@models)) {
+    if (a == length(global_model@models)) {
       # compute the mean of the 5 columns     
       conf.matr.output <- mutate(conf.matr.output, 
                                  tp_mean = rowMeans(dplyr::across(contains("tp"))), # compute the average of all "tp" columns
@@ -775,7 +530,7 @@ for (a in seq(length(entire_easternUSA_model@models))) {
       # write to csv
       write.csv(
         x = conf.matr.output, 
-        file = file.path(mypath, paste0("entire_easternUSA_model_thresh_confusion_matrix_all_iterations.csv")),
+        file = file.path(mypath, paste0("global_model_thresh_confusion_matrix_all_iterations.csv")),
         row.names = FALSE
         )
   
@@ -789,72 +544,6 @@ for (a in seq(length(entire_easternUSA_model@models))) {
 
 ```
 
-*NOTE* This is the end of the output that can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`
-
-# Appendix
-
-## Create model report- unfinished
-
-If you so desire, you can write a report of the model output using `SDMtune::modelReport()`. This function creates a report that is similar to the default MaxEnt output. It will include a jackknife analysis of contribution, marginal response curves, testing and training data.
-
-```{r isolate highest AUC model iteration}
-
-# these code were adapted from the SDMtune tutorials
-# code still isnt working
-
-if (FALSE) {
-
-  entire_easternUSA_model@models 
-  # Order results by highest test AUC 
-  entire_easternUSA_model@results[order(-entire_easternUSA_model@results$test_AUC), ] 
-  # Combine cross validation models for output with highest test AUC 
-  idx <- which.max(entire_easternUSA_model@results$test_AUC) 
-  combined_model <- combineCV(entire_easternUSA_model@models[[idx]])
-  
-  # re-trains the model on all data
-  entire_easternUSA_model <- SDMtune::combineCV(entire_easternUSA_model)
-  
-}
-
-```
-
-```{r produce model report}
-
-if (FALSE) {
-
-  modelReport(
-    model = entire_easternUSA_model,
-    folder = "slf_easternUSA_entire_step1",
-    test = entire_easternUSA_test,
-    type = "cloglog", # default output type
-    response_curves = TRUE,
-    jk = TRUE,
-    verbose = TRUE
-    )
-  
-}
-
-```
-
-## Compute Sensitivity and Specificity- unfinished
-
-Lastly, I will use this confusion matrix to calculate the sensitivity and specificity for each threshold value. The sensitivity represents the percentage of presences that were correctly identified by the algorithm at that threshold, while the specificity represents the percentage of background points that were correctly identified by the algorithm at that threshold. I will only do this for the confusion matrix for mean threshold values from all iterations.
-
-```{r compute sensitivity and specificity}
-if(FALSE) {
-mypath <- file.path(here() %>% 
-                       dirname(),
-                     "maxent/models/slf_easternUSA_entire_step1_v1")
-
-# read in confusion matrix
-conf.matr.output <- read.csv(file = file.path(mypath, "easternUSA_entire_thresh_confusion_matrix_all_iterations.csv"))
-
-conf.matr.output <- dplyr::mutate(conf.matr.output, 
-                                  Sensitivity = apply(conf.matr.output, MARGIN = 1, FUN = (tp_mean / (tp_mean + fn_mean))))
-}
-
-```
-
 # References
 
 Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
@@ -863,4 +552,4 @@ Phillips, S. J., R. P. Anderson, and R. E. Schapire. 2006. Maximum entropy model
 
 Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
 
-Vignali, S., Barras, A. G., Arlettaz, R., Braunisch, V. (2022). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evololution, 10(20), 11488–11506. https://doi.org/10.1002/ece3.6786
+Vignali, S., Barras, A. G., Arlettaz, R., Braunisch, V. (2022). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evololution, 10(20), 11488–11506. <https://doi.org/10.1002/ece3.6786>

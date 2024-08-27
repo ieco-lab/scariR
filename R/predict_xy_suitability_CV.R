@@ -79,8 +79,35 @@
 #'be returned per predict.type, predict.fun and buffer.fun combination.
 #'
 #'@examples
-#'examples
 #'
+#'EXAMPLE USAGE:
+#'
+#'# simple predict method
+#'slfSpread::predict_xy_suitability_CV(
+#' xy.obj = IVR_regions,
+#' xy.type = "IVR regions",
+#' env.covar.obj = x_global_hist_env_covariates,
+#' model.obj = global_model,
+#' mypath = mypath,
+#' clamp.pred = TRUE,
+#' predict.type = c("cloglog", "logistic"),
+#' output.name = "global_wineries_1981-2010"
+#' )
+#'
+#' # buffered predict method
+#'slfSpread::predict_xy_suitability_CV(
+#' xy.obj = IVR_regions,
+#' xy.type = "IVR regions",
+#' env.covar.obj = x_global_hist_env_covariates,
+#' model.obj = global_model,
+#' mypath = mypath,
+#' clamp.pred = TRUE,
+#' predict.type = c("cloglog", "logistic"),
+#' output.name = "global_wineries_1981-2010",
+#' buffer.pred = TRUE,
+#' buffer.dist = 20000, # in meters
+#' buffer.fun = c("min", "max")
+#' )
 #'
 #'@export
 predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, output.name) {
@@ -89,43 +116,43 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
 
   # ensure objects are character type
   if (is.character(predict.fun) == FALSE) {
-    cli::cli_alert_danger("Parameter 'predict.fun' must be of type 'character'")
+    cli::cli_abort("Parameter 'predict.fun' must be of type 'character'")
     stop()
   }
   if (is.character(predict.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'predict.type' must be of type 'character'")
+    cli::cli_abort("Parameter 'predict.type' must be of type 'character'")
     stop()
   }
   if (is.character(xy.type) == FALSE) {
-    cli::cli_alert_danger("Parameter 'xy.type' must be of type 'character'")
+    cli::cli_abort("Parameter 'xy.type' must be of type 'character'")
     stop()
   }
   if (is.character(mypath) == FALSE) {
-    cli::cli_alert_danger("Parameter 'mypath' must be of type 'character'")
+    cli::cli_abort("Parameter 'mypath' must be of type 'character'")
     stop()
   }
   if (is.character(output.name) == FALSE) {
-    cli::cli_alert_danger("Parameter 'output.name' must be of type 'character'")
+    cli::cli_abort("Parameter 'output.name' must be of type 'character'")
     stop()
   }
   if (is.character(buffer.fun) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.fun' must be of type 'character'")
+    cli::cli_abort("Parameter 'buffer.fun' must be of type 'character'")
     stop()
   }
 
   # ensure objects are logical type
   if (is.logical(clamp.pred) == FALSE) {
-    cli::cli_alert_danger("Parameter 'clamp.pred' must be of type 'logical'")
+    cli::cli_abort("Parameter 'clamp.pred' must be of type 'logical'")
     stop()
   }
   if (is.logical(buffer.pred) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.pred' must be of type 'logical'")
+    cli::cli_abort("Parameter 'buffer.pred' must be of type 'logical'")
     stop()
   }
 
   # ensure objects are numeric type
   if (is.numeric(buffer.dist) == FALSE) {
-    cli::cli_alert_danger("Parameter 'buffer.dist' must be of type 'numeric'")
+    cli::cli_abort("Parameter 'buffer.dist' must be of type 'numeric'")
     stop()
   }
 
@@ -148,7 +175,7 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
   if (ncol(xy_import) == 2 & is.numeric(xy_import[, 1]) & is.numeric(xy_import[, 2])) {
     cli::cli_alert_success("importing xy coordinate data")
   } else {
-    cli::cli_alert_danger("Data import must contain only coordinates in decimal degree. Columns must be longitude (column label 'x') and latitude (column label 'y'), in that order")
+    cli::cli_abort("Data import must contain only coordinates in decimal degree. Columns must be longitude (column label 'x') and latitude (column label 'y'), in that order")
     stop()
   }
 

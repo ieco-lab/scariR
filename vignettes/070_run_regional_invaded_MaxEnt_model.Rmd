@@ -5,15 +5,18 @@ contact: "sam.owens@temple.edu"
 date: "2024-08-02"
 output: html_document
 ---
+
 # Overview
 
-In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional-scale model based on the invaded North American range.
+In the last vignette, I cropped the covariate layer to the extent of each regional model training area and chose background points from those layers to characterize these covariates. In this vignette, I will train our first regional-scale model based on the invaded North American range. This another step toward my goal of analyzing the realized niche of Lycorma delicatula at multiple spatial scales. This output will be combined with the other regional models and compared directly to the global scale model to determine the impact of climate change on the suitability of SLF in important viticultural regions.
+
+Just to reiterate, I hypothesize that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change. I also hypothesize that the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could.
 
 # Setup
 
 *CURRENT MODEL VERSION: v7*
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
@@ -37,13 +40,13 @@ library(viridis)
 
 `SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
-```{r check maxent installation}
+```{r check maxent installation, message = FALSE}
 
 checkMaxentInstallation(verbose = TRUE)
 
 ```
 
-This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory. 
+This chunk sets the java memory allocation (`Xmx`). I will increase the memory allocation from 512m (the default) to 2GB of memory.
 
 ```{r control MaxEnt settings}
 
@@ -57,7 +60,7 @@ options(java.parameters = "-Xmx2048m")
 
 # 1. Format Data for Model
 
-I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used in the `SDMtune::train()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets.
+I will load in the datasets I will need for the MaxEnt models. These are labeled at the beginning of the object name by the parameter they will be used in the `SDMtune::train()` function (x, p or a). I will begin by loading in the covariate data and then by loading in the points datasets. The `env_covariates` dataset labeled `invaded` contains a raster of each of the environmental covariates used to train the model- these were the covariates that were masked using the K-G climate zones in the last vignette.
 
 ## 1.1 Input Data- env covariates
 
@@ -118,7 +121,7 @@ env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
 
 ```
 
-```{r stack historical covariates and make naming consistent}
+```{r stack historical covariates and make naming consistent, message = FALSE}
 
 # easternUSA rasters
 # stack env covariates
@@ -154,7 +157,7 @@ names(x_global_hist_env_covariates) <- env_layer_names
 
 ```
 
-```{r load in CMIP6 covariates}
+```{r stack CMIP6 covariates, message = FALSE}
 
 # SSP126
 x_global_126_env_covariates <- terra::rast(x = x_global_126_env_covariates_list)
@@ -208,7 +211,7 @@ rm(x_global_585_env_covariates_list)
 
 ## 1.2 Input data- presences / absences (training and testing)
 
-I need to also load in the SLF presence dataset created in vignette 030 and the background points dataset created in vignette 040.
+I need to also load in the SLF presence and background points datasets created in vignette 060.
 
 ```{r load in points datasets}
 
@@ -221,7 +224,7 @@ a_regional_invaded_background_points <- read.csv(file.path(here::here(), "vignet
 
 ```
 
-I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into two different spatial extents: the invaded range and the native range. I will filter the presences from the invaded range and will use these points to train the invaded model, while the presences from the native range will be used to validate / test the model. The native model will work in the opposite way- the native range data will be used to train while the invaded range data will be used for validation. 
+I will need to combine the above covariates, presence and background point datasets into two different datasets to feed into MaxEnt: one for training and another for testing the model. These dataset will need to contain point-wise values for each of the predictor covariates at the presence and background point coordinates. `SDMtune` takes an SWD (sample with data) S4 object for these purposes, containing the presences and background points with associated covariate data to be fed into the model. First, I will create the training dataset. I will need to perform some extra edits on the slf presences. These presences need to be filtered into the training and testing datasets. I will filter the presences from the invaded range in North America and will use these points to train the invaded model, while the presences from the invaded range in Asia will be used to validate / test the model.
 
 ### Model training object
 
@@ -231,9 +234,9 @@ p_slf_invaded_train <- read.csv(file = file.path(here::here(), "vignette-outputs
 
 ```
 
-Now I will create the "samples with data" object that SDMtune requires. 
+Now I will create the "samples with data" object that SDMtune requires.
 
-```{r prepare SWD data object}
+```{r prepare training SWD data object}
 
 if (TRUE) {
 
@@ -264,7 +267,7 @@ if (TRUE) {
 
 I usually look at how many records were dropped before I save it, because SDMtune gives an undefined warning about how many samples were discarded. In this case, we only lost 3 presence records, so this is acceptable. I will also save the output to be used later.
 
-```{r save SWD file}
+```{r save training SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
   file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v7.csv"),
@@ -275,7 +278,7 @@ SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
 
 ### Model testing object
 
-The testing / validation SWD object will be created in the same fashion, except using the presences from the invaded range in Asia. These presences will be selected using a shapefile of the Japan/SK extent as a mask. we chose to test using the invaded region over the native region because Sobek-Swant et al found that their invaded MaxEnt models performed poorly when projected to the native range for EAB. Additionally, the initial versions of this model performed very poorly when tested on the native range (Sobek-Swant et al, 2012). 
+The testing / validation SWD object will be created in the same fashion, except using a subset of the presences from the invaded range in Asia. These presences will be selected using a shapefile of the Japan/SK extent as a mask. we chose to test using the invaded region over the native region because Sobek-Swant et al found that their invaded MaxEnt models performed poorly when projected to the native range for EAB. Additionally, the initial versions of this model performed very poorly when tested on the native range (Sobek-Swant et al, 2012).
 
 ```{r import test points}
 
@@ -283,7 +286,7 @@ p_slf_invaded_test <- read.csv(file = file.path(here::here(), "vignette-outputs"
 
 ```
 
-```{r prepare SWD data object}
+```{r prepare testing SWD data object}
 
 if (TRUE) {
 
@@ -303,7 +306,7 @@ if (TRUE) {
 
 ```
 
-```{r save SWD file}
+```{r save testing SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
   file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v7.csv"),
@@ -317,13 +320,13 @@ file.remove(file.path(here::here(), "vignette-outputs", "data-tables", "NULL.csv
 
 # 2. Train Invaded Regional Model
 
-First, I will train a MaxEnt model. This and the other regional scale model will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity [SOURCE](). The regional_invaded model will only be trained on the proportion of presence data from the invaded range. It will then be validated using the presence data from the native range (China).
+First, I will train a MaxEnt model. This and the other regional-scale models will NOT be cross-validated. Cross-validation randomly selects a percentage of the presence data for training and testing, without regard for spatial location. This process makes sense for the global model, which is fed ALL presence data. Due to the spatial scale of the regional models, it makes more sense to spatially separate the training and testing data if given the opportunity.
 
 I will use the following list of hyperparameters to train the initial model, which I selected via tuning for the global model.
 
-* ALL feature classes (fc) used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
-* regularization multiplier (reg) set to 1.5 (more regularized than default of 1)
-* iterations = 5000. This is the max number of iterations for the optimization algorithm to perform before stopping training. Increasing this number from the default of 500 allows the algorithm to make more refined predictions.
+-   ALL feature classes (fc) used (l = linear, q = quadratic, p = product, h = hinge, t = threshold)
+-   regularization multiplier (reg) set to 1.5 (more regularized than default of 1)
+-   iterations = 5000. This is the max number of iterations for the optimization algorithm to perform before stopping training. Increasing this number from the default of 500 allows the algorithm to make more refined predictions.
 
 ```{r train maxent model}
 
@@ -340,7 +343,7 @@ regional_invaded_model <- SDMtune::train(
 
 ## Summary Statistics
 
-This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`. 
+This function produces all summary statistics for this model. For the complete and annotated workflow used to create this function, see `051_compute_MaxEnt_summary_statistics_workflow.Rmd`.
 
 ```{r compute summary statistics using custom function}
 
@@ -367,9 +370,7 @@ slfSpread::compute_MaxEnt_summary_statistics(
 
 ## 3.1 Create distribution map for area of interest
 
-Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds. The workflow for this function can be found in vignette `052_create_suitability_maps_workflow.Rmd` and is wrapped into the function `slfSpread::create_MaxEnt_suitability_maps()`.
-
-I will take the above map and reclassify it so that areas that aren't suitable are more obvious. I will use the `MTSS` (maximum training sensitivity plus specificity threshold), as this threshold is one of the most rigorous available (ADD MORE). I will also use the `MTP` (minimum training presence) and `10_percentile` (10 percentile training threshold) thresholds. These thresholds represent a continuum of training data exclusion. The `MTP` threshold does not exclude any data and assumes confidence in the validity of the training data, making the most conservative predictions (the largest suitable range for invasive species) The `10_percentile` threshold excludes the top 10% of suitable training samples, which would be more appropriate if I have less confidence in my training data. Finally, the `MTSS` threshold maximizes the sensitivity (the likelihood of detecting a true positive) and (WHAT ELSE) (Maryam Bordkhani (n.d.)).
+Lastly, I will use the `SDMtune::predict()` function to predict the suitability for the range of interest. I will threshold the map by the `MTP`, `MTSS` and `10_percentile` thresholds.
 
 I will retrieve the specific value for the MTSS threshold for this model and use it to define a what is considered unsuitable in this raster. Then, I will reclassify the mean raster so that anything below this threshold is now "unsuitable". I will use the mean cloglog threshold for all iterations. I will create a binary version of the mean raster, with unsuitable regions, which are below the MTSS training threshold, as 0, and those above the threshold as 1. Then, I can reclassify averaged raster of MaxEnt predictions. I will load in the averaged prediction for this model and reclassify the raster using a temporary raster layer that I will create. This raster will only have values where the model predicts the climate to be unsuitable, so that it can be plotted overtop the averaged raster to mask unsuitable areas
 
@@ -409,7 +410,7 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-I will also create suitability maps for the projected 2041-2070 climate data.
+I will also create suitability maps for ssp scenarios of the projected 2041-2070 climate data.
 
 ```{r predict suitability maps for ssp126 data}
 
@@ -465,11 +466,38 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-# Appendix
+We have trained the Ri.NAmerica model, so now we will move on to train the other two regional-scale models. 
+
+# References
+
+Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
+
+Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+
+Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+
+Maryam Bordkhani. (n.d.). threshold rule.
+
+Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
+
+Sobek-Swant S, Kluza DA, Cuddington K, Lyons DB. Potential distribution of emerald ash borer: What can we learn from ecological niche models using Maxent and GARP? Forest Ecology and Management. 2012 Oct 1;281:23–31.
+
+Steven Phillips. (2017). A Brief Tutorial on Maxent. <http://biodiversityinformatics.amnh.org/open_source/maxent/>.
+
+Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: <http://biodiversityinformatics.amnh.org/open_source/maxent/>. Accessed on 2023-9-18.
+
+Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+
+VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. <https://doi.org/10.1016/j.ecolmodel.2008.11.010>
+
+Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
+
+
+# Appendix {.hidden}
 
 ## 3.2 Predict suitability for known SLF presences
 
-```{r data import}
+```{r data import- slf populations}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
@@ -479,7 +507,7 @@ mypath <- file.path(here::here() %>%
 slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
   dplyr::select(-species)
 
-``` 
+```
 
 ```{r predictions for known SLF populations- historical}
 
@@ -541,9 +569,9 @@ slfSpread::predict_xy_suitability(
 
 ## 3.3 Predict suibability for IVR regions
 
-I will perform the same action as above, but for the locations of important wineries around the world. 
+I will perform the same action as above, but for the locations of important wineries around the world.
 
-```{r data import}
+```{r data import- wineries}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
@@ -555,7 +583,7 @@ load(file = file.path(here::here(), "data", "wineries.rda"))
 IVR_regions <- wineries %>%
   dplyr::select(x, y)
 
-``` 
+```
 
 ```{r predictions for IVR coordinate data- historical}
 
@@ -618,31 +646,3 @@ slfSpread::predict_xy_suitability(
 )
 
 ```
-
-We have the regional_invaded model trained, so now we will move on to train the regional_native model
-
-# References
-
-Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
-
-Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
-
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
-
-Maryam Bordkhani. (n.d.). threshold rule.
-
-Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
-
-Sobek-Swant S, Kluza DA, Cuddington K, Lyons DB. Potential distribution of emerald ash borer: What can we learn from ecological niche models using Maxent and GARP? Forest Ecology and Management. 2012 Oct 1;281:23–31. 
-
-Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
-
-Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: http://biodiversityinformatics.amnh.org/open_source/maxent/. Accessed on 2023-9-18.
-
-Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
-
-VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
-
-Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
-
-

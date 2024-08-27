@@ -55,19 +55,9 @@
 #'
 #'The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'dismo', 'SDMtune', 'viridis', 'plotROC', 'cli', and 'terra'.
 #'
-#'model.obj <- entire_easternUSA_model
-#'model.name <- "entire_easternUSA_model"
-#'mypath <- file.path(here() %>%
-#'                     dirname(),
-#'                                   "maxent/models/slf_easternUSA_entire_step1")
-#'env.covar.obj <- x_env_covariates
-#'train.obj <- entire_easternUSA_train
-#'test.obj <- entire_easternUSA_test
-#'jk.test.type <- c("train", "test") # used to produce jackknife plots
-#'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
-#'
 #'@return
 #'The output of this function includes the following:
+#'
 #'* training and test datasets used for the model
 #'* listed model parameters and suitability thresholds
 #'* variable contributions, permutation importance and SD
@@ -80,7 +70,29 @@
 #'
 #'@examples
 #'
-#'TBD
+#'ARGUMENT USAGE:
+#'model.obj = regional_native_model
+#'model.name = "regional_native"
+#'
+#'mypath <- file.path(here::here() %>%
+#'                     dirname(),
+#'                      "maxent/models/slf_regional_native_v3")
+#'
+#'jk.test.type <- c("train", "test") # used to produce jackknife plots
+#'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
+#'
+#'# EXAMPLE USAGE:
+#'slfSpread::compute_MaxEnt_summary_statistics(
+#'model.obj = regional_native_model,
+#'model.name = "regional_native",
+#'mypath = mypath,
+#'create.dir = TRUE, # create subdirectory
+#'env.covar.obj = x_native_env_covariates, # env covariates raster stacked
+#'train.obj = regional_native_train, # training data used to create model
+#'test.obj = regional_native_test, # data you wish to use to test the model
+#'plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
+#'jk.test.type = c("train", "test") # types of jackknife curves to be created
+#')
 #'
 #'@export
 compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {
@@ -91,30 +103,30 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
     checkMaxentInstallation(verbose = TRUE)
     # stop if it isnt installed
     if (checkMaxentInstallation() == FALSE) {
-      cli::cli_alert_danger("The latest version of Java and MaxEnt for Java must be installed")
+      cli::cli_abort("The latest version of Java and MaxEnt for Java must be installed")
       stop()
     }
 
     # ensure objects are character type
     if (is.character(model.name) == FALSE) {
-      cli::cli_alert_danger("Parameter 'model.name' must be of type character")
+      cli::cli_abort("Parameter 'model.name' must be of type character")
       stop()
     }
     if (is.character(jk.test.type) == FALSE) {
       # error message
-      cli::cli_alert_danger("Parameter 'jk.test.type' must be of type character")
+      cli::cli_abort("Parameter 'jk.test.type' must be of type character")
       stop()
     }
     if (is.character(plot.fun) == FALSE) {
-      cli::cli_alert_danger("Parameter 'plot.fun' must be of type character")
+      cli::cli_abort("Parameter 'plot.fun' must be of type character")
       stop()
     }
     if (is.character(plot.type) == FALSE) {
-      cli::cli_alert_danger("Parameter 'plot.type' must be of type character")
+      cli::cli_abort("Parameter 'plot.type' must be of type character")
       stop()
     }
     if (is.character(mypath) == FALSE) {
-      cli::cli_alert_danger("Parameter 'mypath' must be of type character")
+      cli::cli_abort("Parameter 'mypath' must be of type character")
       stop()
     }
 
@@ -137,7 +149,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
       dir.create(mypath, "plots")
 
     } else {
-      cli::cli_alert_danger("'create.dir' must be of type 'logical'")
+      cli::cli_abort("'create.dir' must be of type 'logical'")
       stop()
 
     }

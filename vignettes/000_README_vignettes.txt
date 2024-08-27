@@ -1,4 +1,6 @@
+###########################
 ########## ABOUT ##########
+###########################
 
 # slfSpread
 # folder: vignettes
@@ -6,7 +8,9 @@
 
 This README is for the vignettes subfolder, which contains workflows for my package slfSpread. Outputs from these vignettes are stored in "data" or "vignette-outputs".
 
+###########################
 ########## FILES ##########
+###########################
 
 ----------010_initialize_pkg.R----------
 
@@ -75,6 +79,18 @@ v1- in sandbox/vignettes_old. creates v1 of the global model
 v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
 v3- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
 
+
+
+----------051_compute_MaxEnt_summary_statistics_workflow.Rmd----------
+
+## About
+
+This vignette contains an example workflow of the R function "compute_MaxEnt_summary_statistics.R", which uses the model objects from SDMtune to calculate summary statistics.
+
+## Changelog
+
+v0-
+v1- 2024-08-27
 
 
 ----------060_setup_regional_MaxEnt_models.Rmd----------
@@ -271,5 +287,6 @@ v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP sce
 ## changelog
 
 v0- initial version- 08-12-2024
+v
 
 
