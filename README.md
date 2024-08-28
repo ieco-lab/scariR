@@ -56,15 +56,15 @@ slfSpread::create_risk_report(
 
 You should note the risk map and accompanying risk plots:
 
-![Projected current and future risk of *Lycorma delicatula* establishment under climate change | USA](https://github.com/user-attachments/assets/641c6183-5357-4ef6-84ef-59d0a35d1b92)
+![Projected current and future risk of *Lycorma delicatula* establishment under climate change | USA](https://github.com/user-attachments/assets/641c6183-5357-4ef6-84ef-59d0a35d1b92) {width=50%}
 
 The points on the map represent key viticultural regions. These regions and their colored risk zone correspond to points and colors on the quadrant plot:
 
-![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | USA](https://github.com/user-attachments/assets/4ee16d43-68b6-40f2-a4db-d16f31a8ab11)
+![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | USA](https://github.com/user-attachments/assets/4ee16d43-68b6-40f2-a4db-d16f31a8ab11) {width=50%}
 
 The accompanying table provides a list of key viticultural regions and their geographical region (state/province): 
 
-![List of viticultural regions and SLF risk level](https://github.com/user-attachments/assets/6fa11e83-ae4c-4c26-8f93-adf45ff79a3b)
+![List of viticultural regions and SLF risk level](https://github.com/user-attachments/assets/6fa11e83-ae4c-4c26-8f93-adf45ff79a3b) {width=50%}
 
 You may begin to notice that a particular region has many records, like we can see is the case for Washington State. You could then produce a report only for that region, to get a better idea of the overall trend of risk shift due to climate change. We will produce a report for Washington State alone, to better visualize this trend:
 
@@ -81,9 +81,9 @@ slfSpread::create_risk_report(
 
 We can now see that Washington state exhibits a totally different trend from the rest of the country
 
-![Projected current and future risk of *Lycorma delicatula* establishment under climate change | Washington, USA](https://github.com/user-attachments/assets/767a60c1-ec5a-4e7c-a246-7a29fb478f81)
+![Projected current and future risk of *Lycorma delicatula* establishment under climate change | Washington, USA](https://github.com/user-attachments/assets/767a60c1-ec5a-4e7c-a246-7a29fb478f81) {width=50%}
 
-![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | Washington, USA](https://github.com/user-attachments/assets/cfea701c-1c10-46a0-96d7-889922f59f52)
+![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | Washington, USA](https://github.com/user-attachments/assets/cfea701c-1c10-46a0-96d7-889922f59f52) {width=50%}
 
 This function can be applied to important winegrowing regions across the globe because it uses our dataset `data/wineries_tidied.rds`, which contains a sample (1,074) of the world's most important winegrowing regions.
 
