@@ -6,7 +6,7 @@ This package is a research compendium for the manuscript:
 
 We outline a workflow for conducting species distribution modeling (SDM) for the invasive Lycorma delicatula. We primarily provide tools for viticulturalists to assess the risk of establishment of L. delicatula at their locality currently and under predicted future climate conditions. Viticulturalists should apply our function 'create_risk_report' to retrieve present and climate change risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. These resources are intended to help viticulturalists assess respond to predicted risk for Lycorma delicatula establishment under climate change. We also apply a novel multi-scale approach to model this invasive pest and find that our ensemble of regional-scale models provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF more effectively than our global-scale model. Modelers should adapt and apply this framework to model the global suitability for establishment of other incipient invaders under climate change.
 
-![Alt text](/vignette-outputs/figur)
+![slf_binarized_risk_patchwork_ssp_mean](https://github.com/user-attachments/assets/e969dd8b-a38b-4b9a-8f10-c2529bf32e70)
 
 Here are the main packages that this package depends on:
 
@@ -18,6 +18,7 @@ install.packages("ggnewscale", version = '0.4.10')
 ```
 
 # How to reproduce this analysis
+
 
 
 
