@@ -8,9 +8,11 @@ output: html_document
 
 # Overview
 
+In vignettes 060-090, I created three regional-scale MaxEnt models for invasive plant pest *Lycorma delicatula* based on historical and predicted future climate trends under climate change. One of these models was based on the planthopper's native range in east Asia, while the other two models were based on the regions it has so far invaded (the Koreas/Japan and North America). These regional models were created using the same data and settings as the global-scale version (vignette 050), which considers all regions together.
 
+Our goal is to compare the global-scale output with that from the three regional-scale models. A global-scale model is the traditional approach to modeling species distributions and represents an important generalization made using all data, but it may not consider localized climate conditions that differ between regions (Gallien et al, 2012). I hypothesized that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change (Araújo and New, 2007). I also hypothesize that the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could. 
 
-
+We will ensemble the three regional-scale models into a single prediction using a weighted mean approach. This will involve weighting each model's predictions by the ExDet metric (Which we measured in the last vignette, 100) and its test AUC value. The ExDet metric measures the level of extrapolation in the model's predictions when projecting models. Measuring the level of extrapolation is very important when making predictions across different climate zones, time periods, or for range shifting species (we check all of those boxes) (Elith et al, 2010; Mesgaran et al, 2014). We will directly use the Exdet metric from each model to measure our confidence in its predictions for a particular grid cell. We will also use the test AUC from each model in the weighting so that we also consider goodness of fit. 
 
 # Setup
 
@@ -42,9 +44,12 @@ if (FALSE) {
 
 ## Plotting
 
+I will define a helper function and import the background area rasters for plotting.
+
 ```{r helper function for plot aesthetics}
 
 format_decimal <- function(x) as.numeric(sprintf("%.*f", 2, x))
+# formats decimals to 2 places
 
 ```
 
@@ -110,7 +115,7 @@ pred_regional_native_585 <- terra::rast(
 
 ```
 
-```{r Ri.NAmerica regional_invaded model}
+```{r Ri.NAmerica regional_invaded model pred suit}
 
 pred_regional_invaded <- terra::rast(
   x = file.path(mypath, "models", "slf_regional_invaded_v7", "regional_invaded_pred_suit_clamped_cloglog_globe_1981-2010.asc")
@@ -221,8 +226,7 @@ exdet_regional_native_585 <- terra::rast(
 
 ```
 
-
-```{r Ri.NAmerica regional_invaded model}
+```{r Ri.NAmerica regional_invaded model- exdets}
 
 exdet_regional_invaded <- terra::rast(
   x = file.path(mypath, "models", "slf_regional_invaded_v7", "ExDet_slf_regional_invaded_v7_background_projGlobe.tif")
@@ -278,7 +282,7 @@ exdet_regional_invaded_asian_585 <- terra::rast(
 
 I will need to stack the predicted and ExDet rasters to perform this analysis.
 
-```{r pred suitability}
+```{r pred suitability stack}
 
 pred_hist_stack <- c(pred_regional_native, pred_regional_invaded, pred_regional_invaded_asian)
 
@@ -336,7 +340,9 @@ Now, I need to prepare to weight the predicted distribution rasters using their 
 
 # 3. Ensemble rasters
 
-## 3.1 take ABS value of Exdet rasters
+I will create a weight factor for each model raster in this section across several steps. First, I will convert the ExDet rasters to a weight value. Next, I will add the test AUC values to these rasters and create a weighting factor. Finally, I will apply the weights to take the weighted mean of the three models.
+
+## 3.1 Format ExDet rasters into weighting factor
 
 First, I will need to manipulate the ExDet rasters so they can be used for weighting. I will begin by adding 1 to any negative ExDet value and then taking the absolute value of each cell. This way, the weighting is performed on a positive scale. The ExDet metric works such that anything between 0 and 1 is not extrapolated, while anything below 0 or above 1 is extrapolated. Next, I will convert any ExDet value below 0 to 1, so that cells without extrapolation are simply not weighted.
 
@@ -347,7 +353,7 @@ First, I will need to manipulate the ExDet rasters so they can be used for weigh
 
 ### historical
 
-```{r exdet historical stack}
+```{r exdet historical stack, message = FALSE}
 
 # 1. add 1 to negatives
 
@@ -394,7 +400,7 @@ minmax(exdet_hist_stack)
 
 ```
 
-```{r save raster}
+```{r save raster- exdet weight hist}
 
 terra::writeRaster(
   x = exdet_hist_stack, 
@@ -411,9 +417,9 @@ terra::writeRaster(
 
 I will do the same for the CMIP6 exdet rasters
 
-### SSP 126
+### SSP 126 {.hidden}
 
-```{r exdet CMIP6 stack- SSP126}
+```{r exdet CMIP6 stack- SSP126, message = FALSE}
 
 # 1. add 1 to negatives
 
@@ -458,7 +464,7 @@ minmax(exdet_126_stack)
 
 ```
 
-```{r save raster}
+```{r save raster- exdet weight ssp126}
 
 terra::writeRaster(
   x = exdet_126_stack, 
@@ -473,9 +479,9 @@ terra::writeRaster(
 
 ```
 
-### SSP 370
+### SSP 370 {.hidden}
 
-```{r exdet CMIP6 stack- SSP370}
+```{r exdet CMIP6 stack- SSP370, message = FALSE}
 
 # 1. add 1 to negatives
 
@@ -520,7 +526,7 @@ minmax(exdet_370_stack)
 
 ```
 
-```{r save raster}
+```{r save raster- exdet weight ssp370}
 
 terra::writeRaster(
   x = exdet_370_stack, 
@@ -535,9 +541,9 @@ terra::writeRaster(
 
 ```
 
-### SSP 585
+### SSP 585 {.hidden}
 
-```{r exdet CMIP6 stack- SSP585}
+```{r exdet CMIP6 stack- SSP585, message = FALSE}
 
 # 1. add 1 to negatives
 
@@ -582,7 +588,7 @@ minmax(exdet_585_stack)
 
 ```
 
-```{r save raster}
+```{r save raster- exdet weight ssp585}
 
 terra::writeRaster(
   x = exdet_585_stack, 
@@ -603,7 +609,7 @@ The second step in this weighting process is to also weight each model by its go
 
 ### historical
 
-```{r weight hist exdet rasters using AUC}
+```{r weight hist exdet rasters using AUC, message = FALSE}
 
 minmax(exdet_hist_stack)
 
@@ -634,7 +640,7 @@ names(exdet_hist_stack) <- c("regional_native", "regional_invaded", "regional_in
 
 ```
 
-```{r save raster}
+```{r save raster- ensemble weight hist}
 
 terra::writeRaster(
   x = exdet_hist_stack, 
@@ -649,11 +655,11 @@ terra::writeRaster(
 
 ```
 
-### SSP 126
-
 Now, I will perform the same operation to the CMIP6 rasters.
 
-```{r weight CMIP6 exdet rasters using AUC- SSP126}
+### SSP 126 {.hidden}
+
+```{r weight CMIP6 exdet rasters using AUC- SSP126, message = FALSE}
 
 minmax(exdet_126_stack)
 
@@ -684,7 +690,7 @@ names(exdet_126_stack) <- c("regional_native_126_2041-2070", "regional_invaded_1
 
 ```
 
-```{r save raster}
+```{r save raster- ensemble weight ssp126}
 
 terra::writeRaster(
   x = exdet_126_stack, 
@@ -699,9 +705,9 @@ terra::writeRaster(
 
 ```
 
-### SSP 370
+### SSP 370 {.hidden}
 
-```{r weight CMIP6 exdet rasters using AUC- SSP370}
+```{r weight CMIP6 exdet rasters using AUC- SSP370, message = FALSE}
 
 minmax(exdet_370_stack)
 
@@ -732,7 +738,7 @@ names(exdet_370_stack) <- c("regional_native_370_2041-2070", "regional_invaded_3
 
 ```
 
-```{r save raster}
+```{r save raster- ensemble weight ssp370}
 
 terra::writeRaster(
   x = exdet_370_stack, 
@@ -747,9 +753,9 @@ terra::writeRaster(
 
 ```
 
-### SSP 585
+### SSP 585 {.hidden}
 
-```{r weight CMIP6 exdet rasters using AUC- SSP585}
+```{r weight CMIP6 exdet rasters using AUC- SSP585, message = FALSE}
 
 minmax(exdet_585_stack)
 
@@ -780,7 +786,7 @@ names(exdet_585_stack) <- c("regional_native_585_2041-2070", "regional_invaded_5
 
 ```
 
-```{r save raster}
+```{r save raster- ensemble weight ssp585}
 
 terra::writeRaster(
   x = exdet_585_stack, 
@@ -795,7 +801,7 @@ terra::writeRaster(
 
 ```
 
-## 3.3 Weight models using confidence metric (ExDet)
+## 3.3 Apply weighting factor to models
 
 Finally, I will apply these weighting factors to the predicted raster layers from each model and take a weighted mean. Weighted means are a common method for creating model ensembles (Araújo & New, 2007). The three predicted suitability rasters will each be weighted by their respective weighted exdet raster. This will be repeated for the CMIP6 rasters as well. 
 
@@ -1105,7 +1111,7 @@ MTSS_hist_thresh <- stats::weighted.mean(
 
 Next, I will perform this operation for the CMIP6 rasters
 
-#### ssp126
+#### ssp126 {.hidden}
 
 ```{r weights for CMIP6 rasters- ssp126}
 
@@ -1186,7 +1192,7 @@ MTSS_126_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp370
+#### ssp370 {.hidden}
 
 ```{r weights for CMIP6 rasters- ssp370}
 
@@ -1267,7 +1273,7 @@ MTSS_370_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp585
+#### ssp585 {.hidden}
 
 ```{r weights for CMIP6 rasters- ssp585}
 
@@ -1431,7 +1437,7 @@ MTP_hist_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp126
+#### ssp126 {.hidden}
 
 ```{r weights for CMIP6 rasters- MTP- ssp126}
 
@@ -1510,7 +1516,7 @@ MTP_126_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp370
+#### ssp370 {.hidden}
 
 ```{r weights for CMIP6 rasters- MTP- ssp370}
 
@@ -1589,7 +1595,7 @@ MTP_370_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp585
+#### ssp585 {.hidden}
 
 ```{r weights for CMIP6 rasters- MTP- ssp585}
 
@@ -1700,7 +1706,6 @@ readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", 
 ```
 
 Now that I have the suitability values and thresholds ensembled, I can begin to analyze the differences between the global and regional ensemble predictions. I will begin by creating suitability maps in the next vignette.
-
 
 # 5. Ensemble ExDet / MIC maps
 
@@ -1820,7 +1825,7 @@ exdet_regional_invaded_asian_585 <- terra::rast(
 
 ```
 
-```{r pred suitability}
+```{r exdet}
 
 # hist
 exdet_hist_stack2 <- c(exdet_regional_native, exdet_regional_invaded, exdet_regional_invaded_asian)
@@ -1878,7 +1883,7 @@ exdet_regional_ensemble_hist_plot <- exdet_regional_ensemble_hist_plot +
 
 ```
 
-```{r save plot}
+```{r save plot- exdet hist, warning = FALSE}
 
 # save plot
 ggsave(
@@ -1940,7 +1945,7 @@ exdet_regional_ensemble_126_plot <- exdet_regional_ensemble_126_plot +
 
 ```
 
-```{r save plot}
+```{r save plot- exdet ssp126, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2002,7 +2007,7 @@ exdet_regional_ensemble_370_plot <- exdet_regional_ensemble_370_plot +
 
 ```
 
-```{r save plot}
+```{r save plot- exdet ssp370, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2064,7 +2069,7 @@ exdet_regional_ensemble_585_plot <- exdet_regional_ensemble_585_plot +
 
 ```
 
-```{r save plot}
+```{r save plot- exdet ssp585, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2132,7 +2137,7 @@ exdet_regional_ensemble_mean_plot <- exdet_regional_ensemble_mean_plot +
 
 ```
 
-```{r save plot}
+```{r save plot- exdet ssp mean, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2226,7 +2231,7 @@ mic_regional_invaded_asian_585 <- terra::rast(
 
 ```
 
-```{r pred suitability}
+```{r mic stack}
 
 # historical
 mic_hist_stack2 <- c(mic_regional_native, mic_regional_invaded, mic_regional_invaded_asian)
@@ -2258,7 +2263,7 @@ mic_hist_mean_df <- terra::rast(x =  file.path(
 
 ```
 
-```{r create MIC plot}
+```{r create MIC plot- hist}
 
 # plot mean raster first
 mic_hist_mean_plot <- ggplot() +
@@ -2284,7 +2289,7 @@ mic_hist_mean_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- mic hist, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2298,7 +2303,7 @@ ggsave(
 
 ```
 
-### ssp 126
+### ssp 126 {.hidden}
 
 ```{r ensemble mic rasters and make data frame- ssp126}
 
@@ -2320,7 +2325,7 @@ mic_126_mean_df <- terra::rast(x =  file.path(
 
 ```
 
-```{r create MIC plot}
+```{r create MIC plot- ssp126}
 
 # plot mean raster first
 mic_126_mean_plot <- ggplot() +
@@ -2346,7 +2351,7 @@ mic_126_mean_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- mic ssp126, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2360,7 +2365,7 @@ ggsave(
 
 ```
 
-### ssp 370
+### ssp 370 {.hidden}
 
 ```{r ensemble mic rasters and make data frame- ssp370}
 
@@ -2382,7 +2387,7 @@ mic_370_mean_df <- terra::rast(x =  file.path(
 
 ```
 
-```{r create MIC plot}
+```{r create MIC plot- ssp370}
 
 # plot mean raster first
 mic_370_mean_plot <- ggplot() +
@@ -2408,7 +2413,7 @@ mic_370_mean_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- mic ssp370, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2422,7 +2427,7 @@ ggsave(
 
 ```
 
-### ssp 585
+### ssp 585 {.hidden}
 
 ```{r ensemble mic rasters and make data frame- ssp585}
 
@@ -2444,7 +2449,7 @@ mic_585_mean_df <- terra::rast(x =  file.path(
 
 ```
 
-```{r create MIC plot}
+```{r create MIC plot- ssp585}
 
 # plot mean raster first
 mic_585_mean_plot <- ggplot() +
@@ -2470,7 +2475,7 @@ mic_585_mean_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- mic ssp585, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2484,7 +2489,7 @@ ggsave(
 
 ```
 
-### ssp mode
+### ssp mode {.hidden}
 
 ```{r stack mic rasters}
 
@@ -2513,7 +2518,7 @@ mic_ssp_mode_df <- terra::rast(x =  file.path(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp mean}
+```{r create CMIP6 mic plot- ssp mean}
 
 mic_ssp_mode_plot <- ggplot() +
   # default plot style
@@ -2538,7 +2543,7 @@ mic_ssp_mode_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- mic ssp mean, warning = FALSE}
 
 # save plot
 ggsave(
@@ -2569,7 +2574,6 @@ ensemble_weight_regional_invaded_asian_hist <- terra::rast(file.path(mypath, "mo
 ensemble_weights_stack <- c(ensemble_weight_regional_native_hist, ensemble_weight_regional_invaded_hist, ensemble_weight_regional_invaded_asian_hist)
 
 ```
-
 
 ```{r prepare data}
 
@@ -2619,7 +2623,7 @@ ensemble_relative_cont_plot <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot- relative weights, warning = FALSE}
 
 ggsave(
   ensemble_relative_cont_plot, 
@@ -2632,7 +2636,18 @@ ggsave(
 
 ```
 
-# Appendix
+Now that we have created an ensembled prediction for our regional-scale models, we can compare them with the global model predictions and explore the suitability for SLF under climate change using suitability maps, point-wise predictions, quadrant plots, variable reponse curves and others.
+
+# References
+
+Araújo, M. B., & New, M. (2007). Ensemble forecasting of species distributions. Trends in Ecology & Evolution, 22(1), 42–47. https://doi.org/10.1016/j.tree.2006.09.010
+
+Elith, J., Kearney, M., & Phillips, S. (2010). The art of modelling range-shifting species. Methods in Ecology and Evolution, 1(4), 330–342. https://doi.org/10.1111/j.2041-210X.2010.00036.x
+
+Mesgaran, M. B., Cousens, R. D., & Webber, B. L. (2014). Here be dragons: A tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions, 20(10), 1147–1159. https://doi.org/10.1111/ddi.12209
+
+
+# Appendix {.hidden}
 
 ## Unweighted mean ensemble
 
@@ -2695,7 +2710,7 @@ ensemble_thresh_values_unweighted <- tibble(
 
 ```
 
-```{r export table}
+```{r export table- unweighted}
 
 write_csv(ensemble_thresh_values_unweighted, file = file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_threshold_values_unweighted.csv"))
 
@@ -2843,7 +2858,7 @@ mic_regional_ensemble_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- mic patchwork, warning = FALSE}
 
 ggsave(
   mic_regional_ensemble_patchwork, 
@@ -2855,10 +2870,3 @@ ggsave(
   )
 
 ```
-
-
-# References
-
-Araújo, M. B., and M. New. 2007. Ensemble forecasting of species distributions. Trends in Ecology & Evolution 22:42–47.
-
-Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.

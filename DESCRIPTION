@@ -3,9 +3,10 @@ Type: Package
 Title: "Research Compendium: Multi-scale modeling of the spotted lanternfly Lycorma delicatula (Hemiptera: Fulgoridae) reveals displaced risk to viticulture and regional range expansion due to climate change"
 Version: 0.1.0
 Authors@R: c(
-    person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut", "cre"),
-    person("Matthew", "Helmus", email = "mrhelmus@temple.edu", role = c("aut")))
-Description: 
+    person("Samuel", "Owens", "M.", email = "sam.owens@temple.edu", role = "aut", "cre", comment = c(ORCID = "0009-0001-2338-7928")),
+    person("Matthew", "Helmus", email = "mrhelmus@temple.edu", role = c("aut"), comment = c(ORCID = "0000-0003-3977-0507"))
+    )
+Description: This package is a research compendium for the titled manuscript. We outline a workflow for conducting species distribution modeling (SDM) for the invasive Lycorma delicatula. We primarily provide tools for viticulturalists to assess the risk of establishment of L. delicatula at their locality currently and under predicted future climate conditions. Viticulturalists should apply our function 'create_risk_report' to retrieve present and climate change risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. These resources are intended to help viticulturalists assess respond to predicted risk for Lycorma delicatula establishment under climate change. We also apply a novel multi-scale approach to model this invasive pest and find that our ensemble of regional-scale models provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF more effectively than our global-scale model. Modelers should adapt and apply this framework to model the global suitability for establishment of other incipient invaders under climate change
 License: MIT
 Encoding: UTF-8
 LazyData: true
@@ -58,6 +59,7 @@ Imports:
     terra,
     tibble,
     tidyr,
+    tidygeocoder,
     tidyverse,
     usethis,
     utils,
@@ -66,5 +68,4 @@ Imports:
     webshot2 
 Suggests:
     blockCV,
-    tcltk,
-    tidygeocoder
+    tcltk
