@@ -1,9 +1,9 @@
 ---
 title: "Retrieve SLF records from various sources and tidy them for MaxEnt modeling"
-author: "Samuel M. Owens"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-05"
-contact: 'sam.owens@temple.edu'
-output: html_document
 ---
 
 # Overview

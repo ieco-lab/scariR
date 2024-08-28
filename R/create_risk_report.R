@@ -98,8 +98,8 @@
 #'
 #'* viticultural_regions_list - a list of known important wine regions within the locality with predicted suitability values and levels.
 #'* risk_maps - a current and future map of risk for L delicatula establishment. The CMIP6 predictions are based on the mean of the three ssp scenarios
-#'* viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality.
-#'* viticultural_risk_table = a table quantifying the risk plot for viticultural areas
+#'* viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality. This plot depicts the intersection of our two modeled scales.
+#'* viticultural_risk_table = a risk table quantifying the level of risk to vineyards according to the quadrant plot
 #'* range_shift_map = a map of potential range expansion for L delicatula under climate change
 #'
 #'Some maps may be formatted strangely because of a country's outlying territories.
@@ -1070,7 +1070,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
      theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
      coord_fixed(ratio = 1) +
     labs(
-      title = "Projected risk of Lycorma delicatula establishment under climate change",
+      title = "Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change",
       subtitle = paste0(stringr::str_to_title(locality_name_internal), ": important viticultural regions"),
       caption = paste0("arrows indicate a region is crossing a risk threshold (dashed lines, MTSS thresh)", ifelse(!is.na(buffer.dist), paste0("\n", buffer.dist, "m buffer used for suitability of viticultural areas"), ""))
     )

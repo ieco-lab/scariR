@@ -1,16 +1,16 @@
 ---
 title: "Example usage of create_risk_report.R to create reports of key viticultural areas"
-author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-23"
-output: html_document
 ---
 
 INTRO
 
 # Setup
 
-```{r library}
+```{r library packages, message = FALSE}
 
 # general tools
 library(tidyverse)
@@ -162,7 +162,7 @@ slfSpread::create_risk_report(
   locality.name = "united states",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
-  create.dir = TRUE,
+  create.dir = FALSE,
   save.report = TRUE,
   buffer.dist = 20000
 )

@@ -1,11 +1,9 @@
 ---
 title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling"
-author: "Samuel M. Owens"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-07-29"
-contact: 'sam.owens@temple.edu'
-output: html_document
-editor_options: 
-  chunk_output_type: inline
 ---
 
 # Overview

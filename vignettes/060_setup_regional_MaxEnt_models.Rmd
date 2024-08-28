@@ -1,9 +1,9 @@
 ---
 title: "Setup for regional-scale MaxEnt models"
-author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-05"
-output: html_document
 ---
 
 # Overview

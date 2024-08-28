@@ -67,8 +67,8 @@ the global env in a list object include:
 \itemize{
 \item viticultural_regions_list - a list of known important wine regions within the locality with predicted suitability values and levels.
 \item risk_maps - a current and future map of risk for L delicatula establishment. The CMIP6 predictions are based on the mean of the three ssp scenarios
-\item viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality.
-\item viticultural_risk_table = a table quantifying the risk plot for viticultural areas
+\item viticultural_risk_plot = a quantified assessment of the risk for L delicatula establishment for known wine regions within the locality. This plot depicts the intersection of our two modeled scales.
+\item viticultural_risk_table = a risk table quantifying the level of risk to vineyards according to the quadrant plot
 \item range_shift_map = a map of potential range expansion for L delicatula under climate change
 }
 
