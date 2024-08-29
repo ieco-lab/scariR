@@ -26,11 +26,11 @@ install.packages("ggnewscale", version = '0.4.10')
 
 The package `slfSpread` is a research compendium for our manuscript, Owens and Helmus, 2024:
 
-<insert citation>
+**insert citation**
 
 ## How to Use this Project
 
-### 1. Produce localized reports 
+### 1. Produce localized reports on SLF risk to viticulture
 
 Our primary datasets, including risk maps and a viticultural risk analysis, can be accessed by executing the function `create_risk_report`. This function creates a localized (at the country or state/provincial level) report of the risk for *Lycorma delicatula* to local viticulture. It also recreates the other major datasets that we provide in our analysis, including:
 
@@ -39,6 +39,7 @@ Our primary datasets, including risk maps and a viticultural risk analysis, can 
 3. range shift map of potential range expansion for L delicatula under climate change
 4. viticultural quadrant plot depicting of the risk for SLF establishment for known wine regions within the locality. This plot depicts the intersection of our two modeled scales.
 5. risk table quantifying the level of risk to vineyards according to the quadrant plot
+
 
 Here is an example of a workflow for creating a localized risk map and how this might be applied:
 
@@ -54,17 +55,28 @@ slfSpread::create_risk_report(
 )
 ```
 
-You should note the risk map and accompanying risk plots:
+You should first note the three most important outputs of this function: 
+1. the risk maps
+2. the accompanying risk quadrant plot
+3. tabled list of viticultural regions in this locality
 
-![Projected current and future risk of *Lycorma delicatula* establishment under climate change | USA](https://github.com/user-attachments/assets/641c6183-5357-4ef6-84ef-59d0a35d1b92) {width=50%}
+First, we observe the risk map, which depicts the risk of SLF establishment using the agreement between our regional-scale model ensemble and our global-scale model. More agreement on suitability mean higher risk.
 
-The points on the map represent key viticultural regions. These regions and their colored risk zone correspond to points and colors on the quadrant plot:
+<img src="https://github.com/user-attachments/assets/c02e9028-a5df-4993-8c0b-a49a73be679d" width="60%"/>
 
-![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | USA](https://github.com/user-attachments/assets/4ee16d43-68b6-40f2-a4db-d16f31a8ab11) {width=50%}
+**Fig. 1:** Projected current and future risk of *Lycorma delicatula* establishment under climate change | USA
 
-The accompanying table provides a list of key viticultural regions and their geographical region (state/province): 
+The points on the map represent key viticultural regions. We have extracted the suitability of each viticultural region and depicted its quantitative shift in risk on our second output, the risk quadrant plot. This plot quantifies the level of risk along both modeled scales, both $\color{violet}{\textsf{presently}}$ and in the $\color{purple}{\textsf{future}}$ under a predicted climate change shift (arrows):
 
-![List of viticultural regions and SLF risk level](https://github.com/user-attachments/assets/6fa11e83-ae4c-4c26-8f93-adf45ff79a3b) {width=50%}
+<img src="https://github.com/user-attachments/assets/49df16d5-d9b2-4c5b-960d-b9dca245f0f9" width="50%"/>
+
+**Fig. 2:** Projected shift in the risk for *Lycorma delicatula* establishment at key viticultural regions due to climate change | USA
+
+The accompanying table provides a list of key viticultural regions and their geographical region (state/province), with predicted risk levels: 
+
+**Table 1:** List of viticultural regions and their projected risk
+
+<img src="https://github.com/user-attachments/assets/d75eb908-4255-4286-bf9d-f4bcae380937"/>
 
 You may begin to notice that a particular region has many records, like we can see is the case for Washington State. You could then produce a report only for that region, to get a better idea of the overall trend of risk shift due to climate change. We will produce a report for Washington State alone, to better visualize this trend:
 
@@ -79,20 +91,27 @@ slfSpread::create_risk_report(
 )
 ```
 
-We can now see that Washington state exhibits a totally different trend from the rest of the country
+We can see that most of Washington is at some level of SLF risk presently. Under climate change, risk is projected to decrease some, but one or both modeled scales still predict that SLF can establish in most of the state.
 
-![Projected current and future risk of *Lycorma delicatula* establishment under climate change | Washington, USA](https://github.com/user-attachments/assets/767a60c1-ec5a-4e7c-a246-7a29fb478f81) {width=50%}
+<img src="https://github.com/user-attachments/assets/d1019a9c-7649-4bf6-a91b-8338cf54f9d0" width="60%"/>
 
-![Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | Washington, USA](https://github.com/user-attachments/assets/cfea701c-1c10-46a0-96d7-889922f59f52) {width=50%}
+**Fig. 3:** Projected current and future risk of *Lycorma delicatula* establishment under climate change | Washington, USA
+
+Based on the risk quadrant plot, we can now see that Washington state exhibits a totally different trend from the rest of the country. While viticultural regions across the united states exhibit a range of risk levels, regions in Washington are either at high or extreme risk for SLF establishment, and this pattern does not change under predicted climate change levels. 
+
+<img src="https://github.com/user-attachments/assets/2a94ce74-9df7-45df-989b-fccf79566a93" width="60%"/>
+
+**Fig. 4:** Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | Washington, USA
 
 This function can be applied to important winegrowing regions across the globe because it uses our dataset `data/wineries_tidied.rds`, which contains a sample (1,074) of the world's most important winegrowing regions.
 
-### 2. Recreate the analysis for another pest of interest
 
+### 2. Recreate the analysis for another pest of interest
 
 
 # References
 
 Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
 
+Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
