@@ -99,7 +99,7 @@ We can see that most of Washington is at some level of SLF risk presently. Under
 
 Based on the risk quadrant plot, we can now see that Washington state exhibits a totally different trend from the rest of the country. While viticultural regions across the united states exhibit a range of risk levels, regions in Washington are either at high or extreme risk for SLF establishment, and this pattern does not change under predicted climate change levels. 
 
-<img src="https://github.com/user-attachments/assets/2a94ce74-9df7-45df-989b-fccf79566a93" width="60%"/>
+<img src="https://github.com/user-attachments/assets/2a94ce74-9df7-45df-989b-fccf79566a93" width="50%"/>
 
 **Fig. 4:** Projected shift in the risk for Lycorma delicatula establishment at key viticultural regions due to climate change | Washington, USA
 
