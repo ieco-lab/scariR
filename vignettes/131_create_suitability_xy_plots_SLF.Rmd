@@ -1,18 +1,44 @@
 ---
 title: "Plot stability of known SLF populations due climate change effects"
-author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-15"
-output: html_document
 ---
 
 # Overview
 
+In the last vignette, I created figures to analyze the suitability for SLF establishment at key viticultural regions globally. I will now apply this same framework to analyze the risk of establishment for currently known SLF populations. We will use this to infer the stability of these populations under climate change. We will use the same quadrant plot framework as in the last vignette.
 
+```{r example quadrant plot, echo = FALSE}
+
+library(tidyverse)
+
+ggplot() +
+   geom_vline(xintercept = 0.5, linetype = "dashed", linewidth = 0.7) +
+   geom_hline(yintercept = 0.5, linetype = "dashed", linewidth = 0.7) + 
+   # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), labels = c(0, 2, 4, 6, 8, 10)) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), labels = c(0, 2, 4, 6, 8, 10)) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   theme_bw() +
+   coord_fixed(ratio = 1)
+   
+
+```
+**Fig. 1** Example quadrant plot for assessing SLF risk across two different scales of SDM.
 
 # Setup
 
-```{r load necesssary packages, echo = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
@@ -29,6 +55,7 @@ library(scales)
 library(patchwork)
 library(grid)
 library(kableExtra)
+library(webshot)
 library(webshot2)
 
 ```
@@ -270,7 +297,7 @@ xy_global_2055_ssp_mean <- xy_global_2055_126 %>%
 
 ```
 
-```{r write as csv}
+```{r write as csv- global}
 
 write_csv(
   x = xy_global_2055_ssp_mean,
@@ -363,7 +390,7 @@ xy_regional_ensemble_2055_ssp_mean <- xy_regional_ensemble_2055_126 %>%
 
 ```
 
-```{r write as csv}
+```{r write as csv- regional ensemble}
 
 write_csv(
   x = xy_regional_ensemble_2055_ssp_mean,
@@ -575,7 +602,7 @@ write_rds(
 
 We need a baseline for visualizing the trends in these scatter plots, so I will first plot the un-transformed datasets.
 
-```{r join datasets}
+```{r join datasets- untransformed}
 
 # join datasets for plotting
 xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y")) %>%
@@ -587,7 +614,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 
 ```
 
-```{r plot SLF suitability values, fig.asp = 1}
+```{r plot SLF suitability values- untransformed, fig.asp = 1}
 
 # figure annotation title
 # "suitability of known Lycorma delicatula populations, projected for climate change"
@@ -621,7 +648,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 
 ```
 
-```{r save scatterplot}
+```{r save scatterplot- untransformed}
 
 ggsave(
   xy_joined_plot, 
@@ -668,7 +695,7 @@ xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here:
 
 ```
 
-```{r join datasets}
+```{r join datasets- rescaled}
 
 # join datasets for plotting
 xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
@@ -727,7 +754,7 @@ xy_joined_rescaled_intersects <- dplyr::filter(
 
 Now lets plot the data.
 
-```{r plot SLF suitability values, fig.asp = 1}
+```{r plot SLF suitability values- rescaled, fig.asp = 1}
 
 # figure annotation title
 # "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
@@ -781,7 +808,7 @@ Now lets plot the data.
 
 ```
 
-```{r save scatterplot}
+```{r save scatterplot- rescaled}
 
 ggsave(
   xy_joined_rescaled_plot, 
@@ -802,7 +829,7 @@ write_rds(
 
 ```
 
-#4. Create summary table of transformed plot
+# 4. Create summary table of transformed plot
 
 I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `slfSpread::calculate_risk_quadrant()`. 
 
@@ -954,9 +981,10 @@ if(TRUE) {
   # initialize webshot by 
  # webshot::install_phantomjs()
   # convert to pdf
-  webshot2::webshot(
+  webshot::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg")
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg"),
+    zoom = 2
   )
   
   
@@ -967,105 +995,9 @@ if(TRUE) {
 
 ```
 
-
-# Appendix
-
-## add percentage change to scatter plot
-
-I will add a percentage change for each quadrant that illustrates the total loss or gain per quadrant over time. I will use the slf_risk_table created above
-
-*this section's code is broken dont use*
-
-```{r % change table}
-
-slf_quad_percent_change <- tibble(
-  "risk_quadrant" = c("extreme", "high", "moderate", "low"),
-  "percent_change" = c(
-    # extreme
-    ((colSums(slf_risk_table[, 2]) - rowSums(slf_risk_table[1, 2:5])) / (rowSums(slf_risk_table[1, 2:5]) + colSums(slf_risk_table[, 2]))),
-    # high
-    ((colSums(slf_risk_table[, 3]) - rowSums(slf_risk_table[2, 2:5])) / (rowSums(slf_risk_table[2, 2:5]) + colSums(slf_risk_table[, 3]))),
-    # moderate
-    ((colSums(slf_risk_table[, 4]) - rowSums(slf_risk_table[3, 2:5])) / (rowSums(slf_risk_table[3, 2:5]) + colSums(slf_risk_table[, 4]))),
-    ((colSums(slf_risk_table[, 5]) - rowSums(slf_risk_table[4, 2:5])) / (rowSums(slf_risk_table[4, 2:5]) + colSums(slf_risk_table[, 5])))
-  )
-)
-
-```
-
-Now I will plot these percent changes over the risk quadrants.
-
-```{r plot SLF suitability values and % change, fig.asp = 1}
-
-# figure annotation title
-# "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
-
-# plot
-(xy_joined_rescaled_plot_percent_change <- ggplot(data = xy_joined_rescaled) +
-   # threshold lines
-   # MTSS thresholds
-   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
-   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
-   # historical data
-   geom_point(
-     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
-     size = 2, stroke = 0.7, color = "black", fill = "wheat3", alpha = 0.2
-     ) +
-   # GFDL ssp370 data
-   geom_point(
-     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
-     size = 2, stroke = 0.7, color = "black", fill = "firebrick3", alpha = 0.2
-     ) +
-   # axes scaling
-   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
-   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
-   # quadrant labels
-   # extreme risk, top right, quad4
-   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
-   # high risk, top left, quad3
-   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
-   # moderate risk, bottom right, quad2
-   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
-   # low risk, bottom left, quad1
-   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
-   # quadrant % changes
-   # extreme
-   geom_text(aes(x = 0.75, y = 0.8, label = scales::percent(as.numeric(slf_quad_percent_change[1, 2]), accuracy = 0.1)), size = 12, color = "darkred") +
-   # high
-   geom_text(aes(x = 0.25, y = 0.8, label = scales::percent(as.numeric(slf_quad_percent_change[2, 2]), accuracy = 0.1)), size = 12, color = "darkorange") +
-   # moderate
-   geom_text(aes(x = 0.75, y = 0.2, label = scales::percent(as.numeric(slf_quad_percent_change[3, 2]), accuracy = 0.1)), size = 12, color = "gold") +
-   # low
-   geom_text(aes(x = 0.25, y = 0.2, label = scales::percent(as.numeric(slf_quad_percent_change[4, 2]), accuracy = 0.1)), size = 12, color = "azure4") +
-   # aesthetics
-   scale_shape_manual(name = "Time period", values = c(21, 21)) +
-   #scale_fill_manual(name = "Time period", values = c("azure4", "gray27")) +
-   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
-   theme_bw() +
-   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-   coord_fixed(ratio = 1)
-)
-
-```
-
-```{r save scatterplot}
-
-ggsave(
-  xy_joined_rescaled_plot_percent_change, 
-  filename = file.path(
-    here::here(), "vignette-outputs", "figures", "xy_suitability_rescaled_CC_shift_slf_populations_global_regional_ensemble_percentages.jpg"
-    ),
-  height = 8, 
-  width = 8,
-  device = "jpeg",
-  dpi = "retina"
-  )
-
-```
-
-
 # References
 
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+1. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
-Smith, T. 2021, August 11. Evaluating Invasion Stage with SDMs - plantarum.ca. <https://plantarum.ca/2021/08/11/invasion-stage/>.
+2. Smith, T. 2021, August 11. Evaluating Invasion Stage with SDMs - plantarum.ca. <https://plantarum.ca/2021/08/11/invasion-stage/>.
+

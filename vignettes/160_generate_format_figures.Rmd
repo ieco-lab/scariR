@@ -1,0 +1,882 @@
+---
+title: "Format risk tables for SLF populations and viticultural regions"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+date: "2024-08-16"
+---
+
+# Overview
+
+In this vignette, I will format an assortment of tables and figures for publication:
+
+1. IVR risk tables
+2. SLF risk tables
+3. SLF risk plots- faceted by country
+4. Map of globally important viticultural regions
+5. bioclim variables
+
+# Setup
+
+```{r load necesssary packages, message = FALSE}
+
+# general tools
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+here::here() # here() starts at the root folder of this package.
+library(devtools)
+
+# spatial data handling
+library(terra)
+library(tidygeocoder) # analysis 7
+
+# table aesthetics
+library(scales)
+library(grid)
+library(formattable)
+library(kableExtra)
+library(webshot)
+library(webshot2)
+
+```
+
+# IVR risk table
+
+```{r read in IVR table}
+
+IVR_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "IVR_risk_table.csv"), row.names = 1) %>%
+  dplyr::rename(
+    "extreme_2055" = "extreme",
+    "high_2055" = "high",
+    "moderate_2055" = "moderate",
+    "low_2055" = "low"
+  )
+
+# change rownames
+rownames(IVR_risk_table) <- c("extreme_present", "high_present", "moderate_present", "low_present", "total_2055")
+
+
+```
+
+I will calculate the percentage of IVRs that increase and decrease risk overall and will report this in the paper.
+
+```{r calculate percentages- IVR risk table}
+
+total_IVR <- sum(IVR_risk_table[1:4, 1:4])
+
+IVR_shift_prop_table <- tibble(
+  risk_shift = c("no_shift", "risk_increase", "risk_decrease"),
+  prop_change = c(
+    sum(IVR_risk_table[1, 1], IVR_risk_table[2, 2], IVR_risk_table[3, 3], IVR_risk_table[4, 4]) / total_IVR,
+    sum(IVR_risk_table[2:4, 1], IVR_risk_table[3:4, 2], IVR_risk_table[4, 3]) / total_IVR,
+    sum(IVR_risk_table[1, 2], IVR_risk_table[1:2, 3], IVR_risk_table[1:3, 4]) / total_IVR
+  )
+) %>%
+  # make % format
+  dplyr::mutate(prop_change = scales::label_percent(accuracy = 0.01) (prop_change))
+
+
+```
+
+For reporting purposes, we see that about 69.7% of the 1063 IVRs experience no change in risk of SLF establishment due to climate change by 2055. Meanwhile, about 1.7% actually experience an increase in risk due to climate change and the remaining 28.6% move down one or more levels of risk by 2055.
+
+```{r save table from above, if desired- IVR prop plot}
+
+if(TRUE) {
+  
+  # make kable
+  IVR_shift_prop_table <- knitr::kable(IVR_shift_prop_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:2, width_min = '4cm') %>%
+    kableExtra::add_header_above(., header = c("IVR risk table shift proportions" = 2), bold = TRUE)
+
+  
+  # save as .html
+  kableExtra::save_kable(
+    IVR_shift_prop_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.jpg"),
+    zoom = 4
+  )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table_shift_prop.html"))
+    
+}
+
+```
+
+Now I will format and export the table. I will add colored proportion bars to the columns, which indicate the category distribution of IVRs entering that risk category. In other words, the columns represent the risk category in 2055, so the proportion bars represent the distribution of which current risk category those points move from by 2055. I will also add positive and negative signs to indicate a risk increase or decrease. The diagonal (top L to bottom R) will have no signs because this represents no shift in risk by 2055. All points experiencing a decline in risk sit above the diagonal, and points experiencing an increase in risk sit below the diagonal.
+
+```{r format table- IVR risk table}
+
+# convert top half (above diagonal) to negative numbers
+IVR_risk_table[1, 2] <- -(IVR_risk_table[1, 2])
+IVR_risk_table[1:2, 3] <- -(IVR_risk_table[1:2, 3])
+IVR_risk_table[1:3, 4] <- -(IVR_risk_table[1:3, 4])
+
+# add positive sign to bottom half
+IVR_risk_table[2:4, 1] <- sprintf("%+.0f", IVR_risk_table[2:4, 1])
+IVR_risk_table[3:4, 2] <- sprintf("%+.0f", IVR_risk_table[3:4, 2])
+IVR_risk_table[4, 3] <- sprintf("%+.0f", IVR_risk_table[4, 3])
+
+# add color formatting to totals
+# extreme risk
+IVR_risk_table[1, 5] <- cell_spec(IVR_risk_table[1, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+IVR_risk_table[5, 1] <- cell_spec(IVR_risk_table[5, 1], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+# high risk
+IVR_risk_table[2, 5] <- cell_spec(IVR_risk_table[2, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+IVR_risk_table[5, 2] <- cell_spec(IVR_risk_table[5, 2], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+# moderate risk
+IVR_risk_table[3, 5] <- cell_spec(IVR_risk_table[3, 5], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+IVR_risk_table[5, 3] <- cell_spec(IVR_risk_table[5, 3], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+# low risk
+IVR_risk_table[4, 5] <- cell_spec(IVR_risk_table[4, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+IVR_risk_table[5, 4] <- cell_spec(IVR_risk_table[5, 4], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+
+# bold total
+IVR_risk_table[5, 5] <- cell_spec(IVR_risk_table[5, 5], format = "html", bold = TRUE, escape = FALSE)
+
+# print table, e.g., in html format
+IVR_risk_table <- kable(IVR_risk_table, format = "html", escape = FALSE) %>% 
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  # standardize col width
+  kableExtra::column_spec(1:5, width_min = '4cm') %>%
+  # add footnotes
+  kableExtra::add_footnote("number signs indicate whether climate change is increasing (+) or decreasing (-) risk", notation = "alphabet") %>%
+  # add header
+  kableExtra::add_header_above(., header = c("Risk of L delicatula establishment in globally important viticultural regions" = 6), bold = TRUE)
+
+  
+```
+
+```{r save table from above, if desired- IVR risk table}
+
+if(TRUE) {
+  
+  # save as .html
+  kableExtra::save_kable(
+    IVR_risk_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.jpg"),
+    zoom = 4
+  )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "IVR_risk_table.html"))
+    
+}
+
+```
+
+# SLF risk table
+
+I will do the same for the SLF populations.
+
+```{r read in SLF table}
+
+slf_risk_table <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_risk_table.csv"), row.names = 1) %>%
+  dplyr::rename(
+    "extreme_2055" = "extreme",
+    "high_2055" = "high",
+    "moderate_2055" = "moderate",
+    "low_2055" = "low"
+  )
+
+# change rownames
+rownames(slf_risk_table) <- c("extreme_present", "high_present", "moderate_present", "low_present", "total_2055")
+
+```
+
+```{r calculate percentages- SLF risk table}
+
+total_slf <- sum(slf_risk_table[1:4, 1:4])
+
+slf_shift_prop_table <- tibble(
+  risk_shift = c("no_shift", "risk_increase", "risk_decrease"),
+  prop_change = c(
+    sum(slf_risk_table[1, 1], slf_risk_table[2, 2], slf_risk_table[3, 3], slf_risk_table[4, 4]) / total_slf,
+    sum(slf_risk_table[2:4, 1], slf_risk_table[3:4, 2], slf_risk_table[4, 3]) / total_slf,
+    sum(slf_risk_table[1, 2], slf_risk_table[1:2, 3], slf_risk_table[1:3, 4]) / total_slf
+  )
+) %>%
+  # make % format
+  dplyr::mutate(prop_change = scales::label_percent(accuracy = 0.01) (prop_change))
+
+```
+
+For reporting purposes, we see that about 86.2% of the 769 slf populations experience no change in risk of persistence due to climate change by 2055. Meanwhile, about 2.7% actually experience an increase in risk due to climate change and the remaining 11% move down one or more levels of risk by 2055.
+
+
+```{r save table from above, if desired- SLF prop plot}
+
+if(TRUE) {
+  
+  # make kable
+  slf_shift_prop_table <- kable(slf_shift_prop_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:2, width_min = '4cm') %>%
+    kableExtra::add_header_above(., header = c("SLF risk table shift proportions" = 2), bold = TRUE)
+  
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_shift_prop_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.jpg"),
+    zoom = 4
+  )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table_shift_prop.html"))
+    
+}
+
+```
+
+```{r format table- SLF risk table}
+
+# convert top half (above diagonal) to negative numbers
+slf_risk_table[1, 2] <- -(slf_risk_table[1, 2])
+slf_risk_table[1:2, 3] <- -(slf_risk_table[1:2, 3])
+slf_risk_table[1:3, 4] <- -(slf_risk_table[1:3, 4])
+
+# add positive sign to bottom half
+slf_risk_table[2:4, 1] <- sprintf("%+.0f", slf_risk_table[2:4, 1])
+slf_risk_table[3:4, 2] <- sprintf("%+.0f", slf_risk_table[3:4, 2])
+slf_risk_table[4, 3] <- sprintf("%+.0f", slf_risk_table[4, 3])
+
+# add color formatting to totals
+# extreme risk
+slf_risk_table[1, 5] <- cell_spec(slf_risk_table[1, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+slf_risk_table[5, 1] <- cell_spec(slf_risk_table[5, 1], format = "html", bold = TRUE, escape = FALSE, color = "darkred")
+# high risk
+slf_risk_table[2, 5] <- cell_spec(slf_risk_table[2, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+slf_risk_table[5, 2] <- cell_spec(slf_risk_table[5, 2], format = "html", bold = TRUE, escape = FALSE, color = "darkorange")
+# moderate risk
+slf_risk_table[3, 5] <- cell_spec(slf_risk_table[3, 5], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+slf_risk_table[5, 3] <- cell_spec(slf_risk_table[5, 3], format = "html", bold = TRUE, escape = FALSE, color = "gold")
+# low risk
+slf_risk_table[4, 5] <- cell_spec(slf_risk_table[4, 5], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+slf_risk_table[5, 4] <- cell_spec(slf_risk_table[5, 4], format = "html", bold = TRUE, escape = FALSE, color = "darkgrey")
+
+# bold total
+slf_risk_table[5, 5] <- cell_spec(slf_risk_table[5, 5], format = "html", bold = TRUE, escape = FALSE)
+
+# print table, e.g., in html format
+slf_risk_table <- kable(slf_risk_table, "html", escape = FALSE) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  # standardize col width
+  kableExtra::column_spec(1:5, width_min = '4cm') %>%
+  # add footnotes
+  kableExtra::add_footnote("number signs indicate whether climate change is increasing (+) or decreasing (-) risk", notation = "alphabet") %>%
+  # add header
+  add_header_above(., header = c("Risk of persistence for known L delicatula populations" = 6), bold = TRUE)
+
+  
+```
+
+
+```{r save table from above, if desired- SLF risk table}
+
+if(TRUE) {
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_risk_table, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.jpg"),
+    zoom = 4
+  )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_table.html"))
+    
+}
+
+```
+
+# SLF quadrant plots- facet by country
+
+I want to segment the SLF presences by country and create risk plots similar to what I have for IVR regions.
+
+```{r load in SLF dataset}
+
+slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
+
+```
+
+## Geocode country codes
+
+```{r geocode country}
+
+if(TRUE) {
+
+  # geocode
+  slf_populations_geocoded <- tidygeocoder::reverse_geocode(
+    .tbl = slf_populations, 
+    lat = y, 
+    long = x, 
+    full_results = TRUE, # give each element of the address in a column
+    method = "arcgis",
+    progress_bar = TRUE
+    )
+  
+  # get unique values- should only be 4 countries
+  unique(slf_populations_geocoded$CountryCode)
+  
+  # filter out presences with no country code
+  slf_populations_geocoded_tidy <- slf_populations_geocoded %>%
+    dplyr::filter(!CountryCode %in% c("", "NA"), !is.na(CountryCode)) %>%
+    dplyr::select(species, x, y, CountryCode) 
+  
+  slf_populations_geocoded_tidy$CountryCode <- toupper(slf_populations_geocoded_tidy$CountryCode)
+  
+  nrow(slf_populations_geocoded_tidy)
+  # we only lost about 4 records
+  
+  # save
+  write_csv(
+    x = slf_populations_geocoded_tidy, 
+    file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05_withCountries.csv")
+    )
+  
+  # also write to rds
+  readr::write_rds(
+    x = slf_populations_geocoded_tidy, 
+    file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_withCountries.rds")
+  )
+}
+
+```
+
+```{r re-import geocoded data}
+
+slf_populations_geocoded_tidy <- readr::read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_withCountries.rds"))
+
+```
+
+```{r summarize slf records per country}
+
+slf_populations_geocoded_table <- slf_populations_geocoded_tidy %>%
+  dplyr::group_by(CountryCode) %>%
+  dplyr::summarize(slf_record_count = n()) %>%
+  dplyr::arrange(desc(slf_record_count)) %>%
+  dplyr::mutate(country_name = c("United_States", "China", "South_Korea", "Japan", "North_Korea")) %>%
+  dplyr::rename("country_code" = "CountryCode") %>%
+  dplyr::relocate(country_code, country_name) %>%
+  tibble::add_row(country_code = "Total", country_name = "-", slf_record_count = sum(.$slf_record_count))
+
+```
+
+```{r kable of slf records per country}
+
+if(TRUE) {
+  
+  slf_populations_geocoded_table[6, 1] <- cell_spec(slf_populations_geocoded_table[6, 1], format = "html", bold = TRUE, escape = FALSE)
+  
+  # make kable
+  slf_populations_geocoded_kable <- knitr::kable(slf_populations_geocoded_table, "html", escape = FALSE) %>% 
+    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+    # standardize col width
+    kableExtra::column_spec(1:3, width_min = '4cm') %>%
+    kableExtra::add_header_above(., header = c("SLF population counts per country" = 3), bold = TRUE) 
+  
+  # save as .html
+  kableExtra::save_kable(
+    slf_populations_geocoded_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"),
+    self_contained = TRUE
+    )
+  
+  # initialize webshot by 
+ # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.jpg"),
+    zoom = 2
+  )
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_records_per_country.html"))
+    
+}
+
+```
+
+## Load in suitability data
+
+```{r re-load rescaled values}
+
+# global
+xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_global_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
+
+xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled.rds"))
+
+```
+
+```{r re-load thresholds}
+
+# global
+xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_global_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
+
+# regional
+xy_regional_ensemble_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
+
+xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "regional_ensemble_slf_all_coords_2041-2070_GFDL_ssp_mean_xy_pred_suit_rescaled_thresholds.rds"))
+
+```
+
+```{r join datasets}
+
+# join datasets for plotting
+xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, join_by(ID, x, y)) %>%
+  # join CC datasets
+  full_join(., xy_global_2055_rescaled, join_by(ID, x, y)) %>%
+  full_join(., xy_regional_ensemble_2055_rescaled, join_by(ID, x, y)) %>%
+  # order
+  dplyr::relocate(ID, x, y, xy_global_1995_rescaled, xy_global_2055_rescaled) %>%
+  dplyr::select(-c(xy_global_1995, xy_global_2055, xy_regional_ensemble_1995, xy_regional_ensemble_2055))
+
+
+```
+
+Isolate threshold values
+
+```{r retrieve threshold values}
+
+# global
+global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
+# regional ensemble
+regional_ensemble_MTSS_1995 <- as.numeric(xy_regional_ensemble_1995_rescaled_thresholds[2, 2])
+regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_2055_rescaled_thresholds[4, 2])
+
+```
+
+## for loop to create plots
+
+Now lets plot the data. I will create 4 plots, 1 per country using a for loop.
+
+```{r plot SLF suitability values, fig.asp = 1}
+
+# create empty list for appending
+slf_plots_output <- list()
+
+# plotting objects
+breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
+
+labels <- c(0, 2, 4, 6, 8, 10)
+
+
+# for loop
+for(i in unique(slf_populations_geocoded_tidy$CountryCode)) {
+
+  ## create datasets
+  
+  # filter datasets
+  slf_populations_internal <- slf_populations_geocoded_tidy %>%
+    dplyr::filter(CountryCode == i)
+  
+  # filter out only records from country using join
+  xy_joined_rescaled_internal <- xy_joined_rescaled %>%
+    right_join(., slf_populations_internal, join_by(x, y)) %>%
+    dplyr::select(-c(species, CountryCode))
+  
+  
+  ## boundary crossing arrows 
+  
+  # first get the ones that cross a threshold
+  slf_intersects <- xy_joined_rescaled_internal %>%
+    dplyr::mutate(
+      crosses_threshold = dplyr::case_when(
+        # conditional for starting and ending points that overlap a the threshold
+        # x-axis
+        xy_global_1995_rescaled > global_MTSS & xy_global_2055_rescaled < global_MTSS ~ "crosses",
+        xy_global_1995_rescaled < global_MTSS & xy_global_2055_rescaled > global_MTSS ~ "crosses",
+        # y-axis
+        xy_regional_ensemble_1995_rescaled > regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled < regional_ensemble_MTSS_2055 ~ "crosses",
+         xy_regional_ensemble_1995_rescaled < regional_ensemble_MTSS_2055 & xy_regional_ensemble_2055_rescaled > regional_ensemble_MTSS_2055 ~ "crosses",
+        # else
+        .default = "does not cross"
+      )
+    )
+  
+  # filter out the crosses
+  slf_intersects <- dplyr::filter(
+    slf_intersects,
+    crosses_threshold == "crosses"
+  )
+  
+  
+  
+  
+  # plot
+   slf_plot <- ggplot(data = xy_joined_rescaled_internal) +
+   # threshold lines
+   # MTSS thresholds
+   geom_vline(xintercept = global_MTSS, linetype = "dashed", linewidth = 0.7) + # global
+   geom_hline(yintercept = regional_ensemble_MTSS_1995, linetype = "dashed", linewidth = 0.7) + # regional_ensemble- there are two MTSS thresholds for this model, but the difference is so small that you will never see it on the plot
+   # arrows indicating change
+   geom_segment(
+     data = slf_intersects,
+     aes(
+       x = xy_global_1995_rescaled,
+       xend = xy_global_2055_rescaled,
+       y = xy_regional_ensemble_1995_rescaled,
+       yend = xy_regional_ensemble_2055_rescaled
+     ), 
+     arrow = grid::arrow(angle = 5.5, type = "closed"), alpha = 0.3, linewidth = 0.25, color = "black"
+   ) +
+   # historical data
+   geom_point(
+     aes(x = xy_global_1995_rescaled, y = xy_regional_ensemble_1995_rescaled, shape = "Present"), 
+     size = 2, stroke = 0.7, color = "black", fill = "white"
+     ) +
+   # GFDL ssp370 data
+   geom_point(
+     aes(x = xy_global_2055_rescaled, y = xy_regional_ensemble_2055_rescaled, shape = "2041-2070\nGFDL ssp370"), 
+     size = 2, stroke = 0.7, color = "black", fill = "wheat3"
+     ) +
+   # axes scaling
+   scale_x_continuous(name = "'global' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) + 
+   scale_y_continuous(name = "'regional_ensemble' model risk projection", limits = c(0, 1), breaks = breaks, labels = labels) +
+   # quadrant labels
+   # extreme risk, top right, quad4
+   geom_label(aes(x = 0.75, y = 0.9, label = "extreme risk"), fill = "darkred", color = "azure", size = 5) +
+   # high risk, top left, quad3
+   geom_label(aes(x = 0.25, y = 0.9, label = "high risk"), fill = "darkorange", color = "azure", size = 5) +
+   # moderate risk, bottom right, quad2
+   geom_label(aes(x = 0.75, y = 0.1, label = "moderate risk"), fill = "gold", color = "azure", size = 5) +
+   # low risk, bottom left, quad1
+   geom_label(aes(x = 0.25, y = 0.1, label = "low risk"), fill = "azure4", color = "azure", size = 5) +
+   # aesthetics
+   scale_shape_manual(name = "Time period", values = c(21, 21)) +
+   guides(shape = guide_legend(nrow = 1, override.aes = list(size = 2.5), reverse = TRUE)) +
+   theme_bw() +
+   theme(legend.position = "bottom", panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+   coord_fixed(ratio = 1)
+
+  
+  
+  # append to output
+  slf_plots_output[[i]] <- slf_plot
+  
+  
+  # remove objects
+  rm(slf_plot)
+  rm(slf_intersects)
+  rm(slf_populations_internal)
+  rm(xy_joined_rescaled_internal)
+  
+}
+  
+```
+
+## patchwork figure
+
+```{r edit plots}
+
+# USA
+USA_risk_plot <- slf_plots_output[["USA"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "A") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+USA_risk_plot <- USA_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+USA_risk_plot$data[[4]]$size <- 1.5
+USA_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#USA_risk_plot$data[[3]]$linewidth <- 0.1
+
+USA_risk_plot <- ggplot_gtable(USA_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# france
+CHN_risk_plot <- slf_plots_output[["CHN"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "B") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+# edits
+# remove geom_text
+CHN_risk_plot <- CHN_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+CHN_risk_plot$data[[4]]$size <- 1.5
+CHN_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#CHN_risk_plot$data[[3]]$linewidth <- 0.1
+
+CHN_risk_plot <- ggplot_gtable(CHN_risk_plot) %>%
+  wrap_ggplot_grob()
+
+# JPN
+JPN_risk_plot <- slf_plots_output[["JPN"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "C") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+JPN_risk_plot <- JPN_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+JPN_risk_plot$data[[4]]$size <- 1.5
+JPN_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#JPN_risk_plot$data[[3]]$linewidth <- 0.1
+
+JPN_risk_plot <- ggplot_gtable(JPN_risk_plot) %>%
+  wrap_ggplot_grob()
+
+
+# italy
+KOR_risk_plot <- slf_plots_output[["KOR"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "D") +
+  theme(
+    legend.position = "none", 
+    panel.border = element_rect(size = 1, linetype = "solid", color = "black"), 
+    plot.tag.position = c(0.2, 0.9),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+KOR_risk_plot <- KOR_risk_plot %>%
+  gginnards::delete_layers(match_type = "GeomLabel") %>%
+  ggplot_build()
+# edit point size
+KOR_risk_plot$data[[4]]$size <- 1.5
+KOR_risk_plot$data[[5]]$size <- 1.5
+# edit linewidth
+#KOR_risk_plot$data[[3]]$linewidth <- 0.1
+
+KOR_risk_plot <- ggplot_gtable(KOR_risk_plot) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+slf_plot_patchwork <- (
+  USA_risk_plot + plot_spacer() + CHN_risk_plot +
+  JPN_risk_plot + plot_spacer() + KOR_risk_plot 
+  ) +
+  # annotation
+  plot_annotation(
+    title = "SLF risk plots by country",
+    subtitle = "USA | CHN | JPN | KOR"
+    ) +
+  plot_layout(ncol = 3, nrow = 2, widths = unit(c(5.5, 1, 5.5), "cm"), heights = unit(5.5, "cm"))
+
+
+```
+
+```{r save plot- SLF patchwork}
+
+ggsave(
+  slf_plot_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plots_by_country.jpg"),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+# viticultural regions map
+
+```{r ggplot object for map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(legend.position = "bottom",
+        panel.background = element_rect(fill = "lightblue2",
+                                        colour = "lightblue2")
+        ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  viridis::scale_fill_viridis(option = "D"),
+  coord_equal()
+)
+
+```
+
+```{r load in files for plotting}
+
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+# background layer
+global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+
+# load wineries
+IVR_locations <- readr::read_rds(file.path(here::here(), "data", "wineries_tidied.rds"))
+
+```
+
+```{r plot points}
+
+IVR_points_plot <- ggplot() +
+    geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
+    geom_point(data = IVR_locations, aes(x = x, y = y), fill = "purple3", shape = 21, size = 1, stroke = 0.3) +
+    ggtitle("globally important viticultural regions") +
+    map_style +
+    theme(legend.position = "none") 
+
+```
+
+```{r save plot- IVR regions}
+
+ggsave(
+  IVR_points_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_viticultural_regions.jpg"),
+  height = 8, 
+  width = 12,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+# Plot bioclim variables
+
+```{r set wd}
+
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
+
+```
+
+```{r map style}
+
+map_style <- list(
+  xlab("longitude"),
+  ylab("latitude"),
+  theme_classic(),
+  theme(
+    # legend
+    legend.position = "bottom",
+    # background
+    panel.background = element_rect(fill = "azure3",
+                                        colour = "azure3")
+  ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  coord_equal()
+)
+
+```
+
+```{r import datasets}
+
+
+
+# bio 11
+bio11_hist_df <- terra::rast(
+  x = file.path(mypath, "bio11_1981-2010_global.asc")
+) %>%
+  terra::as.data.frame(xy = TRUE)
+
+```
+
+```{r bio 11 plot}
+
+bio11_hist_plot <- ggplot() +
+  geom_raster(data = bio11_hist_df, aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  map_style +
+  theme(legend.position = "none")
+
+```
+
+

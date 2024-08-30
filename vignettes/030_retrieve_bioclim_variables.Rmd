@@ -1263,19 +1263,17 @@ The final 4 variables have been selected for SDM of Lycorma delicatula, which in
 
 # References
 
-Huron, N. A., Behm, J. E. & Helmus, M. R. 2022. Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5:1–11. <https://doi.org/10.1038/s42003-022-03580-w>
+1. Huron, N. A., Behm, J. E., & Helmus, M. R. (2022). Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5(1), 655. https://doi.org/10.1038/s42003-022-03580-w
 
-Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. <https://doi.org/10.1038/sdata.2017.122>
+2. Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E., Linder, P., Kessler, M. (2017). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4 170122. <https://doi.org/10.1038/sdata.2017.122>
 
-Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. <https://doi.org/10.16904/envidat.228.v2.1>
+3. Karger D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N.E, Linder, H.P., Kessler, M. (2018): Data from: Climatologies at high resolution for the earth’s land surface areas. EnviDat. <https://doi.org/10.16904/envidat.228.v2.1>
 
-Krasting, John P.; John, Jasmin G; Blanton, Chris; McHugh, Colleen; Nikonov, Serguei; Radhakrishnan, Aparna; Rand, Kristopher; Zadeh, Niki T.; Balaji, V; Durachta, Jeff; Dupuis, Christopher; Menzel, Raymond; Robinson, Thomas; Underwood, Seth; Vahlenkamp, Hans; Dunne, Krista A.; Gauthier, Paul PG; Ginoux, Paul; Griffies, Stephen M.; Hallberg, Robert; Harrison, Matthew; Hurlin, William; Malyshev, Sergey; Naik, Vaishali; Paulot, Fabien; Paynter, David J; Ploshay, Jeffrey; Reichl, Brandon G; Schwarzkopf, Daniel M; Seman, Charles J; Silvers, Levi; Wyman, Bruce; Zeng, Yujin; Adcroft, Alistair; Dunne, John P.; Dussin, Raphael; Guo, Huan; He, Jian; Held, Isaac M; Horowitz, Larry W.; Lin, Pu; Milly, P.C.D; Shevliakova, Elena; Stock, Charles; Winton, Michael; Wittenberg, Andrew T.; Xie, Yuanyu; Zhao, Ming (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP. Version YYYYMMDD[1].Earth System Grid Federation. <https://doi.org/10.22033/ESGF/CMIP6.1407>
+4. Krasting, J. P., John, J. G., Blanton, C., McHugh, C., Nikonov, S., Radhakrishnan, A., Rand, K., Zadeh, N. T., Balaji, V., Durachta, J., Dupuis, C., Menzel, R., Robinson, T., Underwood, S., Vahlenkamp, H., Dunne, K. A., Gauthier, P. P., Ginoux, P., Griffies, S. M., … Zhao, M. (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP [Dataset]. Earth System Grid Federation. https://doi.org/10.22033/ESGF/CMIP6.1407
 
-Lee, J.-S., I.-K. Kim, S.-H. Koh, S. J. Cho, S.-J. Jang, S.-H. Pyo, and W. I. Choi. 2011. Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology 14:123–125.
+5. Lee, J.-S., Kim, I.-K., Koh, S.-H., Cho, S. J., Jang, S.-J., Pyo, S.-H., & Choi, W. I. (2011). Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology, 14(1), 123–125. https://doi.org/10.1016/j.aspen.2010.09.004
 
-Maino, J. L., R. Schouten, J. C. Lye, P. A. Umina, and O. L. Reynolds. 2022. Mapping the life-history, development, and survival of spotted lantern fly in occupied and uninvaded ranges. Biological Invasions 24:2155–2167. 10.1007/s10530-022-02764-z
-
-Weiss, D. J., A. Nelson, H. S. Gibson, W. Temperley, S. Peedell, A. Lieber, M. Hancher, et al. 2018. “A Global Map of Travel Time to Cities to Assess Inequalities in Accessibility in 2015.” Nature 553 (7688): 333–36. <https://doi.org/10.1038/nature25181>.
+6. Weiss, D. J., Nelson, A., Gibson, H. S., Temperley, W., Peedell, S., Lieber, A., Hancher, M., Poyart, E., Belchior, S., Fullman, N., Mappin, B., Dalrymple, U., Rozier, J., Lucas, T. C. D., Howes, R. E., Tusting, L. S., Kang, S. Y., Cameron, E., Bisanzio, D., … Gething, P. W. (2018). A global map of travel time to cities to assess inequalities in accessibility in 2015. Nature, 553(7688), 333–336. https://doi.org/10.1038/nature25181
 
 # Appendix
 

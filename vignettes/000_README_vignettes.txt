@@ -239,22 +239,7 @@ v4- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP sce
 
 
 
-
-----------140_format_risk_tables.Rmd----------
-
-## About
-
-This vignette formats risk tables from vignettes 130 and 131 by adding colors and headers.
-
-## changelog
-
-v0- initial version
-v1- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP scenarios
-
-
-
-
-----------150_plot_response_curves.Rmd----------
+----------140_plot_response_curves.Rmd----------
 
 ## About
 
@@ -266,7 +251,7 @@ v0- initial version
 v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
-----------160_generate_risk_report.Rmd----------
+----------150_generate_risk_report.Rmd----------
 
 ## About
 
@@ -278,15 +263,16 @@ v0- initial version
 v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP scenarios
 
 
-----------161_generate_extra_plots.Rmd----------
+----------160_generate_format_figures.Rmd----------
 
 ## About
 
-
+This vignette formats risk tables from vignettes 130 and 131 by adding colors and headers.
 
 ## changelog
 
-v0- initial version- 08-12-2024
-v
+v0- initial version
+v1- 2024-08-14- rework- updated SLF presence data and inclusion of other SSP scenarios
+v2- changeed name from format_risk_tables to generate_format_figures- combined with generate_extra_plots (161)
 
 

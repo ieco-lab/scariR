@@ -763,31 +763,33 @@ pred_global_2055_mean <- terra::app(
 
 # References
 
-Elith, J., S. J. Phillips, T. Hastie, M. Dudík, Y. E. Chee, and C. J. Yates. 2011. A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions 17:43–57.
+1. Elith, J., Phillips, S. J., Hastie, T., Dudík, M., Chee, Y. E., & Yates, C. J. (2011). A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions, 17(1), 43–57. https://doi.org/10.1111/j.1472-4642.2010.00725.x
 
-Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+2. Feng, X. (2022). Shandongfx/nimbios_enm [HTML]. https://github.com/shandongfx/nimbios_enm (Original work published 2018).
 
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+3. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
-Liu, C., M. White, and G. Newell. 2013. Selecting thresholds for the prediction of species occurrence with presence-only data. Journal of Biogeography 40:778–789.
+4. Liu, C., Newell, G., & White, M. (2016). On the selection of thresholds for predicting species occurrence with presence-only data. Ecology and Evolution, 6(1), 337–348. https://doi.org/10.1002/ece3.1878
 
-Liu, C., G. Newell, and M. White. 2016. On the selection of thresholds for predicting species occurrence with presence-only data. Ecology and Evolution 6:337–348.
+5. Liu, C., White, M., & Newell, G. (2013). Selecting thresholds for the prediction of species occurrence with presence-only data. Journal of Biogeography, 40(4), 778–789. https://doi.org/10.1111/jbi.12058
 
-Maryam Bordkhani. (n.d.). threshold rule.
+6. Maryam Bordkhani. (n.d.). Threshold rule [Online post].
 
-Radosavljevic, A., and R. P. Anderson. 2014. Making better Maxent models of species distributions: complexity, overfitting and evaluation. Journal of Biogeography 41:629–643.
+7. Radosavljevic, A., & Anderson, R. P. (2014). Making better Maxent models of species distributions: Complexity, overfitting and evaluation. Journal of Biogeography, 41(4), 629–643. https://doi.org/10.1111/jbi.12227
 
-Steven Phillips. (2017). A Brief Tutorial on Maxent. <http://biodiversityinformatics.amnh.org/open_source/maxent/>.
+8. Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
 
-Steven J. Phillips, Miroslav Dudík, Robert E. Schapire. [Internet] Maxent software for modeling species niches and distributions (Version 3.4.4). Available from url: <http://biodiversityinformatics.amnh.org/open_source/maxent/>. Accessed on 2023-9-18.
+9. Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
 
-Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+10. Steven J. Phillips, Miroslav Dudík, & Robert E. Schapire. (2023). Maxent software for modeling species niches and distributions (Version 3.4.3 (Java)) [Computer software]. http://biodiversityinformatics.amnh.org/open_source/maxent/.
 
-Valavi, R., J. Elith, J. J. Lahoz-Monfort, and G. Guillera-Arroita. 2019. blockCV: An r package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models. Methods in Ecology and Evolution 10:225–232.
+11. Srivastava, V., Roe, A. D., Keena, M. A., Hamelin, R. C., & Griess, V. C. (2021). Oh the places they’ll go: Improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions, 23(1), 297–349. https://doi.org/10.1007/s10530-020-02372-9
 
-VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. <https://doi.org/10.1016/j.ecolmodel.2008.11.010>
+12. Valavi, R., Elith, J., Lahoz-Monfort, J. J., & Guillera-Arroita, G. (2019). blockCV: An r package for generating spatially or environmentally separated folds for k-fold cross-validation of species distribution models. Methods in Ecology and Evolution, 10(2), 225–232. https://doi.org/10.1111/2041-210X.13107
 
-Vignali, S., A. Barras, V. Braunisch, and C. B.-U. of Bern. 2023, July 3. SDMtune: Species Distribution Model Selection.
+13. VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+14. Vignali, S., Barras, A. G., Arlettaz, R., & Braunisch, V. (2020). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evolution, 10(20), 11488–11506. https://doi.org/10.1002/ece3.6786
 
 # Appendix
 

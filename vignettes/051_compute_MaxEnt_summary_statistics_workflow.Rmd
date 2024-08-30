@@ -546,10 +546,10 @@ for (a in seq(length(global_model@models))) {
 
 # References
 
-Feng, X. 2022, April 24. shandongfx/nimbios_enm. GitHub. Accessed on 2023-9-18.
+1. Feng, X. (2022). Shandongfx/nimbios_enm [HTML]. https://github.com/shandongfx/nimbios_enm (Original work published 2018).
 
-Phillips, S. J., R. P. Anderson, and R. E. Schapire. 2006. Maximum entropy modeling of species geographic distributions. Ecological Modelling 190:231–259.
+2. Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
 
-Srivastava, V., A. D. Roe, M. A. Keena, R. C. Hamelin, and V. C. Griess. 2021. Oh the places they’ll go: improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions 23:297–349.
+3. Srivastava, V., Roe, A. D., Keena, M. A., Hamelin, R. C., & Griess, V. C. (2021). Oh the places they’ll go: Improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions, 23(1), 297–349. https://doi.org/10.1007/s10530-020-02372-9
 
-Vignali, S., Barras, A. G., Arlettaz, R., Braunisch, V. (2022). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evololution, 10(20), 11488–11506. <https://doi.org/10.1002/ece3.6786>
+4. Vignali, S., Barras, A. G., Arlettaz, R., & Braunisch, V. (2020). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evolution, 10(20), 11488–11506. https://doi.org/10.1002/ece3.6786

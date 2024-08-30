@@ -17,22 +17,23 @@ create_risk_report(
 )
 }
 \arguments{
-\item{locality.iso}{The \href{https://www.iso.org/obp/ui/#search}{alpha-3 ISO code} corresponding to the country of interest.
-If the desired locality is a state or province, please still enter the ISO code
-and supply the name of that province in \code{locality.name}}
+\item{locality.iso}{The \href{https://www.iso.org/obp/ui/#search}{alpha-3 ISO code}
+corresponding to the country of interest. If the desired locality is a state
+or province, please still enter the ISO code and supply the name of that
+province in \code{locality.name}.}
 
 \item{locality.name}{The name of the country, state or province for which to
 generate the report. This is optional if the report is for a country, but
 required if the report is for a state/province. Avoid special characters,
 but please include those used used in the ethnic naming (ex: Côte d'Ivoire).}
 
-\item{locality.type}{One of "country" or "states_provinces". If you do
+\item{locality.type}{One of "country" or "state_province". If you do
 not know the state or province you are looking for, you might create a report
 at the country level and then look at the return for the name of the state/province
 included.}
 
 \item{save.report}{Logical. Should the report be saved to file? File location
-specified by \code{mypath}.}
+specified by \code{mypath}. Note, this requires the use of Google Chrome.}
 
 \item{mypath}{Character. A file path to the sub directory where the model
 output will be stored. Should be used with the \code{\link[=file.path]{file.path()}} function
@@ -84,7 +85,8 @@ data outputs from this R package analysis, including current and future risk map
 range shift maps, risk plots and risk tables.
 }
 \details{
-Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot2', 'ggnewscale', 'common'.
+Requires the following packages: 'tidyverse', 'terra', 'here', 'cli', 'rnaturalearth', 'rnaturalearthhires', 'kableExtra', 'formattable', 'webshot', 'webshot2', 'ggnewscale', 'common'.
+\strong{NOTE} This function requires the use of Google Chrome if save.report = TRUE
 
 Note that this function performs downloads from
 \href{https://www.naturalearthdata.com/}{naturalearthdata.com}, if the data do not

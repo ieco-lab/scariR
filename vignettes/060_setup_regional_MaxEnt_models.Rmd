@@ -91,6 +91,7 @@ library(rnaturalearthhires)
 library(kgc) # koppen climate rasters
 
 # aesthetics
+library(webshot)
 library(webshot2)
 library(kableExtra)
 library(patchwork)
@@ -116,9 +117,10 @@ if(FALSE) {
   # initialize webshot by 
   # webshot::install_phantomjs()
   # convert to pdf
-  webshot2::webshot(
+  webshot::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.jpg")
+    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.jpg"),
+    zoom = 2
   )
   
   # model extents
@@ -1658,23 +1660,23 @@ Now we are ready to run all 3 regional models!
 
 # References
 
-Calvin, D. D., J. Rost, J. Keller, S. Crawford, B. Walsh, M. Bosold, and J. Urban. 2023. Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology 52:1108–1125.
+1. Calvin, D. D., Rost, J., Keller, J., Crawford, S., Walsh, B., Bosold, M., & Urban, J. (2023). Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology, 52(6), 1108–1125. https://doi.org/10.1093/ee/nvad093
 
-Du, Z., Y. Wu, Z. Chen, L. Cao, T. Ishikawa, S. Kamitani, T. Sota, F. Song, L. Tian, W. Cai, and H. Li. 2021. Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications.
+2. Du, Z., Wu, Y., Chen, Z., Cao, L., Ishikawa, T., Kamitani, S., Sota, T., Song, F., Tian, L., Cai, W., & Li, H. (2021). Global phylogeography and invasion history of the spotted lanternfly revealed by mitochondrial phylogenomics. Evolutionary Applications. https://doi.org/10.1111/eva.13170
 
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+3. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
-Lewkiewicz, S. M., S. De Bona, M. R. Helmus, and B. Seibold. 2022. Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology 85:29.
+4. Lewkiewicz, S. M., De Bona, S., Helmus, M. R., & Seibold, B. (2022). Temperature sensitivity of pest reproductive numbers in age-structured PDE models, with a focus on the invasive spotted lanternfly. Journal of Mathematical Biology, 85(3), 29. https://doi.org/10.1007/s00285-022-01800-9
 
-Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
+5. Santana Jr, P. A., Kumar, L., Da Silva, R. S., Pereira, J. L., & Picanço, M. C. (2019). Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science, 75(10), 2706–2715. https://doi.org/10.1002/ps.5379
 
-East Asia. 2024, March 6. Wikipedia.
+6. East Asia. 2024, March 6. Wikipedia.
 
-South Asia. 2024, March 27. Wikipedia.
+7. South Asia. 2024, March 27. Wikipedia.
 
-Southeast Asia. 2024, March 27. Wikipedia.
+8. Southeast Asia. 2024, March 27. Wikipedia.
 
-Xin, B., Y. Zhang, X. Wang, L. Cao, K. A. Hoelmer, H. J. Broadley, and J. R. Gould. 2020. Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology 50:36–45.
+9. Xin, B., Zhang, Y., Wang, X., Cao, L., Hoelmer, K. A., Broadley, H. J., & Gould, J. R. (2020). Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology, 50(1), 36–45. https://doi.org/10.1093/ee/nvaa137
 
 # Appendix  {.hidden}
 

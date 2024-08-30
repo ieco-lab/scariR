@@ -2819,11 +2819,12 @@ ggsave(
 
 # References
 
-Bouchet P, Miller D, Roberts J, Mannocci L, Harris C, Thomas L (2020). dsmextra: Extrapolation assessment tools for density surface models. Methods in Ecology and Evolution. DOI: 10.1111/2041-210X.13469
+1. Bouchet, P. J., Miller, D. L., Roberts, J. J., Mannocci, L., Harris, C. M., & Thomas, L. (2020). dsmextra: Extrapolation assessment tools for density surface models. Methods in Ecology and Evolution, 11(11), 1464–1469. https://doi.org/10.1111/2041-210X.13469
 
-Elith, J., M. Kearney, and S. Phillips. 2010. The art of modelling range-shifting species. Methods in Ecology and Evolution 1:330–342.
+2. Elith, J., Kearney, M., & Phillips, S. (2010). The art of modelling range-shifting species. Methods in Ecology and Evolution, 1(4), 330–342. https://doi.org/10.1111/j.2041-210X.2010.00036.x
 
-Mesgaran, M. B., R. D. Cousens, and B. L. Webber. 2014. Here be dragons: a tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions 20:1147–1159.
+3. Mesgaran, M. B., Cousens, R. D., & Webber, B. L. (2014). Here be dragons: A tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions, 20(10), 1147–1159. https://doi.org/10.1111/ddi.12209
+
 
 # Appendix {.hidden}
 

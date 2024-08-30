@@ -6,7 +6,9 @@ author:
 date: "2024-08-23"
 ---
 
-INTRO
+# Overview
+
+
 
 # Setup
 
@@ -28,8 +30,9 @@ library(rnaturalearthhires)
 # aesthetics
 library(kableExtra)
 library(formattable)
+library(webshot)
 library(webshot2)
-# devtools::install_github("eliocamp/ggnewscale")
+# devtools::install_github("eliocamp/ggnewscale", version = "0.4.10")
 library(ggnewscale) ## MUST use version 0.4.10- 0.5.0 has a bug that breaks this function
 
 
@@ -171,7 +174,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "california",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -181,7 +184,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "pennsylvania",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -259,7 +262,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "chn",
   locality.name = "shandong",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -270,7 +273,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "chn",
   locality.name = "yunnan",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -284,7 +287,7 @@ readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette
 
 ```
 
-# Viticultural shifts due to climate change
+# Viticultural shifts due to climate change 
 
 Morales-Castilla et al 2020 predicted that the following areas would experience a loss in suitability for viticulture under a 4C warming scenario of climate change:
 
@@ -634,7 +637,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "michigan",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -645,7 +648,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "oregon",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -656,7 +659,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "usa",
   locality.name = "washington",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -667,7 +670,7 @@ slfSpread::create_risk_report(
 slfSpread::create_risk_report(
   locality.iso = "aus",
   locality.name = "tasmania",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -1243,7 +1246,7 @@ readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vi
 slfSpread::create_risk_report(
   locality.iso = "nzl",
   locality.name = "marlborough",
-  locality.type = "states_provinces",
+  locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "New Zealand"),
   create.dir = FALSE,
   save.report = TRUE,
@@ -1252,7 +1255,13 @@ slfSpread::create_risk_report(
 
 ```
 
-# Appendix
+
+# References
+
+1. Webb, L. B., Watterson, I., Bhend, J., Whetton, P. H., & Barlow, E. W. R. (2013). Global climate analogues for winegrowing regions in future periods: Projections of temperature and precipitation. Australian Journal of Grape and Wine Research, 19(3), 331–341. https://doi.org/10.1111/ajgw.12045
+
+
+# Appendix {.hidden}
 
 ## Create faceted maps
 
@@ -3205,6 +3214,156 @@ ggsave(
 
 ```
 
-# References
+### Patchwork USA maps
 
-Webb, L. B., I. Watterson, J. Bhend, P. H. Whetton, and E. W. R. Barlow. 2013. Global climate analogues for winegrowing regions in future periods: projections of temperature and precipitation. Australian Journal of Grape and Wine Research 19:331--341.
+```{r patchwork USA}
+
+USA_risk_map_present <-  united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "Present") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.20),
+    plot.tag = element_text(face = "bold", size = 20)
+    ) +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_risk_map_present <- ggplot_build(USA_risk_map_present)
+# edit point size
+USA_risk_map_present$data[[3]]$size <- 1.5
+
+USA_risk_map_present <- ggplot_gtable(USA_risk_map_present) %>%
+  wrap_ggplot_grob()
+ 
+
+
+USA_risk_map_future <-  united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "Future") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.2),
+    plot.tag = element_text(face = "bold", size = 20)
+    ) +
+  xlim(-125, -65) +
+  ylim(25, 50)
+
+USA_risk_map_future <- ggplot_build(USA_risk_map_future)
+# edit point size
+USA_risk_map_future$data[[3]]$size <- 1.5
+
+USA_risk_map_future <- ggplot_gtable(USA_risk_map_future) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+USA_patchwork <- (
+  # romania top row
+  USA_risk_map_present / USA_risk_map_future 
+  ) +
+  # annotation
+  plot_annotation(title = "USA risk maps") 
+
+```
+
+```{r save plot}
+
+ggsave(
+  USA_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "USA_risk_maps.jpg"),
+  height = 10, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
+
+### Patchwork washington maps
+
+```{r patchwork washington}
+
+WA_risk_map_present <-  washington_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "Present") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.15),
+    plot.tag = element_text(face = "bold", size = 20)
+    ) 
+
+WA_risk_map_present <- ggplot_build(WA_risk_map_present)
+# edit point size
+WA_risk_map_present$data[[3]]$size <- 1.5
+
+WA_risk_map_present <- ggplot_gtable(WA_risk_map_present) %>%
+  wrap_ggplot_grob()
+ 
+
+
+WA_risk_map_future <-  washington_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    plot.caption = element_blank(),
+    axis.title = element_blank()
+    ) +
+  labs(tag = "Future") +
+  theme(
+    legend.position = "none", 
+    plot.tag.position = c(0.15, 0.15),
+    plot.tag = element_text(face = "bold", size = 20)
+    )
+
+WA_risk_map_future <- ggplot_build(WA_risk_map_future)
+# edit point size
+WA_risk_map_future$data[[3]]$size <- 1.5
+
+WA_risk_map_future <- ggplot_gtable(WA_risk_map_future) %>%
+  wrap_ggplot_grob()
+  
+  
+```
+
+```{r patchwork plots}
+
+WA_patchwork <- (
+  # romania top row
+  WA_risk_map_present / WA_risk_map_future 
+  ) +
+  # annotation
+  plot_annotation(title = "washington risk maps") 
+
+```
+
+```{r save plot}
+
+ggsave(
+  WA_patchwork, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "washington_risk_maps.jpg"),
+  height = 10, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```

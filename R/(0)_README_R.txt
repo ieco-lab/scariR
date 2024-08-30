@@ -110,6 +110,10 @@ First used in vignette 160
 ## Changelog
 
 v0-
+v1-
+v2-
+v3-
+v4- 2024-08-29- added functionality to calculate totals of predicted SLF risk categories from risk maps
 
 
 

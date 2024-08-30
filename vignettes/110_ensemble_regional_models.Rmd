@@ -2636,15 +2636,16 @@ ggsave(
 
 ```
 
-Now that we have created an ensembled prediction for our regional-scale models, we can compare them with the global model predictions and explore the suitability for SLF under climate change using suitability maps, point-wise predictions, quadrant plots, variable reponse curves and others.
+Now that we have created an ensembled prediction for our regional-scale models, we can compare them with the global model predictions and explore the suitability for SLF under climate change using suitability maps, point-wise predictions, quadrant plots, variable response curves and others.
 
 # References
 
-Araújo, M. B., & New, M. (2007). Ensemble forecasting of species distributions. Trends in Ecology & Evolution, 22(1), 42–47. https://doi.org/10.1016/j.tree.2006.09.010
+1. Araújo, M. B., & New, M. (2007). Ensemble forecasting of species distributions. Trends in Ecology & Evolution, 22(1), 42–47. https://doi.org/10.1016/j.tree.2006.09.010
 
-Elith, J., Kearney, M., & Phillips, S. (2010). The art of modelling range-shifting species. Methods in Ecology and Evolution, 1(4), 330–342. https://doi.org/10.1111/j.2041-210X.2010.00036.x
+2. Elith, J., Kearney, M., & Phillips, S. (2010). The art of modelling range-shifting species. Methods in Ecology and Evolution, 1(4), 330–342. https://doi.org/10.1111/j.2041-210X.2010.00036.x
 
-Mesgaran, M. B., Cousens, R. D., & Webber, B. L. (2014). Here be dragons: A tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions, 20(10), 1147–1159. https://doi.org/10.1111/ddi.12209
+3. Mesgaran, M. B., Cousens, R. D., & Webber, B. L. (2014). Here be dragons: A tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions, 20(10), 1147–1159. https://doi.org/10.1111/ddi.12209
+
 
 
 # Appendix {.hidden}

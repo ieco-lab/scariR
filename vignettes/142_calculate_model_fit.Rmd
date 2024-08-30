@@ -1,15 +1,16 @@
 ---
 title: "Calculate model fit statistics"
-author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-23"
-output: html_document
 ---
-THEORY
+
+I will create a table for some important summary statistics for the models. These include sensitivity, specificity, commission error, and omission error. These are calculated according to the cloglog MTSS threshold per model.
 
 # Setup
 
-```{r library packages}
+```{r library packages, message = FALSE}
 
 # general tools
 library(tidyverse)  #data manipulation
@@ -25,6 +26,7 @@ library(plotROC) # plots ROCs
 
 # html tools
 library(kableExtra)
+library(webshot)
 library(webshot2)
 
 ```
@@ -104,11 +106,6 @@ model_sens_spec <- tibble(
 
 ```
 
-```{r additional mods}
-
-
-```
-
 ```{r save as .csv}
 
 write_csv(model_sens_spec, file.path(here::here(), "vignette-outputs", "data-tables", "model_sensitivity_specificity.csv"))
@@ -139,9 +136,10 @@ model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", esca
   # initialize webshot by 
  # webshot::install_phantomjs()
   # convert to pdf
-  webshot2::webshot(
+  webshot::webshot(
     url = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg")
+    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg"),
+    zoom = 2
   )
   
   # model extents
@@ -152,6 +150,7 @@ model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", esca
 
 # References
 
-Jiménez‐Valverde, A. 2012. Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography 21:498--507.
+1. Jiménez‐Valverde, A. (2012). Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography, 21(4), 498–507. https://doi.org/10.1111/j.1466-8238.2011.00683.x
 
-Zou, K. H., A. J. O'Malley, and L. Mauri. 2007. Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation 115:654--657.
+2. Zou, K. H., O’Malley, A. J., & Mauri, L. (2007). Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation, 115(5), 654–657. https://doi.org/10.1161/CIRCULATIONAHA.105.594929
+

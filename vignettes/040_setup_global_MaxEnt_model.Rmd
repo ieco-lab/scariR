@@ -49,9 +49,45 @@ library(raster)
 library(terra)
 
 # aesthetics
+library(webshot)
 library(webshot2)
 library(kableExtra)
 library(patchwork)
+
+```
+
+```{r save tables from above, if desired}
+
+if(FALSE) {
+  
+  # model training dataset
+  # save as .csv
+  write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "global_models_info.csv"))
+  
+  # save as .html
+  kableExtra::save_kable(
+    model_info_kable, 
+    file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
+    self_contained = TRUE,
+    bs_theme = "simplex"
+    )
+  
+  # initialize webshot by 
+  # webshot::install_phantomjs()
+  # convert to pdf
+  webshot::webshot(
+    url = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
+    file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.jpg"),
+    zoom = 2
+  )
+  
+  
+  # rm html
+  file.remove(file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"))
+  
+  # model extents
+    
+}
 
 ```
 
@@ -214,11 +250,12 @@ Now that we have selected the background point datasets and created rasters for 
 
 # References
 
-D.D Calvin, J. Rost, J. Keller, S. Crawford, Julie Urban, B. Walsh, and M. Bosold. Seasonal Activity of Spotted Lanternfly, Lycorma delicatula (White) (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Unpublished.
+1. Calvin, D. D., Rost, J., Keller, J., Crawford, S., Walsh, B., Bosold, M., & Urban, J. (2023). Seasonal activity of spotted lanternfly (Hemiptera: Fulgoridae), in Southeast Pennsylvania. Environmental Entomology, 52(6), 1108–1125. https://doi.org/10.1093/ee/nvad093
 
-Gallien, L., R. Douzet, S. Pratte, N. E. Zimmermann, and W. Thuiller. 2012. Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography 21:1126–1136.
+2. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
-Santana Jr, P. A., L. Kumar, R. S. Da Silva, J. L. Pereira, and M. C. Picanço. 2019. Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science 75:2706–2715.
+3. Santana Jr, P. A., Kumar, L., Da Silva, R. S., Pereira, J. L., & Picanço, M. C. (2019). Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science, 75(10), 2706–2715. https://doi.org/10.1002/ps.5379
+
 
 # Appendix- Patchwork background and presence plots {.hidden}
 
