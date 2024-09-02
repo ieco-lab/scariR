@@ -315,7 +315,7 @@ terra::writeVector(
   x = KG_zones_invaded_poly,
   filename = file.path(mypath, "models", "working_dir", "shapefiles", "koeppen_climate_zones.shp"),
   filetype = "ESRI Shapefile",
-  overwrite = TRUE
+  overwrite = FALSE
 )
 
 ```

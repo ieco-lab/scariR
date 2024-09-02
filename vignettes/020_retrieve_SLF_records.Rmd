@@ -20,6 +20,8 @@ The final step of this analysis will be to organize the different datasets into 
 
 Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.
 
+**Note:** I have added a number of `if()` statements throughout my vignettes, usually at key save points. Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk. This is to prevent accidental overwriting of files.
+
 # Setup
 
 First, I will load in the necessary packages.
@@ -128,46 +130,50 @@ First, I will import the dataset to my working directory. I will also retrieve t
 
 ```{r download to PC; import to session; create simplified .csv file}
 
-# download the data as a zip to PC
-slf_gbif_download <- occ_download_get(
-  key = '0049348-240626123714530',
-  path = file.path(here::here(), "data-raw"),
-  # overwrite = TRUE
-  ) %>% 
-  occ_download_import()
+if (FALSE){
 
-
-# .zip file
-# unzip
-utils::unzip(
-  zipfile = file.path(here::here(), "data-raw", "0049348-240626123714530.zip"),
-  exdir =  file.path(here::here(), "data-raw")
+  # download the data as a zip to PC
+  slf_gbif_download <- occ_download_get(
+    key = '0049348-240626123714530',
+    path = file.path(here::here(), "data-raw"),
+    # overwrite = TRUE
+    ) %>% 
+    occ_download_import()
+  
+  
+  # .zip file
+  # unzip
+  utils::unzip(
+    zipfile = file.path(here::here(), "data-raw", "0049348-240626123714530.zip"),
+    exdir =  file.path(here::here(), "data-raw")
+    )
+  # rename .csv file
+  file.rename(
+    from = file.path(here::here(), "data-raw", "0049348-240626123714530.csv"),
+    to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+    )
+  # delete original zip
+  file.remove(file.path(here::here(), "data-raw", "0049348-240626123714530.zip"))
+  
+  
+  
+  # simplify download into more useable .csv
+  slf_gbif_download_simple <- slf_gbif_download %>%
+    mutate(prov = "gbif") %>%
+    dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "countryCode", "prov", "year", "gbifID")) %>% # select desired columns
+    # rename for consistency with rest of vignette
+    rename("name" = "species",
+           "longitude" = "decimalLongitude", 
+           "latitude" = "decimalLatitude",
+           "key" = "gbifID"
+    )
+  
+  # save .csv output for use
+  write_csv(x = slf_gbif_download_simple, 
+            file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
   )
-# rename .csv file
-file.rename(
-  from = file.path(here::here(), "data-raw", "0049348-240626123714530.csv"),
-  to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
-  )
-# delete original zip
-file.remove(file.path(here::here(), "data-raw", "0049348-240626123714530.zip"))
 
-
-
-# simplify download into more useable .csv
-slf_gbif_download_simple <- slf_gbif_download %>%
-  mutate(prov = "gbif") %>%
-  dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "countryCode", "prov", "year", "gbifID")) %>% # select desired columns
-  # rename for consistency with rest of vignette
-  rename("name" = "species",
-         "longitude" = "decimalLongitude", 
-         "latitude" = "decimalLatitude",
-         "key" = "gbifID"
-  )
-
-# save .csv output for use
-write_csv(x = slf_gbif_download_simple, 
-          file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
-)
+}
 
 ```
 
@@ -210,8 +216,6 @@ slf_gbif_report <- CoordinateCleaner::clean_coordinates(
 ) %>%
   as.data.frame()
 
-
-
 ```
 
 It seems like the most records were removed for duplicate records, followed by for records flagged as being in the ocean or other bodies of water. We also did find a few records that were attributed to biodiversity institutions and country / province centroids.
@@ -234,27 +238,21 @@ unique(slf_gbif_coords1$name)
 
 ```
 
-Next, we will use `humboldt::humboldt.occ.rarefy` to spatially thin the occurrence data. The `Humboldt` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
+Next, we will use `humboldt::humboldt.occ.rarefy()` to spatially thin the occurrence data. The `Humboldt` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
 
-In `humboldt::humboldt.occ.rarefy`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. The resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
-
-Note: Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk.
+In `humboldt::humboldt.occ.rarefy()`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. The resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
 
 ```{r spatial thinning- GBIF}
 
 set.seed(997)
 
-if(TRUE) {
-
-  slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(
-    in.pts = slf_gbif_coords1, 
-    colxy = 2:3, # coordinate columns
-    rarefy.dist = 10, 
-    rarefy.units = "km", 
-    run.silent.rar = F # display progress bars
-    ) 
-
-}
+slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(
+  in.pts = slf_gbif_coords1, 
+  colxy = 2:3, # coordinate columns
+  rarefy.dist = 10, 
+  rarefy.units = "km", 
+  run.silent.rar = F # display progress bars
+  ) 
 
 ```
 
@@ -362,17 +360,13 @@ Again, the majority were duplicates, followed by those that fell into bodies of 
 
 set.seed(998)
 
-if(TRUE) {
-
-  slf_lyde2 <- humboldt::humboldt.occ.rarefy(
-    in.pts = slf_lyde1, 
-    colxy = 4:5, # coordinate columns
-    rarefy.dist = 10, 
-    rarefy.units = "km", 
-    run.silent.rar = F # display progress bars
-    ) 
-
-}
+slf_lyde2 <- humboldt::humboldt.occ.rarefy(
+  in.pts = slf_lyde1, 
+  colxy = 4:5, # coordinate columns
+  rarefy.dist = 10, 
+  rarefy.units = "km", 
+  run.silent.rar = F # display progress bars
+  ) 
 
 ```
 
@@ -380,10 +374,14 @@ Spatial thinning for the `lyde` dataset left 366 points out of the 39,000 points
 
 ```{r save cleaned data- lydemapR}
 
-write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+if(FALSE) {
 
-# also save as a .rds file
-write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
+  write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+  
+  # also save as a .rds file
+  write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
+  
+}
 
 ```
 
@@ -617,7 +615,11 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-08-05.csv"))
+if(FALSE) {
+
+  write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-08-05.csv"))
+
+}
 
 ```
 
@@ -637,27 +639,23 @@ slf_all_coords <- readr::read_csv(file.path(here::here(), "vignette-outputs", "d
 
 ```{r spatial thinning- all data using spThin}
 
-if(FALSE) {
-
-  slf_all_coords2 <- spThin::thin(
-    loc.data = slf_all_coords, 
-    lat.col = "latitude", long.col = "longitude",
-    spec.col = "species",
-    thin.par = 10,
-    reps = 10, # number of passes
-    # line below returns a list of data frames with the locations were preserved
-    locs.thinned.list.return = TRUE, 
-    write.files = TRUE, # returns list of thinned data as a separate .csv file
-    # next, create a file that logs the thinning run, write the path to and name of the log file
-    write.log.file = TRUE, 
-    log.file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-08-05.txt")),
-    # finally, tell it where to write the new files and what to call the thinned dataset
-    out.dir = file.path(here::here(), "vignette-outputs", "data-tables"),
-    out.base = paste0("slf_all_coords_cleaned_2024-08-05"),
-    verbose = TRUE # give details of run in the console
-    )
-
-}
+slf_all_coords2 <- spThin::thin(
+  loc.data = slf_all_coords, 
+  lat.col = "latitude", long.col = "longitude",
+  spec.col = "species",
+  thin.par = 10,
+  reps = 10, # number of passes
+  # line below returns a list of data frames with the locations were preserved
+  locs.thinned.list.return = TRUE, 
+  write.files = TRUE, # returns list of thinned data as a separate .csv file
+  # next, create a file that logs the thinning run, write the path to and name of the log file
+  write.log.file = TRUE, 
+  log.file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_cleaned_thinning_log_2024-08-05.txt")),
+  # finally, tell it where to write the new files and what to call the thinned dataset
+  out.dir = file.path(here::here(), "vignette-outputs", "data-tables"),
+  out.base = paste0("slf_all_coords_cleaned_2024-08-05"),
+  verbose = TRUE # give details of run in the console
+  )
 
 ```
 
@@ -713,11 +711,15 @@ slf_all_coords3 <- slf_all_coords2 %>%
   rename("x" = "longitude",
          "y" = "latitude")
 
-# save
-write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2024-08-05.csv")))
+if(FALSE) {
 
-# also save as a .rds file
-write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2024-08-05.rds")))
+  # save
+  write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2024-08-05.csv")))
+  
+  # also save as a .rds file
+  write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2024-08-05.rds")))
+  
+}
 
 ```
 
@@ -805,28 +807,24 @@ We now have half of the data we need to perform SDM! In the next vignette, we wi
 
 ```{r visualize newest gbif records vs older pull}
 
-if(FALSE) {
+# new data
+slf_new <- readr::read_csv(file = file.path(here::here(), "data-raw", "data-old", "slf_gbif_cleaned_2024-08-05.csv"))
 
-  # new data
-  slf_new <- readr::read_csv(file = file.path(here::here(), "data-raw", "data-old", "slf_gbif_cleaned_2024-08-05.csv"))
-  
-  # old data
-  slf_old <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
-  
-  # plot SLF
-  map_slf <- ggplot() +
-    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_new, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
-    geom_point(data = slf_old, aes(x = x, y = y), color = "blue", shape = 2) +
-    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
-    ggtitle("SLF new points (darkorange) vs old (blue)") +
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_blank()) +
-    theme_bw()
-  
-  # The old points are in blue and the new points are in darkorange
-  
-}
+# old data
+slf_old <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_2024-01-05.csv"))
+
+# plot SLF
+map_slf <- ggplot() +
+  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_point(data = slf_new, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
+  geom_point(data = slf_old, aes(x = x, y = y), color = "blue", shape = 2) +
+  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  ggtitle("SLF new points (darkorange) vs old (blue)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank()) +
+  theme_bw()
+
+# The old points are in blue and the new points are in darkorange
 
 ```

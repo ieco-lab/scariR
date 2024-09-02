@@ -90,7 +90,7 @@ This vignette contains an example workflow of the R function "compute_MaxEnt_sum
 ## Changelog
 
 v0-
-v1- 2024-08-27
+v1- 2024-08-27- in `sandbox`
 
 
 ----------060_setup_regional_MaxEnt_models.Rmd----------

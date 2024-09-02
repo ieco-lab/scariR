@@ -342,7 +342,7 @@ hypers <- list(
 
 ```{r tune based on test AUC}
   
-if (TRUE) {
+if (FALSE) {
 
   # Train a model with all possible combinations of hyperparameters
   global_model_tuned_auc <- SDMtune::gridSearch(
@@ -368,7 +368,7 @@ Based on the test AUC metric, the highest value was attributed to the model with
 
 ```{r tune based on test TSS}
   
-if (TRUE) {
+if (FALSE) {
 
   # Train a model with all possible combinations of hyperparameters
   global_model_tuned_tss <- SDMtune::gridSearch(

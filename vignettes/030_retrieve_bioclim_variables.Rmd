@@ -1017,7 +1017,7 @@ We will use `ENMTools::raster.cor.matrix()` to perform the correlation analysis.
 
 ```{r Take pearson correlation of raster layers}
 
-if(TRUE){
+if(FALSE){
   
   mypath <- file.path(here::here() %>% 
                         dirname(),
@@ -1222,7 +1222,7 @@ ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs
 
 # 4. Visualize rasters
 
-```{r }
+```{r visualize rasters}
 
 mypath <- file.path(here::here() %>% 
                         dirname(),
@@ -1240,22 +1240,6 @@ bio1_plot <- ggplot() +
   theme(legend.position = "none") +
   labs(title = "CHELSA bio 1") +
   coord_quickmap()
-
-# load in gdd 10
-gdd10 <- terra::rast(x = file.path(mypath, "v1_downsampled", "gdd10_1981-2010_global.tif"))
-
-gdd10_plot <- ggplot() +
-  geom_tile(data = as.data.frame(bio1), 
-              aes(x = x, y = y, fill = `bio1_1981-2010_global`)) +
-  xlab("longitude") +
-  ylab("latitude") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(title = "CHELSA 10C Growing Degree Days") +
-  coord_quickmap()
-
-# patchwork
-bio1_plot / gdd10_plot
 
 ```
 
