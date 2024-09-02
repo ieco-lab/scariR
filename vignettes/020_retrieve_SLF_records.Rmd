@@ -244,7 +244,7 @@ Note: Simply change the `FALSE` within the `if()` statement to `TRUE` to run a c
 
 set.seed(997)
 
-if(FALSE) {
+if(TRUE) {
 
   slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(
     in.pts = slf_gbif_coords1, 
@@ -264,10 +264,14 @@ We will save the results of the cleaning we just performed so they can be refere
 
 ```{r save cleaned data- GBIF}
 
-write_csv(slf_gbif_coords2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-08-05.csv"))
-
-# also save as a .rds file
-write_rds(slf_gbif_coords2, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-08-05.rds"))
+if(FALSE){
+  
+  write_csv(slf_gbif_coords2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-08-05.csv"))
+  
+  # also save as a .rds file
+  write_rds(slf_gbif_coords2, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-08-05.rds"))
+  
+}
 
 ```
 

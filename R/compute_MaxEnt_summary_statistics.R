@@ -70,9 +70,9 @@
 #'
 #'@examples
 #'
-#'ARGUMENT USAGE:
-#'model.obj = regional_native_model
-#'model.name = "regional_native"
+#'# ARGUMENT USAGE:
+#'# model.obj = regional_native_model
+#'# model.name = "regional_native"
 #'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
@@ -83,15 +83,15 @@
 #'
 #'# EXAMPLE USAGE:
 #'slfSpread::compute_MaxEnt_summary_statistics(
-#'model.obj = regional_native_model,
-#'model.name = "regional_native",
-#'mypath = mypath,
-#'create.dir = TRUE, # create subdirectory
-#'env.covar.obj = x_native_env_covariates, # env covariates raster stacked
-#'train.obj = regional_native_train, # training data used to create model
-#'test.obj = regional_native_test, # data you wish to use to test the model
-#'plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
-#'jk.test.type = c("train", "test") # types of jackknife curves to be created
+#' model.obj = regional_native_model,
+#' model.name = "regional_native",
+#' mypath = mypath,
+#' create.dir = TRUE, # create subdirectory
+#' env.covar.obj = x_native_env_covariates, # env covariates raster stacked
+#' train.obj = regional_native_train, # training data used to create model
+#' test.obj = regional_native_test, # data you wish to use to test the model
+#' plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
+#' jk.test.type = c("train", "test") # types of jackknife curves to be created
 #')
 #'
 #'@export

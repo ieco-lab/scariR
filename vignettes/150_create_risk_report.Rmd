@@ -8,7 +8,9 @@ date: "2024-08-23"
 
 # Overview
 
+In the last few vignettes, I have created various outputs that help me to analyze the risk of SLF establishment at for global viticultural regions. I created risk maps and tables, range shift maps and tables, risk quadrant maps for viticultural regions and SLF populations, and have calculated various summary statistics such as omission and commission error, area under the curve, and the optimal suitability threshold for each model. 
 
+In this vignette, I will use my function `create_risk_report()` to refine each of these outputs (excluding the summary statistics, which area model-specific) for countries and provinces of key importance for global viticulture. These outputs will crop maps and viticultural region risk assessments for each region of interest. I will begin by creating a report for each country in our input the `wineries_tidied` dataset. I will also create reports for key areas where viticulture is expected to expand or decline under climate change. This vignette will also outline the best practice for usage of my function `create_risk_report()`.
 
 # Setup
 
@@ -45,6 +47,8 @@ library(gginnards)
 
 # Create internal dataset for function
 
+I will start by creating an internal dataset to be used by the function. These datasets were created in the previous vignettes and are stored in the `data` or `data-raw` folders of the package. I will import these datasets and save them as internal datasets for the function to use.
+
 ```{r datasets for function data import}
 
 # .csv files
@@ -76,7 +80,7 @@ usethis::use_data(
 
 ## loop to apply function to wineries dataset
 
-Primarily, I would like to use the wineries dataset to create a report for each unique country on the list. Our winery records contain 64 unique countries that I will create reports for.
+Primarily, I would like to use the wineries dataset to create a report for each unique country on the list. Our winery records contain 64 unique countries that I will create reports for. These reports will be saved to `vignette-outputs/reports`. 
 
 ```{r get country iso codes}
 
@@ -154,7 +158,7 @@ Some of these maps might need to be edited to zoom in on the countries, because 
 
 # Generate Individual country and state/province reports
 
-Alternatively, I will create individualized reports and maps for key viticultural areas of interest. I will group these regions by expeted gain or loss in viticultural risk, and by geography.
+Alternatively, I will create individualized reports and maps for key viticultural areas of interest. I will group these regions by expected gain or loss in viticultural risk, and by geography. I will start out with the USA and China because they each contain so many SLF records and because I want to create reports for specific provinces within these countries.
 
 ## USA
 
@@ -289,7 +293,9 @@ readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette
 
 # Viticultural shifts due to climate change 
 
-Morales-Castilla et al 2020 predicted that the following areas would experience a loss in suitability for viticulture under a 4C warming scenario of climate change:
+Now, I will apply this function for specific countries of future viticultural interest.
+
+Morales-Castilla et al 2020 predicted that the following countries would experience a loss in suitability for viticulture under a 4C warming scenario of climate change:
 
 highest losses: \* Italy \* Spain
 
@@ -956,7 +962,7 @@ slfSpread::create_risk_report(
 
 ```
 
-## Geographic Areas
+## Geographic Areas {.hidden}
 
 ### Western europe
 
@@ -1255,10 +1261,14 @@ slfSpread::create_risk_report(
 
 ```
 
+This brings us to the end of my analysis on the risk of SLF under climate change and for specific regions!
 
 # References
 
 1. Webb, L. B., Watterson, I., Bhend, J., Whetton, P. H., & Barlow, E. W. R. (2013). Global climate analogues for winegrowing regions in future periods: Projections of temperature and precipitation. Australian Journal of Grape and Wine Research, 19(3), 331–341. https://doi.org/10.1111/ajgw.12045
+
+2. Morales-Castilla, I., García de Cortázar-Atauri, I., Cook, B. I., Lacombe, T., Parker, A., van Leeuwen, C., Nicholas, K. A., & Wolkovich, E. M. (2020). Diversity buffers winegrowing regions from climate change losses. Proceedings of the National Academy of Sciences, 117(6), 2864–2869. https://doi.org/10.1073/pnas.1906731117
+
 
 
 # Appendix {.hidden}

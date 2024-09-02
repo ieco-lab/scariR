@@ -73,7 +73,7 @@
 #'
 #'@examples
 #'
-#'#'# simple predict method
+#'# simple predict method
 #'slfSpread::predict_xy_suitability(
 #' xy.obj = IVR_regions,
 #' xy.type = "IVR regions",

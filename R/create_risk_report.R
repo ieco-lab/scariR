@@ -129,7 +129,7 @@
 #' theme_classic()
 #')
 #'
-#'The output is in list format, so it should be called using this notation:
+#'# The output is in list format, so it should be called using this notation:
 #'
 #'# find viticultural regions in locality
 #'viticultural_regions <- slf_risk_report[[2]]
@@ -144,7 +144,7 @@
 #'xlim(-10, 5) +
 #'ylim(35, 44)
 #'
-#'If you need to save the report Rdata object and use those figures elsewhere:
+#'# If you need to save the report Rdata object and use those figures elsewhere:
 #'
 #'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 #'

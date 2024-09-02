@@ -40,7 +40,7 @@
 #'
 #'@examples
 #'
-#'I typically use it with dplyr::mutate() to create a new column in a data frame.
+#'# I typically use it with dplyr::mutate() to create a new column in a data frame.
 #'
 #'IVR_locations_risk <- dplyr::mutate(IVR_locations_risk, risk_1995 = slfSpread::calculate_risk_quadrant(
 #'  suit.x = IVR_locations_joined$xy_global_1995_rescaled,

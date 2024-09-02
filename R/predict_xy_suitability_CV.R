@@ -80,7 +80,7 @@
 #'
 #'@examples
 #'
-#'EXAMPLE USAGE:
+#'# EXAMPLE USAGE:
 #'
 #'# simple predict method
 #'slfSpread::predict_xy_suitability_CV(

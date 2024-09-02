@@ -7,6 +7,7 @@ Authors@R: c(
     person(given = "Matthew R. Helmus", email = "mrhelmus@temple.edu", role = "aut", comment = c(ORCID = "0000-0003-3977-0507"))
     )
 Description: We outline a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive Lycorma delicatula (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturalists to assess and respond to the risk SLF for viticulture at their locality. Viticulturalists should apply our function 'create_risk_report' to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model this invasive pest that modelers should adapt and apply to model the risk for establishment of other potential global invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+URL: https://ieco-lab.github.io/slfSpread/, https://github.com/ieco-lab/slfSpread
 License: MIT
 Encoding: UTF-8
 LazyData: true

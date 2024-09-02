@@ -9,7 +9,7 @@
 
 # Run this chunk to see the dependencies for the slfSpread package.
 
-# install.packages("renv")
+library(tidyverse)
 library(renv)
 library(here)
 
@@ -20,29 +20,42 @@ packages <- renv::dependencies() %>%
   as.matrix() %>%
   as.character()
 
-# if scrubr or geodata show up on this list, ignore these as they are no longer needed.
+# install correct package versions for project----------------------------------
+
+# you should run this to ensure the correct package versions are used while you are working within this project
+# renv::restore()
+
+
+
+
+
+
+
+
+
 
 # renv initialization-----------------------------------------------------------
 
-# Only run this section if you need to
-
-
-
-
-
-
-# renv initialization-----------------------------------------------------------
-
-# I created this section to initialze the renv package for the first time.
-# DO NOT run this section if you have downloaded this package from my github repo.
+# I created this section to initialize the renv package for the first time.
+# DO NOT run this section if you have downloaded this package as an outside user
 
 # initialization of project renv
-renv::init()
+# only run once
+# renv::init()
+
+# update packages
+# only run as needed
+# renv::update()
 
 # record latest package versions in lockfile
-renv::snapshot()
+# renv::snapshot()
 
 
+# renv restore to previous package versions-------------------------------------
+
+# only use if the current package version need to be reverted
+renv::history()
+renv::revert(project = "slfSpread", commit = "")
 
 
 

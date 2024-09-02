@@ -75,9 +75,9 @@
 #'
 #'@examples
 #'
-#'ARGUMENT USAGE:
-#'model.obj = global_model
-#'model.name = "global"
+#'# ARGUMENT USAGE:
+#'# model.obj = global_model
+#'# model.name = "global"
 #'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
@@ -86,18 +86,18 @@
 #'jk.test.type <- c("train", "test") # used to produce jackknife plots
 #'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 #'
-#' # EXAMPLE USAGE:
+#'# EXAMPLE USAGE:
 #'slfSpread::compute_MaxEnt_summary_statistics_CV(
-#'model.obj = global_model,
-#'model.name = "global",
-#'mypath = mypath,
-#'create.dir = FALSE, # create subdirectory
-#'env.covar.obj = x_global_hist_env_covariates, # env covariates raster stacked
-#'train.obj = global_train, # training data used to create model
-#'trainFolds.obj = global_trainFolds,  # k-folds of training data
-#'test.obj = global_test, # data you wish to use to test the model
-#'jk.test.type = c("train", "test"), # types of jackknife curves to be created
-#'plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
+#' model.obj = global_model,
+#' model.name = "global",
+#' mypath = mypath,
+#' create.dir = FALSE, # create subdirectory
+#' env.covar.obj = x_global_hist_env_covariates, # env covariates raster stacked
+#' train.obj = global_train, # training data used to create model
+#' trainFolds.obj = global_trainFolds,  # k-folds of training data
+#' test.obj = global_test, # data you wish to use to test the model
+#' jk.test.type = c("train", "test"), # types of jackknife curves to be created
+#' plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
 #')
 #'
 #'@export
