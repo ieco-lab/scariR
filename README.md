@@ -192,7 +192,7 @@ KG_zones_poly <- sf::st_as_sf(KG_zones_poly)
 regional_poly <- sf::st_filter(x = KG_zones_poly, y = presence_data)
 ```
 
-Once the presence data, coviariate data and background points have been chosen, the user might run a MaxEnt model for any invasive species and region of interest.
+Once the presence data, coviariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.
 
 # References
 
