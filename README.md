@@ -198,6 +198,10 @@ Once the presence data, coviariate data and background points have been chosen, 
 
 Bryant, C., Wheeler, N. R., Rubel, F., & French, R. H. (2017). kgc: Koeppen-Geiger Climatic Zones. https://CRAN.R-project.org/package=kgc
 
+Chamberlain S, Barve V, Mcglinn D, Oldoni D, Desmet P, Geffert L, Ram K (2024). rgbif: Interface to the Global Biodiversity Information Facility API. R package version 3.8.0, https://CRAN.R-project.org/package=rgbif.
+
+Scott Chamberlain and Eduard Szocs (2013). taxize - taxonomic search and retrieval in R. F1000Research, 2:191. URL: https://f1000research.com/articles/2-191/v2
+
 Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
 Huron, N. A., Behm, J. E., & Helmus, M. R. (2022). Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5(1), 655. https://doi.org/10.1038/s42003-022-03580-w
