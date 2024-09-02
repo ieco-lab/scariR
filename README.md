@@ -106,7 +106,7 @@ Based on the viticultural risk quadrant plot, we can now see that Washington sta
 **Fig. 4:** Projected shift in the risk for *Lycorma delicatula* establishment at key viticultural regions due to climate change | Washington, USA
 
 
-In our more refined analysis, we might also be interested in quantifying the total area at risk for SLF or the total number of viticultural regions at risk for SLF establishment. For this, we will look at two additional outputs from `create_risk_report()`: 
+In our more localized analysis, we might also be interested in quantifying the total area at risk for SLF or the total number of viticultural regions at risk for SLF establishment. For this, we will look at two additional outputs from `create_risk_report()`: 
 
 1. risk map area table- this quantifies the areas and proportions of the total occupied by each risk category on the risk map
 2. viticultural risk table- this quantifies the number of winegrowing regions that are projected to fall into each risk category, both now and in the future under climate change
