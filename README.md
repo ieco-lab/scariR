@@ -28,11 +28,24 @@ The package `slfSpread` is a research compendium for our manuscript, Owens and H
 
 **insert citation**
 
+## Sitemap
+
+This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/slfSpread/tree/master/vignettes) follow this general order: 
+
+* 010: initialization of renv
+* 020-030: retreival and formatting of input datasets
+* 040-090: modeling pipeline
+* 100-110: regional-scale model ensembling
+* 120-142: data analysis
+* 150: example usage for `create_risk_report()` for creation of localized reports
+
 # How to Use this Project
 
 ## 1. Produce localized reports on SLF risk to viticulture
 
 Our primary datasets, including risk maps and a viticultural risk analysis, can be accessed by executing the function `create_risk_report()`. This function creates a localized (at the country or state/provincial level) report of the risk for *Lycorma delicatula* to local viticulture. It can be applied to globally important winegrowing regions because it uses our dataset `data/wineries_tidied.rds`, which contains a sample (1,074) of the world's most important winegrowing regions. Users can and should apply this function for their locality as we are projecting that the risk of *Lycorma delicatula* establishment will exapnd under climate change. *Lycorma delicatula* has been classified as being capable of (global) pan-invasion and viticulure has already been devastated in some regions, so there is high potential for viticultural damage under climate change (Huron et al, 2022).
+
+For examples and best practice for usage of `create_risk_report()`, see the vignette [150_create_risk_report](https://github.com/ieco-lab/slfSpread/blob/master/vignettes/150_create_risk_report.Rmd)
 
 Our function rcreates major datasets that we provide in our main analysis, including:
 
