@@ -28,9 +28,9 @@ The package `slfSpread` is a research compendium for our manuscript, Owens and H
 
 **insert citation**
 
-## How to Use this Project
+# How to Use this Project
 
-### 1. Produce localized reports on SLF risk to viticulture
+## 1. Produce localized reports on SLF risk to viticulture
 
 Our primary datasets, including risk maps and a viticultural risk analysis, can be accessed by executing the function `create_risk_report()`. This function creates a localized (at the country or state/provincial level) report of the risk for *Lycorma delicatula* to local viticulture. It can be applied to globally important winegrowing regions because it uses our dataset `data/wineries_tidied.rds`, which contains a sample (1,074) of the world's most important winegrowing regions. Users can and should apply this function for their locality as we are projecting that the risk of *Lycorma delicatula* establishment will exapnd under climate change. *Lycorma delicatula* has been classified as being capable of (global) pan-invasion and viticulure has already been devastated in some regions, so there is high potential for viticultural damage under climate change (Huron et al, 2022).
 
@@ -127,17 +127,85 @@ Next, lets look at the viticultural risk table:
 
 From this table, we can see that all 7 viticultural regions maintain their present risk level under climate change. Six regions fall into the high risk category (regional ensemble suitability only) and one falls into the extreme risk category (suitable area agreement).
 
-Users should explore the other data available with this function.
+Users should explore the other localities and data types available with this function.
 
 
-### 2. Recreate the analysis for another pest of interest
+## 2. Recreate the analysis for another invasive species of interest
 
+For modelers who wish to apply this pipeline for other invasive species, this pipeline can easily be adapted to model the risk of establishment by simply changing the input datasets and modeled scales. 
+
+First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the packages `rgbif` and `taxize`:
+
+```{r get taxa ID and GBIF presence data}
+# get species ID from gbif database
+ids <- taxize::get_ids(sci_com = "Emerald Ash Borer", db = "gbif")
+
+# initiate download
+records_gbif <- rgbif::occ_download(
+  # general formatting
+  type = "and",
+  format = "SIMPLE_CSV",
+  # inclusion rules
+  pred("taxonKey", ids[[1]]), # search by ID, not species name
+  pred("hasCoordinate", TRUE),
+  pred("hasGeospatialIssue", FALSE),
+  pred("occurrenceStatus", "PRESENT")
+)
+```
+
+The input covariates would also need to change based on what is biologically relevant for the particular species. I outline the process of choosing input covariates in vignette 030. 
+
+Once the input data have been adapted to the user's needs, the regional-scale models will need to be applied per region of interest. Each regional-scale model depends on a spcecific background area selection for MaxEnt that will need to change. I outline the process for choosing this area in vignette 060, in which I subset the presence data by region and intersect these subsets with the Köppen-Geiger climate zones to select the appropriate background area. This resulting polygon would need to be cropped to the region of interest. I use the `kgc`, `terra`, and `sf` packages for this analysis:
+
+```{r get K-G zones and intersect with presence data}
+# get K-G zones
+kmz_data <- kgc::kmz
+
+# generate coordinates
+kmz_lat <- kgc::genCoords(latlon = "lat", full = TRUE)
+kmz_lon <- kgc::genCoords(latlon = "lon", full = TRUE)
+
+# join data and coordinates
+kmz_data <- cbind(kmz_lat, kmz_lon) %>%
+  cbind(., kmz_data) %>%
+  as.data.frame() %>%
+  # relocate column
+  dplyr::select(kmz_lon, everything()) 
+
+# convert to raster
+KG_zones_rast <- terra::rast(
+  x = kmz_data,
+  type = "xyz",
+  crs = "EPSG:4326"
+  )
+
+# next, convert raster to polygon
+KG_zones_poly <- terra::as.polygons(
+  x = KG_zones_rast,
+  aggregate = TRUE, # combine cells with the same value into one area
+  values = TRUE, # include cell values as attributes
+  crs = "EPSG:4326"
+)
+KG_zones_poly <- sf::st_as_sf(KG_zones_poly)
+
+# intersect polygon and presences
+regional_poly <- sf::st_filter(x = KG_zones_poly, y = presence_data)
+```
+
+Once the presence data, coviariate data and background points have been chosen, the user might run a MaxEnt model for any invasive species and region of interest.
 
 # References
+
+Bryant, C., Wheeler, N. R., Rubel, F., & French, R. H. (2017). kgc: Koeppen-Geiger Climatic Zones. https://CRAN.R-project.org/package=kgc
 
 Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
 Huron, N. A., Behm, J. E., & Helmus, M. R. (2022). Paninvasion severity assessment of a U.S. grape pest to disrupt the global wine market. Communications Biology, 5(1), 655. https://doi.org/10.1038/s42003-022-03580-w
 
+Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1), 439-446, https://doi.org/10.32614/RJ-2018-009
+
 Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
 
+Hijmans R (2024). terra: Spatial Data Analysis. R package version 1.7-81, https://rspatial.github.io/terra/, https://rspatial.org/.
+
+Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. doi:10.21105/joss.01686.
