@@ -52,9 +52,18 @@ library(kableExtra)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 I will load in preset styles for the maps. The regular map_style will be for the continuous suitability maps, while map_style_binarized will be used for specialized binary overlay maps between the regional ensemble and the global models.
 
-```{r map style}
+```{r map style, eval = TRUE}
 
 map_style <- list(
   xlab("longitude"),
@@ -77,7 +86,7 @@ map_style <- list(
 
 ```
 
-```{r map style binarized}
+```{r map style binarized, eval = TRUE}
 
 map_style_binarized <- list(
   xlab("longitude"),
@@ -97,7 +106,7 @@ map_style_binarized <- list(
 
 ```
 
-```{r set wd}
+```{r set wd, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
@@ -111,7 +120,7 @@ I will import the predicted suitability rasters and MTSS thresholds from each of
 
 ## regional ensemble
 
-```{r ensemble rasters}
+```{r ensemble rasters, eval = TRUE, message = FALSE}
 
 # historical 
 regional_ensemble_1995 <- terra::rast(
@@ -140,13 +149,13 @@ regional_ensemble_2055_ssp_mean <- terra::rast(
 
 ```
 
-```{r ensemble thresholds}
+```{r ensemble thresholds, eval = TRUE, message = FALSE}
 
 regional_ensemble_thresholds <- read_csv(file = file.path(mypath, "slf_regional_ensemble_v1", "ensemble_threshold_values.csv"))
 
 ```
 
-```{r change raster names and convert to df- regional}
+```{r change raster names and convert to df- regional, eval = TRUE, message = FALSE}
 
 # change names
 names(regional_ensemble_1995) <- "ensemble_suitability"
@@ -168,7 +177,7 @@ regional_ensemble_2055_ssp_mean_df <- terra::as.data.frame(regional_ensemble_205
 
 ## Global model
 
-```{r global model rasters}
+```{r global model rasters, eval = TRUE, message = FALSE}
 
 # historical 
 global_1995 <- terra::rast(
@@ -196,14 +205,14 @@ global_2055_ssp_mean <- terra::rast(
 
 ```
 
-```{r summary file}
+```{r summary file, eval = TRUE, message = FALSE}
 
 summary_global <- read_csv(file.path(mypath, "slf_global_v3", "global_summary_all_iterations.csv")) %>%
   dplyr::select(., statistic, mean)
 
 ```
 
-```{r change raster names and convert to df- global}
+```{r change raster names and convert to df- global, eval = TRUE, message = FALSE}
 
 # change names
 # historical
@@ -233,7 +242,7 @@ Before I binarize these mapped predictions, I will plot raw suitability maps fro
 
 I will try to reduce the amount of repeated code by using a mapping helper function containing the body of the plotting code. This part will remain relatively unchanged each time.
 
-```{r mapping helper function}
+```{r mapping helper function, eval = TRUE}
 
 map_cloglog_output <- function(raster.df, raster.value.name, thresh.MTP, thresh.MTSS) {
   
@@ -278,7 +287,7 @@ map_cloglog_output <- function(raster.df, raster.value.name, thresh.MTP, thresh.
 
 ## 1.2 Map cloglog output of models- historical
 
-```{r map regional ensemble: 1981-2010}
+```{r map regional ensemble: 1981-2010, eval = TRUE}
 
 regional_ensemble_1995_plot <- map_cloglog_output(
   raster.df = regional_ensemble_1995_df, # the dataframe of the raster
@@ -308,7 +317,7 @@ ggsave(
 
 ```
 
-```{r map global: 1981-2010}
+```{r map global: 1981-2010, eval = TRUE}
 
 global_1995_plot <- map_cloglog_output(
   raster.df = global_1995_df, # the dataframe of the raster
@@ -540,7 +549,7 @@ ggsave(
 
 Finally, I will plot the mean of the three ssp scenarios.
 
-```{r map regional ensemble: ssp mean}
+```{r map regional ensemble: ssp mean, eval = TRUE}
 
 # I had to change the row call of the thresholds tibble to row 2 [2, x]
 
@@ -572,7 +581,7 @@ ggsave(
 
 ```
 
-```{r map global: ssp_mean}
+```{r map global: ssp_mean, eval = TRUE}
 
 global_2055_ssp_mean_plot <- map_cloglog_output(
   raster.df = global_2055_ssp_mean_df, # the dataframe of the raster
@@ -608,7 +617,7 @@ Now that I have an idea of what the suitability maps look like before conversion
 
 To reclassify, package terra takes a 3-column matrix for its `classify()` function, which re-classifies groups of values to a single value. I will reclassify anything below the MTSS threshold as one value, and anything above as another. 
 
-```{r recall threshold values}
+```{r recall threshold values, eval = TRUE}
 
 summary_global
 # MTSS value is 0.041
@@ -654,7 +663,7 @@ I will walk through this workflow initially, but will functionalize it after thi
 
 To convert the rasters to binary predictors of presence / absence, first I will create the classification matrices needed by the `classify()` function. Before converting, lets check the range of values.
 
-```{r minmax of rasters- hist}
+```{r minmax of rasters- hist, eval = TRUE}
 
 # get the range of the values in the raster
 terra::minmax(global_1995) %>%
@@ -671,7 +680,7 @@ terra::minmax(regional_ensemble_1995) %>%
 
 Now I will create the classification rasters. I will pull these from their respective .csv files.
 
-```{r terra required classification matrices- hist}
+```{r terra required classification matrices- hist, eval = TRUE}
 
 # create regional suitability value matrix for terra
 regional_ensemble_classes <- data.frame(
@@ -691,34 +700,30 @@ global_classes <- data.frame(
 Now I can reclassify the MaxEnt outputs. I will load in the averaged predictions for the global and regional models for the time period 1981-2010. I will reclassify their values based on the two matrices above. This chunk might take some time to run.
 
 ```{r reclassify maxent outputs- hist}
-
-if(FALSE) {
   
-  # regional
-  # reclassify and write regional raster
-  regional_ensemble_1995_classified <- terra::classify(
-    x = regional_ensemble_1995, 
-    rcl = regional_ensemble_classes,
-    right = NA, # close both ends of the range of classification values
-    others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_1981-2010.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-  
-  # global
-  # reclassify and write global raster
-  global_1995_classified <- terra::classify(
-    x = global_1995, 
-    rcl = global_classes, 
-    right = NA, 
-    others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_1981-2010.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
+# regional
+# reclassify and write regional raster
+regional_ensemble_1995_classified <- terra::classify(
+  x = regional_ensemble_1995, 
+  rcl = regional_ensemble_classes,
+  right = NA, # close both ends of the range of classification values
+  others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
+  filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_1981-2010.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
-}
+# global
+# reclassify and write global raster
+global_1995_classified <- terra::classify(
+  x = global_1995, 
+  rcl = global_classes, 
+  right = NA, 
+  others = strtoi(00000100, base = 2), 
+  filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_1981-2010.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -745,7 +750,7 @@ unique(values(regional_ensemble_1995_classified))
 
 Now that the rasters have been converted to binary, we will visualize them to ensure that the process worked. Since the same process was done to both the regional and global models, I will only plot the regional model.
 
-```{r prepare for plotting- hist}
+```{r prepare for plotting- hist, eval = TRUE}
 
 # load in binary raster just created and convert to df
 regional_ensemble_1995_classified_df <- terra::rast(
@@ -767,7 +772,7 @@ values.obj <- c(
 
 ```
 
-```{r plot binarized raster- hist}
+```{r plot binarized raster- hist, eval = TRUE}
 
 # plot regional binary
 ggplot() +
@@ -790,7 +795,7 @@ The helper function below, `classify_matrix()`, will create the object needed to
 
 ### helper function- terra classify
 
-```{r helper function- terra classification matrices}
+```{r helper function- terra classification matrices, eval = TRUE}
 
 classify_matrix <- function(thresh, model.scale) {
   
@@ -856,33 +861,29 @@ regional_ensemble_classes <- classify_matrix(
 
 ```{r reclassify maxent outputs- ssp126}
 
-if(TRUE) {
-  
-  # regional
-  # reclassify and write regional raster
-  regional_ensemble_2055_126_classified <- terra::classify(
-    x = regional_ensemble_2055_126, 
-    rcl = regional_ensemble_classes,
-    right = NA, # close both ends of the range of classification values
-    others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp126_GFDL.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-  
-  # global
-  # reclassify and write global raster
-  global_2055_126_classified <- terra::classify(
-    x = global_2055_126, 
-    rcl = global_classes, 
-    right = NA, 
-    others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp126_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
+# regional
+# reclassify and write regional raster
+regional_ensemble_2055_126_classified <- terra::classify(
+  x = regional_ensemble_2055_126, 
+  rcl = regional_ensemble_classes,
+  right = NA, # close both ends of the range of classification values
+  others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
+  filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp126_GFDL.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
-}
+# global
+# reclassify and write global raster
+global_2055_126_classified <- terra::classify(
+  x = global_2055_126, 
+  rcl = global_classes, 
+  right = NA, 
+  others = strtoi(00000100, base = 2), 
+  filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp126_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -978,33 +979,29 @@ regional_ensemble_classes <- classify_matrix(
 
 ```{r reclassify maxent outputs- ssp370}
 
-if(TRUE) {
-  
-  # regional
-  # reclassify and write regional raster
-  regional_ensemble_2055_370_classified <- terra::classify(
-    x = regional_ensemble_2055_370, 
-    rcl = regional_ensemble_classes,
-    right = NA, # close both ends of the range of classification values
-    others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp370_GFDL.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-  
-  # global
-  # reclassify and write global raster
-  global_2055_370_classified <- terra::classify(
-    x = global_2055_370, 
-    rcl = global_classes, 
-    right = NA, 
-    others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp370_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
+# regional
+# reclassify and write regional raster
+regional_ensemble_2055_370_classified <- terra::classify(
+  x = regional_ensemble_2055_370, 
+  rcl = regional_ensemble_classes,
+  right = NA, # close both ends of the range of classification values
+  others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
+  filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp370_GFDL.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
-}
+# global
+# reclassify and write global raster
+global_2055_370_classified <- terra::classify(
+  x = global_2055_370, 
+  rcl = global_classes, 
+  right = NA, 
+  others = strtoi(00000100, base = 2), 
+  filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp370_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -1100,33 +1097,29 @@ regional_ensemble_classes <- classify_matrix(
 
 ```{r reclassify maxent outputs- ssp585}
 
-if(TRUE) {
-  
-  # regional
-  # reclassify and write regional raster
-  regional_ensemble_2055_585_classified <- terra::classify(
-    x = regional_ensemble_2055_585, 
-    rcl = regional_ensemble_classes,
-    right = NA, # close both ends of the range of classification values
-    others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp585_GFDL.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-  
-  # global
-  # reclassify and write global raster
-  global_2055_585_classified <- terra::classify(
-    x = global_2055_585, 
-    rcl = global_classes, 
-    right = NA, 
-    others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp585_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
+# regional
+# reclassify and write regional raster
+regional_ensemble_2055_585_classified <- terra::classify(
+  x = regional_ensemble_2055_585, 
+  rcl = regional_ensemble_classes,
+  right = NA, # close both ends of the range of classification values
+  others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
+  filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp585_GFDL.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
-}
+# global
+# reclassify and write global raster
+global_2055_585_classified <- terra::classify(
+  x = global_2055_585, 
+  rcl = global_classes, 
+  right = NA, 
+  others = strtoi(00000100, base = 2), 
+  filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp585_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -1191,7 +1184,7 @@ ggplot() +
 
 ### ssp mean
 
-```{r minmax of rasters- ssp mean}
+```{r minmax of rasters- ssp mean, eval = TRUE}
 
 # get the range of the values in the raster
 terra::minmax(global_2055_ssp_mean) %>%
@@ -1204,7 +1197,7 @@ terra::minmax(regional_ensemble_2055_ssp_mean) %>%
 
 ```
 
-```{r terra required classification matrices- ssp mean}
+```{r terra required classification matrices- ssp mean, eval = TRUE}
 
 # global
 global_classes <- classify_matrix(
@@ -1222,33 +1215,30 @@ regional_ensemble_classes <- classify_matrix(
 
 ```{r reclassify maxent outputs- ssp_mean}
 
-if(TRUE) {
-  
-  # regional
-  # reclassify and write regional raster
-  regional_ensemble_2055_ssp_mean_classified <- terra::classify(
-    x = regional_ensemble_2055_ssp_mean, 
-    rcl = regional_ensemble_classes,
-    right = NA, # close both ends of the range of classification values
-    others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
-    filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp_mean_GFDL.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-  
-  # global
-  # reclassify and write global raster
-  global_2055_ssp_mean_classified <- terra::classify(
-    x = global_2055_ssp_mean, 
-    rcl = global_classes, 
-    right = NA, 
-    others = strtoi(00000100, base = 2), 
-    filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp_mean_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
+# regional
+# reclassify and write regional raster
+regional_ensemble_2055_ssp_mean_classified <- terra::classify(
+  x = regional_ensemble_2055_ssp_mean, 
+  rcl = regional_ensemble_classes,
+  right = NA, # close both ends of the range of classification values
+  others = strtoi(00000001, base = 2), # make it the unsuitable value if not in this range
+  filename = file.path(mypath, "working_dir", "slf_regional_ensemble_v1_binarized_2041-2070_ssp_mean_GFDL.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
-}
+# global
+# reclassify and write global raster
+global_2055_ssp_mean_classified <- terra::classify(
+  x = global_2055_ssp_mean, 
+  rcl = global_classes, 
+  right = NA, 
+  others = strtoi(00000100, base = 2), 
+  filename = file.path(mypath, "working_dir", "slf_global_v3_binarized_2041-2070_ssp_mean_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
+
 
 ```
 
@@ -1272,7 +1262,7 @@ unique(values(regional_ensemble_2055_ssp_mean_classified))
 
 Now lets plot the binarized mean of the ssp scenarios.
 
-```{r prepare for plotting- ssp mean}
+```{r prepare for plotting- ssp mean, eval = TRUE}
 
 # load in binary raster just created and convert to df
 regional_ensemble_2055_ssp_mean_classified_df <- terra::rast(
@@ -1293,7 +1283,7 @@ values.obj <- c(
 
 ```
 
-```{r plot binarized raster- ssp mean}
+```{r plot binarized raster- ssp mean, eval = TRUE}
 
 # plot regional binary
 ggplot() +
@@ -1339,23 +1329,19 @@ regional_ensemble_1995_classified <- terra::rast(x = file.path(mypath, "working_
 
 ```{r mosaic rasters- hist}
 
-if(TRUE) {
-  
-  # overlay and combine rasters by summing values
-  slf_binarized_1995 <- terra::mosaic(
-    global_1995_classified, regional_ensemble_1995_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc"),
-    overwrite = FALSE,
-    wopt = list(progress = 1)) # progress bar
-  
-}
+# overlay and combine rasters by summing values
+slf_binarized_1995 <- terra::mosaic(
+  global_1995_classified, regional_ensemble_1995_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc"),
+  overwrite = FALSE,
+  wopt = list(progress = 1)) # progress bar
 
 ```
 
 I will prepare plotting objects.
 
-```{r prepare data for mapping- hist}
+```{r prepare data for mapping- hist, eval = TRUE}
 
 slf_binarized_1995 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc")) 
 # rename values
@@ -1378,7 +1364,7 @@ values.obj <- c("azure4", "gold", "darkorange", "darkred")
 
 ```
 
-```{r plot summed raster- hist}
+```{r plot summed raster- hist, eval = TRUE}
 
 slf_binarized_1995_plot <- ggplot() +
   geom_raster(data = slf_binarized_1995_df, aes(x = x, y = y, fill = as.factor(global_regional_binarized))) +
@@ -1417,7 +1403,7 @@ ggsave(
 
 Now that I have run through the process once, I will functionalize the plotting process for the ssp scenarios to save time and lines of code. 
 
-```{r helper function and plotting objects}
+```{r helper function and plotting objects, eval = TRUE}
 
 # first, create vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order
@@ -1470,21 +1456,18 @@ regional_ensemble_2055_126_classified <- terra::rast(x = file.path(mypath, "work
 
 ```{r mosaic rasters- ssp126}
 
-if(FALSE) {
-  
-  # overlay and combine rasters by summing values
-  slf_binarized_2055_126 <- terra::mosaic(
-    global_2055_126_classified, regional_ensemble_2055_126_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp126_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1, # progress bar
-      names = "global_regional_binarized" # layer name, change in function if this changes
-      )  
-    ) 
-  
-}
+# overlay and combine rasters by summing values
+slf_binarized_2055_126 <- terra::mosaic(
+  global_2055_126_classified, regional_ensemble_2055_126_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp126_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1, # progress bar
+    names = "global_regional_binarized" # layer name, change in function if this changes
+    )  
+  ) 
+
 
 ```
 
@@ -1541,21 +1524,17 @@ regional_ensemble_2055_370_classified <- terra::rast(x = file.path(mypath, "work
 
 ```{r mosaic rasters- ssp370}
 
-if(TRUE) {
-  
-  # overlay and combine rasters by summing values
-  slf_binarized_2055_370 <- terra::mosaic(
-    global_2055_370_classified, regional_ensemble_2055_370_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp370_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1, # progress bar
-      names = "global_regional_binarized" # layer name, change in function if this changes
-      )  
-    ) 
-  
-}
+# overlay and combine rasters by summing values
+slf_binarized_2055_370 <- terra::mosaic(
+  global_2055_370_classified, regional_ensemble_2055_370_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp370_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1, # progress bar
+    names = "global_regional_binarized" # layer name, change in function if this changes
+    )  
+  ) 
 
 ```
 
@@ -1612,21 +1591,17 @@ regional_ensemble_2055_585_classified <- terra::rast(x = file.path(mypath, "work
 
 ```{r mosaic rasters- ssp585}
 
-if(TRUE) {
-  
-  # overlay and combine rasters by summing values
-  slf_binarized_2055_585 <- terra::mosaic(
-    global_2055_585_classified, regional_ensemble_2055_585_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp585_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1, # progress bar
-      names = "global_regional_binarized" # layer name, change in function if this changes
-      )  
-    ) 
-  
-}
+# overlay and combine rasters by summing values
+slf_binarized_2055_585 <- terra::mosaic(
+  global_2055_585_classified, regional_ensemble_2055_585_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp585_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1, # progress bar
+    names = "global_regional_binarized" # layer name, change in function if this changes
+    )  
+  ) 
 
 ```
 
@@ -1682,26 +1657,22 @@ regional_ensemble_2055_ssp_mean_classified <- terra::rast(x = file.path(mypath, 
 ```
 
 ```{r mosaic rasters- ssp mean}
-
-if(TRUE) {
   
-  # overlay and combine rasters by summing values
-  slf_binarized_2055_ssp_mean <- terra::mosaic(
-    global_2055_ssp_mean_classified, regional_ensemble_2055_ssp_mean_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1, # progress bar
-      names = "global_regional_binarized" # layer name, change in function if this changes
-      )  
-    ) 
-  
-}
+# overlay and combine rasters by summing values
+slf_binarized_2055_ssp_mean <- terra::mosaic(
+  global_2055_ssp_mean_classified, regional_ensemble_2055_ssp_mean_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1, # progress bar
+    names = "global_regional_binarized" # layer name, change in function if this changes
+    )  
+  ) 
 
 ```
 
-```{r prepare data for mapping- ssp mean}
+```{r prepare data for mapping- ssp mean, eval = TRUE}
 
 slf_binarized_2055_ssp_mean <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc")) 
 
@@ -1716,7 +1687,7 @@ unique(slf_binarized_2055_ssp_mean_df$global_regional_binarized)
 
 ```
 
-```{r plot summed raster- ssp mean}
+```{r plot summed raster- ssp mean, eval = TRUE}
 
 slf_binarized_2055_ssp_mean_plot <- plot_binary(
   raster.df = slf_binarized_2055_ssp_mean_df
@@ -1757,7 +1728,7 @@ As a reminder, the categories in these rasters are:
 | unsuitable regional/suitable global |        9     |
 | Suitable regional/unsuitable global |        6     |
 
-```{r retrieve summary table- area sums}
+```{r retrieve summary table- area sums, eval = TRUE}
 
 # load rasters
 slf_binarized_1995 <- terra::rast(x = file.path(mypath, "working_dir", "slf_binarized_summed_1981-2010.asc")) 
@@ -1779,7 +1750,7 @@ slf_model_prop_table_2055_ssp_mean <- terra::expanse(
 
 ```
 
-```{r create table}
+```{r create table, eval = TRUE}
 
 # create list of range shift values
 categories.obj <- tibble(
@@ -1794,7 +1765,7 @@ slf_model_prop_table_joined <- left_join(slf_model_prop_table_1995, slf_model_pr
 
 ```
 
-```{r format and convert to Kable}
+```{r format and convert to Kable, eval = TRUE}
 
 # tidy
 slf_model_prop_table_joined <- slf_model_prop_table_joined %>%
@@ -1832,39 +1803,36 @@ slf_model_prop_table_joined[4, 1] <- kableExtra::cell_spec(slf_model_prop_table_
 slf_model_prop_kable <- knitr::kable(x = slf_model_prop_table_joined, format = "html", escape = FALSE) %>%
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = TRUE)
   
+print(slf_model_prop_kable)
 
 ```
 
 ```{r save tables from above, if desired- summed area}
 
-if(TRUE) {
-  
-  # model training dataset
-  # save as .csv
-  write_csv(slf_model_prop_table_joined, file.path(here::here(), "vignette-outputs", "data-tables", "slf_binarized_summed_areas_table.csv"))
-  
-  # save as .html
-  kableExtra::save_kable(
-    slf_model_prop_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to jpg
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.jpg"),
-    zoom = 2
-  )
-  
-  # remove html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"))
-    
-}
+# model training dataset
+# save as .csv
+write_csv(slf_model_prop_table_joined, file.path(here::here(), "vignette-outputs", "data-tables", "slf_binarized_summed_areas_table.csv"))
 
+# save as .html
+kableExtra::save_kable(
+  slf_model_prop_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
+  )
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to jpg
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.jpg"),
+  zoom = 2
+)
+
+# remove html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_areas_table.html"))
+    
 ```
 
 # 4. Map range shifting areas
@@ -1932,17 +1900,15 @@ I will go ahead and classify the historical binarized raster because I will use 
 
 ```{r reclassify historical raster}
 
-if (FALSE) {
-  # reclassify and write the historical binarized raster
-  slf_binarized_1995_classified <- terra::classify(
-    x = slf_binarized_1995, 
-    rcl = classes_1995,
-    others = strtoi(00000001, base = 2),
-    filename = file.path(mypath, "working_dir", "slf_range_shift_1981-2010.asc"), # also write to file
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-}
+# reclassify and write the historical binarized raster
+slf_binarized_1995_classified <- terra::classify(
+  x = slf_binarized_1995, 
+  rcl = classes_1995,
+  others = strtoi(00000001, base = 2),
+  filename = file.path(mypath, "working_dir", "slf_range_shift_1981-2010.asc"), # also write to file
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -1994,7 +1960,7 @@ The conversion worked, as anything colorful on the binarized map should now be w
 * unsuitable 1995/suitable 2055 = 9    -> area will become SUITABLE in the future (range expansion)
 * Suitable 1995/unsuitable 2055 = 6    -> area will become UNSUITABLE in the future (range contraction)
 
-```{r helper function- plot range shifts}
+```{r helper function- plot range shifts, eval = TRUE}
 
 # vectors of values used to manually edit the scale of the plot
 # the possible values of the scale and their order
@@ -2034,7 +2000,7 @@ plot_range_shift <- function(raster.df) {
 
 I will create another helper function to format a range shift table per ssp scenario, which I will create later.
 
-```{r helper function- create range shift table}
+```{r helper function- create range shift table, eval = TRUE}
 
 # create list of range shift values
 ranges.obj <- c("remains_unsuitable", "contraction", "expansion", "retained_suitability")
@@ -2099,21 +2065,17 @@ unique(values(slf_binarized_2055_126))
 ```
 
 ```{r reclassify maxent outputs- ssp126 range shift}
-
-if(FALSE) {
   
-  # global
-  # reclassify and write binarized raster
-  slf_binarized_2055_126_classified <- terra::classify(
-    x = slf_binarized_2055_126, 
-    rcl = classes_2055, 
-    others = strtoi(00000100, base = 2),
-    filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp126_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-
-}
+# global
+# reclassify and write binarized raster
+slf_binarized_2055_126_classified <- terra::classify(
+  x = slf_binarized_2055_126, 
+  rcl = classes_2055, 
+  others = strtoi(00000100, base = 2),
+  filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp126_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -2157,28 +2119,24 @@ slf_binarized_2055_126_classified <- terra::rast(x = file.path(mypath, "working_
 ```
 
 ```{r mosaic rasters- range shift ssp126}
-
-if(FALSE) {
   
-  # overlay and combine rasters by summing values
-  slf_range_shift_126 <- terra::mosaic(
-    slf_binarized_1995_classified, slf_binarized_2055_126_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp126_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1,
-      names = "range_shift_summed"
-      )
-    ) # progress bar
-  
-}
+# overlay and combine rasters by summing values
+slf_range_shift_126 <- terra::mosaic(
+  slf_binarized_1995_classified, slf_binarized_2055_126_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp126_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1,
+    names = "range_shift_summed"
+    )
+  ) # progress bar
 
 ```
 
 ### Plot
 
-```{r prepare data for mapping- range shift ssp126}
+```{r prepare data for mapping- range shift ssp126, eval = TRUE}
 
 # re-load created raster
 slf_range_shift_126 <- terra::rast(x = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp126_GFDL.asc")) 
@@ -2194,7 +2152,7 @@ unique(slf_range_shift_126_df$range_shift_summed)
 
 ```
 
-```{r plot summed raster- range shift ssp126}
+```{r plot summed raster- range shift ssp126, eval = TRUE}
 
 slf_range_shift_126_plot <- plot_range_shift(
   raster.df = slf_range_shift_126_df
@@ -2222,7 +2180,7 @@ ggsave(
 
 ### sum areas gained and lost
 
-```{r retrieve summary table- ssp126 range shift}
+```{r retrieve summary table- ssp126 range shift, eval = TRUE}
 
 slf_range_shift_126_table <- terra::expanse(
   x = slf_range_shift_126,
@@ -2232,7 +2190,7 @@ slf_range_shift_126_table <- terra::expanse(
 
 ```
 
-```{r format range shift table and kable}
+```{r format range shift table and kable, eval = TRUE}
 
 slf_range_shift_126_table <- table_range_shift(table.df = slf_range_shift_126_table)
 
@@ -2248,28 +2206,25 @@ slf_range_shift_126_kable <- knitr::kable(x = slf_range_shift_126_table, format 
 
 ```{r save tables from above, if desired- ssp126 range shift}
 
-if(TRUE) {
-  
-  # save as .html
-  kableExtra::save_kable(
-    slf_range_shift_126_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.jpg"),
-    zoom = 2
+# save as .html
+kableExtra::save_kable(
+  slf_range_shift_126_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
-  
-  # remove .html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"))
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.jpg"),
+  zoom = 2
+)
+
+# remove .html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp126_GFDL.html"))
 
 ```
 
@@ -2303,20 +2258,16 @@ unique(values(slf_binarized_2055_370))
 
 ```{r reclassify maxent outputs- range shift ssp370}
 
-if(FALSE) {
-  
-  # global
-  # reclassify and write global raster
-  slf_binarized_2055_370_classified <- terra::classify(
-    x = slf_binarized_2055_370, 
-    rcl = classes_2055, 
-    others = strtoi(00000100, base = 2),
-    filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp370_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-
-}
+# global
+# reclassify and write global raster
+slf_binarized_2055_370_classified <- terra::classify(
+  x = slf_binarized_2055_370, 
+  rcl = classes_2055, 
+  others = strtoi(00000100, base = 2),
+  filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp370_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -2352,21 +2303,17 @@ slf_binarized_2055_370_classified <- terra::rast(x = file.path(mypath, "working_
 
 ```{r mosaic rasters- range shift ssp370}
 
-if(FALSE) {
-  
-  # overlay and combine rasters by summing values
-  slf_range_shift_370 <- terra::mosaic(
-    slf_binarized_1995_classified, slf_binarized_2055_370_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp370_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1,
-      names = "range_shift_summed"
-      )
-    ) # progress bar
-  
-}
+# overlay and combine rasters by summing values
+slf_range_shift_370 <- terra::mosaic(
+  slf_binarized_1995_classified, slf_binarized_2055_370_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp370_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1,
+    names = "range_shift_summed"
+    )
+  ) # progress bar
 
 ```
 
@@ -2442,28 +2389,25 @@ slf_range_shift_370_kable <- knitr::kable(x = slf_range_shift_370_table, format 
 
 ```{r save tables from above, if desired- ssp370 range shift}
 
-if(TRUE) {
-  
-  # save as .html
-  kableExtra::save_kable(
-    slf_range_shift_370_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.jpg"),
-    zoom = 2
+# save as .html
+kableExtra::save_kable(
+  slf_range_shift_370_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
-  
-  # remove .html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"))
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.jpg"),
+  zoom = 2
+)
+
+# remove .html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp370_GFDL.html"))
 
 ```
 
@@ -2495,20 +2439,16 @@ unique(values(slf_binarized_2055_585))
 
 ```{r reclassify maxent outputs- range shift ssp585}
 
-if(FALSE) {
-  
-  # global
-  # reclassify and write global raster
-  slf_binarized_2055_585_classified <- terra::classify(
-    x = slf_binarized_2055_585, 
-    rcl = classes_2055, 
-    others = strtoi(00000100, base = 2),
-    filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp585_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-
-}
+# global
+# reclassify and write global raster
+slf_binarized_2055_585_classified <- terra::classify(
+  x = slf_binarized_2055_585, 
+  rcl = classes_2055, 
+  others = strtoi(00000100, base = 2),
+  filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp585_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  )
 
 ```
 
@@ -2544,21 +2484,17 @@ slf_binarized_2055_585_classified <- terra::rast(x = file.path(mypath, "working_
 
 ```{r mosaic rasters- range shift ssp585}
 
-if(FALSE) {
-  
-  # overlay and combine rasters by summing values
-  slf_range_shift_585 <- terra::mosaic(
-    slf_binarized_1995_classified, slf_binarized_2055_585_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp585_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1,
-      names = "range_shift_summed"
-      )
-    ) # progress bar
-  
-}
+# overlay and combine rasters by summing values
+slf_range_shift_585 <- terra::mosaic(
+  slf_binarized_1995_classified, slf_binarized_2055_585_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp585_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1,
+    names = "range_shift_summed"
+    )
+  ) # progress bar
 
 ```
 
@@ -2633,29 +2569,26 @@ slf_range_shift_585_kable <- knitr::kable(x = slf_range_shift_585_table, format 
 
 
 ```{r save tables from above, if desired- range shift ssp585}
-
-if(TRUE) {
   
-  # save as .html
-  kableExtra::save_kable(
-    slf_range_shift_585_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.jpg"),
-    zoom = 2
+# save as .html
+kableExtra::save_kable(
+  slf_range_shift_585_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
-  
-  # remove .html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"))
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.jpg"),
+  zoom = 2
+)
+
+# remove .html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp585_GFDL.html"))
 
 ```
 
@@ -2686,21 +2619,17 @@ unique(values(slf_binarized_2055_ssp_mean))
 ```
 
 ```{r reclassify maxent outputs- range shift ssp mean}
-
-if(FALSE) {
   
-  # global
-  # reclassify and write global raster
-  slf_binarized_2055_ssp_mean_classified <- terra::classify(
-    x = slf_binarized_2055_ssp_mean, 
-    rcl = classes_2055, 
-    others = strtoi(00000100, base = 2),
-    filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp_mean_GFDL.asc"), 
-    filetype = "AAIGrid",
-    overwrite = FALSE
-    ) 
-
-}
+# global
+# reclassify and write global raster
+slf_binarized_2055_ssp_mean_classified <- terra::classify(
+  x = slf_binarized_2055_ssp_mean, 
+  rcl = classes_2055, 
+  others = strtoi(00000100, base = 2),
+  filename = file.path(mypath, "working_dir", "slf_range_shift_2041-2070_ssp_mean_GFDL.asc"), 
+  filetype = "AAIGrid",
+  overwrite = FALSE
+  ) 
 
 ```
 
@@ -2735,28 +2664,24 @@ slf_binarized_2055_ssp_mean_classified <- terra::rast(x = file.path(mypath, "wor
 ```
 
 ```{r mosaic rasters- range shift ssp mean}
-
-if(FALSE) {
   
-  # overlay and combine rasters by summing values
-  slf_range_shift_ssp_mean <- terra::mosaic(
-    slf_binarized_1995_classified, slf_binarized_2055_ssp_mean_classified, # rasters
-    fun = "sum", 
-    filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp_mean_GFDL.asc"),
-    overwrite = FALSE,
-    wopt = list(
-      progress = 1,
-      names = "range_shift_summed"
-      )
-    ) # progress bar
-  
-}
+# overlay and combine rasters by summing values
+slf_range_shift_ssp_mean <- terra::mosaic(
+  slf_binarized_1995_classified, slf_binarized_2055_ssp_mean_classified, # rasters
+  fun = "sum", 
+  filename = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp_mean_GFDL.asc"),
+  overwrite = FALSE,
+  wopt = list(
+    progress = 1,
+    names = "range_shift_summed"
+    )
+  ) # progress bar
 
 ```
 
 Plot
 
-```{r prepare data for mapping- range shift ssp mean}
+```{r prepare data for mapping- range shift ssp mean, eval = TRUE}
 
 # re-load created raster
 slf_range_shift_ssp_mean <- terra::rast(x = file.path(mypath, "working_dir", "slf_range_shift_summed_ssp_mean_GFDL.asc")) 
@@ -2772,7 +2697,7 @@ unique(slf_range_shift_ssp_mean_df$range_shift_summed)
 
 ```
 
-```{r plot summed raster- range shift ssp mean}
+```{r plot summed raster- range shift ssp mean, eval = TRUE}
 
 slf_range_shift_ssp_mean_plot <- plot_range_shift(
   raster.df = slf_range_shift_ssp_mean_df
@@ -2800,7 +2725,7 @@ ggsave(
 
 sum areas gained and lost
 
-```{r retrieve summary table- ssp mean range shift}}
+```{r retrieve summary table- ssp mean range shift, eval = TRUE}
 
 slf_range_shift_ssp_mean_table <- terra::expanse(
   x = slf_range_shift_ssp_mean,
@@ -2812,7 +2737,7 @@ slf_range_shift_ssp_mean_table <- terra::expanse(
 
 ```{r format range shift table and kable- range shift ssp mean}
 
-slf_range_shift_ssp_mean_table <- table_range_shift(table.df = slf_range_shift_ssp_mean_table)
+slf_range_shift_ssp_mean_table <- table_range_shift(table.df = slf_range_shift_ssp_mean_table, eval = TRUE)
 
 # save as .csv
 write_csv(slf_range_shift_ssp_mean_table, file.path(here::here(), "vignette-outputs", "data-tables", "slf_range_shift_summed_area_table_ssp_mean_GFDL.csv"))
@@ -2826,28 +2751,25 @@ slf_range_shift_ssp_mean_kable <- knitr::kable(x = slf_range_shift_ssp_mean_tabl
 
 ```{r save tables from above, if desired- ssp mean range shift}
 
-if(TRUE) {
-  
-  # save as .html
-  kableExtra::save_kable(
-    slf_range_shift_ssp_mean_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.jpg"),
-    zoom = 2
+# save as .html
+kableExtra::save_kable(
+  slf_range_shift_ssp_mean_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
-  
-  # remove .html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"))
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.jpg"),
+  zoom = 2
+)
+
+# remove .html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_area_table_ssp_mean_GFDL.html"))
 
 ```
 

@@ -106,7 +106,7 @@ model_sens_spec <- tibble(
 
 ```
 
-```{r save as .csv}
+```{r save as .csv, eval = FALSE}
 
 write_csv(model_sens_spec, file.path(here::here(), "vignette-outputs", "data-tables", "model_sensitivity_specificity.csv"))
 
@@ -114,37 +114,33 @@ write_csv(model_sens_spec, file.path(here::here(), "vignette-outputs", "data-tab
 
 I will also write it to a kable so it can be printed
 
-```{r save tables from above, if desired}
+```{r save tables from above, if desired, eval = FALSE}
 
-if(TRUE) {
-  
-  # add column formatting
-  model_sens_spec <- mutate(model_sens_spec, bg_neg = scales::label_comma() (bg_neg))
-  
-  # convert to kable
+# add column formatting
+model_sens_spec <- mutate(model_sens_spec, bg_neg = scales::label_comma() (bg_neg))
+
+# convert to kable
 model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", escape = FALSE) %>%
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = TRUE)
-  
-  # save as .html
-  kableExtra::save_kable(
-    model_sens_spec_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg"),
-    zoom = 2
+
+# save as .html
+kableExtra::save_kable(
+  model_sens_spec_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
-  
-  # model extents
-    
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg"),
+  zoom = 2
+)
+
+# model extents
 
 ```
 

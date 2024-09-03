@@ -31,14 +31,19 @@ library(ggnewscale)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 ```{r create directory for ensemble product}
 
-if (FALSE) {
-
-  dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1"))
-  dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1", "plots"))
-
-}
+dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1"))
+dir.create(path = file.path(mypath, "models", "slf_regional_ensemble_v1", "plots"))
 
 ```
 
@@ -46,14 +51,14 @@ if (FALSE) {
 
 I will define a helper function and import the background area rasters for plotting.
 
-```{r helper function for plot aesthetics}
+```{r helper function for plot aesthetics, eval = TRUE}
 
 format_decimal <- function(x) as.numeric(sprintf("%.*f", 2, x))
 # formats decimals to 2 places
 
 ```
 
-```{r import background area rasters}
+```{r import background area rasters, eval = TRUE}
 
 # path to directory
 mypath <- file.path(here::here() %>% 
@@ -1705,6 +1710,17 @@ readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", 
 
 ```
 
+Display table
+
+```{r display table, eval = TRUE}
+
+ensemble_thresh_values <- read_rds(file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
+
+print(ensemble_thresh_values)
+
+```
+
+
 Now that I have the suitability values and thresholds ensembled, I can begin to analyze the differences between the global and regional ensemble predictions. I will begin by creating suitability maps in the next vignette.
 
 # 5. Ensemble ExDet / MIC maps
@@ -1713,7 +1729,7 @@ As a final step, I will ensemble the ExDet and MIC rasters themselves for visual
 
 ## 5.1 ExDet
 
-```{r map style exdet}
+```{r map style exdet, eval = TRUE}
 
 map_style_exdet <- list(
   theme_classic(),
@@ -1734,7 +1750,7 @@ map_style_exdet <- list(
 
 ```
 
-```{r exdet map function}
+```{r exdet map function, eval = TRUE}
 
 map_exdet <- function(raster, raster.df) {
   
@@ -1768,7 +1784,6 @@ map_exdet <- function(raster, raster.df) {
 
   
 ```
-
 
 ### prepare files
 
@@ -1849,24 +1864,23 @@ exdet_hist_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create hist exdet plot, eval = TRUE}
+
 # re-load as df
 exdet_hist_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
-```
-
-```{r create hist exdet plot}
 
 # plot mean raster first
 exdet_regional_ensemble_hist_plot <- map_exdet(
   raster = exdet_hist_mean, 
   raster.df = exdet_hist_mean_df
-  ) 
-
+  ) +
 # add background area shapes
-exdet_regional_ensemble_hist_plot <- exdet_regional_ensemble_hist_plot +
   # new fill scale
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
@@ -1912,24 +1926,22 @@ exdet_126_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create CMIP6 exdet plot- ssp 126, eval = TRUE}
+
 # re-load object as df
 exdet_126_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
-```
-
-```{r create CMIP6 exdet plot- ssp 126}
-
 # plot mean raster first
 exdet_regional_ensemble_126_plot <- map_exdet(
   raster = exdet_126_mean, 
   raster.df = exdet_126_mean_df
-  )
-
+  ) +
 # add background area shapes
-exdet_regional_ensemble_126_plot <- exdet_regional_ensemble_126_plot +
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
   geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
@@ -1974,24 +1986,22 @@ exdet_370_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create CMIP6 exdet plot- ssp 370, eval = TRUE}
+
 # re-load object as df
 exdet_370_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
-```
-
-```{r create CMIP6 exdet plot- ssp 370}
-
 # plot mean raster first
 exdet_regional_ensemble_370_plot <- map_exdet(
   raster = exdet_370_mean,
   raster.df = exdet_370_mean_df
-)
-  
+) +
 # add background area shapes
-exdet_regional_ensemble_370_plot <- exdet_regional_ensemble_370_plot +
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
   geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
@@ -2036,23 +2046,22 @@ exdet_585_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create CMIP6 exdet plot- ssp 585, eval = TRUE}
+
 # re-load object as df
 exdet_585_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
-```
-
-```{r create CMIP6 exdet plot- ssp 585}
-
 # plot mean raster first
 exdet_regional_ensemble_585_plot <- map_exdet(
   raster = exdet_585_mean,
   raster.df = exdet_585_mean_df
-)
+) +
 # add background area shapes
-exdet_regional_ensemble_585_plot <- exdet_regional_ensemble_585_plot +
   # new fill scale
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
@@ -2104,24 +2113,22 @@ exdet_ssp_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create CMIP6 exdet plot- ssp mean, eval = TRUE}
+
 # re-load object as df
 exdet_ssp_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mean.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
 
-```
-
-```{r create CMIP6 exdet plot- ssp mean}
-
 # plot mean raster first
 exdet_regional_ensemble_mean_plot <- map_exdet(
   raster = exdet_ssp_mean,
   raster.df = exdet_ssp_mean_df
-)
-  
+) +
 # add background area shapes
-exdet_regional_ensemble_mean_plot <- exdet_regional_ensemble_mean_plot +
   ggnewscale::new_scale_fill() +
    # add layer for bg point area
   geom_raster(data = regional_native_background_area_df, aes(x = x, y = y, fill = "Background"), alpha = 0.25) +
@@ -2155,7 +2162,7 @@ ggsave(
 
 I will also ensemble the MIC maps. These will be combined according to the mode (the most common value of the cell) among the 3 rasters.
 
-```{r map style MIC}
+```{r map style MIC, eval = TRUE}
 
 map_style_MIC <- list(
   theme_classic(),
@@ -2255,15 +2262,15 @@ mic_hist_mean <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create MIC plot- hist, eval = TRUE}
+
 # make df
 mic_hist_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
-
-```
-
-```{r create MIC plot- hist}
 
 # plot mean raster first
 mic_hist_mean_plot <- ggplot() +
@@ -2489,7 +2496,7 @@ ggsave(
 
 ```
 
-### ssp mode {.hidden}
+### ssp mode 
 
 ```{r stack mic rasters}
 
@@ -2510,15 +2517,15 @@ mic_ssp_mode <- terra::app(
   overwrite = FALSE
 )
 
+```
+
+```{r create CMIP6 mic plot- ssp mean, eval = TRUE}
+
 # re-load object as df
 mic_ssp_mode_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mode.asc"
     )) %>%
   terra::as.data.frame(xy = TRUE)
-
-```
-
-```{r create CMIP6 mic plot- ssp mean}
 
 mic_ssp_mode_plot <- ggplot() +
   # default plot style
@@ -2561,7 +2568,7 @@ ggsave(
 
 This bar chart will show the relative weights of each of the three regional models as a percent contribution to the total ensemble. I will take the relative weights from each exdet raster, normalize them and plot those weights.
 
-```{r load in data}
+```{r load in data, eval = TRUE}
 
 # native
 ensemble_weight_regional_native_hist <- terra::rast(file.path(mypath, "models", "slf_regional_ensemble_v1", "ensemble_weights_slf_regional_native_v3.tif"))
@@ -2575,7 +2582,7 @@ ensemble_weights_stack <- c(ensemble_weight_regional_native_hist, ensemble_weigh
 
 ```
 
-```{r prepare data}
+```{r prepare data, eval = TRUE}
 
 # take mean of weights
 relative_weights <- c(
@@ -2605,7 +2612,7 @@ ensemble_colors <- c(
 
 ```
 
-```{r plot proportions}
+```{r plot proportions, eval = TRUE}
 
 ensemble_relative_cont_plot <- ggplot() +
   geom_bar(aes(x = names(relative_weights_prop), y = relative_weights_prop, fill = ensemble_colors), stat = "identity", color = "black") +

@@ -45,6 +45,15 @@ library(gginnards)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 # Create internal dataset for function
 
 I will start by creating an internal dataset to be used by the function. These datasets were created in the previous vignettes and are stored in the `data` or `data-raw` folders of the package. I will import these datasets and save them as internal datasets for the function to use.
@@ -82,7 +91,7 @@ usethis::use_data(
 
 Primarily, I would like to use the wineries dataset to create a report for each unique country on the list. Our winery records contain 64 unique countries that I will create reports for. These reports will be saved to `vignette-outputs/reports`. 
 
-```{r get country iso codes}
+```{r get country iso codes, eval = TRUE}
 
 # import wineries dataset
 IVR_locations <- readr::read_rds(file = file.path(here::here(), "data", "wineries_tidied.rds"))
@@ -127,7 +136,7 @@ unique_name <- IVR_locations_iso %>%
 
 ```
 
-```{r test loop}
+```{r test loop, eval = TRUE}
 
 for (i in seq_along(unique_iso)){
   print(c(unique_name[i],unique_iso[i]))
@@ -162,7 +171,7 @@ Alternatively, I will create individualized reports and maps for key viticultura
 
 ## USA
 
-```{r USA reports}
+```{r USA reports, eval = TRUE}
 
 slfSpread::create_risk_report(
   locality.iso = "usa",
@@ -200,7 +209,7 @@ readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "
 
 ```
 
-```{r edit USA reports}
+```{r edit USA reports, eval = TRUE}
 
 ### USA
 # the USA map usually comes including Alaska and hawaii, which we do not want
@@ -250,7 +259,7 @@ ggsave(
 
 ## China
 
-```{r china}
+```{r china, eval = TRUE}
 
 slfSpread::create_risk_report(
   locality.iso = "chn", 

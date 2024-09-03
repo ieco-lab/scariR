@@ -56,38 +56,44 @@ library(patchwork)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 ```{r save tables from above, if desired}
 
-if(FALSE) {
-  
-  # model training dataset
-  # save as .csv
-  write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "global_models_info.csv"))
-  
-  # save as .html
-  kableExtra::save_kable(
-    model_info_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
-  # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.jpg"),
-    zoom = 2
+# model training dataset
+# save as .csv
+write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "global_models_info.csv"))
+
+# save as .html
+kableExtra::save_kable(
+  model_info_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.jpg"),
+  zoom = 2
+)
+
+
+# rm html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"))
+
+# model extents
   
-  
-  # rm html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"))
-  
-  # model extents
-    
-}
 
 ```
 
@@ -169,7 +175,7 @@ write_rds(global_points, file = file.path(here::here(), "data", "global_backgrou
 
 Now, I will plot these points for visualization purposes.
 
-```{r load in files for plotting}
+```{r load in files for plotting, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
@@ -182,7 +188,7 @@ global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "da
 
 ```
 
-```{r plot points}
+```{r plot points, eval = TRUE}
 
 global_background_plot <- ggplot() +
     geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
@@ -212,7 +218,7 @@ ggsave(
 
 Now I will create a plot of all SLF presence locations for reference. These points will represent the known presences in the model.
 
-```{r plot model presences}
+```{r plot model presences, eval = TRUE}
 
 global_slf_plot <- ggplot() +
   geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +

@@ -90,7 +90,7 @@ This vignette contains an example workflow of the R function "compute_MaxEnt_sum
 ## Changelog
 
 v0-
-v1- 2024-08-27- in `sandbox`
+v1- 2024-08-27
 
 
 ----------060_setup_regional_MaxEnt_models.Rmd----------
@@ -255,12 +255,13 @@ v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP sce
 
 ## About
 
-
+This vignette contains example usage for the function "generate_risk_report.R", which creates a risk report for the SLF based on model outputs.
 
 ## changelog
 
 v0- initial version
 v1- 2024-08-16- rework- updated SLF presence data and inclusion of other SSP scenarios
+
 
 
 ----------160_generate_format_figures.Rmd----------

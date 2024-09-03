@@ -14,6 +14,8 @@ This vignette will walk through the process of downloading and tidying these cli
 
 First, I will download the data from CHELSA into a local library. I will then tidy, harmonize and put the datasets in the proper format for MaxEnt. We will then choose the covariates for our models via an assessment of the level of co-linearity between the rasters. I will also consider biological relevance in selecting the final set of covariates.
 
+**Note:** I have added a number of `if()` statements throughout my vignettes, usually to prevent data from being downloaded again unnecessarily. Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk. This is to prevent re-downloading.
+
 # Setup
 
 ```{r load necesssary packages, message = FALSE}
@@ -30,6 +32,15 @@ library(ENMTools) # env covariates colinearity
 
 library(terra)
 library(patchwork)
+
+```
+
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
 
 ```
 
@@ -307,56 +318,53 @@ In this first chunk, I will:
 This chunk will take a very long time to run... so maybe find a good book to read.
 
 ```{r loop to tidy rasters- historical}
+  
+# view list of filetypes for terra, use .ascii
+  terra::gdal(drivers = TRUE)
 
-if(FALSE) {
-  
-  # view list of filetypes for terra, use .ascii
-    terra::gdal(drivers = TRUE)
-  
-    # loop to crop extent for all files
-    for(a in seq_along(env.files)) {
-      
-      # load each raster into temp object
-      rast.hold <- terra::rast(env.files[a])
-      
-      
-      
-      # begin edits
-      # crop new rasters to extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      # mask the bioclim layers by global_atc
-      rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-      
-      # set crs
-      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
-      
-      # set origin
-      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-      
-      #resample to fit the extent/resolution of the main layer global_bio1
-      #use bilinear interpolation, since values are continuous
-      rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
-      
-      # crop again to ensure aggregation doesnt increase extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      
-      
-      #write out the new resampled rasters!
-      terra::writeRaster(
-        x = rast.hold, 
-        filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
-        filetype = "GTiff", 
-        overwrite = FALSE
-        )
-      
-      # remove object once its done
-      rm(rast.hold)
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)) {
+    
+    # load each raster into temp object
+    rast.hold <- terra::rast(env.files[a])
+    
+    
+    
+    # begin edits
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # mask the bioclim layers by global_atc
+    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+    
+    # set origin
+    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    #resample to fit the extent/resolution of the main layer global_bio1
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(
+      x = rast.hold, 
+      filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
+      filetype = "GTiff", 
+      overwrite = FALSE
+      )
+    
+    # remove object once its done
+    rm(rast.hold)
 
-  }
-  
 }
+
 
 ```
 
@@ -378,63 +386,55 @@ We will convert the rasters to the `.ascii` format required by MaxEnt.
 
 ```{r conversion of .tif to .asc files- hist}
 
-if(FALSE){
+# loop to convert to .ascii
+for(a in seq_along(env.files)){
   
-  # loop to convert to .ascii
-  for(a in seq_along(env.files)){
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "v1_maxent", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
     
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "v1_maxent", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
+  }
 
 ```
 
 Finally, I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
 
 ```{r aggregation of rasters to 10km}
-
-if (FALSE) {
   
-  # loop to aggregate and convert to .ascii
-  for(a in seq_along(env.files)){
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will  be an NA value.
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-  }
+# loop to aggregate and convert to .ascii
+for(a in seq_along(env.files)){
   
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+  # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will  be an NA value.
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
+  
+  # crop again to ensure aggregation doesnt increase extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+    
 }
 
 ```
@@ -495,58 +495,53 @@ output.files <- output.files %>%
 #### tidy
 
 ```{r loop to tidy rasters- ssp126}
+  
+# view list of filetypes for terra, use .ascii
+terra::gdal(drivers = TRUE)
 
-if(FALSE) {
-  
-  
-  # view list of filetypes for terra, use .ascii
-  terra::gdal(drivers = TRUE)
-  
-    # loop to crop extent for all files
-    for(a in seq_along(env.files)) {
-      
-      # load each raster into temp object
-      rast.hold <- terra::rast(env.files[a])
-      
-      
-      
-      # begin edits
-      # crop new rasters to extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      # mask the bioclim layer by global_atc
-      rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-      
-      # set crs
-      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
-      
-      
-      # set origin
-      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-      
-      
-      #resample to fit the extent/resolution of the main layer global_bio1
-      #use bilinear interpolation, since values are continuous
-      rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
-      
-      # crop again to ensure aggregation doesnt increase extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)) {
+    
+    # load each raster into temp object
+    rast.hold <- terra::rast(env.files[a])
+    
+    
+    
+    # begin edits
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # mask the bioclim layer by global_atc
+    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+    
+    
+    # set origin
+    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    
+    #resample to fit the extent/resolution of the main layer global_bio1
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
 
-      
-      
-      #write out the new resampled rasters!
-      terra::writeRaster(
-        x = rast.hold,
-        filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1", paste0(output.files[a], "_global", ".tif")),
-        filetype = "GTiff",
-        overwrite = FALSE
-      )
-      
-      # remove object once its done
-      rm(rast.hold)
+    
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(
+      x = rast.hold,
+      filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1", paste0(output.files[a], "_global", ".tif")),
+      filetype = "GTiff",
+      overwrite = FALSE
+    )
+    
+    # remove object once its done
+    rm(rast.hold)
 
-  }
-  
 }
 
 
@@ -554,75 +549,68 @@ if(FALSE) {
 
 ```{r get file names 4}
 
- # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
-    grep("bio2_2041-2070_gfdl_126_global.tif|bio11_2041-2070_gfdl_126_global.tif|bio12_2041-2070_gfdl_126_global.tif|bio15_2041-2070_gfdl_126_global.tif", ., value = TRUE)
+# directory of files to modify
+env.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+  grep("bio2_2041-2070_gfdl_126_global.tif|bio11_2041-2070_gfdl_126_global.tif|bio12_2041-2070_gfdl_126_global.tif|bio15_2041-2070_gfdl_126_global.tif", ., value = TRUE)
 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    grep("bio2_2041-2070_gfdl_126_global.tif|bio11_2041-2070_gfdl_126_global.tif|bio12_2041-2070_gfdl_126_global.tif|bio15_2041-2070_gfdl_126_global.tif", ., value = TRUE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
+# output file names
+output.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_126_global.tif|bio11_2041-2070_gfdl_126_global.tif|bio12_2041-2070_gfdl_126_global.tif|bio15_2041-2070_gfdl_126_global.tif", ., value = TRUE) %>%
+  gsub(pattern = ".tif", replacement = ".asc")
 
 ```
 
 This code chunk was added later so I will only grab the rasters I need downstream.
 
 ```{r conversion of .tif to .asc files- ssp126}
-
-if(FALSE){
   
-  # loop to convert to .ascii
-  for(a in seq_along(env.files)) {
+# loop to convert to .ascii
+for(a in seq_along(env.files)) {
+  
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
     
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
+  }
+  
 
 ```
 
 ```{r on-demand aggregation of rasters- ssp126}
 
-if (FALSE) {
+# loop to aggregate and convert to .ascii
+for(a in seq_along(env.files)){
   
-  # loop to aggregate and convert to .ascii
-  for(a in seq_along(env.files)){
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-  }
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
   
+  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
+  
+  # crop again to ensure aggregation doesnt increase extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+    
 }
 
 ```
@@ -666,70 +654,66 @@ output.files <- output.files %>%
 #### tidy
 
 ```{r loop to tidy rasters- ssp370}
+  
+# view list of filetypes for terra, use .ascii
+  terra::gdal(drivers = TRUE)
 
-if(FALSE) {
-  
-  # view list of filetypes for terra, use .ascii
-    terra::gdal(drivers = TRUE)
-  
-    # loop to crop extent for all files
-    for(a in seq_along(env.files)) {
-      
-      # load each raster into temp object
-      rast.hold <- terra::rast(env.files[a])
-      
-      
-      
-      # begin edits
-      # crop new rasters to extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      # mask the bioclim layer by global_atc
-      rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-      
-      # set crs
-      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
-      
-      # set origin
-      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-      
-      #resample to fit the extent/resolution of the main layer global_bio1
-      #use bilinear interpolation, since values are continuous
-      rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
-      
-      # crop again to ensure aggregation doesnt increase extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      
-      
-      
-      #write out the new resampled rasters!
-      terra::writeRaster(
-        x = rast.hold,
-        filename = file.path(mypath, "2041-2070_ssp370_GFDL", "v1", paste0(output.files[a], "_global", ".tif")), 
-        filetype = "GTiff", 
-        overwrite = FALSE
-        )
-      
-      # remove object once its done
-      rm(rast.hold)
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)) {
+    
+    # load each raster into temp object
+    rast.hold <- terra::rast(env.files[a])
+    
+    
+    
+    # begin edits
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # mask the bioclim layer by global_atc
+    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+    
+    # set origin
+    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    #resample to fit the extent/resolution of the main layer global_bio1
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    
+    
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(
+      x = rast.hold,
+      filename = file.path(mypath, "2041-2070_ssp370_GFDL", "v1", paste0(output.files[a], "_global", ".tif")), 
+      filetype = "GTiff", 
+      overwrite = FALSE
+      )
+    
+    # remove object once its done
+    rm(rast.hold)
 
-  }
-  
 }
 
 ```
 
 ```{r get file names 6}
 
-  # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
-    grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE)
+# directory of files to modify
+env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+  grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE)
 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
+# output file names
+output.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+  grep("bio2_2041-2070_gfdl_370_global.tif|bio11_2041-2070_gfdl_370_global.tif|bio12_2041-2070_gfdl_370_global.tif|bio15_2041-2070_gfdl_370_global.tif", ., value = TRUE) %>%
+  gsub(pattern = ".tif", replacement = ".asc")
 
 ```
 
@@ -762,35 +746,31 @@ if(FALSE){
 
 ```{r on-demand aggregation of rasters- ssp370}
 
-if (FALSE) {
+# loop to aggregate and convert to .ascii
+for(a in seq_along(env.files)){
   
-  # loop to aggregate and convert to .ascii
-  for(a in seq_along(env.files)){
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-  }
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
   
+  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
+  
+  # crop again to ensure aggregation doesnt increase extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+  
+  
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+    
 }
 
 ```
@@ -833,55 +813,51 @@ output.files <- output.files %>%
 
 ```{r loop to tidy rasters- ssp 585}
 
-if(FALSE) {
-  
-  # view list of filetypes for terra, use .ascii
-    terra::gdal(drivers = TRUE)
-  
-    # loop to crop extent for all files
-    for(a in seq_along(env.files)) {
-      
-      # load each raster into temp object
-      rast.hold <- terra::rast(env.files[a])
-      
-      
-      
-      # begin edits
-      # crop new rasters to extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      # mask the bioclim layer by global_atc
-      rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-      
-      # set crs
-      rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
-      
-      # set origin
-      terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-      
-      #resample to fit the extent/resolution of the main layer global_bio1
-      #use bilinear interpolation, since values are continuous
-      rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
-      
-      # crop again to ensure aggregation doesnt increase extent
-      rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-      
-      
-      
-      
-      #write out the new resampled rasters!
-      terra::writeRaster(
-        x = rast.hold,
-        filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1", paste0(output.files[a], "_global", ".tif")), 
-        filetype = "GTiff", 
-        overwrite = FALSE
-        )
-      
-      # remove object once its done
-      rm(rast.hold)
+# view list of filetypes for terra, use .ascii
+  terra::gdal(drivers = TRUE)
 
-  }
-  
+  # loop to crop extent for all files
+  for(a in seq_along(env.files)) {
+    
+    # load each raster into temp object
+    rast.hold <- terra::rast(env.files[a])
+    
+    
+    
+    # begin edits
+    # crop new rasters to extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    # mask the bioclim layer by global_atc
+    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+    
+    # set origin
+    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    #resample to fit the extent/resolution of the main layer global_bio1
+    #use bilinear interpolation, since values are continuous
+    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear")
+    
+    # crop again to ensure aggregation doesnt increase extent
+    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+    
+    
+    
+    
+    #write out the new resampled rasters!
+    terra::writeRaster(
+      x = rast.hold,
+      filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1", paste0(output.files[a], "_global", ".tif")), 
+      filetype = "GTiff", 
+      overwrite = FALSE
+      )
+    
+    # remove object once its done
+    rm(rast.hold)
+
 }
 
 ```
@@ -890,75 +866,68 @@ if(FALSE) {
 
 ```{r get file names 8}
 
-  # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
-    grep("bio2_2041-2070_gfdl_585_global.tif|bio11_2041-2070_gfdl_585_global.tif|bio12_2041-2070_gfdl_585_global.tif|bio15_2041-2070_gfdl_585_global.tif", ., value = TRUE)
+# directory of files to modify
+env.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+  grep("bio2_2041-2070_gfdl_585_global.tif|bio11_2041-2070_gfdl_585_global.tif|bio12_2041-2070_gfdl_585_global.tif|bio15_2041-2070_gfdl_585_global.tif", ., value = TRUE)
 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
-    grep("bio2_2041-2070_gfdl_585_global.tif|bio11_2041-2070_gfdl_585_global.tif|bio12_2041-2070_gfdl_585_global.tif|bio15_2041-2070_gfdl_585_global.tif", ., value = TRUE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
+# output file names
+output.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE)  %>%
+  grep("bio2_2041-2070_gfdl_585_global.tif|bio11_2041-2070_gfdl_585_global.tif|bio12_2041-2070_gfdl_585_global.tif|bio15_2041-2070_gfdl_585_global.tif", ., value = TRUE) %>%
+  gsub(pattern = ".tif", replacement = ".asc")
 
 ```
 
 ```{r conversion of .tif to .asc files- ssp585}
 
-if(TRUE){
   
-  # loop to convert to .ascii
-  for(a in seq_along(env.files)) {
+# loop to convert to .ascii
+for(a in seq_along(env.files)) {
+  
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
     
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
+  }
 
 ```
 
 ```{r on-demand aggregation of rasters- ssp585}
-
-if (FALSE) {
   
-  # loop to aggregate and convert to .ascii
-  for(a in seq_along(env.files)){
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-    rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
-    
-    
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-  }
+# loop to aggregate and convert to .ascii
+for(a in seq_along(env.files)){
   
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE)
+  
+  # crop again to ensure aggregation doesnt increase extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj, overwrite = FALSE)
+  
+  
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+    
 }
 
 ```
@@ -974,38 +943,34 @@ While it is very important to reduce co-linearity, this cannot be the only metri
 We will downsize the rasters from the `v1` folder to perform a co-linearity analysis between the layers. This will only be done for the historical variables. We will be using `terra::aggregate()` to combine cells in a 2x2 grid fashion and take the mean of the 4 cells.
 
 ```{r downsize raster resolution}
+  
+mypath <- file.path(here::here() %>% 
+                      dirname(),
+                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
-if(FALSE) {
+#list env layers, load
+env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE)
+output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)
+# I had to modify "pattern" to not include any .tif.aux.xml files
+
+# loop to downsample rasters for colinearity analysis
+# code taken from Huron et.al
+for(a in seq_along(env.files)){
   
-  mypath <- file.path(here::here() %>% 
-                        dirname(),
-                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+  # holding object
+  rast.hold <- terra::rast(env.files[a])
   
-  #list env layers, load
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE)
-  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)
-  # I had to modify "pattern" to not include any .tif.aux.xml files
+  rast.hold <- terra::aggregate(
+    rast.hold, 
+    fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
+    fun = "mean", # take mean of these cells
+    # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
+    na.rm = TRUE, 
+    filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE
+    )
   
-  # loop to downsample rasters for colinearity analysis
-  # code taken from Huron et.al
-  for(a in seq_along(env.files)){
-    
-    # holding object
-    rast.hold <- terra::rast(env.files[a])
-    
-    rast.hold <- terra::aggregate(
-      rast.hold, 
-      fact = 2, # downsampling by factor of 2 (read 2 cells deep around cell) and take mean of cells
-      fun = "mean", # take mean of these cells
-      # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
-      na.rm = TRUE, 
-      filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
+  # remove object once its done
+  rm(rast.hold)
   
 }
 
@@ -1095,7 +1060,7 @@ The correlations are now more intuitive to read, so they are ready to be analyze
 
 Now that they are in a more readable format and have been converted to an absolute scale, we can create heatmaps to display these values and look for trends. I will create a heatmap of both the raw values and of a threshold of any above 0.7.
 
-```{r prepare data to visualize}
+```{r prepare data to visualize, eval = TRUE}
 
 env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v2.csv"))
 
@@ -1118,7 +1083,7 @@ env.cor5 <- env.cor5 %>%
 
 I need to set factor levels for the variable names and how to rename them.
 
-```{r factor levels for plot}
+```{r factor levels for plot, eval = TRUE}
 
 # factor levels to order row names
 var.names <- c(x = "bio1", "bio2", "bio3", "bio4", "bio5", "bio6", "bio7", "bio8", "bio9", "bio10", "bio11", "bio12", "bio13", "bio14", "bio15", "bio16", "bio17", "bio18", "bio19")
@@ -1143,12 +1108,12 @@ var.renames <- c(
   "bio16" = "precip of wettest quarter",
   "bio17"	= "precip of driest quarter",
   "bio18" = "precip of warmest quarter",
-  "bio19" = "precip of coldest quarter",
+  "bio19" = "precip of coldest quarter"
 )
 
 ```
 
-```{r visualize correlations via heatmap}
+```{r visualize correlations via heatmap, eval = TRUE}
 
 # plot correlation matrix
 (env.cor_plot <- ggplot(data = env.cor5) +
@@ -1182,7 +1147,7 @@ ggsave(env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "fig
 
 ```
 
-```{r binarize correlation heatmap}
+```{r binarize correlation heatmap, eval = TRUE}
 
 # binary heatmap
 
@@ -1222,7 +1187,7 @@ ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs
 
 # 4. Visualize rasters
 
-```{r visualize rasters}
+```{r visualize rasters, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                         dirname(),

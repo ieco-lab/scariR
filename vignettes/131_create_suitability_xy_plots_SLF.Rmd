@@ -60,7 +60,16 @@ library(webshot2)
 
 ```
 
-```{r set wd}
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+```{r set wd, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
@@ -70,7 +79,7 @@ mypath <- file.path(here::here() %>%
 
 I will load in some aesthetic objects, including for breaks.
 
-```{r axis breaks and labels}
+```{r axis breaks and labels, eval = TRUE}
 
 breaks <- c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
 
@@ -80,7 +89,7 @@ labels <- c(0, 2, 4, 6, 8, 10)
 
 Load in summary files for the global and regional ensemble models, which contain the thresholds.
 
-```{r load in summary files}
+```{r load in summary files, eval = TRUE}
 # summary file to extract thresholds from
 
 # global
@@ -95,7 +104,7 @@ summary_regional_ensemble <- read_csv(file = file.path(mypath, "slf_regional_ens
 
 Finally, I will load in the global and regional ensemble suitability maps. These will be used both for extracting the new xy suitability values and for plotting.
 
-```{r load in suitability rasters}
+```{r load in suitability rasters, eval = TRUE}
 
 # global
 global_1995 <- terra::rast(x = file.path(mypath, "slf_global_v3", "global_pred_suit_clamped_cloglog_globe_1981-2010_mean.asc"))
@@ -132,7 +141,7 @@ regional_ensemble_2055_ssp_mean <- terra::rast(
 
 I will load in the dataset containing SLF populations.
 
-```{r load in SLF dataset}
+```{r load in SLF dataset, eval = TRUE}
 
 slf_populations <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds"))
 
@@ -198,16 +207,16 @@ slf_populations <- slf_populations %>%
 
 Now that the records have been harmonized between the datasets, I will save to file for use downstream. This will be the main file for predicting slf population suitability.
 
-```{r save tidied data}
+```{r save tidied data, eval = TRUE}
 
 if (FALSE) {
 
   readr::write_rds(slf_populations, file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
   
-  #read it back in
-  slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
-  
 }
+
+#read it back in
+slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
 
 ```
 
@@ -472,13 +481,13 @@ I will plot the suitability values in two different ways- I will plot the raw xy
 
 I created the function `slfSpread::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
 
-```{r re-laod slf populations dataset}
+```{r re-laod slf populations dataset, eval = TRUE}
 
 slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_final_2024-08-05_tidied.rds"))
 
 ```
 
-```{r re-load pred suit datasets}
+```{r re-load pred suit datasets, eval = TRUE}
 
 # global
 xy_global_1995 <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit.rds"))
@@ -490,7 +499,7 @@ xy_regional_ensemble_2055 <- read_rds(file = file.path(here::here(), "data", "re
 
 ```
 
-```{r transform global xy data}
+```{r transform global xy data, eval = TRUE}
 
 xy_global_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
   xy.predicted = xy_global_1995,
@@ -520,7 +529,7 @@ xy_global_2055_rescaled <- xy_global_2055_rescaled[[1]]
 
 ```
 
-```{r transform regional_ensemble xy data}
+```{r transform regional_ensemble xy data, eval = TRUE}
 
 xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
   xy.predicted = xy_regional_ensemble_1995,
@@ -602,7 +611,7 @@ write_rds(
 
 We need a baseline for visualizing the trends in these scatter plots, so I will first plot the un-transformed datasets.
 
-```{r join datasets- untransformed}
+```{r join datasets- untransformed, eval = TRUE}
 
 # join datasets for plotting
 xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y")) %>%
@@ -614,7 +623,7 @@ xy_joined <- full_join(xy_global_1995, xy_regional_ensemble_1995, by = c("x", "y
 
 ```
 
-```{r plot SLF suitability values- untransformed, fig.asp = 1}
+```{r plot SLF suitability values- untransformed, fig.asp = 1, eval = TRUE}
 
 # figure annotation title
 # "suitability of known Lycorma delicatula populations, projected for climate change"
@@ -667,7 +676,7 @@ ggsave(
 
 I will manually change the scale of these values to a 1-10 scale so that this plot of risk is not confused for a measure of suitability from the model.
 
-```{r re-load rescaled values}
+```{r re-load rescaled values, eval = TRUE}
 
 # global
 xy_global_1995_rescaled <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled.rds"))
@@ -681,7 +690,7 @@ xy_regional_ensemble_2055_rescaled <- read_rds(file = file.path(here::here(), "d
 
 ```
 
-```{r re-load thresholds}
+```{r re-load thresholds, eval = TRUE}
 
 # global
 xy_global_1995_rescaled_thresholds <- read_rds(file = file.path(here::here(), "data", "global_slf_all_coords_1981-2010_xy_pred_suit_rescaled_thresholds.rds"))
@@ -695,7 +704,7 @@ xy_regional_ensemble_2055_rescaled_thresholds <- read_rds(file = file.path(here:
 
 ```
 
-```{r join datasets- rescaled}
+```{r join datasets- rescaled, eval = TRUE}
 
 # join datasets for plotting
 xy_joined_rescaled <- full_join(xy_global_1995_rescaled, xy_regional_ensemble_1995_rescaled, by = c("x", "y")) %>%
@@ -715,7 +724,7 @@ First, I need to isolate the MTSS threshold values.
 
 ## find points that shift across thresholds
 
-```{r retrieve threshold values}
+```{r retrieve threshold values, eval = TRUE}
 
 # global
 global_MTSS <- as.numeric(xy_global_1995_rescaled_thresholds[2, 2])
@@ -725,7 +734,7 @@ regional_ensemble_MTSS_2055 <- as.numeric(xy_regional_ensemble_2055_rescaled_thr
 
 ```
 
-```{r filter segments that cross thresholds}
+```{r filter segments that cross thresholds, eval = TRUE}
 
 xy_joined_rescaled_intersects <- xy_joined_rescaled %>%
   mutate(
@@ -754,7 +763,7 @@ xy_joined_rescaled_intersects <- dplyr::filter(
 
 Now lets plot the data.
 
-```{r plot SLF suitability values- rescaled, fig.asp = 1}
+```{r plot SLF suitability values- rescaled, fig.asp = 1, eval = TRUE}
 
 # figure annotation title
 # "Risk of Lycorma delicatula establishment in globally important viticultural areas, projected for climate change"
@@ -835,7 +844,7 @@ I will now create a summary table to explain the rescaled plots from step 4. The
 
 I will create a summary table of the quadrant placement (and thus the level of risk) for each point in the IVR_locations dataset. I will use `calculate_risk_quadrant()` to accomplish this.
 
-```{r summary IVRs}
+```{r summary slf populations, eval = TRUE}
 
 # create dataset and tidy
 slf_populations_joined <- left_join(slf_populations, xy_joined_rescaled, by = c("x", "y")) %>%
@@ -861,13 +870,13 @@ slf_populations_risk <- slf_populations_joined %>%
 
 ```
 
-```{r factor ordering of risk}
+```{r factor ordering of risk, eval = TRUE}
 
 risk_levels <- c("extreme", "high", "moderate", "low")
 
 ```
 
-```{r risk categories table}
+```{r risk categories table, eval = TRUE}
 
 slf_risk_table <- slf_populations_risk %>%
   # create counts and make into acrostic table
@@ -907,7 +916,7 @@ I will create a table to sum the number of points in three different groups.  My
 
 I will sum the number of points that are suitable in the global model only, unsuitable in the global model only, and unsuitable in the global model / suitable in the regional model. I will repeat this operation for both time periods.
 
-```{r create table of sums}
+```{r create table of sums, eval = TRUE}
 
 global_regional_risk_shift <- tibble(
   time_period = c(1995, 1995, 1995, 2055, 2055, 2055),
@@ -932,7 +941,7 @@ global_regional_risk_shift <- tibble(
 
 ```
 
-```{r add proportions and make specific calculations}
+```{r add proportions and make specific calculations, eval = TRUE}
 
 # total # slf populations
 total_slf <- sum(global_regional_risk_shift[1:2, 5])
@@ -959,39 +968,35 @@ With this analysis, I found that currently, only about 2.9% of known (rarefied) 
 This means that our regional-scale ensemble is adding resolution and nuance to our estimation of risk for SLF establishment.
 
 ```{r save table from above, if desired}
+  
+# add %
+global_regional_risk_shift <- mutate(global_regional_risk_shift, slf_population_prop = scales::label_percent(accuracy = 0.01) (slf_population_prop))
 
-if(TRUE) {
-  
-  # add %
-  global_regional_risk_shift <- mutate(global_regional_risk_shift, slf_population_prop = scales::label_percent(accuracy = 0.01) (slf_population_prop))
-  
-  # make kable
-  global_regional_risk_shift <- kable(global_regional_risk_shift, "html", escape = FALSE) %>% 
-    kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
-    kableExtra::add_header_above(., header = c("SLF risk plot quadrant proportions" = 6), bold = TRUE)
-  
-  
-  # save as .html
-  kableExtra::save_kable(
-    global_regional_risk_shift, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
-    self_contained = TRUE
-    )
-  
-  # initialize webshot by 
- # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg"),
-    zoom = 2
+# make kable
+global_regional_risk_shift <- kable(global_regional_risk_shift, "html", escape = FALSE) %>% 
+  kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) %>%
+  kableExtra::add_header_above(., header = c("SLF risk plot quadrant proportions" = 6), bold = TRUE)
+
+
+# save as .html
+kableExtra::save_kable(
+  global_regional_risk_shift, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
+  self_contained = TRUE
   )
-  
-  
-  # rm html
-  file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"))
-    
-}
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.jpg"),
+  zoom = 2
+)
+
+
+# rm html
+file.remove(file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plot_quadrant_props.html"))
 
 ```
 

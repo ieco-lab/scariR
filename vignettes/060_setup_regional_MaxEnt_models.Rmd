@@ -98,34 +98,40 @@ library(patchwork)
 
 ```
 
-```{r save tables from above, if desired}
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
 
-if(FALSE) {
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+```{r save tables from above, if desired}
   
-  # model training dataset
-  # save as .csv
-  write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "regional_ensemble_models_info.csv"))
-  
-  # save as .html
-  kableExtra::save_kable(
-    model_info_kable, 
-    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
-    self_contained = TRUE,
-    bs_theme = "simplex"
-    )
-  
-  # initialize webshot by 
-  # webshot::install_phantomjs()
-  # convert to pdf
-  webshot::webshot(
-    url = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
-    file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.jpg"),
-    zoom = 2
+# model training dataset
+# save as .csv
+write_csv(model_info, file.path(here::here(), "vignette-outputs", "data-tables", "regional_ensemble_models_info.csv"))
+
+# save as .html
+kableExtra::save_kable(
+  model_info_kable, 
+  file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
+  self_contained = TRUE,
+  bs_theme = "simplex"
   )
+
+# initialize webshot by 
+# webshot::install_phantomjs()
+# convert to pdf
+webshot::webshot(
+  url = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.html"),
+  file = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_models_info.jpg"),
+  zoom = 2
+)
+
+# model extents
   
-  # model extents
-    
-}
 
 ```
 
@@ -246,7 +252,7 @@ koppen_zones_rast <- terra::resample(
 
 Now lets plot those zones to make sure this worked.
 
-```{r visualize}
+```{r visualize, eval = TRUE}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"))
 # origin
@@ -278,8 +284,6 @@ KG_climate_map <- ggplot() +
   theme_classic() +
   theme(legend.position = "bottom") +
   coord_equal()
-
-
 
 ```
 
@@ -390,7 +394,7 @@ sf::st_write(
 
 ```
 
-```{r re-load K-G zones Ri.NAmerica}
+```{r re-load K-G zones Ri.NAmerica, eval = TRUE, message = FALSE}
 
 regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
@@ -403,7 +407,7 @@ st_bbox(regional_invaded_withSLF)
 
 Now lets plot it for a sanity check.
 
-```{r plot K-G zones in N America}
+```{r plot K-G zones in N America, eval = TRUE}
 
 (regional_invaded_withSLF_plot <- ggplot() +
    # world map
@@ -465,32 +469,28 @@ ext.obj.crop <- terra::ext(-138.66681, 19.12534, -52.58347, 60.83319 , xy = TRUE
 I will now mask these rasters using the shapefile created above.
 
 ```{r loop to crop bioclim layers to NAmerica invaded range}
-
-if(FALSE) {
   
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
+# loop to crop extent for all files
+for(a in seq_along(env.files)){
 
-    # load in first raster
-    rast.hold <- terra::rast(env.files[a])
-    
-    # mask new rasters using shapefile
-    rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_withSLF, overwrite = FALSE)
-        # crop to extent as well
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = TRUE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
+  # load in first raster
+  rast.hold <- terra::rast(env.files[a])
+  
+  # mask new rasters using shapefile
+  rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_withSLF, overwrite = FALSE)
+      # crop to extent as well
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
+  
+  #write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = TRUE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
   
 }
 
@@ -500,7 +500,7 @@ if(FALSE) {
 
 Lets plot one of the new layers to make sure the cropping worked.
 
-```{r plot to ensure cropping worked}
+```{r plot to ensure cropping worked, eval = TRUE}
 
 bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc")) 
 # convert to df
@@ -604,7 +604,7 @@ sf::st_write(
 
 ```
 
-```{r re-load K-G zones Ri.Asia}
+```{r re-load K-G zones Ri.Asia, eval = TRUE}
 
 regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
@@ -616,7 +616,7 @@ st_bbox(regional_invaded_asian_withSLF)
 
 Now lets plot it for a sanity check.
 
-```{r plot invaded_asian range}
+```{r plot invaded_asian range, eval = TRUE}
 
 (regional_invaded_asian_withSLF_plot <- ggplot() +
    # world map
@@ -674,38 +674,34 @@ ext.obj.crop <- terra::ext(122.93816, 30.49986, 149.74986, 46.58424, xy = TRUE)
 ```
 
 ```{r mask}
-
-if(FALSE) {
   
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
+# loop to crop extent for all files
+for(a in seq_along(env.files)){
 
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # crop new rasters to extent
-    rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_asian_withSLF)
-    # crop to extent as well
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
-    
-    # write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
+  #ensure that the CRS is consistent
+  rast.hold <- terra::rast(env.files[a])
+  
+  # crop new rasters to extent
+  rast.hold <- terra::mask(x = rast.hold, mask = regional_invaded_asian_withSLF)
+  # crop to extent as well
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
+  
+  # write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
   
 }
 
 ```
 
-```{r plot for check}
+```{r plot for check, eval = TRUE}
 
 bio11_invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc")
@@ -746,7 +742,7 @@ The native range for China will be defined as anywhere within Southeast asia tha
 
 I will retrieve the shapefile data from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called rnaturalearth to access this database.
 
-```{r rnaturalearth download}
+```{r rnaturalearth download, eval = TRUE}
 
 # check which types of data are available
 # these are in the rnaturalearth package
@@ -896,7 +892,7 @@ sf::st_write(
 
 ```
 
-```{r re-load shapefile as needed}
+```{r re-load shapefile as needed, eval = TRUE}
 
 regional_native_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_native_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
@@ -908,7 +904,7 @@ st_bbox(regional_native_withSLF)
 
 Now lets plot it for a sanity check.
 
-```{r plot china}
+```{r plot china, eval = TRUE}
 
 (regional_native_withSLF_plot <- ggplot() +
   geom_polygon(
@@ -966,41 +962,36 @@ I will now mask these rasters using the shapefile created above
 
 ```{r loop to crop bioclim layers to Rn range}
 
-if(TRUE) {
-  
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)){
+# loop to crop extent for all files
+for(a in seq_along(env.files)){
 
-    #ensure that the CRS is consistent
-    rast.hold <- terra::rast(env.files[a])
-    
-    # mask new rasters using shapefile
-    rast.hold <- terra::mask(x = rast.hold, mask = regional_native_withSLF, overwrite = FALSE)
-    # crop to extent as well
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-    
-  }
+  #ensure that the CRS is consistent
+  rast.hold <- terra::rast(env.files[a])
+  
+  # mask new rasters using shapefile
+  rast.hold <- terra::mask(x = rast.hold, mask = regional_native_withSLF, overwrite = FALSE)
+  # crop to extent as well
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj.crop, overwrite = FALSE)
+  
+  #write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
   
 }
-
 # I am pretty sure this method resets the raster cell numbers, which might be annoying downstream....
 
 ```
 
 Lets plot one of the new layers to make sure the cropping worked.
 
-```{r plot main_layer to ensure cropping worked}
+```{r plot main_layer to ensure cropping worked, eval = TRUE}
 
 bio11_native <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc")) 
 # convert to df
@@ -1060,37 +1051,34 @@ Create 10,000 random background points. These will be corrected for the latitudi
 # set seed
 set.seed(5)
 
-if (FALSE) {
+# generate random points 
+regional_invaded_background <- dismo::randomPoints(
+  mask = regional_invaded_bio11, 
+  n = 10000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
 
-  # generate random points 
-  regional_invaded_background <- dismo::randomPoints(
-    mask = regional_invaded_bio11, 
-    n = 10000, # default number used by maxent
-    p = slf_points,
-    excludep = TRUE, # exclude cells where slf has been found
-    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-    warn = 2 # higher number gives most warnings, including if sample size not reached
-    ) %>%
-    as.data.frame(.)
-  
-  # save as csv
-  write_csv(
-    x = regional_invaded_background, 
-    file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")
-    )
-  # save as rds file
-  write_rds(
-    regional_invaded_background, 
-    file = file.path(here::here(), "data", "regional_invaded_background_points_v7.rds")
+# save as csv
+write_csv(
+  x = regional_invaded_background, 
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")
   )
-  
-}
+# save as rds file
+write_rds(
+  regional_invaded_background, 
+  file = file.path(here::here(), "data", "regional_invaded_background_points_v7.rds")
+)
+
 
 ```
 
 Now lets visualize the result.
 
-```{r plotting datasets}
+```{r plotting datasets, eval = TRUE}
 
 # plotting raster
 regional_invaded_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) %>%
@@ -1111,7 +1099,7 @@ global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
 
 ```
 
-```{r plot Ri.NAmerica background}
+```{r plot Ri.NAmerica background, eval = TRUE}
 
 # plot at the continental scale
 (regional_invaded_background_plot <- ggplot() +
@@ -1171,32 +1159,29 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 # set seed
 set.seed(7)
+  
+# generate random points 
+regional_invaded_asian_points <- dismo::randomPoints(
+  mask = invaded_asian_bio11, # cropped to regional_invaded_asian range
+  n = 10000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
 
-if (FALSE) {
-  
-  # generate random points 
-  regional_invaded_asian_points <- dismo::randomPoints(
-    mask = invaded_asian_bio11, # cropped to regional_invaded_asian range
-    n = 10000, # default number used by maxent
-    p = slf_points,
-    excludep = TRUE, # exclude cells where slf has been found
-    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-    warn = 2 # higher number gives most warnings, including if sample size not reached
-    ) %>%
-    as.data.frame(.)
-  
-  # save as csv
-  write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
-  # save as rds file
-  write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_v2.rds"))
-  
-}
+# save as csv
+write_csv(x = regional_invaded_asian_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
+# save as rds file
+write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", "regional_invaded_asian_background_points_v2.rds"))
+
 
 ```
 
 Now lets visualize the result.
 
-```{r load in data for plotting}
+```{r load in data for plotting, eval = TRUE}
 
 invaded_asian_bio11_df <- terra::rast(
   x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")
@@ -1210,7 +1195,7 @@ regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignet
 
 ```
 
-```{r plot}
+```{r plot, eval = TRUE}
 
 (regional_invaded_asian_points_plot <- ggplot() +
    geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
@@ -1272,35 +1257,31 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 # set seed so that the random points for this dataset are the same the next time this code is run
 set.seed(6)
+  
+# generate random points 
+regional_native_points <- dismo::randomPoints(
+  mask = regional_native_bio2, 
+  n = 10000, # default number used by maxent
+  p = slf_points,
+  excludep = TRUE, # exclude cells where slf has been found
+  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  warn = 2 # higher number gives most warnings, including if sample size not reached
+  ) %>%
+  as.data.frame(.)
 
-if (FALSE) {
-  
-  # generate random points 
-  regional_native_points <- dismo::randomPoints(
-    mask = regional_native_bio2, 
-    n = 10000, # default number used by maxent
-    p = slf_points,
-    excludep = TRUE, # exclude cells where slf has been found
-    lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
-    warn = 2 # higher number gives most warnings, including if sample size not reached
-    ) %>%
-    as.data.frame(.)
-  
-  # save as csv
-  write_csv(x = regional_native_points, 
-            file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
-            )
-  # save as rds file
-  write_rds(regional_native_points, 
-            file = file.path(here::here(), "data", "regional_native_background_points_v3.rds")
-            )
-  
-}
+# save as csv
+write_csv(x = regional_native_points, 
+          file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")
+          )
+# save as rds file
+write_rds(regional_native_points, 
+          file = file.path(here::here(), "data", "regional_native_background_points_v3.rds")
+)
   
   
 ```
 
-```{r load in files for plotting}
+```{r load in files for plotting, eval = TRUE}
 
 regional_native_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
@@ -1312,7 +1293,7 @@ global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
 
 ```
 
-```{r plot points}
+```{r plot points, eval = TRUE}
 
 (regional_native_points_plot <- ggplot() +
   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
@@ -1399,7 +1380,7 @@ write_csv(
 
 Now I will plot these points on the raster to ensure that the bounding box worked.
 
-```{r plot model presences- Ri.NAmerica}
+```{r plot model presences- Ri.NAmerica, eval = TRUE}
 
 # load in raster
 regional_invaded <- terra::rast(
@@ -1475,7 +1456,7 @@ write_csv(
 
 ```
 
-```{r plot model presences- Ri.Asia}
+```{r plot model presences- Ri.Asia, eval = TRUE}
 
 invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
@@ -1549,7 +1530,7 @@ write_csv(
 
 ```
 
-```{r plot model presences- Rn}
+```{r plot model presences- Rn, eval = TRUE}
 
 regional_native <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_native_KG.asc")
@@ -1678,7 +1659,7 @@ Now we are ready to run all 3 regional models!
 
 9. Xin, B., Zhang, Y., Wang, X., Cao, L., Hoelmer, K. A., Broadley, H. J., & Gould, J. R. (2020). Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology, 50(1), 36–45. https://doi.org/10.1093/ee/nvaa137
 
-# Appendix  {.hidden}
+# Appendix {.hidden}
 
 ## Patchwork together figures for publication
 

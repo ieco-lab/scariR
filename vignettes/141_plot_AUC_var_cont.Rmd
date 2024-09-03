@@ -127,7 +127,7 @@ ROC_ensemble <- ggplot() +
 
 ```
 
-```{r save plot- AUC}
+```{r save plot- AUC, eval = FALSE}
 
 ggsave(
   ROC_ensemble, 
@@ -217,7 +217,7 @@ var_imp_ensemble <- ggplot() +
 
 ```
 
-```{r save plot- regional ensemble}
+```{r save plot- regional ensemble, eval = FALSE}
 
 ggsave(
   var_imp_ensemble, 
@@ -298,7 +298,7 @@ ROC_ensemble_global <- ggplot() +
 
 ```
 
-```{r save plot- AUC combined}
+```{r save plot- AUC combined, eval = FALSE}
 
 ggsave(
   ROC_ensemble_global, 
@@ -364,7 +364,7 @@ var_imp_ensemble <- ggplot() +
 
 ```
 
-```{r save plot}
+```{r save plot, eval = FALSE}
 
 ggsave(
   var_imp_ensemble, 

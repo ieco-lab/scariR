@@ -43,9 +43,18 @@ library(blockCV) # appendix, not necessary to run this vignette
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 `SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
-```{r check maxent installation, message = FALSE}
+```{r check maxent installation, eval = TRUE}
 
 checkMaxentInstallation(verbose = TRUE)
 
@@ -453,12 +462,8 @@ mypath <- file.path(here::here() %>%
 ```
 
 ```{r re-load model as needed}
-
-if (FALSE) {
   
-  global_model <- read_rds(file = file.path(mypath, "global_model.rds"))
-
-}
+global_model <- read_rds(file = file.path(mypath, "global_model.rds"))
 
 ```
 

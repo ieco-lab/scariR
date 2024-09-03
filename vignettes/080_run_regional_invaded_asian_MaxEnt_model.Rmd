@@ -36,6 +36,15 @@ library(viridis)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 `SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
 ```{r check maxent installation, message = FALSE}
@@ -239,21 +248,17 @@ Now I will create the "samples with data" object that SDMtune requires.
 
 ```{r prepare training SWD data object}
 
-if (TRUE) {
+regional_invaded_asian_train <- SDMtune::prepareSWD(
+  species = "Lycorma delicatula",
+  env = x_global_hist_env_covariates,
+  p = p_slf_points_invaded_asian_train, 
+  a = a_regional_invaded_asian_background_points,
+  verbose = TRUE # print helpful messages
+  )
 
-  regional_invaded_asian_train <- SDMtune::prepareSWD(
-    species = "Lycorma delicatula",
-    env = x_global_hist_env_covariates,
-    p = p_slf_points_invaded_asian_train, 
-    a = a_regional_invaded_asian_background_points,
-    verbose = TRUE # print helpful messages
-    )
-  
-  regional_invaded_asian_train@coords # coordinates
-  regional_invaded_asian_train@pa # presence / absence (background counted as absence)
-  regional_invaded_asian_train@data # extracted data from 
-
-}
+regional_invaded_asian_train@coords # coordinates
+regional_invaded_asian_train@pa # presence / absence (background counted as absence)
+regional_invaded_asian_train@data # extracted data from 
 
 ```
 
@@ -274,21 +279,17 @@ The testing / validation SWD object will be created in the same fashion, except 
 
 ```{r prepare testing SWD data object}
 
-if (TRUE) {
+regional_invaded_asian_test <- SDMtune::prepareSWD(
+  species = "Lycorma delicatula",
+  env = x_global_hist_env_covariates, 
+  p = p_slf_points_invaded_asian_test, 
+  a = a_regional_invaded_asian_background_points,
+  verbose = TRUE # print helpful messages
+  )
 
-  regional_invaded_asian_test <- SDMtune::prepareSWD(
-    species = "Lycorma delicatula",
-    env = x_global_hist_env_covariates, 
-    p = p_slf_points_invaded_asian_test, 
-    a = a_regional_invaded_asian_background_points,
-    verbose = TRUE # print helpful messages
-    )
-  
-  regional_invaded_asian_test@coords # coordinates
-  regional_invaded_asian_test@pa # presence / absence (background counted as absence)
-  regional_invaded_asian_test@data # extracted data from 
-
-}
+regional_invaded_asian_test@coords # coordinates
+regional_invaded_asian_test@pa # presence / absence (background counted as absence)
+regional_invaded_asian_test@data # extracted data from 
 
 ```
 
@@ -371,12 +372,8 @@ mypath <- file.path(here::here() %>%
 
 ```{r re-load model as needed}
 
-if (FALSE) {
+regional_invaded_asian_model <- read_rds(file = file.path(mypath, "regional_invaded_asian_model.rds"))
   
-  regional_invaded_asian_model <- read_rds(file = file.path(mypath, "regional_invaded_asian_model.rds"))
-
-}
-
 ```
 
 ```{r predict mean and thresholded suitability maps for historical data}

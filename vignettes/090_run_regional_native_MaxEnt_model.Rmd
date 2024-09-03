@@ -36,9 +36,18 @@ library(viridis)
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 `SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
 
-```{r check maxent installation, message = FALSE}
+```{r check maxent installation}
 
 checkMaxentInstallation(verbose = TRUE)
 
@@ -238,21 +247,17 @@ Now I will create the "samples with data" object that SDMtune requires.
 
 ```{r prepare training SWD data object}
 
-if (FALSE) {
+regional_native_train <- SDMtune::prepareSWD(
+  species = "Lycorma delicatula",
+  env = x_native_env_covariates,
+  p = p_slf_points_native_train, 
+  a = a_regional_native_background_points,
+  verbose = TRUE # print helpful messages
+  )
 
-  regional_native_train <- SDMtune::prepareSWD(
-    species = "Lycorma delicatula",
-    env = x_native_env_covariates,
-    p = p_slf_points_native_train, 
-    a = a_regional_native_background_points,
-    verbose = TRUE # print helpful messages
-    )
-  
-  regional_native_train@coords # coordinates
-  regional_native_train@pa # presence / absence (background counted as absence)
-  regional_native_train@data # extracted data from 
-
-}
+regional_native_train@coords # coordinates
+regional_native_train@pa # presence / absence (background counted as absence)
+regional_native_train@data # extracted data from 
 
 
 ```
@@ -272,21 +277,17 @@ The model will be tested using all presences from N America.
 
 ```{r prepare testing SWD data object}
 
-if (FALSE) {
+regional_native_test <- SDMtune::prepareSWD(
+  species = "Lycorma delicatula",
+  env = x_global_hist_env_covariates, # need the global covariates for China and N America
+  p = p_slf_points_native_test, 
+  a = a_regional_native_background_points,
+  verbose = TRUE # print helpful messages
+  )
 
-  regional_native_test <- SDMtune::prepareSWD(
-    species = "Lycorma delicatula",
-    env = x_global_hist_env_covariates, # need the global covariates for China and N America
-    p = p_slf_points_native_test, 
-    a = a_regional_native_background_points,
-    verbose = TRUE # print helpful messages
-    )
-  
-  regional_native_test@coords # coordinates
-  regional_native_test@pa # presence / absence (background counted as absence)
-  regional_native_test@data # extracted data from 
-
-}
+regional_native_test@coords # coordinates
+regional_native_test@pa # presence / absence (background counted as absence)
+regional_native_test@data # extracted data from 
 
 ```
 
@@ -367,13 +368,9 @@ mypath <- file.path(here::here() %>%
 ```
 
 ```{r re-load model as needed}
-
-if (FALSE) {
   
-  regional_native_model <- read_rds(file = file.path(mypath, "regional_native_model.rds"))
-
-}
-
+regional_native_model <- read_rds(file = file.path(mypath, "regional_native_model.rds"))
+  
 ```
 
 ```{r predict mean and thresholded suitability maps for historical data}

@@ -20,7 +20,6 @@ The final step of this analysis will be to organize the different datasets into 
 
 Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.
 
-**Note:** I have added a number of `if()` statements throughout my vignettes, usually at key save points. Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk. This is to prevent accidental overwriting of files.
 
 # Setup
 
@@ -50,6 +49,15 @@ library(knitr) # nice rmd tables
 
 ```
 
+**Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+```{r set global chunk opts, include = FALSE}
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
 Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). Package `taxize` will allow the retrieval of taxonomic IDs within `GBIF`.
 
 # 1. Retrieve data from GBIF and lydemapR and tidy
@@ -58,7 +66,7 @@ Most of this compendium and its functions are built on the `tidyverse` language.
 
 I will begin by retrieving the GBIF taxonomic ID for Lycorma delicatula.
 
-```{r get SLF gbif taxa ID}
+```{r get SLF gbif taxa ID, eval = TRUE}
 
 # get species ID from gbif database
 ids <- taxize::get_ids(sci_com = "Lycorma delicatula", db = "gbif")
@@ -75,7 +83,7 @@ Save and close the document.
 
 I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada) and Taiwan. Lin and Liao did a comprehensive survey for SLF in Taiwan to validate SLF presence records in online repositories and found that these records were likely false (Lin and Liao, 2024).
 
-```{r other rgbif operations}
+```{r other rgbif operations, eval = TRUE}
 
 # edit R environment for user credentials
 usethis::edit_r_environ()
@@ -98,7 +106,7 @@ Next, retrieve `GBIF` records using `occ_download()`. I will be editing the foll
 -   hasGeospatialIssue: exclude any records with an issue in the coordinate data
 -   country: the country of the record
 
-```{r retrieve SLF records from GBIF}
+```{r retrieve SLF records from GBIF, eval = TRUE}
   
 # initiate download
 slf_gbif <- rgbif::occ_download(
@@ -130,54 +138,52 @@ First, I will import the dataset to my working directory. I will also retrieve t
 
 ```{r download to PC; import to session; create simplified .csv file}
 
-if (FALSE){
 
-  # download the data as a zip to PC
-  slf_gbif_download <- occ_download_get(
-    key = '0049348-240626123714530',
-    path = file.path(here::here(), "data-raw"),
-    # overwrite = TRUE
-    ) %>% 
-    occ_download_import()
-  
-  
-  # .zip file
-  # unzip
-  utils::unzip(
-    zipfile = file.path(here::here(), "data-raw", "0049348-240626123714530.zip"),
-    exdir =  file.path(here::here(), "data-raw")
-    )
-  # rename .csv file
-  file.rename(
-    from = file.path(here::here(), "data-raw", "0049348-240626123714530.csv"),
-    to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
-    )
-  # delete original zip
-  file.remove(file.path(here::here(), "data-raw", "0049348-240626123714530.zip"))
-  
-  
-  
-  # simplify download into more useable .csv
-  slf_gbif_download_simple <- slf_gbif_download %>%
-    mutate(prov = "gbif") %>%
-    dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "countryCode", "prov", "year", "gbifID")) %>% # select desired columns
-    # rename for consistency with rest of vignette
-    rename("name" = "species",
-           "longitude" = "decimalLongitude", 
-           "latitude" = "decimalLatitude",
-           "key" = "gbifID"
-    )
-  
-  # save .csv output for use
-  write_csv(x = slf_gbif_download_simple, 
-            file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+# download the data as a zip to PC
+slf_gbif_download <- occ_download_get(
+  key = '0049348-240626123714530',
+  path = file.path(here::here(), "data-raw"),
+  # overwrite = TRUE
+  ) %>% 
+  occ_download_import()
+
+
+# .zip file
+# unzip
+utils::unzip(
+  zipfile = file.path(here::here(), "data-raw", "0049348-240626123714530.zip"),
+  exdir =  file.path(here::here(), "data-raw")
+  )
+# rename .csv file
+file.rename(
+  from = file.path(here::here(), "data-raw", "0049348-240626123714530.csv"),
+  to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+  )
+# delete original zip
+file.remove(file.path(here::here(), "data-raw", "0049348-240626123714530.zip"))
+
+
+
+# simplify download into more useable .csv
+slf_gbif_download_simple <- slf_gbif_download %>%
+  mutate(prov = "gbif") %>%
+  dplyr::select(c("species", "decimalLongitude", "decimalLatitude", "countryCode", "prov", "year", "gbifID")) %>% # select desired columns
+  # rename for consistency with rest of vignette
+  rename("name" = "species",
+         "longitude" = "decimalLongitude", 
+         "latitude" = "decimalLatitude",
+         "key" = "gbifID"
   )
 
-}
+# save .csv output for use
+write_csv(x = slf_gbif_download_simple, 
+          file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
+)
+
 
 ```
 
-```{r retrieve data citation}
+```{r retrieve data citation, eval = TRUE}
 
 gbif_citation('0049348-240626123714530')
 
@@ -374,14 +380,10 @@ Spatial thinning for the `lyde` dataset left 366 points out of the 39,000 points
 
 ```{r save cleaned data- lydemapR}
 
-if(FALSE) {
+write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
 
-  write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
-  
-  # also save as a .rds file
-  write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
-  
-}
+# also save as a .rds file
+write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
 
 ```
 
@@ -389,7 +391,7 @@ if(FALSE) {
 
 We want to visualize the difference between the raw coordinates that were pulled from GBIF and the cleaned, spatially thinned version. This is to ensure proper geospatial coverage and the success of the spatial thinning runs.
 
-```{r visualize raw and thinned GBIF records}
+```{r visualize raw and thinned GBIF records, eval = TRUE}
 
 # raw data
 gbif_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-08-05.csv"))
@@ -431,7 +433,7 @@ map_gbif_thinned + map_gbif_thinned_Asia +
 
 From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the invaded range, and indeed every blue point is paired with at least 1 darkorange point. So, our goal was met! We will do the same for the LydemapR data to ensure spatial thinning success.
 
-```{r visualize raw and thinned lydemapr records}
+```{r visualize raw and thinned lydemapr records, eval = TRUE}
 
 # raw data
 lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
@@ -492,7 +494,7 @@ The spatial thinning was successful! However, the first plot does not help us to
 
 In this step, I will combine the records obtained from GBIF and LydemapR with data taken from the literature. I will begin by loading in records taken from the published literature. There are a total of 165 records from China, southeast Asia, Japan, SK and the USA. Most of these records were obtained from genetic studies and represent samples taken from established populations of SLF. Data is scarce for established populations of SLF within its native range (China and southeast Asia), so these records are especially important. These records were taken from both peer-reviewed literature and natural history notes:
 
-```{r kable table of published literature}
+```{r kable table of published literature, eval = TRUE}
 
 # read in .csv of papers
 slf_published_papers <- readr::read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
@@ -505,7 +507,7 @@ slf_published_papers %>%
 
 ```
 
-```{r load in records from literature}
+```{r load in records from literature, eval = TRUE}
 
 slf_published <- readr::read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_v2.csv"))
 
@@ -514,7 +516,7 @@ write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publish
 
 ```
 
-```{r map of data from published sources}
+```{r map of data from published sources, eval = TRUE}
 
 map_published_Asia <- ggplot() +
   # this plots a basemap of the USA because data here are exclusively from the USA
@@ -615,11 +617,7 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-if(FALSE) {
-
-  write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-08-05.csv"))
-
-}
+write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-08-05.csv"))
 
 ```
 
@@ -711,19 +709,17 @@ slf_all_coords3 <- slf_all_coords2 %>%
   rename("x" = "longitude",
          "y" = "latitude")
 
-if(FALSE) {
 
-  # save
-  write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2024-08-05.csv")))
+# save
+write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2024-08-05.csv")))
+
+# also save as a .rds file
+write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2024-08-05.rds")))
   
-  # also save as a .rds file
-  write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2024-08-05.rds")))
-  
-}
 
 ```
 
-```{r map all points}
+```{r map all points, eval = TRUE}
 
 slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv"))
 
@@ -765,7 +761,7 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
 
 From the map, we can see the final points that were selected. We have a good spread across the native range and better spread than before in the invaded range. This version of the total dataset included newer data from lydemapr, so we now have better coverage in the invaded range. I will also check the number of points in the native vs the invaded range.
 
-```{r number points invaded vs native range}
+```{r number points invaded vs native range, eval = TRUE}
 
 SLF_by_longitude <- ggplot(data = slf_all_coords3) +
   geom_histogram(aes(x = x)) +
