@@ -41,6 +41,13 @@ This project is organized into general sections of our modeling pipeline: Our [v
 
 # How to Use this Project
 
+Before diving into this project and our modeling workflow, an end user should:
+1. read the [companion paper](), which outlines the conceptual underpinnings for this project
+2. install the package `renv`, which ensures that R package versions are consistent for running this package (this craetes a projct-specific R package library, so it should not affect your main library)
+3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/slfSpread/blob/master/vignettes/010_initialize_pkg.R), which initializes `renv` and lists our package's dependencies.
+
+Here are the main uses we recommend for our package:
+
 ## 1. Produce localized reports on SLF risk to viticulture
 
 Our primary datasets, including risk maps and a viticultural risk analysis, can be accessed by executing the function `create_risk_report()`. This function creates a localized (at the country or state/provincial level) report of the risk for *Lycorma delicatula* to local viticulture. It can be applied to globally important winegrowing regions because it uses our dataset `data/wineries_tidied.rds`, which contains a sample (1,074) of the world's most important winegrowing regions. Users can and should apply this function for their locality as we are projecting that the risk of *Lycorma delicatula* establishment will exapnd under climate change. *Lycorma delicatula* has been classified as being capable of (global) pan-invasion and viticulure has already been devastated in some regions, so there is high potential for viticultural damage under climate change (Huron et al, 2022).
@@ -224,5 +231,7 @@ Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vecto
 Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
 
 Hijmans R (2024). terra: Spatial Data Analysis. R package version 1.7-81, https://rspatial.github.io/terra/, https://rspatial.org/.
+
+Ushey K, Wickham H (2024). renv: Project Environments. R package version 1.0.7, https://github.com/rstudio/renv, https://rstudio.github.io/renv/.
 
 Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. doi:10.21105/joss.01686.
