@@ -1,4 +1,12 @@
+# Overview
+
 Our package `slfSpread` outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+
+## Citation
+
+The package `slfSpread` is a research compendium for our manuscript, Owens and Helmus, 2024:
+
+**insert citation**
 
 ## Installation
 
@@ -21,12 +29,6 @@ install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'd
 # install specific version of ggnewscale
 install.packages("ggnewscale", version = '0.4.10')
 ```
-
-## Citation
-
-The package `slfSpread` is a research compendium for our manuscript, Owens and Helmus, 2024:
-
-**insert citation**
 
 ## Sitemap
 
@@ -213,6 +215,14 @@ regional_poly <- sf::st_filter(x = KG_zones_poly, y = presence_data)
 ```
 
 Once the presence data, coviariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.
+
+## Computing Information
+
+This package was developed and its vignettes were rendered on a Dell Precision desktop PC with the following characteristics:
+* Core: intel Xeon CPU, 3.60 GHz
+* RAM memory: 64 GB
+* Operating System: Windows 10 Enterprise, version 22H2
+* R version: 4.2.3
 
 # References
 
