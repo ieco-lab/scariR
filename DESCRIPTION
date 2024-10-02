@@ -27,7 +27,6 @@ Imports:
     formattable,
     gginnards,
     ggnewscale(== 0.4.10),
-    ggpattern,
     ggrepel,
     grid,
     here,

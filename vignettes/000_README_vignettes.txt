@@ -51,6 +51,7 @@ v0- initial version
 v1
 v2
 v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
+v4- 2024-10-01- updated workflow to use different projection- Behrmann cylindrical equal-area projection- EPSG:53017
 
 
 

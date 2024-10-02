@@ -3,7 +3,7 @@ title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
-date: "2024-07-29"
+date: "2024-10-01"
 ---
 
 # Overview
@@ -30,7 +30,10 @@ library(devtools)
 # devtools::install_github("danlwarren/ENMTools")
 library(ENMTools) # env covariates colinearity
 
+# spatial
 library(terra)
+library(rgdal)
+
 library(patchwork)
 
 ```
@@ -43,6 +46,8 @@ library(patchwork)
 knitr::opts_chunk$set(eval = FALSE)
 
 ```
+
+We will be projecting all rasters to the Behrmann cylindrical equal-area projection, which is EPSG:53017.
 
 # 1. Retrieve CHELSA bioclim rasters
 
@@ -220,10 +225,12 @@ We will get a list of the files that I need to modify. We will also create an ob
 # I will load in the files and then get the new names I would like to give them
 
 # load in bioclim layers to be cropped- the original .tif files
-env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = TRUE)
+env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = TRUE)  %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE)
 
 # output file names
-output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = FALSE) %>%
+output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = FALSE)  %>%
+    grep("atc_2015_global.tif|bio2_1981-2010_global.tif|bio11_1981-2010_global.tif|bio12_1981-2010_global.tif|bio15_1981-2010_global.tif", ., value = TRUE) %>%
   # get rid of filetype endings
   gsub(pattern = ".tif", replacement = "") %>%
   # crop off ending 
@@ -282,8 +289,9 @@ terra::origin(mask_layer) <- c(-0.0001396088, -0.0001392488)
 mask_layer <- terra::resample(x = mask_layer, y = main_layer, method = "bilinear")
 
 # set CRS of reference layers to be sure
-main_layer <- terra::project(x = main_layer, y = "EPSG:4326", method = "bilinear")
-mask_layer <- terra::project(x = mask_layer, y = "EPSG:4326", method = "bilinear")
+# new projection
+main_layer <- terra::project(x = main_layer, y = "EPSG:53017", method = "bilinear")
+mask_layer <- terra::project(x = mask_layer, y = "EPSG:53017", method = "bilinear")
 
 # check
 terra::ext(mask_layer)
@@ -338,7 +346,7 @@ This chunk will take a very long time to run... so maybe find a good book to rea
     rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
     
     # set crs
-    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear")
+    rast.hold <- terra::project(x = rast.hold, y = "EPSG:53017", method = "bilinear")
     
     # set origin
     terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
@@ -355,7 +363,7 @@ This chunk will take a very long time to run... so maybe find a good book to rea
     #write out the new resampled rasters!
     terra::writeRaster(
       x = rast.hold, 
-      filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
+      filename = file.path(mypath, "v1", paste0(output.files[a], "_global_epsg53017", ".tif")), 
       filetype = "GTiff", 
       overwrite = FALSE
       )

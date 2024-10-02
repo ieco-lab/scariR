@@ -214,7 +214,7 @@ KG_zones_poly <- sf::st_as_sf(KG_zones_poly)
 regional_poly <- sf::st_filter(x = KG_zones_poly, y = presence_data)
 ```
 
-Once the presence data, coviariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.
+Once the presence data, covariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.
 
 ## Computing Information
 
@@ -222,7 +222,7 @@ This package was developed and its vignettes were rendered on a Dell Precision d
 * Core: intel Xeon CPU, 3.60 GHz
 * RAM memory: 64 GB
 * Operating System: Windows 10 Enterprise, version 22H2
-* R version: 4.2.3
+* R version: 4.4.1
 
 # References
 
