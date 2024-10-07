@@ -26,8 +26,10 @@ Imports:
     ENMTools,
     formattable,
     gginnards,
-    ggnewscale(== 0.4.10),
+    ggnewscale (== 0.4.10),
+    ggplot2,
     ggrepel,
+    gitcreds,
     grid,
     here,
     humboldt,
@@ -58,14 +60,13 @@ Imports:
     taxize,
     terra,
     tibble,
-    tidyr,
     tidygeocoder,
+    tidyr,
     tidyverse,
     usethis,
     utils,
     viridis,
     webshot,
-    webshot2 
+    webshot2    
 Suggests:
-    blockCV,
-    tcltk
+    blockCV

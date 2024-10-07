@@ -3,7 +3,7 @@ title: "Setup for regional-scale MaxEnt models"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
-date: "2024-08-05"
+date: "2024-10-07"
 ---
 
 # Overview
@@ -138,15 +138,15 @@ webshot::webshot(
 ```{r ggplot object for map style}
 
 map_style <- list(
-  xlab("longitude"),
-  ylab("latitude"),
+  xlab("eastings (m)"),
+  ylab("northings (m)"),
   theme_classic(),
   theme(legend.position = "bottom",
         panel.background = element_rect(fill = "lightblue2",
                                         colour = "lightblue2")
-  ),
-  scale_x_continuous(expand = c(0, 0)),
-  scale_y_continuous(expand = c(0, 0)),
+        ),
+  scale_x_continuous(labels = scales::comma, expand = c(0, 0)),
+  scale_y_continuous(labels = scales::comma, expand = c(0, 0)),
   labs(fill = "Suitability for SLF"),
   viridis::scale_fill_viridis(option = "D"),
   coord_equal()
@@ -257,13 +257,18 @@ Now lets plot those zones to make sure this worked.
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"))
 # origin
 terra::origin(koeppen_zones_rast)
+
+
+# create plotting copy that is reprojected
+koeppen_zones_rast_plot_layer <- terra::project(x = koeppen_zones_rast, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-koeppen_zones_rast_df <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
+koeppen_zones_rast_plot_layer <- terra::as.data.frame(koeppen_zones_rast_plot_layer, xy = TRUE)
+
 
 # plot main layer as example
 KG_climate_map <- ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = koeppen_zones_rast_df, 
+  geom_raster(data = koeppen_zones_rast_plot_layer, 
             aes(x = x, y = y, fill = as.factor(koeppen_climate_zones))) +
     labs(
       title = "Köppen-Geiger Climate Zones", 
@@ -271,8 +276,8 @@ KG_climate_map <- ggplot() +
       y = "latitude",
       fill = "K-G climate zone"
     ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_continuous(labels = scales::comma, expand = c(0, 0)) +
+  scale_y_continuous(labels = scales::comma, expand = c(0, 0)) +
   viridis::scale_fill_viridis(
     discrete = TRUE,
     aesthetics = "fill",
@@ -294,7 +299,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "koppen_climate_zones.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -312,7 +317,7 @@ KG_zones_invaded_poly <- terra::as.polygons(
   crs = "EPSG:4326"
 ) 
 
-gdal(drivers=TRUE)
+gdal(drivers = TRUE)
 
 # write to shapefile
 terra::writeVector(
@@ -399,9 +404,11 @@ sf::st_write(
 regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
+# create plot layer and reproject
+regional_invaded_withSLF_plot_layer <- sf::st_transform(x = regional_invaded_withSLF, crs = "ESRI:54017")
 
 # get extent
-st_bbox(regional_invaded_withSLF) 
+st_bbox(regional_invaded_withSLF_plot_layer) 
 
 ```
 
@@ -413,7 +420,7 @@ Now lets plot it for a sanity check.
    # world map
    geom_polygon(data = map_data('world', region = c("Canada", "USA", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Bahamas", "Cuba", "Costa Rica", "Haiti", "Dominican Republic", "Jamaica", "Bermuda")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
    # slf native range shapefile
-   geom_sf(data = regional_invaded_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
+   geom_sf(data = regional_invaded_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
      title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.NAmerica' model",
@@ -425,7 +432,7 @@ Now lets plot it for a sanity check.
    scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
    theme(legend.position = "right") +
-   coord_sf(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+   coord_sf(datum = sf::st_crs("ESRI:54017"), xlim = c(-13379444, -5073584), ylim = c(2395972, 6404431))
 )
 
 ```
@@ -437,7 +444,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_regional_invaded_extent_KG_climate_zones.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -502,7 +509,10 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot to ensure cropping worked, eval = TRUE}
 
-bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc")) 
+bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc"))
+
+# reproject raster
+bio11 <- terra::project(bio11, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
 bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
 
@@ -609,8 +619,11 @@ sf::st_write(
 regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
+# create plot layer and reproject
+regional_invaded_asian_withSLF_plot_layer <- sf::st_transform(x = regional_invaded_asian_withSLF, crs = "ESRI:54017")
+
 # get extent
-st_bbox(regional_invaded_asian_withSLF) 
+st_bbox(regional_invaded_asian_withSLF_plot_layer) 
 
 ```
 
@@ -622,7 +635,7 @@ Now lets plot it for a sanity check.
    # world map
    geom_polygon(data = map_data('world', region = c("Japan", "North Korea", "China", "South Korea", "Russia", "Mongolia")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
    # slf native range shapefile
-   geom_sf(data = regional_invaded_asian_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
+   geom_sf(data = regional_invaded_asian_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
      title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.Asia' model",
@@ -634,7 +647,7 @@ Now lets plot it for a sanity check.
    scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
    theme_classic() +
    theme(legend.position = "right") +
-   coord_sf(xlim = c(122.93816, 153.98561), ylim = c(24.21210, 45.52041))
+   coord_sf(xlim = c(), ylim = c())
 )
 
 ```
@@ -646,7 +659,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_regional_invaded_asian_extent_KG_climate_zones.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -706,13 +719,16 @@ for(a in seq_along(env.files)){
 bio11_invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc")
   ) 
+
+# reproject raster
+bio11_invaded_asian_plot_layer <- terra::project(bio11_invaded_asian, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-bio11_invaded_asian_df <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
+bio11_invaded_asian_plot_layer <- terra::as.data.frame(bio11_invaded_asian_plot_layer, xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_invaded_asian_df, 
+  geom_raster(data = bio11_invaded_asian_plot_layer, 
             aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
@@ -897,8 +913,11 @@ sf::st_write(
 regional_native_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_native_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
+# create plot layer and reproject
+regional_native_withSLF_plot_layer <- sf::st_transform(x = regional_native_withSLF, crs = "ESRI:54017")
+
 # get extent
-st_bbox(regional_native_withSLF) 
+st_bbox(regional_native_withSLF_plot_layer) 
 
 ```
 
@@ -911,7 +930,7 @@ Now lets plot it for a sanity check.
     data = map_data('world', region = c("Brunei", "East Timor", "Indonesia", "Laos", "Malaysia", "Myanmar", "Philippines", "Singapore", "Thailand", "Vietnam", "China", "Hong Kong", "Macau", "Mongolia", "Taiwan","Bangladesh", "Bhutan", "India", "Maldives", "Nepal", "Sri Lanka")), 
     aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
    # slf native range shapefile
-   geom_sf(data = regional_native_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
+   geom_sf(data = regional_native_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
    # scales
    labs(
      title = "Köppen climate zones as background selection area for 'Rn' model",
@@ -934,7 +953,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_native_extent_KG_climate_zones.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -994,13 +1013,16 @@ Lets plot one of the new layers to make sure the cropping worked.
 ```{r plot main_layer to ensure cropping worked, eval = TRUE}
 
 bio11_native <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc")) 
+
+# reproject raster
+bio11_native_plot_layer <- terra::project(bio11_native, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-bio11_native_df <- terra::as.data.frame(bio11_native, xy = TRUE)
+bio11_native_plot_layer <- terra::as.data.frame(bio11_native_plot_layer, xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_native_df, 
+  geom_raster(data = bio11_native_plot_layer, 
             aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
@@ -1133,7 +1155,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v7.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1219,7 +1241,7 @@ ggsave(regional_invaded_asian_points_plot,
          ),
        height = 8, 
        width = 10,
-       device = "jpeg",
+       device = jpeg,
        dpi = "retina"
        )
 
@@ -1313,7 +1335,7 @@ ggsave(regional_native_points_plot,
        filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v3.jpg"),
        height = 8, 
        width = 10,
-       device = "jpeg",
+       device = jpeg,
        dpi = "retina")
 
 ```
@@ -1417,7 +1439,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_train_slf_presences_v7.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1491,7 +1513,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_train_slf_presences_v2.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1565,7 +1587,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_train_slf_presences_v3.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1827,7 +1849,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_v7_summary.jpg"),
   height = 10, 
   width = 14,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1974,7 +1996,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_v2_summary.jpg"),
   height = 10, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2123,7 +2145,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_v3_summary.jpg"),
   height = 10, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

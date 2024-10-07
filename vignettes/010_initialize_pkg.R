@@ -50,6 +50,7 @@ renv::hydrate()
 # first, create a github PAT on website
 usethis::create_github_token()
 # enter created PAT (personal access token) into the .Renviron
+## be sure to use defaults and allow download and upload of packages
 gitcreds::gitcreds_set()
 # now install packages
 renv::install(packages = c(

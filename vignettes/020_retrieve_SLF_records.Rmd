@@ -777,7 +777,7 @@ SLF_by_longitude <- ggplot(data = slf_all_coords3) +
 ggsave(SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_all_coords_final_by_longitude.jpg"),
        height = 8, 
        width = 10,
-       device = "jpeg",
+       device = jpeg,
        dpi = "retina")
 
 ```
