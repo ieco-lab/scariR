@@ -10,7 +10,7 @@ date: "2024-10-07"
 
 In the previous vignette, I ran the global model, which was the first step to examine suitability for SLF at multiple spatial scales. In this vignette, I will set up to run three regional-scale models, one for each geographical region where SLF is found. I will run a model based on SLF presence data from the native range (China), the invaded region in Asia (Japan and South Korea), and the invaded region in North America. I hypothesize that by creating models at multiple spatial scales, I can have more confidence in suitability predictions made for specific SLF populations and important viticultural regions, and can predict the risk of specific populations spreading now and under climate change. I also hypothesize that the regional-scale models, once ensembled into a single prediction, will make more refined predictions than a global-scale model could.
 
-This vignette will set up for these regional-scale models in a similar fashion to the setup I created for the global model in vignette 040, but with some additional steps. First, I will use geopolitical boundaries or bounding boxes to select a broad area for each regional model's background points. I will choose a much broader area than SLF currently occupies in each area so that I can further reduce this area based on climate. I will then narrow this area for each model using the [Köppen-Geiger climate zones](https://koeppen-geiger.vu-wien.ac.at/). If a presence point within each region intersects with a zone, that zone will be included in the area used to choose background points.
+This vignette will set up for these regional-scale models in a similar fashion to the setup I created for the global model in vignette 040, but with some additional steps. First, I will use geopolitical boundaries or bounding boxes to select a broad area for each regional model's background points. I will choose a much broader area than SLF currently occupies in each area so that I can further reduce this area based on climate. I will then narrow this area for each model using the [Koppen-Geiger climate zones](https://koeppen-geiger.vu-wien.ac.at/). If a presence point within each region intersects with a zone, that zone will be included in the area used to choose background points.
 
 For each regional-scale model, I will:
 
@@ -135,32 +135,73 @@ webshot::webshot(
 
 ```
 
-```{r ggplot object for map style}
+```{r ggplot object for map style, eval = TRUE}
 
 map_style <- list(
-  xlab("eastings (m)"),
-  ylab("northings (m)"),
+  xlab("longitude"),
+  ylab("latitude"),
   theme_classic(),
-  theme(legend.position = "bottom",
-        panel.background = element_rect(fill = "lightblue2",
+  theme(panel.background = element_rect(fill = "lightblue2",
                                         colour = "lightblue2")
         ),
-  scale_x_continuous(labels = scales::comma, expand = c(0, 0)),
-  scale_y_continuous(labels = scales::comma, expand = c(0, 0)),
-  labs(fill = "Suitability for SLF"),
-  viridis::scale_fill_viridis(option = "D"),
-  coord_equal()
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
+  coord_sf()
 )
+
+```
+
+## Download countries shapefile
+
+I will need a shapefile of world countries for parts of this analysis, which I will retrieve from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called `rnaturalearth`.
+
+```{r rnaturalearth ne_countries download, eval = TRUE}
+
+# check which types of data are available
+# these are in the rnaturalearth package
+data(df_layers_cultural) 
+# I will use states_provinces
+
+# get metadata
+ne_metadata <- ne_find_vector_data(
+  scale = 10,
+  category = "cultural",
+  getmeta = TRUE
+) %>%
+  dplyr::filter(layer == "admin_0_countries")
+# URL to open metadata
+utils::browseURL(ne_metadata[, 3])
+
+# if the file isnt already downloaded, download it
+if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))) {
+  
+  countries_sf <- rnaturalearth::ne_download(
+    scale = 10, # highest resolution
+    type = "admin_0_countries", # states and provinces
+    category = "cultural",
+    destdir = file.path(here::here(), "data-raw", "ne_countries"),
+    load = TRUE, # load into environment
+    returnclass = "sf" # shapefile
+  )
+  
+  # else, just import
+  } else {
+    
+    countries_sf <- sf::read_sf(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))
+  
+}
+
+
 
 ```
 
 # 1. Retrieve K-G climate zones
 
-First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.html) package to retrieve a global raster of the Köppen-Geiger climate zones.
+First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.html) package to retrieve a global raster of the Koppen-Geiger climate zones.
 
 I need to set up a path to my directory and the necessary bioclimatic raster layers.
 
-```{r set wd 1}
+```{r set wd 1, eval = TRUE}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
@@ -174,13 +215,13 @@ I need to set up a path to my directory and the necessary bioclimatic raster lay
 # lists of target files in the directory
 # load in bioclim layers to be cropped- the 10km .asc files
 env.files <- list.files(path = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km"), pattern = "\\.asc$", full.names = TRUE) %>%
-# extract the 4 bioclim layers I will be using in my models. 
+  # extract the 4 bioclim layers I will be using in my models. 
   grep("atc_2015_global.asc|bio2_1981-2010_global.asc|bio11_1981-2010_global.asc|bio12_1981-2010_global.asc|bio15_1981-2010_global.asc", ., value = TRUE)
 
 
 ```
 
-Now I will download the Köppen-Geiger climate zones, which I will use to clip the bioclim layers.
+Now I will download the Koppen-Geiger climate zones, which I will use to clip the bioclim layers.
 
 ```{r download koppen climate data}
  
@@ -252,32 +293,25 @@ koppen_zones_rast <- terra::resample(
 
 Now lets plot those zones to make sure this worked.
 
+**NOTE** At some point after I updated R, it stopped automatically encoding UTF-8 special characters. So, I had to replace the umalot "o" with its css code.
+
 ```{r visualize, eval = TRUE}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc"))
-# origin
-terra::origin(koeppen_zones_rast)
-
-
-# create plotting copy that is reprojected
-koeppen_zones_rast_plot_layer <- terra::project(x = koeppen_zones_rast, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-koeppen_zones_rast_plot_layer <- terra::as.data.frame(koeppen_zones_rast_plot_layer, xy = TRUE)
+koeppen_zones_rast_plot_layer <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
 
 
 # plot main layer as example
 KG_climate_map <- ggplot() +
   # change scale of plots to be standard across figures
-  geom_raster(data = koeppen_zones_rast_plot_layer, 
-            aes(x = x, y = y, fill = as.factor(koeppen_climate_zones))) +
+  geom_raster(data = koeppen_zones_rast_plot_layer, aes(x = x, y = y, fill = as.factor(koeppen_climate_zones))) +
     labs(
-      title = "Köppen-Geiger Climate Zones", 
-      x = "longitude",
-      y = "latitude",
-      fill = "K-G climate zone"
+      title = "K\U00F6ppen-Geiger Climate Zones", 
+      fill = "K-G climate\nzone"
     ) +
-  scale_x_continuous(labels = scales::comma, expand = c(0, 0)) +
-  scale_y_continuous(labels = scales::comma, expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   viridis::scale_fill_viridis(
     discrete = TRUE,
     aesthetics = "fill",
@@ -287,7 +321,12 @@ KG_climate_map <- ggplot() +
     ) +
   guides(fill = guide_legend(nrow = 3)) +
   theme_classic() +
-  theme(legend.position = "bottom") +
+  theme(
+    legend.position = "bottom",
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ) +
   coord_equal()
 
 ```
@@ -300,7 +339,7 @@ ggsave(
   height = 8, 
   width = 12,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
 )
 
 ```
@@ -404,11 +443,8 @@ sf::st_write(
 regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
-# create plot layer and reproject
-regional_invaded_withSLF_plot_layer <- sf::st_transform(x = regional_invaded_withSLF, crs = "ESRI:54017")
-
 # get extent
-st_bbox(regional_invaded_withSLF_plot_layer) 
+st_bbox(regional_invaded_withSLF) 
 
 ```
 
@@ -416,24 +452,27 @@ Now lets plot it for a sanity check.
 
 ```{r plot K-G zones in N America, eval = TRUE}
 
-(regional_invaded_withSLF_plot <- ggplot() +
-   # world map
-   geom_polygon(data = map_data('world', region = c("Canada", "USA", "Mexico", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Bahamas", "Cuba", "Costa Rica", "Haiti", "Dominican Republic", "Jamaica", "Bermuda")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # slf native range shapefile
-   geom_sf(data = regional_invaded_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
-   # scales
-   labs(
-     title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.NAmerica' model",
-     caption = "K-G zones selected if containing SLF presences",
-     x = "longitude",
-     y = "latitude",
-     fill = "Köppen climate zone"
-     ) +
-   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
-   theme_classic() +
-   theme(legend.position = "right") +
-   coord_sf(datum = sf::st_crs("ESRI:54017"), xlim = c(-13379444, -5073584), ylim = c(2395972, 6404431))
-)
+regional_invaded_withSLF_plot <- ggplot() +
+  # world map
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = "azure4", color = "black", lwd = 0.25) +
+  # slf native range shapefile
+  geom_sf(data = regional_invaded_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black", lwd = 0.25) +
+  # scales
+  labs(
+    title = "K\U00F6ppen-Geiger climate zones as background selection area\nfor 'Ri.NAmerica' model",
+    caption = "K-G zones selected if containing SLF presences",
+    x = "longitude",
+    y = "latitude",
+    fill = "K-G climate\nzone"
+    ) +
+  # scales
+  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  # theme
+  theme_classic() +
+  theme(legend.position = "right") +
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
 ```
 
@@ -445,7 +484,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
 )
 
 ```
@@ -509,15 +548,14 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 ```{r plot to ensure cropping worked, eval = TRUE}
 
-bio11 <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc"))
-
-# reproject raster
-bio11 <- terra::project(bio11, y = "ESRI:54017", method = "bilinear", threads = TRUE)
-# convert to df
-bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
+bio11_df <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc")) %>%
+  # convert to df
+  terra::as.data.frame(., xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
   # change scale of plots to be standard across figures
   geom_raster(data = bio11_df, 
             aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
@@ -525,7 +563,7 @@ bio11_df <- terra::as.data.frame(bio11, xy = TRUE)
   ylab("latitude") +
   theme_minimal() +
   theme(legend.position = "none") +
-  coord_equal()
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 )
 # the cropping worked
 
@@ -619,11 +657,8 @@ sf::st_write(
 regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_invaded_asian_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
-# create plot layer and reproject
-regional_invaded_asian_withSLF_plot_layer <- sf::st_transform(x = regional_invaded_asian_withSLF, crs = "ESRI:54017")
-
 # get extent
-st_bbox(regional_invaded_asian_withSLF_plot_layer) 
+st_bbox(regional_invaded_asian_withSLF) 
 
 ```
 
@@ -631,25 +666,28 @@ Now lets plot it for a sanity check.
 
 ```{r plot invaded_asian range, eval = TRUE}
 
-(regional_invaded_asian_withSLF_plot <- ggplot() +
-   # world map
-   geom_polygon(data = map_data('world', region = c("Japan", "North Korea", "China", "South Korea", "Russia", "Mongolia")), aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # slf native range shapefile
-   geom_sf(data = regional_invaded_asian_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
-   # scales
-   labs(
-     title = "Köppen-Geiger climate zones as background selection area\nfor 'Ri.Asia' model",
-     caption = "K-G zones selected if containing SLF presences",
-     x = "longitude",
-     y = "latitude",
-     fill = "Köppen climate zone"
-     ) +
-   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
-   theme_classic() +
-   theme(legend.position = "right") +
-   coord_sf(xlim = c(), ylim = c())
-)
-
+regional_invaded_asian_withSLF_plot <- ggplot() +
+  # world map
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = "azure4", color = "black", lwd = 0.25) +
+  # slf native range shapefile
+  geom_sf(data = regional_invaded_asian_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black", lwd = 0.25) +
+  # scales
+  labs(
+    title = "K\U00F6ppen-Geiger climate zones as background selection area\nfor 'Ri.Asia' model",
+    caption = "K-G zones selected if containing SLF presences",
+    x = "longitude",
+    y = "latitude",
+    fill = "K-G climate\nzone"
+    ) +
+  # scales
+  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  # theme
+  theme_classic() +
+  theme(legend.position = "right") +
+  coord_sf(xlim = c(122.93816, 149.74986), ylim = c(30.49986, 46.58424))
+  
 ```
 
 ```{r save Ri.Asia K-G plot}
@@ -660,7 +698,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
 )
 
 ```
@@ -720,21 +758,20 @@ bio11_invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc")
   ) 
 
-# reproject raster
-bio11_invaded_asian_plot_layer <- terra::project(bio11_invaded_asian, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-bio11_invaded_asian_plot_layer <- terra::as.data.frame(bio11_invaded_asian_plot_layer, xy = TRUE)
+bio11_invaded_asian <- terra::as.data.frame(bio11_invaded_asian, xy = TRUE)
 
 # plot main layer as example
 (ggplot() +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_invaded_asian_plot_layer, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  geom_raster(data = bio11_invaded_asian, aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
   theme(legend.position = "none") +
-  coord_equal()
+  coord_sf(xlim = c(122.93816, 149.74986), ylim = c(30.49986, 46.58424))
 )
 # the cropping worked
 
@@ -752,45 +789,16 @@ Looks good!
 
 ## 2.3 Native region in Southeast Asia (Rn model)
 
-The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east and southeast Asia. We will first need to download shapefiles for each of the countries in southeast asia. We will use these shapefiles to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
+The native range for China will be defined as anywhere within Southeast asia that contains the same climate zones that SLF are found in within east and southeast Asia. We will use the `ne_countries` shapefile to clip our KG climate zones shapefile. Then, we will use that final shapefile to clip the bioclim rasters.
 
 ### Get shapefile for native range
 
-I will retrieve the shapefile data from [naturalearthdata](https://www.naturalearthdata.com/) using their R package called rnaturalearth to access this database.
-
-```{r rnaturalearth download, eval = TRUE}
-
-# check which types of data are available
-# these are in the rnaturalearth package
-data(df_layers_cultural) 
-# I will use states_provinces
-
-# get metadata
-ne_metadata <- ne_find_vector_data(
-  scale = 10,
-  category = "cultural",
-  getmeta = TRUE
-) %>%
-  dplyr::filter(layer == "admin_0_countries")
-# URL to open metadata
-utils::browseURL(ne_metadata[, 3])
-
-
-# download data
-asia_sf <- rnaturalearth::ne_download(
-  scale = 10, # highest resolution
-  type = "admin_0_countries", # states and provinces
-  category = "cultural",
-  destdir = file.path(here::here(), "data-raw", "ne_countries"),
-  load = TRUE, # load into environment
-  returnclass = "sf" # shapefile
-)
-
-```
-
-Now that we have the data, we can cut out the parts we want. We can treat the shapefile like any other data table and simply retrieve the countries we want. We will keep all countries in southeast Asia, plus countries in south Asia excluding Pakistan and Afghanistan and east Asia excluding the invaded range in Asia (Japan, SK, NK) (Wikipedia, see references). We are using a much larger extent because there is a lot of conjecture about the true native range of SLF, and we want those climate zones to be considered.
+We will use the `ne_countries` shapefile downloaded earlier to  cut out the parts we want. We can treat the shapefile like any other data table and simply retrieve the countries we want. We will keep all countries in southeast Asia, plus countries in south Asia excluding Pakistan and Afghanistan and east Asia excluding the invaded range in Asia (Japan, SK, NK) (Wikipedia, see references). We are using a much larger extent because there is a lot of conjecture about the true native range of SLF, and we want those climate zones to be considered.
 
 ```{r select countries and save}
+
+# re-load the shapefile downloaded earlier
+asia_sf <- sf::read_sf(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) 
 
 # southeast asia shapefile
 asia_sf <- asia_sf %>%
@@ -913,11 +921,8 @@ sf::st_write(
 regional_native_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-outputs", "shapefiles", "SLF_regional_native_extent.shp")) %>%
   dplyr::rename("koeppen_climate_zones" = "kppn_c_")
 
-# create plot layer and reproject
-regional_native_withSLF_plot_layer <- sf::st_transform(x = regional_native_withSLF, crs = "ESRI:54017")
-
 # get extent
-st_bbox(regional_native_withSLF_plot_layer) 
+st_bbox(regional_native_withSLF) 
 
 ```
 
@@ -925,25 +930,28 @@ Now lets plot it for a sanity check.
 
 ```{r plot china, eval = TRUE}
 
-(regional_native_withSLF_plot <- ggplot() +
-  geom_polygon(
-    data = map_data('world', region = c("Brunei", "East Timor", "Indonesia", "Laos", "Malaysia", "Myanmar", "Philippines", "Singapore", "Thailand", "Vietnam", "China", "Hong Kong", "Macau", "Mongolia", "Taiwan","Bangladesh", "Bhutan", "India", "Maldives", "Nepal", "Sri Lanka")), 
-    aes(x = long, y = lat, group = group), fill = "azure4", color = "black", lwd = 0.15) +
-   # slf native range shapefile
-   geom_sf(data = regional_native_withSLF_plot_layer, aes(fill = as.factor(koeppen_climate_zones)), color = "black") +
-   # scales
-   labs(
-     title = "Köppen climate zones as background selection area for 'Rn' model",
-     caption = "K-G zones selected if containing SLF presences",
-     x = "longitude",
-     y = "latitude",
-     fill = "Köppen climate zone"
-     ) +
-   scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
-   theme_classic() +
-   theme(legend.position = "right") +
-   coord_sf()
-)
+regional_native_withSLF_plot <- ggplot() +
+  # world map
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = "azure4", color = "black", lwd = 0.25) +
+  # slf native range shapefile
+  geom_sf(data = regional_native_withSLF, aes(fill = as.factor(koeppen_climate_zones)), color = "black", lwd = 0.25) +
+  # scales
+  labs(
+    title = "K\U00F6ppen climate zones as background selection area for 'Rn' model",
+    caption = "K-G zones selected if containing SLF presences",
+    x = "longitude",
+    y = "latitude",
+    fill = "K-G climate\nzone"
+    ) +
+  # scales
+  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  # theme
+  theme_classic() +
+  theme(legend.position = "right") +
+  coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
+
 ```
 
 ```{r save Rn K-G plot}
@@ -954,7 +962,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
 )
 
 ```
@@ -1014,22 +1022,21 @@ Lets plot one of the new layers to make sure the cropping worked.
 
 bio11_native <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc")) 
 
-# reproject raster
-bio11_native_plot_layer <- terra::project(bio11_native, y = "ESRI:54017", method = "bilinear", threads = TRUE)
 # convert to df
-bio11_native_plot_layer <- terra::as.data.frame(bio11_native_plot_layer, xy = TRUE)
+bio11_native <- terra::as.data.frame(bio11_native, xy = TRUE)
 
 # plot main layer as example
-(ggplot() +
+ggplot() +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
   # change scale of plots to be standard across figures
-  geom_raster(data = bio11_native_plot_layer, 
-            aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
+  geom_raster(data = bio11_native, aes(x = x, y = y, fill = `CHELSA_bio11_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
   theme(legend.position = "none") +
-  coord_equal()
-)
+  coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
+
 # the cropping worked
 
 ```
@@ -1044,13 +1051,21 @@ rm(ext.obj.crop)
 
 Now, I need to use the rasters I just created to choose the background points, which are used by MaxEnt to sample the climate and compare that sample with known SLF presences. The background points should be randomized because they are a stand-in for true absences, so I will generate them using `dismo::randomPoints()`.
 
-```{r set wd 2}
+```{r set wd 2, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 ```
+
+```{r load plotting base layer, eval = TRUE}
+
+global_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_global.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+```
+
 
 ## 3.1 invaded region of North America (Ri.NAmerica model)
 
@@ -1100,49 +1115,32 @@ write_rds(
 
 Now lets visualize the result.
 
-```{r plotting datasets, eval = TRUE}
+```{r import plotting datasets and reproject to equal area, eval = TRUE}
 
-# plotting raster
+# rasters
+# bg raster
 regional_invaded_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
-
+  
 # re-read background points 
-regional_invaded_background <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv"))
-
-# extent object for N America
-ext.obj <- terra::ext( -140.976563, -51.064453, 15.182421, 60.586967)
-
-# load in raster for visualization
-global_atc <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
-  # crop to easternUSA
-  terra::crop(., y = ext.obj)
-# convert to df
-global_atc_df <- terra::as.data.frame(global_atc, xy = TRUE)
+regional_invaded_background <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv")) 
 
 ```
 
 ```{r plot Ri.NAmerica background, eval = TRUE}
 
-# plot at the continental scale
-(regional_invaded_background_plot <- ggplot() +
-   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = regional_invaded_bio11_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_invaded_background, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-   scale_x_continuous(expand = c(0, 0)) +
-   scale_y_continuous(expand = c(0, 0)) +
-   labs(
-     title = "'Ri.NAmerica' model background points", 
-     x = "longitude",
-     y = "latitude"
-     ) +
-   theme_classic() +
-   theme(
-     legend.position = "none",
-     panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-     ) + 
-   coord_equal() 
-)
+regional_invaded_background_plot <- ggplot() +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  # base layer
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
+  # raster of interest
+  geom_raster(data = regional_invaded_bio11_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = regional_invaded_background, aes(x = x, y = y), color = "firebrick2", size = 0.25) +
+  ggtitle("'Ri.NAmerica' model background points") +
+  # same coords used to cut other N America plots
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
 ```
 
@@ -1154,9 +1152,9 @@ ggsave(
   regional_invaded_background_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_model_background_points_v7.jpg"),
   height = 8, 
-  width = 12,
+  width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1203,60 +1201,47 @@ write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", 
 
 Now lets visualize the result.
 
-```{r load in data for plotting, eval = TRUE}
+```{r load in data for plotting and change projection- Ri.Asia, eval = TRUE}
 
-invaded_asian_bio11_df <- terra::rast(
-  x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")
-  ) %>%
+# background raster
+invaded_asian_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
-  terra::as.data.frame(., xy = TRUE)
-
-regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv"))
+# bg points
+regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv")) 
 
 ```
 
-```{r plot, eval = TRUE}
+```{r plot Ri.Asia bg, eval = TRUE}
 
-(regional_invaded_asian_points_plot <- ggplot() +
-   geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
-   geom_raster(data = invaded_asian_bio11_df, aes(x = x, y = y), fill = "azure1") +
-   geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-   ggtitle("'Ri.Asia' model background points") +
-   map_style +
-   theme(legend.position = "none") +
-   coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
-)
-
-
+regional_invaded_asian_points_plot <- ggplot() +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = invaded_asian_bio11_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = regional_invaded_asian_points, aes(x = x, y = y), color = "firebrick2", size = 0.5) +
+  ggtitle("'Ri.Asia' model background points") +
+  coord_sf() +
+  scale_x_continuous(limits = c(122.93816, 149.74986), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), expand = c(0, 0))
 
 ```
 
 ```{r save plot- Ri.Asia bg}
 
-ggsave(regional_invaded_asian_points_plot, 
-       filename = file.path(
-         here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_v2.jpg"
-         ),
-       height = 8, 
-       width = 10,
-       device = jpeg,
-       dpi = "retina"
-       )
+ggsave(
+  regional_invaded_asian_points_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_asian_model_background_points_v2.jpg"),
+  height = 8, 
+  width = 10,
+  device = jpeg,
+  dpi = 500
+  )
 
 ```
 
 ## 3.3 Native region (Rn model)
-
-```{r set wd 3}
-
-# path to directory
-mypath <- file.path(here::here() %>% 
-                     dirname(),
-                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
-
-```
 
 ```{r load in datasets}
 
@@ -1303,40 +1288,40 @@ write_rds(regional_native_points,
   
 ```
 
-```{r load in files for plotting, eval = TRUE}
+```{r load in files for plotting and change projection- Rn, eval = TRUE}
 
 regional_native_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
-regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv"))
 
-global_atc_df <- terra::rast(x = file.path(mypath, "atc_2015_global.asc")) %>%
-  terra::as.data.frame(., xy = TRUE)
+regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_background_points_v3.csv")) 
 
 ```
 
 ```{r plot points, eval = TRUE}
 
-(regional_native_points_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
-  geom_raster(data = regional_native_bio2_df, aes(x = x, y = y), fill = "azure1") +
-  geom_point(data = regional_native_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-  ggtitle("'Rn' model background points") +
+regional_native_points_plot <- ggplot() +
   map_style +
-  theme(legend.position = "none")  +
-  coord_equal(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
-)
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
+  geom_raster(data = regional_native_bio2_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = regional_native_points, aes(x = x, y = y), color = "firebrick2", size = 0.25) +
+  ggtitle("'Rn' model background points") +
+  coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
 
 ```
 
 ```{r save plot- Rn bg}
 
-ggsave(regional_native_points_plot, 
-       filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v3.jpg"),
-       height = 8, 
-       width = 10,
-       device = jpeg,
-       dpi = "retina")
+ggsave(
+  regional_native_points_plot, 
+  filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_background_points_v3.jpg"),
+  height = 8, 
+  width = 10,
+  device = jpeg,
+  dpi = 500
+  )
 
 ```
 
@@ -1344,7 +1329,7 @@ ggsave(regional_native_points_plot,
 
 Next, I will use bounding boxes to isolate SLF presences from each major region. This would not normally be sufficient to select the correct points, but each region is isolated from the others in a fashion that a bounding box easily separates the points by region in this case.
 
-```{r set wd 4}
+```{r set wd 4, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
@@ -1354,11 +1339,7 @@ mypath <- file.path(here::here() %>%
 
 ```{r read in data}
 
-# background raster for plotting
-global_atc_df <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
-  ) %>%
-  terra::as.data.frame(., xy = TRUE)
+# background raster for plotting will be same as in last section
 
 # load in slf points to intersect
 slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
@@ -1405,31 +1386,23 @@ Now I will plot these points on the raster to ensure that the bounding box worke
 ```{r plot model presences- Ri.NAmerica, eval = TRUE}
 
 # load in raster
-regional_invaded <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")
-  )
-# also convert to df
-regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
+regional_invaded_df <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
+# re-import point data
+slf_points_invaded <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_v7.csv")) 
 
 # plot
 regional_invaded_slf_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded, aes(x = x, y = y), color = "darkorange", size = 0.5) +
-  labs(
-    title = "'Ri.NAmerica' model SLF presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+  labs(title = "'Ri.NAmerica' model SLF presences") +
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
   
-
 ```
 
 ```{r save Ri.NAmerica presence plot}
@@ -1438,9 +1411,9 @@ ggsave(
   regional_invaded_slf_plot, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_invaded_train_slf_presences_v7.jpg"),
   height = 8, 
-  width = 12,
+  width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1480,29 +1453,26 @@ write_csv(
 
 ```{r plot model presences- Ri.Asia, eval = TRUE}
 
-invaded_asian <- terra::rast(
+invaded_asian_df <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
-  )
-# also convert to df
-invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
+  ) %>%
+  terra::as.data.frame(., xy = TRUE)
 
+# re-import point data
+slf_points_invaded_asian <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_v2.csv")) 
+
+# plot
 regional_invaded_asian_slf_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded_asian, aes(x = x, y = y), color = "darkorange", size = 1) +
-  labs(
-    title = "'Ri.Asia' model SLF presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
-  
+  labs(title = "'Ri.Asia' model SLF presences") +
+  coord_sf() +
+  scale_x_continuous(limits = c(122.93816, 149.74986), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), expand = c(0, 0))
 
 ```
 
@@ -1514,7 +1484,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1554,30 +1524,27 @@ write_csv(
 
 ```{r plot model presences- Rn, eval = TRUE}
 
-regional_native <- terra::rast(
+# raster
+regional_native_df <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_native_KG.asc")
-  )
-# also convert to df
-regional_native_df <- terra::as.data.frame(regional_native, xy = TRUE)
+  ) %>%
+  terra::as.data.frame(., xy = TRUE)
 
+# re-import point data
+slf_points_native <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_v3.csv"))
+
+
+# plot
 regional_native_slf_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_native_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_native, aes(x = x, y = y), color = "darkorange", size = 1) +
-  labs(
-    title = "'Rn' model SLF presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
+  labs(title = "'Rn' model SLF presences") +
+  coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
   
-
 ```
 
 ```{r save Rn presence plot}
@@ -1588,7 +1555,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1685,18 +1652,15 @@ Now we are ready to run all 3 regional models!
 
 ## Patchwork together figures for publication
 
-```{r set wd 5}
+```{r reference layer 5}
 
-# path to directory
-  mypath <- file.path(here::here() %>% 
-                       dirname(),
-                     "maxent")
+mypath <- file.path(here::here() %>% 
+                     dirname(),
+                   "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
 
-# raster for mapping
-global_atc_df <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_global.asc")
-  ) %>%
+# reference layer for background of test plots
+global_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 
 ```
@@ -1712,41 +1676,33 @@ slf_points_invaded_test <- read.csv(
   file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v7.csv")
   )
 
-
 # raster for the validation plot
-invaded_asian <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
-  )
-# also convert to df
-invaded_asian_df <- terra::as.data.frame(invaded_asian, xy = TRUE)
+invaded_asian_df <- terra::rast(x = file.path(mypath, "atc_2015_regional_invaded_asian_KG.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
 
 ```
 
 ```{r plot validation region for Ri.NAmerica model}
 
 regional_invaded_test_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = invaded_asian_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded_test, aes(x = x, y = y), color = "darkorange", size = 1) +
-  labs(
-    title = "'Ri.NAmerica' model validation (test) presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(122, 153.98561), ylim = c(24.21210, 47))
+  labs(title = "'Ri.NAmerica' model validation (test) presences") +
+  coord_sf() +
+  scale_x_continuous(limits = c(122.93816, 149.74986), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), expand = c(0, 0))
 
 ```
 
 ```{r Ri.NAmerica model elements}
-# change axis labels
-x_scale_labels <- c(-140, -120, -100, -80, -60)
-y_scale_labels <- c(20, 30, 40, 50, 60)
+
+# labels
+x_scale_labels <- seq(from = -120, to = -60, by = 20)
+y_scale_labels <- seq(from = 20, to = 60, by = 5)
 
 # background selection area
 regional_invaded_withSLF_plot <- regional_invaded_withSLF_plot + 
@@ -1805,9 +1761,9 @@ regional_invaded_slf_plot  <- regional_invaded_slf_plot +
   )
 
 
-x_scale_labels <- c(80, 100, 120, 140)
-y_scale_labels <- c(0, 10, 20, 30, 40, 50)
-
+# new labels
+x_scale_labels <- seq(from = 125, to = 145, by = 5)
+y_scale_labels <- seq(from = 32, to = 46, by = 2)
 
 # test/validation presences
 regional_invaded_test_plot <- regional_invaded_test_plot +
@@ -1818,15 +1774,15 @@ regional_invaded_test_plot <- regional_invaded_test_plot +
     axis.title = element_blank()
     ) +
   labs(tag = "D") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  scale_x_continuous(limits = c(122.93816, 149.74986), labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
   )
 
-
+# patchwork plot
 regional_invaded_patchwork <- (
   (regional_invaded_slf_plot + regional_invaded_background_plot) / 
   (regional_invaded_withSLF_plot + regional_invaded_test_plot) 
@@ -1835,10 +1791,6 @@ regional_invaded_patchwork <- (
     title = "'Ri.NAmerica' model elements",
     subtitle = "(A) training presences (B) background points (C) background selection area (D) test presences"
     ) 
-
-  # work around because collect axes not working
-# regional_invaded_patchwork <- patchwork::patchworkGrob(regional_invaded_patchwork) %>%
-#  gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
 
 ```
 
@@ -1850,7 +1802,7 @@ ggsave(
   height = 10, 
   width = 14,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1866,38 +1818,31 @@ slf_points_invaded_asian_test <- read.csv(
 
 # load in raster for validation plot
 regional_invaded <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")
-  )
-# also convert to df
-regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
+  x = file.path(mypath, "atc_2015_regional_invaded_KG.asc")
+  ) %>%
+  terra::as.data.frame(., xy = TRUE)
 
 ```
 
 ```{r plot validation region for Ri.Asia model}
 
 regional_invaded_asian_test_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_invaded_asian_test, aes(x = x, y = y), color = "darkorange", size = 1) +
-  labs(
-    title = "'Ri.Asia' model test presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+  labs(title = "'Ri.Asia' model test presences") +
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
 ```
 
 ```{r regional_invaded_asian}
 
-x_scale_labels <- c(130, 140, 150)
-y_scale_labels <- c(25, 30, 35, 40, 45)
+# labels
+x_scale_labels <- seq(from = 125, to = 145, by = 5)
+y_scale_labels <- seq(from = 32, to = 46, by = 2)
 
 # background selection area
 regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot + 
@@ -1911,8 +1856,8 @@ regional_invaded_asian_withSLF_plot <- regional_invaded_asian_withSLF_plot +
     tag = "C",
     fill = "zone"
     ) +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  scale_x_continuous(limits = c(122.93816, 149.74986), labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
@@ -1929,8 +1874,8 @@ regional_invaded_asian_points_plot <- regional_invaded_asian_points_plot +
     axis.title = element_blank()
     ) +
   labs(tag = "B") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  scale_x_continuous(limits = c(122.93816, 149.74986), labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
@@ -1947,17 +1892,18 @@ regional_invaded_asian_slf_plot  <- regional_invaded_asian_slf_plot +
     axis.title = element_blank()
     ) +
   labs(tag = "A") +
-  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
-  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
+  scale_x_continuous(limits = c(122.93816, 149.74986), labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(limits = c(30.49986, 46.58424), labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
   )
 
+# labels
+x_scale_labels <- seq(from = -120, to = -60, by = 20)
+y_scale_labels <- seq(from = 20, to = 60, by = 5)
 
-x_scale_labels <- c(-140, -120, -100, -80, -60)
-y_scale_labels <- c(20, 30, 40, 50, 60)
 
 # test presences
 regional_invaded_asian_test_plot <- regional_invaded_asian_test_plot + 
@@ -1997,7 +1943,7 @@ ggsave(
   height = 10, 
   width = 12,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -2009,36 +1955,27 @@ ggsave(
 # validation dataset
 slf_points_native_test <- read.csv(
   file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_test_slf_presences_v3.csv")
-  )
-
+  ) 
 
 # load in raster for validation plot
 regional_invaded <- terra::rast(
-  x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")
-  )
-# also convert to df
-regional_invaded_df <- terra::as.data.frame(regional_invaded, xy = TRUE)
+  x = file.path(mypath, "atc_2015_regional_invaded_KG.asc")
+  ) %>%
+  terra::as.data.frame(., xy = TRUE)
 
 ```
 
 ```{r plot validation region for Rn model}
 
 regional_native_test_plot <- ggplot() +
-  geom_raster(data = global_atc_df, aes(x = x, y = y), fill = "azure4") +
+  map_style +
+  # empty world map to force same aspect ratio
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = NA) +
+  geom_raster(data = global_bio11_df, aes(x = x, y = y), fill = "azure4") +
   geom_raster(data = regional_invaded_df, aes(x = x, y = y), fill = "azure1") +
   geom_point(data = slf_points_native_test, aes(x = x, y = y), color = "darkorange", size = 1) +
-  labs(
-    title = "'Rn' model test presences",
-    x = "longitude",
-    y = "latitude"
-  ) +
-  scale_x_continuous(expand = c(0, 0)) +
-  scale_y_continuous(expand = c(0, 0)) +
-  theme_classic() +
-  theme(panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ) +
-  coord_equal(xlim = c(-140.976563, -51.064453), ylim = c(15.182421, 60.586967))
+  labs(title = "'Rn' model test presences") +
+  coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
 ```
 
@@ -2046,8 +1983,8 @@ Patchwork
 
 ```{r regional_native}
 
-x_scale_labels <- c(80, 100, 120, 140)
-y_scale_labels <- c(0, 10, 20, 30, 40, 50)
+x_scale_labels <- seq(from = 80, to = 140, by = 10)
+y_scale_labels <- seq(from = 0, to = 50, by = 10)
 
 # background selection area
 regional_native_withSLF_plot <- regional_native_withSLF_plot + 
@@ -2057,15 +1994,15 @@ regional_native_withSLF_plot <- regional_native_withSLF_plot +
     plot.caption = element_blank(),
     axis.title = element_blank(),
     plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
+    plot.tag.position = c(0.1, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
     ) +
   labs(
     tag = "C",
     fill = "zone"
     ) +
-  scale_x_continuous(labels = seq(from = 70, to = 140, by = 10), breaks = seq(from = 70, to = 140, by = 10), expand = c(0, 0)) +
-  scale_y_continuous(labels = c(-10, 0, 10, 20, 30, 40, 50), breaks = c(-10, 0, 10, 20, 30, 40, 50), expand = c(0, 0)) 
+  scale_x_continuous(labels = x_scale_labels, breaks = x_scale_labels, expand = c(0, 0)) +
+  scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
 
 # background points
@@ -2076,7 +2013,7 @@ regional_native_points_plot <- regional_native_points_plot +
     plot.caption = element_blank(),
     axis.title = element_blank(),
     plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
+    plot.tag.position = c(0.1, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
     ) +
   labs(tag = "B") +
@@ -2092,7 +2029,7 @@ regional_native_slf_plot  <- regional_native_slf_plot +
     plot.caption = element_blank(),
     axis.title = element_blank(),
     plot.tag.location = "panel",
-    plot.tag.position = c(0.05, 0.1),
+    plot.tag.position = c(0.1, 0.1),
     plot.tag = element_text(face = "bold", size = 25)
     ) +
   labs(tag = "A") +
@@ -2100,9 +2037,10 @@ regional_native_slf_plot  <- regional_native_slf_plot +
   scale_y_continuous(labels = y_scale_labels, breaks = y_scale_labels, expand = c(0, 0)) 
 
 
-# redefine
-x_scale_labels <- c(-140, -120, -100, -80, -60)
-y_scale_labels <- c(20, 30, 40, 50, 60)
+
+# labels
+x_scale_labels <- seq(from = -120, to = -60, by = 20)
+y_scale_labels <- seq(from = 20, to = 60, by = 5)
 
 # testing presences
 regional_native_test_plot <- regional_native_test_plot + 
@@ -2132,10 +2070,6 @@ regional_native_patchwork <- (
     ) +
   plot_layout(widths = unit(20, "cm")) 
 
-# work around because collect axes not working
-# regional_native_patchwork <- patchwork::patchworkGrob(regional_native_patchwork) %>%
- # gridExtra::grid.arrange(left = "latitude", bottom = "longitude")
-
 ```
 
 ```{r save Rn patchwork plot}
@@ -2143,10 +2077,10 @@ regional_native_patchwork <- (
 ggsave(
   regional_native_patchwork, 
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_native_model_v3_summary.jpg"),
-  height = 10, 
+  height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```

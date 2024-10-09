@@ -97,26 +97,23 @@ file.remove(file.path(here::here(), "vignette-outputs", "figures", "global_model
 
 ```
 
-```{r ggplot object for map style}
+```{r ggplot object for map style, eval = TRUE}
 
 map_style <- list(
-  xlab("eastings (m)"),
-  ylab("northings (m)"),
   theme_classic(),
-  theme(legend.position = "bottom",
-        panel.background = element_rect(fill = "lightblue2",
-                                        colour = "lightblue2")
-        ),
-  scale_x_continuous(labels = scales::comma, expand = c(0, 0)),
-  scale_y_continuous(labels = scales::comma, expand = c(0, 0)),
-  labs(fill = "Suitability for SLF"),
-  viridis::scale_fill_viridis(option = "D"),
+  theme(
+    legend.position = "bottom",
+    panel.background = element_rect(fill = "lightblue2",colour = "lightblue2"),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank()
+    ),
+  scale_x_continuous(expand = c(0, 0)),
+  scale_y_continuous(expand = c(0, 0)),
   coord_equal()
 )
 
 ```
-
-*Note* For all mapping applications moving forward, I will be re-projecting all data into the [Behrmann cylindrical equal-area projection](https://epsg.io/54017), `ESRI:54017`. Part of my analysis emphasizes distributional areas, so use of an equal-area projection is important for preserving and calculating area correctly. I will transform all maps into this projection for consistency.
 
 # 1. Select Background Points for model
 
@@ -124,7 +121,7 @@ MaxEnt requires a set of "background" or "pseudoabsence" points that it will use
 
 First, I will load in known SLF presences so that background sampling does not occur in those grid cells.
 
-```{r load in SLF presence}
+```{r load in SLF presence, eval = TRUE}
 
 # dismo requires the base function (not tidyverse)
 slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
@@ -133,7 +130,7 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 ```
 
-```{r set wd}
+```{r set wd, eval = TRUE}
 
 # file path to local directory
 mypath <- file.path(here::here() %>% 
@@ -183,45 +180,22 @@ mypath <- file.path(here::here() %>%
                      dirname(),
                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec/v1_maxent_10km")
 
-global_bio2 <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) 
-
-global_points_raw <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
-
-```
-
-This is my first visualization of the component data for the models, so I will be re-projecting these data to 
-
-```{r reproject raster and point data}
-
-# reproject raster 
-global_bio2 <- terra::project(x = global_bio2, y = "ESRI:54017", method = "bilinear", threads = TRUE)
-# check crs
-crs(global_bio2, parse = TRUE)
-# convert to df
-global_bio2_df <- terra::as.data.frame(global_bio2, xy = TRUE) 
-
-
-# transform coordinate data to UTM
-# convert to vector
-global_points <- global_points_raw %>%
-  terra::vect(., geom = c("x", "y"), crs = "EPSG:4326") %>%
-  # project coordinates
-  terra::project(., y = "ESRI:54017") %>%
-  # use geom to get coordinates of a spatVector and convert to df
-  terra::geom(., df = TRUE) %>%
-  dplyr::select(-c(geom, part, hole)) 
+# background layer
+global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
+  terra::as.data.frame(., xy = TRUE)
+# points
+global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
 
 ```
-
 
 ```{r plot points, eval = TRUE}
 
 global_background_plot <- ggplot() +
-    geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
-    geom_point(data = global_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
-    ggtitle("'global' model background points") +
-    map_style +
-    theme(legend.position = "none") 
+  geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
+  geom_point(data = global_points, aes(x = x, y = y), color = "firebrick2", size = 0.1) +
+  ggtitle("'global' model background points") +
+  map_style +
+  theme(legend.position = "none") 
 
 ```
 
@@ -235,7 +209,7 @@ ggplot2::ggsave(
   height = 8, 
   width = 12,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -244,20 +218,6 @@ ggplot2::ggsave(
 
 Now I will create a plot of all SLF presence locations for reference. These points will represent the known presences in the model.
 
-```{r transform SLF points}
-
-# transform coordinate data to UTM
-# convert to vector
-slf_points <- slf_points %>%
-  terra::vect(., geom = c("x", "y"), crs = "EPSG:4326") %>%
-  # project coordinates
-  terra::project(., y = "ESRI:54017") %>%
-  # use geom to get coordinates of a spatVector and convert to df
-  terra::geom(., df = TRUE) %>%
-  dplyr::select(-c(geom, part, hole)) 
-
-```
-
 ```{r plot model presences, eval = TRUE}
 
 global_slf_plot <- ggplot() +
@@ -265,7 +225,7 @@ global_slf_plot <- ggplot() +
   geom_point(data = slf_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
   map_style +
   theme(legend.position = "none") +
-  labs(title = "'global' model SLF presences")
+  labs(title = "'global' model SLF presences") 
 
 ```
 
@@ -277,7 +237,7 @@ ggsave(
   height = 8, 
   width = 12,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -305,8 +265,8 @@ global_slf_plot <- global_slf_plot +
     axis.title = element_blank()
     ) +
   labs(tag = "A") +
-  scale_x_continuous(labels = scales::comma, expand = c(0, 0)) +
-  scale_y_continuous(labels = scales::comma, expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),
@@ -322,8 +282,8 @@ global_background_plot <- global_background_plot +
     axis.title = element_blank()
     ) +
   labs(tag = "B") +
-  scale_x_continuous(labels = scales::comma, expand = c(0, 0)) +
-  scale_y_continuous(labels = scales::comma, expand = c(0, 0))  +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))  +
   theme(
     plot.tag.location = "panel",
     plot.tag.position = c(0.05, 0.1),

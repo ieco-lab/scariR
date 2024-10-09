@@ -195,29 +195,6 @@ I will mask the CHELSA bioclim rasters using the worldclim version of bio1, annu
 
 First, I will load in the reference layers
 
-```{r load in main_layer}
-
-mypath <- file.path(here::here() %>% 
-                          dirname(),
-                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
-
-# 1st chelsa bioclim layer as reference
-ref_chelsa_bio1_main <- terra::rast(x = file.path(mypath, "originals", "CHELSA_bio1_1981-2010_V.2.1.tif"))
-
-```
-
-```{r load in mask_layer}
-
-mypath <- file.path(here::here() %>%
-                      dirname(),
-                    "maxent/historical_climate_rasters/wc2.1_30arcsec")
-
-ref_wc_bio1_mask <- terra::rast(x = file.path(mypath, "originals", "wc2.1_30s_bio_1.tif"))
-
-```
-
-We will get a list of the files that I need to modify. We will also create an object containing the new names assigned to the files to simplify the naming.
-
 ```{r set wd 1}
 
 # set path to external directory
@@ -226,6 +203,21 @@ mypath <- file.path(here::here() %>%
                         "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
 ```
+
+```{r load in main layer}
+
+# 1st chelsa bioclim layer as reference
+ref_chelsa_bio1_main <- terra::rast(x = file.path(mypath, "originals", "CHELSA_bio1_1981-2010_V.2.1.tif"))
+
+```
+
+```{r load in mask layer}
+
+ref_atc_mask <- terra::rast(x = file.path(mypath, "originals", "2015_accessibility_to_cities_v1.0.tif"))
+
+```
+
+We will get a list of the files that I need to modify. We will also create an object containing the new names assigned to the files to simplify the naming.
 
 ```{r get file names 1}
 
@@ -254,7 +246,7 @@ output.files <- output.files %>%
 
 ```{r isolate only final variables 1}
 
-if(TRUE) {
+if(FALSE) {
 
   env.files <- grep("bio2|bio11|bio12|bio15", env.files, value = TRUE)
   
@@ -268,34 +260,38 @@ Now that we have our files and reference layers loaded in and names chosen, we c
 
 ## 2.2 Prepare reference layers
 
-In this chunk, we will create 2 reference layers. The `main_layer (global_bio1)` will be used for resampling the data, while the `mask_layer (global_atc)` will be used for masking. First, I will crop the layers, set their origins, and resample them to the same resolution. I will also keep the rasters consistently to `EPSG:4326` for now. Before any visualization, these layers will be projected to an equal-area projection. I have chosen the [Behrmann cylindrical equal-area projection](https://epsg.io/54017), `ESRI:54017`. Our analysis emphasizes distributional areas, so use of an equal-area projection is important for preserving and calculating area correctly. 
+In this chunk, we will create 2 reference layers. `ref_chelsa_bio1_main` will be used for resampling the data, while `ref_atc_mask` will be used for masking. First, I will crop the layers, set their origins, and resample them to the same resolution. I will also keep the rasters consistently to `EPSG:4326` for now. 
 
-For now, I will tidy the layers
-
-```{r check projection details}
-
-crs("EPSG:4326", parse = TRUE)
-
-# to be user LATER downstream for visualization and analysis
-crs("ESRI:54017", parse = TRUE)
-
-```
-
-```{r harmonize reference layers}
+```{r check for reference layer differences}
 # resolutions
 res(ref_chelsa_bio1_main)
-res(ref_wc_bio1_mask)
+res(ref_atc_mask)
 # they are identical
 
 # ext of the reference layers
 ext(ref_chelsa_bio1_main)
-ext(ref_wc_bio1_mask)
+ext(ref_atc_mask)
 # the extents will need to be corrected
 
-# crs of reference layers
 terra::crs(ref_chelsa_bio1_main, parse = TRUE)
-terra::crs(ref_wc_bio1_mask, parse = TRUE)
-# they are epsg 4326, which I will change
+terra::crs(ref_atc_mask, parse = TRUE)
+# crs of reference layers is epsg:4326 so no change needed
+
+# check origin
+terra::origin(ref_chelsa_bio1_main)
+terra::origin(ref_atc_mask)
+# the origin of ref_atc_mask will need to be changed to match the others
+
+```
+
+I will need to change the origin and extent of these reference layers. I will crop them to the same extent first, then unify their origins. Their extents will be matched to the smallest, `ref_atc_mask`, while their origins will be matched to the bioclim layer `ref_chelsa_bio1_main`. 
+
+```{r harmonize reference layers}
+
+# project 
+## UNNECESSARY NOW THAT THE CRS IS CORRECT
+# ref_chelsa_bio1_main <- terra::project(x = ref_chelsa_bio1_main, y = "ESPG:4326", method = "bilinear", threads = TRUE)
+# ref_atc_mask <- terra::project(x = ref_atc_mask, y = "ESPG:4326", method = "bilinear", threads = TRUE)
 
 # set extent
 # set ext to the smallest whole number shared between the layers
@@ -303,30 +299,25 @@ ext.obj <- terra::ext(-180, 179, -60, 83)
 # create main layer for future cropping, crop to new ext
 ref_chelsa_bio1_main <- terra::crop(x = ref_chelsa_bio1_main, y = ext.obj)
 # create a mask layer specifically for the cropping and masking
-ref_wc_bio1_mask <- terra::crop(x = ref_wc_bio1_mask, y = ext.obj)
-
-# check origin
-terra::origin(ref_chelsa_bio1_main)
-terra::origin(ref_wc_bio1_mask)
-# the origin of ref_wc_bio1_mask will need to be changed to match the others
+ref_atc_mask <- terra::crop(x = ref_atc_mask, y = ext.obj)
 
 # unify origins
-# set origin of ref_wc_bio1_mask
-terra::origin(ref_wc_bio1_mask) <- c(-0.0001396088, -0.0001392488)
-# resample mask to main layer because origins are different- most rasters will already have the origin of the bio1 layer
-ref_wc_bio1_mask <- terra::resample(x = ref_wc_bio1_mask, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
-
-# project to equal area projection
-main_layer <- terra::project(x = ref_chelsa_bio1_main, y = "ESPG:4326", method = "bilinear", threads = TRUE)
-mask_layer <- terra::project(x = ref_wc_bio1_mask, y = "ESPG:4326", method = "bilinear", threads = TRUE)
+# set origin of ref_atc_mask
+terra::origin(ref_atc_mask) <- c(-0.0001396088, -0.0001392488)
+# resample mask to origin of main layer- most rasters will already have the origin of the bio1 layer
+ref_atc_mask <- terra::resample(x = ref_atc_mask, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
 
 # check
-terra::ext(main_layer)
-terra::ext(mask_layer)
-terra::origin(main_layer)
-terra::origin(mask_layer)
-terra::crs(main_layer, parse = TRUE)              
-terra::crs(mask_layer, parse = TRUE)
+terra::ext(ref_chelsa_bio1_main)
+terra::ext(ref_atc_mask)
+terra::origin(ref_chelsa_bio1_main)
+terra::origin(ref_atc_mask)
+
+```
+
+```{r check projection details}
+
+crs("EPSG:4326", parse = TRUE)
 
 ```
 
@@ -336,9 +327,9 @@ Here is where we get into tidying the data. We will crop the rasters using the e
 
 ```{r set wd 2}
 
-  mypath <- file.path(here::here() %>% 
-                        dirname(),
-                      "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+mypath <- file.path(here::here() %>% 
+                      dirname(),
+                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
 ```
 
@@ -355,50 +346,47 @@ This chunk will take a very long time to run... so maybe find a good book to rea
 ```{r loop to tidy rasters- historical}
   
 # view list of filetypes for terra, use .ascii
-  terra::gdal(drivers = TRUE)
+terra::gdal(drivers = TRUE)
 
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)) {
-    
-    # load each raster into temp object
-    rast.hold <- terra::rast(env.files[a])
-    
-    
-    
-    # begin edits
-    # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
-    
-    # mask the bioclim layers by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-    
-    # project crs
-    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
-    
-    # set origin
-    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-    
-    #resample to fit the extent/resolution of the main layer global_bio1
-    #use bilinear interpolation, since values are continuous
-    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear", threads = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
-    
-    
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
-      filetype = "GTiff", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
+# loop to crop extent for all files
+for(a in seq_along(env.files)) {
+  
+  # load each raster into temp object
+  rast.hold <- terra::rast(env.files[a])
+  
+  
+  
+  # begin edits
+  # crop new rasters to extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  
+  # mask the bioclim layers by global_atc
+  rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
+  
+  # project crs
+  rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+  
+  # set origin
+  terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+  
+  #resample to fit the extent/resolution of the main layer global_bio1
+  #use bilinear interpolation, since values are continuous
+  rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
+  
+  
+  
+  #write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
+    filetype = "GTiff", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
 
-  }
+}
 
 ```
 
@@ -407,11 +395,11 @@ We will convert the rasters to the `.ascii` format required by MaxEnt.
 ```{r get file names 2}
 
 # directory of files to modify
-  env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
+env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) 
 
-  # output file names
-  output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
-    gsub(pattern = ".tif", replacement = ".asc")
+# output file names
+output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+  gsub(pattern = ".tif", replacement = ".asc")
 
 ```
 
@@ -558,48 +546,44 @@ if(FALSE) {
 # view list of filetypes for terra, use .ascii
 terra::gdal(drivers = TRUE)
 
-  # loop to crop extent for all files
-  for(a in seq_along(env.files)) {
-    
-    # load each raster into temp object
-    rast.hold <- terra::rast(env.files[a])
-    
-    
-    
-    # begin edits
-    # crop new rasters to extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
-    
-    # mask the bioclim layer by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
-    
-    # set crs
-    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
-    
-    
-    # set origin
-    terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
-    
-    
-    #resample to fit the extent/resolution of the main layer global_bio1
-    #use bilinear interpolation, since values are continuous
-    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear", threads = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+# loop to crop extent for all files
+for(a in seq_along(env.files)) {
+  
+  # load each raster into temp object
+  rast.hold <- terra::rast(env.files[a])
+  
+  
+  
+  # begin edits
+  # crop new rasters to extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  
+  # mask the bioclim layer by global_atc
+  rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
+  
+  # set crs
+  rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+  
+  # set origin
+  terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+  
+  #resample to fit the extent/resolution of the main layer global_bio1
+  #use bilinear interpolation, since values are continuous
+  rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
 
-    
-    
-    #write out the new resampled rasters!
-    terra::writeRaster(
-      x = rast.hold,
-      filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1", paste0(output.files[a], "_global", ".tif")),
-      filetype = "GTiff",
-      overwrite = FALSE
-    )
-    
-    # remove object once its done
-    rm(rast.hold)
+  
+  
+  
+  #write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold,
+    filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1", paste0(output.files[a], "_global", ".tif")),
+    filetype = "GTiff",
+    overwrite = FALSE
+  )
+  
+  # remove object once its done
+  rm(rast.hold)
 
 }
 
@@ -756,7 +740,7 @@ if(FALSE) {
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
     
     # mask the bioclim layer by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
     
     # set crs
     rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
@@ -766,10 +750,7 @@ if(FALSE) {
     
     #resample to fit the extent/resolution of the main layer global_bio1
     #use bilinear interpolation, since values are continuous
-    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear", threads = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+    rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
     
     
     
@@ -940,7 +921,7 @@ if(FALSE) {
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
     
     # mask the bioclim layer by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = mask_layer)
+    rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
     
     # set crs
     rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
@@ -950,11 +931,8 @@ if(FALSE) {
     
     #resample to fit the extent/resolution of the main layer global_bio1
     #use bilinear interpolation, since values are continuous
-    rast.hold <- terra::resample(x = rast.hold, y = main_layer, method = "bilinear", threads = TRUE)
-    
-    # crop again to ensure aggregation doesnt increase extent
-    rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
-    
+    rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
+
     
     
     
@@ -1317,7 +1295,7 @@ mypath <- file.path(here::here() %>%
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
 # load in bio 1
-bio1 <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_global.tif"))
+bio1 <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_global.tif")) 
 
 bio1_plot <- ggplot() +
   geom_tile(data = as.data.frame(bio1), 

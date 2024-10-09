@@ -65,7 +65,6 @@ Preparations for running the global-scale model, including cropping rasters, cho
 
 v0- initial version
 v1- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- added cropping of other ssp scenario rasters
-v2- 2024-10-01- changed projection of maps to Behrmann conical equal-area
 
 ----------050_run_global_MaxEnt_model.Rmd----------
 
@@ -109,7 +108,7 @@ v3- did not weight easternUSA model. Moved section on weighting to supp material
 v4- added koeppen climate download and use for selecting background points
 v5- added table indicating number of training points per model, added plot faceting
 v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios
-v7- 2024-10-07- changed projection of maps to Behrmann conical equal-area
+v7- 2024-10-09- cleaned and simplified workflow
 
 
 
