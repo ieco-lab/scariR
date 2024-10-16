@@ -74,6 +74,8 @@
 #'# model.obj = regional_native_model
 #'# model.name = "regional_native"
 #'
+#'```R
+#'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_regional_native_v3")
@@ -93,6 +95,8 @@
 #' plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
 #' jk.test.type = c("train", "test") # types of jackknife curves to be created
 #')
+#'
+#'```
 #'
 #'@export
 compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {

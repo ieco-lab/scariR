@@ -252,16 +252,16 @@ minmax(kmz_data_rast)
 
 ```
 
-```{r retrieve names for zones and make factor}
+```{r retrieve names for zones, eval = TRUE}
 
 # retrieve names of zones
 kmz_names <- kgc::getZone(1:32)
-# make facor levels
-kmz_names_factor <- factor(
-  x = kmz_names,
-  levels = unique(kmz_names),
-  ordered = TRUE
-)
+
+# create naming object for later
+kmz_names_labels <- kmz_names %>%
+  as.data.frame() %>%
+  dplyr::rename("zone_name" = ".") %>%
+  dplyr::mutate(zone_number = 1:32) 
 
 ```
 
@@ -443,6 +443,10 @@ regional_invaded_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-
 # get extent
 st_bbox(regional_invaded_withSLF) 
 
+# add zone nums to shapefile
+regional_invaded_withSLF <- regional_invaded_withSLF %>%
+  left_join(kmz_names_labels, join_by(koeppen_climate_zones == zone_number))
+
 ```
 
 Now lets plot it for a sanity check.
@@ -463,7 +467,7 @@ regional_invaded_withSLF_plot <- ggplot() +
     fill = "K-G climate\nzone"
     ) +
   # scales
-  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_fill_brewer(palette = "Paired", labels = regional_invaded_withSLF$zone_name) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   # theme
@@ -657,6 +661,9 @@ regional_invaded_asian_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vig
 # get extent
 st_bbox(regional_invaded_asian_withSLF) 
 
+regional_invaded_asian_withSLF <- regional_invaded_asian_withSLF %>%
+  left_join(kmz_names_labels, join_by(koeppen_climate_zones == zone_number))
+
 ```
 
 Now lets plot it for a sanity check.
@@ -677,7 +684,7 @@ regional_invaded_asian_withSLF_plot <- ggplot() +
     fill = "K-G climate\nzone"
     ) +
   # scales
-  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_fill_brewer(palette = "Paired", labels = regional_invaded_asian_withSLF$zone_name) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   # theme
@@ -921,6 +928,9 @@ regional_native_withSLF <- sf::read_sf(dsn = file.path(here::here(), "vignette-o
 # get extent
 st_bbox(regional_native_withSLF) 
 
+regional_native_withSLF <- regional_native_withSLF %>%
+  left_join(kmz_names_labels, join_by(koeppen_climate_zones == zone_number))
+
 ```
 
 Now lets plot it for a sanity check.
@@ -941,7 +951,7 @@ regional_native_withSLF_plot <- ggplot() +
     fill = "K-G climate\nzone"
     ) +
   # scales
-  scale_fill_brewer(palette = "Paired", labels = kmz_names_factor) +
+  scale_fill_brewer(palette = "Paired", labels = regional_native_withSLF$zone_name) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   # theme

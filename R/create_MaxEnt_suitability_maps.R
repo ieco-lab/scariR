@@ -140,6 +140,9 @@
 #'@examples
 #'
 #'# ARGUMENT USAGE:
+#'
+#'```R
+#'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_regional_native_v3")
@@ -164,6 +167,8 @@
 #'  map.thresh.extra = "MTP",
 #'  summary.file = file.path(mypath, "regional_native_summary.csv")
 #')
+#'
+#'```
 #'
 #'@export
 create_MaxEnt_suitability_maps <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.type = "cloglog", clamp.pred = TRUE, thresh = NA, map.thresh = FALSE, map.thresh.extra = NA, map.style = NA, summary.file = NA) {

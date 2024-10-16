@@ -73,6 +73,8 @@
 #'
 #'@examples
 #'
+#'```R
+#'
 #'# simple predict method
 #'slfSpread::predict_xy_suitability(
 #' xy.obj = IVR_regions,
@@ -100,6 +102,7 @@
 #' buffer.fun = c("min", "max")
 #' )
 #'
+#'```
 #'
 #'@export
 predict_xy_suitability <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, output.name) {

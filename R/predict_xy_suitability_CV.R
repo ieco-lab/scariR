@@ -82,6 +82,8 @@
 #'
 #'# EXAMPLE USAGE:
 #'
+#'```R
+#'
 #'# simple predict method
 #'slfSpread::predict_xy_suitability_CV(
 #' xy.obj = IVR_regions,
@@ -108,6 +110,8 @@
 #' buffer.dist = 20000, # in meters
 #' buffer.fun = c("min", "max")
 #' )
+#'
+#' ```
 #'
 #'@export
 predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, output.name) {

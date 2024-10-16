@@ -92,6 +92,8 @@
 #'
 #'# EXAMPLE USAGE:
 #'
+#'```R
+#'
 #'xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
 #' xy.predicted = xy_regional_ensemble_1995,
 #' thresh = "MTSS", # max training and sensitivity plus specificity
@@ -105,6 +107,8 @@
 #'
 #'xy_regional_ensemble_1995_rescaled_thresholds <- xy_regional_ensemble_1995_rescaled[[2]]
 #'xy_regional_ensemble_1995_rescaled <- xy_regional_ensemble_1995_rescaled[[1]]
+#'
+#'```
 #'
 #'@export
 rescale_cloglog_suitability <- function(xy.predicted, thresh, exponential.file, summary.file, rescale.name = NA, rescale.thresholds = FALSE) {

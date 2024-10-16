@@ -79,6 +79,8 @@
 #'# model.obj = global_model
 #'# model.name = "global"
 #'
+#'```R
+#'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_global_v3")
@@ -99,6 +101,8 @@
 #' jk.test.type = c("train", "test"), # types of jackknife curves to be created
 #' plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
 #')
+#'
+#'```
 #'
 #'@export
 compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {

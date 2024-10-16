@@ -13,6 +13,7 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
 Imports:
@@ -26,7 +27,7 @@ Imports:
     ENMTools,
     formattable,
     gginnards,
-    ggnewscale (== 0.4.10),
+    ggnewscale,
     ggplot2,
     ggrepel,
     gitcreds,
@@ -47,6 +48,7 @@ Imports:
     renv,
     rgbif,
     rJava,
+    rlang,
     rmarkdown,
     rnaturalearth,
     rnaturalearthhires,
@@ -57,7 +59,6 @@ Imports:
     spThin,
     stats,
     stringr,
-    taxize,
     terra,
     tibble,
     tidygeocoder,
@@ -69,4 +70,4 @@ Imports:
     webshot,
     webshot2    
 Suggests:
-    blockCV
+    blockCV, knitr, rmarkdown

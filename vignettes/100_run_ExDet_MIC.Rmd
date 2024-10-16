@@ -30,7 +30,8 @@ library(here)
 library(terra)
 library(raster)
 # remotes::install_github("densitymodelling/dsmextra")
-library(dsmextra) # ExDet and MIC
+#library(dsmextra) # ExDet and MIC
+## this package is used but we will be retiring it soon as part of an update, # out for now
 
 # aes
 library(viridis)

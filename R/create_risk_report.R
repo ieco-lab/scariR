@@ -112,6 +112,9 @@
 #'@examples
 #'
 #'# EXAMPLE USAGE:
+#'
+#'```R
+#'
 #'slfSpread::create_risk_report(
 #' locality.iso = "aus",
 #' locality.name = "australia",
@@ -122,14 +125,23 @@
 #' buffer.dist = 20000 # this is only used for buffered predictions, default is NA for simple predictions.
 #')
 #'
+#'```
+#'
 #'# ARGUMENT USAGE:
+#'
+#'```R
+#'
 #'map_style <- list(
 #' xlab("longitude"),
 #' ylab("latitude"),
 #' theme_classic()
 #')
 #'
+#'```
+#'
 #'# The output is in list format, so it should be called using this notation:
+#'
+#'```R
 #'
 #'# find viticultural regions in locality
 #'viticultural_regions <- slf_risk_report[[2]]
@@ -147,6 +159,8 @@
 #'# If you need to save the report Rdata object and use those figures elsewhere:
 #'
 #'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
+#'
+#'```
 #'
 #'@export
 create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA, buffer.dist = NA) {

@@ -42,12 +42,16 @@
 #'
 #'# I typically use it with dplyr::mutate() to create a new column in a data frame.
 #'
+#'```R
+#'
 #'IVR_locations_risk <- dplyr::mutate(IVR_locations_risk, risk_1995 = slfSpread::calculate_risk_quadrant(
 #'  suit.x = IVR_locations_joined$xy_global_1995_rescaled,
-#'    suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
-#'    thresh.x = global_MTSS, # this threshold remains the same
-#'    thresh.y = regional_ensemble_MTSS_1995
-#'    ))
+#'  suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
+#'  thresh.x = global_MTSS, # this threshold remains the same
+#'  thresh.y = regional_ensemble_MTSS_1995
+#'  ))
+#'
+#'```
 #'
 #'@export
 calculate_risk_quadrant <- function(suit.x, suit.y, thresh.x, thresh.y) {

@@ -35,25 +35,38 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/020_retrieve_SLF_records.html">Retrieve SLF records from various sources and tidy them for MaxEnt modeling</a></li>
+<li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Initialize `slfSpread`</h6></li>
+    <li><a class="dropdown-item" href="articles/010_initialize_pkg.html">Initialization of renv package for dependencies</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Retrieve and format input data</h6></li>
+    <li><a class="dropdown-item" href="articles/020_retrieve_SLF_records.html">Retrieve SLF records from various sources and tidy them for MaxEnt modeling</a></li>
     <li><a class="dropdown-item" href="articles/030_retrieve_bioclim_variables.html">Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>SDM modeling pipeline</h6></li>
     <li><a class="dropdown-item" href="articles/040_setup_global_MaxEnt_model.html">Setup for global-scale MaxEnt model</a></li>
     <li><a class="dropdown-item" href="articles/050_run_global_MaxEnt_model.html">Run global-scale MaxEnt model</a></li>
-    <li><a class="dropdown-item" href="articles/051_compute_MaxEnt_summary_statistics_workflow.html">MaxEnt Summary Statistics Output- workflow</a></li>
     <li><a class="dropdown-item" href="articles/060_setup_regional_MaxEnt_models.html">Setup for regional-scale MaxEnt models</a></li>
     <li><a class="dropdown-item" href="articles/070_run_regional_invaded_MaxEnt_model.html">Run 'Ri.NAmerica' model trained on SLF invaded region in North America</a></li>
     <li><a class="dropdown-item" href="articles/080_run_regional_invaded_asian_MaxEnt_model.html">Run 'Ri.Asia' model trained on SLF invaded range in Japan and South Korea</a></li>
     <li><a class="dropdown-item" href="articles/090_run_regional_native_MaxEnt_model.html">Run 'Rn' model trained on SLF native range in east Asia</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Ensemble Regional-scale SDMs</h6></li>
     <li><a class="dropdown-item" href="articles/100_run_ExDet_MIC.html">Run an Extrapolation Detection (NT2) analysis and calculate MIC</a></li>
     <li><a class="dropdown-item" href="articles/110_ensemble_regional_models.html">Ensemble regional-scale models into a single prediction</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Analyze SLF risk using SDMs</h6></li>
     <li><a class="dropdown-item" href="articles/120_create_suitability_maps.html">Map regional ensemble predictions and intercept with global model</a></li>
     <li><a class="dropdown-item" href="articles/130_create_suitability_xy_plots_viticultural.html">Plot shift in SLF suitability for important viticultural regions under climate change</a></li>
     <li><a class="dropdown-item" href="articles/131_create_suitability_xy_plots_SLF.html">Plot stability of known SLF populations due climate change effects</a></li>
     <li><a class="dropdown-item" href="articles/140_plot_response_curves.html">Plot response curves</a></li>
     <li><a class="dropdown-item" href="articles/141_plot_AUC_var_cont.html">Plot AUC curves and variable contribution graphs</a></li>
     <li><a class="dropdown-item" href="articles/142_calculate_model_fit.html">Calculate model fit statistics</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Create viticultural region reports</h6></li>
     <li><a class="dropdown-item" href="articles/150_create_risk_report.html">Example usage of create_risk_report.R to create reports of key viticultural areas</a></li>
-    <li><a class="dropdown-item" href="articles/160_generate_format_figures.html">Format risk tables for SLF populations and viticultural regions</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -78,7 +91,16 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><p>Our package <code>slfSpread</code> outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive <em>Lycorma delicatula</em> (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function <a href="/R/create_risk_report.R">create_risk_report</a> to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of <em>Lycorma delicatula</em>, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.</p>
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h1></div>
+<p>Our package <code>slfSpread</code> outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive <em>Lycorma delicatula</em> (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function <a href="/R/create_risk_report.R">create_risk_report</a> to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of <em>Lycorma delicatula</em>, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.</p>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<p>The package <code>slfSpread</code> is a research compendium for our manuscript, Owens and Helmus, 2024:</p>
+<p><strong>insert citation</strong></p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -89,24 +111,35 @@
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">slfSpread</span><span class="op">)</span></span></code></pre>
 <p>The <strong>dependency</strong> packages should then be installed for the package to run properly:</p>
 <p>Here are the main packages that <code>slfSpread</code> depends on:</p>
-<pre><code><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'cli'</span>, <span class="st">'common'</span>, <span class="st">'CoordinateCleaner'</span>, <span class="st">'devtools'</span>, <span class="st">'dismo'</span>, <span class="st">'dplyr'</span>, <span class="st">'dsmextra'</span>, <span class="st">'ENMTools'</span>, <span class="st">'formattable'</span>, <span class="st">'gginnards'</span>, <span class="st">'ggpattern'</span>, <span class="st">'ggrepel'</span>, <span class="st">'grid'</span>, <span class="st">'here'</span>, <span class="st">'humboldt'</span>, <span class="st">'kableExtra'</span>, <span class="st">'kgc'</span>, <span class="st">'knitr'</span>, <span class="st">'lydemapr'</span>, <span class="st">'patchwork'</span>, <span class="st">'pkgdown'</span>, <span class="st">'plotROC'</span>, <span class="st">'pROC'</span>, <span class="st">'raster'</span>, <span class="st">'rasterVis'</span>, <span class="st">'readr'</span>, <span class="st">'renv'</span>, <span class="st">'rgbif'</span>, <span class="st">'rJava'</span>, <span class="st">'rmarkdown'</span>, <span class="st">'rnaturalearth'</span>, <span class="st">'rnaturalearthhires'</span>, <span class="st">'scales'</span>, <span class="st">'SDMtune'</span>, <span class="st">'sf'</span>, <span class="st">'sp'</span>, <span class="st">'spThin'</span>, <span class="st">'stats'</span>, <span class="st">'stringr'</span>, <span class="st">'taxize'</span>, <span class="st">'terra'</span>, <span class="st">'tibble'</span>, <span class="st">'tidyr'</span>, <span class="st">'tidygeocoder'</span>, <span class="st">'tidyverse'</span>, <span class="st">'usethis'</span>, <span class="st">'utils'</span>, <span class="st">'viridis'</span>, <span class="st">'webshot'</span>, <span class="st">'webshot2'</span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># install specific version of ggnewscale</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"ggnewscale"</span>, version <span class="op">=</span> <span class="st">'0.4.10'</span><span class="op">)</span></span></code></pre>
+<pre><code>install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'gginnards', 'ggplot2', 'ggrepel', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+
+# install specific version of ggnewscale
+install.packages("ggnewscale", version = '0.4.10')</code></pre>
 </div>
 <div class="section level2">
-<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+<h2 id="sitemap">Sitemap<a class="anchor" aria-label="anchor" href="#sitemap"></a>
 </h2>
-<p>The package <code>slfSpread</code> is a research compendium for our manuscript, Owens and Helmus, 2024:</p>
-<p><strong>insert citation</strong></p>
+<p>This project is organized into general sections of our modeling pipeline: Our <a href="https://github.com/ieco-lab/slfSpread/tree/master/vignettes" class="external-link">vignettes</a> follow this general order:</p>
+<ul>
+<li>010: Initialize <code>slfSpread</code>: initialization of <code>renv</code> package for dependencies</li>
+<li>020-030: Retrieve and format input data</li>
+<li>040-090: SDM modeling pipeline</li>
+<li>100-110: Regional-scale SDM ensemble</li>
+<li>120-142: Analysis of SLF risk using SDMs</li>
+<li>150: Example usage for <code><a href="reference/create_risk_report.html">create_risk_report()</a></code> for creation of localized reports</li>
+</ul>
+</div>
 </div>
 <div class="section level1">
-<div class="page-header"><h1 id="how-to-use-this-project">How to Use this Project<a class="anchor" aria-label="anchor" href="#how-to-use-this-project"></a>
-</h1></div>
+<h1 id="how-to-use-this-project">How to Use this Project<a class="anchor" aria-label="anchor" href="#how-to-use-this-project"></a>
+</h1>
+<p>Before diving into this project and our modeling workflow, an end user should: 1. read the <a href="">companion paper</a>, which outlines the conceptual underpinnings for this project 2. install the package <code>renv</code>, which ensures that R package versions are consistent for running this package (this craetes a projct-specific R package library, so it should not affect your main library) 3. run the first vignette, <a href="https://github.com/ieco-lab/slfSpread/blob/master/vignettes/010_initialize_pkg.R" class="external-link">010_initialize_renv</a>, which initializes <code>renv</code> and lists our package’s dependencies.</p>
+<p>Here are the main uses we recommend for our package:</p>
 <div class="section level2">
 <h2 id="id_1-produce-localized-reports-on-slf-risk-to-viticulture">1. Produce localized reports on SLF risk to viticulture<a class="anchor" aria-label="anchor" href="#id_1-produce-localized-reports-on-slf-risk-to-viticulture"></a>
 </h2>
 <p>Our primary datasets, including risk maps and a viticultural risk analysis, can be accessed by executing the function <code><a href="reference/create_risk_report.html">create_risk_report()</a></code>. This function creates a localized (at the country or state/provincial level) report of the risk for <em>Lycorma delicatula</em> to local viticulture. It can be applied to globally important winegrowing regions because it uses our dataset <code>data/wineries_tidied.rds</code>, which contains a sample (1,074) of the world’s most important winegrowing regions. Users can and should apply this function for their locality as we are projecting that the risk of <em>Lycorma delicatula</em> establishment will exapnd under climate change. <em>Lycorma delicatula</em> has been classified as being capable of (global) pan-invasion and viticulure has already been devastated in some regions, so there is high potential for viticultural damage under climate change (Huron et al, 2022).</p>
+<p>For examples and best practice for usage of <code><a href="reference/create_risk_report.html">create_risk_report()</a></code>, see the vignette <a href="https://github.com/ieco-lab/slfSpread/blob/master/vignettes/150_create_risk_report.Rmd" class="external-link">150_create_risk_report</a></p>
 <p>Our function rcreates major datasets that we provide in our main analysis, including:</p>
 <ol style="list-style-type: decimal">
 <li>list of known important wine regions within the locality with predicted suitability values and levels</li>
@@ -128,7 +161,7 @@
 <p>First, we observe the risk map, which depicts the risk of SLF establishment using the agreement between our regional-scale model ensemble and our global-scale model. More agreement on suitability mean higher risk.</p>
 <p><img src="https://github.com/user-attachments/assets/c02e9028-a5df-4993-8c0b-a49a73be679d" width="60%"></p>
 <p><strong>Fig. 1:</strong> Projected current and future risk of <em>Lycorma delicatula</em> establishment under climate change | USA</p>
-<p>The points on the map represent key viticultural regions. We have extracted the suitability of each viticultural region and depicted its quantitative shift in risk on our second output, the viticultural risk quadrant plot. This plot quantifies the level of risk along both modeled scales, both <span class="math inline">$\color{violet}{\textsf{presently}}$</span> and in the <span class="math inline">$\color{purple}{\textsf{future}}$</span> under a predicted climate change shift (arrows):</p>
+<p>The points on the map represent key viticultural regions. We have extracted the suitability of each viticultural region and depicted its quantitative shift in risk on our second output, the viticultural risk quadrant plot. This plot quantifies the level of risk along both modeled scales, both presently (light purple) and in the future (dark purple) under a predicted climate change shift (arrows):</p>
 <p><img src="https://github.com/user-attachments/assets/49df16d5-d9b2-4c5b-960d-b9dca245f0f9" width="50%"></p>
 <p><strong>Fig. 2:</strong> Projected shift in the risk for <em>Lycorma delicatula</em> establishment at key viticultural regions due to climate change | USA</p>
 <p>The accompanying table provides a list of key viticultural regions and their geographical region (state/province), with predicted risk levels:</p>
@@ -214,7 +247,12 @@ KG_zones_poly &lt;- sf::st_as_sf(KG_zones_poly)
 
 # intersect polygon and presences
 regional_poly &lt;- sf::st_filter(x = KG_zones_poly, y = presence_data)</code></pre>
-<p>Once the presence data, coviariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.</p>
+<p>Once the presence data, covariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.</p>
+<div class="section level2">
+<h2 id="computing-information">Computing Information<a class="anchor" aria-label="anchor" href="#computing-information"></a>
+</h2>
+<p>This package was developed and its vignettes were rendered on a Dell Precision desktop PC with the following characteristics: * Core: intel Xeon CPU, 3.60 GHz * RAM memory: 64 GB * Operating System: Windows 10 Enterprise, version 22H2 * R version: 4.4.1</p>
+</div>
 </div>
 <div class="section level1">
 <h1 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -227,6 +265,7 @@ regional_poly &lt;- sf::st_filter(x = KG_zones_poly, y = presence_data)</code></
 <p>Pebesma, E., 2018. Simple Features for R: Standardized Support for Spatial Vector Data. The R Journal 10 (1), 439-446, <a href="https://doi.org/10.32614/RJ-2018-009" class="external-link uri">https://doi.org/10.32614/RJ-2018-009</a></p>
 <p>Phillips, S. J., Anderson, R. P., &amp; Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. <a href="https://doi.org/10.1016/j.ecolmodel.2005.03.026" class="external-link uri">https://doi.org/10.1016/j.ecolmodel.2005.03.026</a></p>
 <p>Hijmans R (2024). terra: Spatial Data Analysis. R package version 1.7-81, <a href="https://rspatial.github.io/terra/" class="external-link uri">https://rspatial.github.io/terra/</a>, <a href="https://rspatial.org/" class="external-link uri">https://rspatial.org/</a>.</p>
+<p>Ushey K, Wickham H (2024). renv: Project Environments. R package version 1.0.7, <a href="https://github.com/rstudio/renv" class="external-link uri">https://github.com/rstudio/renv</a>, <a href="https://rstudio.github.io/renv/" class="external-link uri">https://rstudio.github.io/renv/</a>.</p>
 <p>Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. <a href="doi:10.21105/joss.01686" class="uri">doi:10.21105/joss.01686</a>.</p>
 </div>
 
@@ -271,7 +310,7 @@ regional_poly &lt;- sf::st_filter(x = KG_zones_poly, y = presence_data)</code></
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
 </div>
 
     </footer>

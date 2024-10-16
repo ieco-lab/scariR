@@ -24,7 +24,7 @@ The **dependency** packages should then be installed for the package to run prop
 Here are the main packages that `slfSpread` depends on:
 
 ```
-install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'gginnards', 'ggplot2', 'ggrepel', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'taxize', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'gginnards', 'ggplot2', 'ggrepel', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
 
 # install specific version of ggnewscale
 install.packages("ggnewscale", version = '0.4.10')
@@ -34,12 +34,12 @@ install.packages("ggnewscale", version = '0.4.10')
 
 This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/slfSpread/tree/master/vignettes) follow this general order: 
 
-* 010: initialization of renv
-* 020-030: retreival and formatting of input datasets
-* 040-090: modeling pipeline
-* 100-110: regional-scale model ensembling
-* 120-142: data analysis
-* 150: example usage for `create_risk_report()` for creation of localized reports
+* 010: Initialize `slfSpread`: initialization of `renv` package for dependencies
+* 020-030: Retrieve and format input data
+* 040-090: SDM modeling pipeline
+* 100-110: Regional-scale SDM ensemble
+* 120-142: Analysis of SLF risk using SDMs
+* 150: Example usage for `create_risk_report()` for creation of localized reports
 
 # How to Use this Project
 
@@ -90,7 +90,7 @@ First, we observe the risk map, which depicts the risk of SLF establishment usin
 
 **Fig. 1:** Projected current and future risk of *Lycorma delicatula* establishment under climate change | USA
 
-The points on the map represent key viticultural regions. We have extracted the suitability of each viticultural region and depicted its quantitative shift in risk on our second output, the viticultural risk quadrant plot. This plot quantifies the level of risk along both modeled scales, both $\color{violet}{\textsf{presently}}$ and in the $\color{purple}{\textsf{future}}$ under a predicted climate change shift (arrows):
+The points on the map represent key viticultural regions. We have extracted the suitability of each viticultural region and depicted its quantitative shift in risk on our second output, the viticultural risk quadrant plot. This plot quantifies the level of risk along both modeled scales, both presently (light purple) and in the future (dark purple) under a predicted climate change shift (arrows):
 
 <img src="https://github.com/user-attachments/assets/49df16d5-d9b2-4c5b-960d-b9dca245f0f9" width="50%"/>
 

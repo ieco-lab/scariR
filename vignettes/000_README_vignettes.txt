@@ -12,7 +12,7 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 ########## FILES ##########
 ###########################
 
-----------010_initialize_pkg.R----------
+----------010_initialize_pkg.Rmd----------
 
 ## About
 
@@ -22,6 +22,7 @@ Initializes renv, saves data objects for internal use
 
 v0- initial version
 v1- 2024-08-26
+v2- 2024-10-16- changed to .Rmd, fixed renv errors with project
 
 
 ----------020_retrieve_SLF_records.Rmd----------

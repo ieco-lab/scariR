@@ -145,6 +145,8 @@
 #'@examples
 #'
 #'# ARGUMENT USAGE:
+#'
+#'```R
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_global_v3")
@@ -169,6 +171,8 @@
 #'map.thresh.extra = "MTP",
 #'summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 #')
+#'
+#'```
 #'
 #'@export
 create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, thresh = NA, map.thresh = FALSE, map.thresh.extra = NA, map.style = NA, summary.file = NA) {

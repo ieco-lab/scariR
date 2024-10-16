@@ -36,12 +36,12 @@ here::here()
 library(devtools) # installing packages not from CRAN
 # devtools::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
 library(lydemapr) # field survey data for SLF
-library(taxize) # get taxonomic ids
 library(rgbif) #query gbif and format as a dataframe
 
 library(spThin) # spatial thinning of occurrence points
-# install_github("jasonleebrown/humboldt")
-library(humboldt) # spatial thinning of points
+# remotes::install_github("jasonleebrown/humboldt")
+# library(humboldt) # spatial thinning of points
+## this package is used but we will be retiring it soon as part of an update, # out for now
 library(CoordinateCleaner) # tidying of points
 
 library(patchwork) #nice plots
@@ -102,7 +102,7 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
 
 ```
 
-Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). Package `taxize` will allow the retrieval of taxonomic IDs within `GBIF`.
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). 
 
 # 1. Retrieve data from GBIF and lydemapR and tidy
 
@@ -112,8 +112,12 @@ I will begin by retrieving the GBIF taxonomic ID for Lycorma delicatula.
 
 ```{r get SLF gbif taxa ID, eval = TRUE}
 
-# get species ID from gbif database
-ids <- taxize::get_ids(sci_com = "Lycorma delicatula", db = "gbif")
+slf_id <- rgbif::occ_search(scientificName = "Lycorma delicatula")[["data"]]
+
+slf_id <- slf_id %>%
+  dplyr::select(taxonKey) %>%
+  dplyr::slice_head() %>%
+  as.character()
 
 ```
 
@@ -158,7 +162,7 @@ slf_gbif <- rgbif::occ_download(
   type = "and",
   format = "SIMPLE_CSV",
   # inclusion rules
-  pred("taxonKey", ids[[1]]), # search by ID, not species name
+  pred("taxonKey", slf_id), # search by ID, not species name
   pred("hasCoordinate", TRUE),
   pred("hasGeospatialIssue", FALSE),
   pred("occurrenceStatus", "PRESENT"),
