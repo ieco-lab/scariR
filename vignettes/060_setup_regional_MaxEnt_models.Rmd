@@ -86,7 +86,6 @@ library(sf)
 
 # spatial data sources
 library(rnaturalearth)
-# remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
 library(kgc) # koppen climate rasters
 
@@ -190,8 +189,6 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
     countries_sf <- sf::read_sf(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))
   
 }
-
-
 
 ```
 

@@ -47,6 +47,10 @@ library(CoordinateCleaner) # tidying of points
 library(patchwork) #nice plots
 library(knitr) # nice rmd tables
 
+library(rnaturalearth)
+# remotes::install_github("ropensci/rnaturalearthhires")
+library(rnaturalearthhires)
+
 ```
 
 **Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
@@ -55,6 +59,46 @@ library(knitr) # nice rmd tables
 
 # eval = FALSE so that outputs not overwritten
 knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+I will also download a world map for plotting the data I download from GBIF and lydemapR. I will use the `rnaturalearth` package to download a world map at a scale of 10. 
+
+```{r rnaturalearth ne_countries download, eval = TRUE}
+
+# check which types of data are available
+# these are in the rnaturalearth package
+data(df_layers_cultural) 
+# I will use states_provinces
+
+# get metadata
+ne_metadata <- ne_find_vector_data(
+  scale = 10,
+  category = "cultural",
+  getmeta = TRUE
+) %>%
+  dplyr::filter(layer == "admin_0_countries")
+# URL to open metadata
+utils::browseURL(ne_metadata[, 3])
+
+# if the file isnt already downloaded, download it
+if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))) {
+  
+  countries_sf <- rnaturalearth::ne_download(
+    scale = 10, # highest resolution
+    type = "admin_0_countries", # states and provinces
+    category = "cultural",
+    destdir = file.path(here::here(), "data-raw", "ne_countries"),
+    load = TRUE, # load into environment
+    returnclass = "sf" # shapefile
+  )
+  
+  # else, just import
+  } else {
+    
+    countries_sf <- sf::read_sf(dsn = file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp"))
+  
+}
 
 ```
 
@@ -401,11 +445,11 @@ gbif_thinned <- readr::read_csv(file = file.path(here::here(), "vignette-outputs
 
 # plot world map
 map_gbif_thinned <- ggplot() +
-  # the second line is a basemap from ggplot2
-  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  # basemap
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
-  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  coord_sf(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
   ggtitle("SLF GBIF records- \n raw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -414,11 +458,11 @@ map_gbif_thinned <- ggplot() +
 
 # plot map of Asia
 map_gbif_thinned_Asia <- ggplot() +
-  # the second line is a basemap from ggplot2
-  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  # basemao
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = gbif_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = gbif_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
-  coord_quickmap(xlim = c(100, 140), ylim = c(20, 50)) +
+  coord_sf(xlim = c(100, 140), ylim = c(20, 50)) +
   ggtitle("SLF GBIF records in Asia-\nraw (blue) vs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -447,11 +491,10 @@ lyde_raw <- lyde_raw %>%
 
 # plot map of NAmerica
 map_lyde_allRecords <- ggplot() +
-  # this plots a basemap of the USA because data here are exclusively from the USA
-  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
-  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  coord_sf(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
   ggtitle("SLF lydemapR records- \nall records (blue)\nvs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -469,11 +512,10 @@ lyde_raw1 <- lyde_raw %>%
 
 # plot map including only established records
 map_lyde_estab <- ggplot() +
-  # this plots a basemap of the USA because data here are exclusively from the USA
-  geom_polygon(data = map_data('state'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = lyde_raw1, aes(x = longitude, y = latitude), color = "blue", size = 2) +
   geom_point(data = lyde_thinned, aes(x = longitude, y = latitude), color = "darkorange", shape = 2) +
-  coord_quickmap(xlim = c(-90, -70), ylim = c(35, 45)) +
+  coord_sf(xlim = c(-90, -70), ylim = c(35, 45)) +
   ggtitle("SLF lydemapR records- \nall records estab populations (blue)\nvs thinned (darkorange)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -519,10 +561,10 @@ write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publish
 ```{r map of data from published sources, eval = TRUE}
 
 map_published_Asia <- ggplot() +
-  # this plots a basemap of the USA because data here are exclusively from the USA
-  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  # basemap
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "darkorange") +
-  coord_quickmap(xlim = c(100, 140), ylim = c(10, 45)) +
+  coord_sf(xlim = c(100, 140), ylim = c(10, 45)) +
   ggtitle("SLF data from published sources \n in China") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -530,10 +572,10 @@ map_published_Asia <- ggplot() +
   theme_bw()
 
 map_published_NAmerica <- ggplot() +
-  # this plots a basemap of the USA because data here are exclusively from the USA
-  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  # basemap
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = slf_published, aes(x = longitude, y = latitude), color = "darkorange") +
-  coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+  coord_sf(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
   ggtitle("SLF data from published sources \n in N America") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -724,9 +766,10 @@ write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_al
 slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv"))
 
  map_all <- ggplot() +
-    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    # basemap
+    geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
     geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
-    coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+    coord_sf(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
     ggtitle("All SLF presences") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
@@ -734,9 +777,10 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
     theme_bw()
 
  map_all_NAmerica <- ggplot() +
-    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    # basemap
+    geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
     geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
-    coord_quickmap(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
+    coord_sf(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
     ggtitle("SLF presences N America") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
@@ -744,9 +788,10 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
     theme_bw()
  
   map_all_Asia <- ggplot() +
-    geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+    # basemap
+    geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
     geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
-    coord_quickmap(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
+    coord_sf(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
     ggtitle("SLF presences Asia") +
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
@@ -797,7 +842,7 @@ We now have half of the data we need to perform SDM! In the next vignette, we wi
 
 4. Lin, Y.-S., & Liao, J.-R. (2024). Multifaceted Investigation into the Absence and Potential Invasion of Spotted Lanternfly (Lycorma delicatula) in Taiwan. Research Square. https://doi.org/10.21203/rs.3.rs-4832573/v1
 
-# Appendix
+# Appendix {.hidden}
 
 ## Visualize changes in GBIF records over time
 
@@ -811,10 +856,11 @@ slf_old <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "d
 
 # plot SLF
 map_slf <- ggplot() +
-  geom_polygon(data = map_data('world'), aes(x = long, y = lat, group = group), fill = NA, color = "black", lwd = 0.15) +
+  # basemap
+  geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
   geom_point(data = slf_new, aes(x = longitude, y = latitude), color = "darkorange", size = 2) +
   geom_point(data = slf_old, aes(x = x, y = y), color = "blue", shape = 2) +
-  coord_quickmap(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
+  coord_sf(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
   ggtitle("SLF new points (darkorange) vs old (blue)") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),

@@ -27,10 +27,10 @@ packages <- renv::dependencies() %>%
 # first, check the status of your current package versions vs those in renv
 renv::status()
 
-# you should run this to ensure the correct package versions are used while you are working within this project
+# you should run this to ensure the correct package versions are used while you are working within this project. This aligns the sys library with the lockfile.
 renv::restore()
 # only use this version if you want to edit your system library to match the renv library
-# renv::restore(clean = TRUE)
+renv::restore(clean = TRUE)
 
 
 
@@ -41,24 +41,24 @@ renv::restore()
 # troubleshooting---------------------------------------------------------------
 
 # the first thing you should try is updating your R and Rtools version.. This messed up my renv for quite awhile
+# NOTE TO SELF: DONT FORGET to update R_LIBS_USER PATH system variable in windows if R was updated by a major version (eg 4.4 -> 4.5)
+## might be the solution if packages are behaving strangely
 
 # hydrate() corrected an issue where renv could not discover any local packages in the system library
 renv::hydrate()
 
-# install specific packages
+# install specific packages (usually needed for packages not on the CRAN)
 # you may need to enter your github credentials into the .Renviron or log into github for this to work
 # first, create a github PAT on website
 usethis::create_github_token()
 # enter created PAT (personal access token) into the .Renviron
 ## be sure to use defaults and allow download and upload of packages
 gitcreds::gitcreds_set()
-# now install packages
-renv::install(packages = c(
-  "densitymodelling/dsmextra", # dsmextra
-  "ieco-lab/lydemapr", # lydemapr
-  "jasonleebrown/humboldt", # humboldt
-  "ropensci/rnaturalearthhires" # rnaturalearthhires
-  ))
+# now install packages not on the CRAN
+devtools::install_github("densitymodelling/dsmextra") # dsmextra
+devtools::install_github("ieco-lab/lydemapr") # lydemapr
+devtools::install_github("jasonleebrown/humboldt") # humboldt
+devtools::install_github("ropensci/rnaturalearthhires")# rnaturalearthhires
 
 # renv restore to previous package versions
 # only use if the current package version need to be reverted to a previous state
