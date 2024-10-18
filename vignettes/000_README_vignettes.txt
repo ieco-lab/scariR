@@ -174,6 +174,7 @@ v0- initial version- in sandbox/vignettes_old
 v1- added ExDet and MIC for global model
 v2- added grey area to each figure to represent bg area
 v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP scenarios
+v4- 2024-10-18- changed plotting to re-load rasters so that vignette could be rendered without dsmextra package (will retire because its not available for R 4.4)
 
 
 

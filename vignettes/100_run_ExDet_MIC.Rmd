@@ -3,7 +3,7 @@ title: "Run an Extrapolation Detection (NT2) analysis and calculate MIC"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
-date: "2024-08-09"
+date: "2024-10-18"
 ---
 
 In this vignette, I will run an ExDet analysis for each regional-scale model and calculate the most important covariate based on each model. The ExDet will be used for two main purposes:
@@ -151,7 +151,7 @@ map_style_MIC <- list(
 
 First, I will import and tidy the global bioclim layers for 1981-2010 and 2041-2070.
 
-```{r load in historical covariates, eval = TRUE}
+```{r load in historical covariates}
 
 # path to directory
 mypath <- file.path(here::here() %>% 
@@ -164,7 +164,7 @@ x_global_hist_env_covariates_list <- list.files(path = file.path(mypath, "v1_max
 
 ```
 
-```{r load in CMIP6 covariates, eval = TRUE}
+```{r load in CMIP6 covariates}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
@@ -199,7 +199,7 @@ env_layer_names <- c("bio11", "bio12", "bio15", "bio2")
 
 ```
 
-```{r stack historical covariates and make naming consistent, message = FALSE, eval = TRUE}
+```{r stack historical covariates and make naming consistent}
 
 # stack env covariates
 x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_list)
@@ -218,7 +218,7 @@ names(x_global_hist_env_covariates) <- env_layer_names
 
 ```
 
-```{r stack CMIP6 covariates, message = FALSE, eval = TRUE}
+```{r stack CMIP6 covariates, message = FALSE}
 
 # SSP126
 x_global_126_env_covariates <- terra::rast(x = x_global_126_env_covariates_list)
@@ -260,7 +260,7 @@ names(x_global_585_env_covariates) <- env_layer_names
 
 ```
 
-```{r remove lists, eval = TRUE}
+```{r remove lists}
 
 rm(x_global_hist_env_covariates_list)
 rm(x_global_126_env_covariates_list)
@@ -333,7 +333,7 @@ regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invad
 
 First, I will load the background points dataset used to train the model and that will be used to train the ExDet analysis. I have extracted the climate dataset from 1981-2010 for these points, but not for our projected time period of 2041-2070 and our 3 ssp scenarios. I will extract the values for the background points from each model and SSP scenario.
 
-```{r extract CMIP6 values for background points- SSP126, eval = TRUE}
+```{r extract CMIP6 values for background points- SSP126}
 
 # regional_native model
 # extract values from 2060 projected raster
@@ -372,7 +372,7 @@ global_background_126 <- global_background %>%
 
 ```
 
-```{r extract CMIP6 values for background points- SSP370, eval = TRUE}
+```{r extract CMIP6 values for background points- SSP370}
 
 # regional_native model
 # extract values from 2060 projected raster
@@ -411,7 +411,7 @@ global_background_370 <- global_background %>%
 
 ```
 
-```{r extract CMIP6 values for background points- SSP585, eval = TRUE}
+```{r extract CMIP6 values for background points- SSP585}
 
 # regional_native model
 # extract values from 2060 projected raster
@@ -452,7 +452,7 @@ global_background_585 <- global_background %>%
 
 The `compute_extrapolation()` function only takes data columns (no descriptors), so I will isolate those from each background point set that was loaded in.
 
-```{r select only data columns, eval = TRUE}
+```{r select only data columns}
 
 # native
 regional_native_background <- dplyr::select(regional_native_background, 4:7)
@@ -467,7 +467,7 @@ global_background <- dplyr::select(global_background, 4:7)
 
 Now I will convert the global-scale climate rasters to df. These will be used for projection, to compare the exdet and MIC analyses with. The background point sets are used to train the analyses, and the global rasters are used for projection.
 
-```{r convert projection rasters to df, eval = TRUE}
+```{r convert projection rasters to df}
 
 # historical
 global_projection_hist_df <- terra::as.data.frame(x_global_hist_env_covariates, xy = TRUE)
@@ -496,7 +496,7 @@ mypath <- file.path(here::here() %>%
 
 ## 2.1 Historical Climate
 
-```{r regional_native model, eval = TRUE}
+```{r regional_native model}
 
 exdet_MIC_regional_native_hist <- dsmextra::compute_extrapolation(
   samples = regional_native_background, # training set of background points
@@ -508,7 +508,7 @@ exdet_MIC_regional_native_hist <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded model, eval = TRUE}
+```{r regional_invaded model}
 
 exdet_MIC_regional_invaded_hist <- dsmextra::compute_extrapolation(
   samples = regional_invaded_background, # training set of background points
@@ -520,7 +520,7 @@ exdet_MIC_regional_invaded_hist <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded_asian model, eval = TRUE}
+```{r regional_invaded_asian model}
 
 exdet_MIC_regional_invaded_asian_hist <- dsmextra::compute_extrapolation(
   samples = regional_invaded_asian_background, # training set of background points
@@ -534,7 +534,7 @@ exdet_MIC_regional_invaded_asian_hist <- dsmextra::compute_extrapolation(
 
 also do global model
 
-```{r global model, eval = TRUE}
+```{r global model}
 
 exdet_MIC_global_hist <- dsmextra::compute_extrapolation(
   samples = global_background, # training set of background points
@@ -550,7 +550,7 @@ exdet_MIC_global_hist <- dsmextra::compute_extrapolation(
 
 ### SSP126
 
-```{r regional_native model- SSP126, eval = TRUE}
+```{r regional_native model- SSP126}
 
 exdet_MIC_regional_native_126 <- dsmextra::compute_extrapolation(
   samples = regional_native_background_126, # training set of background points
@@ -562,7 +562,7 @@ exdet_MIC_regional_native_126 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded model- SSP126, eval = TRUE}
+```{r regional_invaded model- SSP126}
 
 exdet_MIC_regional_invaded_126 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_background_126, # training set of background points
@@ -574,7 +574,7 @@ exdet_MIC_regional_invaded_126 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded_asian model- SSP126, eval = TRUE}
+```{r regional_invaded_asian model- SSP126}
 
 exdet_MIC_regional_invaded_asian_126 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_asian_background_126, # training set of background points
@@ -588,7 +588,7 @@ exdet_MIC_regional_invaded_asian_126 <- dsmextra::compute_extrapolation(
 
 also do global model
 
-```{r global model- SSP126, eval = TRUE}
+```{r global model- SSP126}
 
 exdet_MIC_global_126 <- dsmextra::compute_extrapolation(
   samples = global_background_126, # training set of background points
@@ -602,7 +602,7 @@ exdet_MIC_global_126 <- dsmextra::compute_extrapolation(
 
 ### SSP370
 
-```{r regional_native model- SSP370, eval = TRUE}
+```{r regional_native model- SSP370}
 
 exdet_MIC_regional_native_370 <- dsmextra::compute_extrapolation(
   samples = regional_native_background_370, # training set of background points
@@ -614,7 +614,7 @@ exdet_MIC_regional_native_370 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded model- SSP370, eval = TRUE}
+```{r regional_invaded model- SSP370}
 
 exdet_MIC_regional_invaded_370 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_background_370, # training set of background points
@@ -626,7 +626,7 @@ exdet_MIC_regional_invaded_370 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded_asian model- SSP370, eval = TRUE}
+```{r regional_invaded_asian model- SSP370}
 
 exdet_MIC_regional_invaded_asian_370 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_asian_background_370, # training set of background points
@@ -640,7 +640,7 @@ exdet_MIC_regional_invaded_asian_370 <- dsmextra::compute_extrapolation(
 
 also do global model
 
-```{r global model- SSP370, eval = TRUE}
+```{r global model- SSP370}
 
 exdet_MIC_global_370 <- dsmextra::compute_extrapolation(
   samples = global_background_370, # training set of background points
@@ -654,7 +654,7 @@ exdet_MIC_global_370 <- dsmextra::compute_extrapolation(
 
 ### SSP585
 
-```{r regional_native model- SSP585, eval = TRUE}
+```{r regional_native model- SSP585}
 
 exdet_MIC_regional_native_585 <- dsmextra::compute_extrapolation(
   samples = regional_native_background_585, # training set of background points
@@ -666,7 +666,7 @@ exdet_MIC_regional_native_585 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded model- SSP585, eval = TRUE}
+```{r regional_invaded model- SSP585}
 
 exdet_MIC_regional_invaded_585 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_background_585, # training set of background points
@@ -678,7 +678,7 @@ exdet_MIC_regional_invaded_585 <- dsmextra::compute_extrapolation(
 
 ```
 
-```{r regional_invaded_asian model- SSP585, eval = TRUE}
+```{r regional_invaded_asian model- SSP585}
 
 exdet_MIC_regional_invaded_asian_585 <- dsmextra::compute_extrapolation(
   samples = regional_invaded_asian_background_585, # training set of background points
@@ -692,7 +692,7 @@ exdet_MIC_regional_invaded_asian_585 <- dsmextra::compute_extrapolation(
 
 also do global model
 
-```{r global model- SSP585, eval = TRUE}
+```{r global model- SSP585}
 
 exdet_MIC_global_585 <- dsmextra::compute_extrapolation(
   samples = global_background_585, # training set of background points
@@ -769,13 +769,17 @@ Finally, I will create plots of each of the ExDet and MIC analyses.
 
 ```{r create exdet plot- Rn hist exdet, eval = TRUE}
 
-# isolate exdet raster
-exdet_regional_native_hist <- exdet_MIC_regional_native_hist[["rasters"]][["ExDet"]][["all"]]
-
+# re-import raster
+exdet_regional_native_hist <- terra::rast(x = file.path(mypath, "models", "slf_regional_native_v3", "ExDet_slf_regional_native_v3_background_projGlobe_1981-2010.tif"))
+# convert to df
+exdet_regional_native_hist_df <- terra::as.data.frame(exdet_regional_native_hist, xy = TRUE)
+# mapping helper
 exdet_regional_native_hist_plot <- map_exdet(
   raster = exdet_regional_native_hist, 
-  raster.df = exdet_MIC_regional_native_hist[["data"]][["all"]]
+  raster.df = exdet_regional_native_hist_df
   ) 
+
+
 
 # add new scale for bg area
 exdet_regional_native_hist_plot <- exdet_regional_native_hist_plot +
@@ -813,12 +817,16 @@ ggsave(
 
 ```{r create MIC plot- Rn hist mic, eval = TRUE}
 
+# re-import
+mic_regional_native_hist_df <- terra::rast(x = file.path(mypath, "models", "slf_regional_native_v3", "MIC_slf_regional_native_v3_background_projGlobe_1981-2010.tif")) %>%
+  terra::as.data.frame(., xy = TRUE)
+
 # plot mean raster first
 mic_regional_native_hist_plot <- ggplot() +
   # default plot style
   map_style_MIC +
   # plot regular raster of values first
-  geom_raster(data = exdet_MIC_regional_native_hist[["data"]][["all"]], aes(x = x, y = y, fill = as.factor(mic))) +
+  geom_raster(data = mic_regional_native_hist_df, aes(x = x, y = y, fill = as.factor(mic))) +
   # fill scale 1
   viridis::scale_fill_viridis(name = "MIC", discrete = TRUE, labels = c("analogous", "bio11", "bio12", "bio15", "bio2"), guide = guide_legend(order = 1)) +
   # new scale

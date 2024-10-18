@@ -1240,11 +1240,13 @@ I will save this plot and produce a binarized version before I continue choosing
 ```{r save correlation heatmap}
 
 # save correlation heatmap
-ggsave(env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2.jpg"),
-       height = 8, 
-       width = 10,
-       device = jpeg,
-       dpi = "retina")
+ggsave(
+  env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2.jpg"),
+  height = 8, 
+  width = 10,
+  device = jpeg,
+  dpi = 500
+  )
 
 ```
 
@@ -1265,7 +1267,9 @@ env.cor6$value <- cut(env.cor6$value, breaks = c(0, 0.709, 1), labels = c("0.7 o
   guides(x =  guide_axis(angle = 45),
          fill = guide_legend(title = "Correlation")) +
   labs(x = "", y = "")  +
-  labs(title = "Pearson's correlations: CHELSA and atc covariate rasters") +
+  labs(
+    title = "Pearson's correlations: CHELSA bioclim covariate rasters (binarized)"
+    ) +
   scale_fill_manual(values = c("yellow2", "azure4")) +
   theme(legend.position = "bottom") +
   scale_y_discrete(labels = var.renames) +
@@ -1278,11 +1282,13 @@ Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarte
 
 ```{r save binary heatmap}
 
-ggsave(env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2_binary.jpg"),
-       height = 8, 
-       width = 10,
-       device = jpeg,
-       dpi = "retina")
+ggsave(
+  env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2_binary.jpg"),
+  height = 8, 
+  width = 10,
+  device = jpeg,
+  dpi = 500
+  )
 
 ```
 

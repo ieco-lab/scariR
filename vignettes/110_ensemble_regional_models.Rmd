@@ -87,7 +87,7 @@ regional_invaded_asian_background_area_df <- terra::as.data.frame(regional_invad
 
 First, I need to load in the rasters containing the predictions from each model. I will load in both the historical and climate change versions of these predictions.
 
-```{r set wd}
+```{r set wd, eval = TRUE}
 
 # output directory
 mypath <- file.path(here::here() %>% 
@@ -1868,11 +1868,12 @@ exdet_hist_mean <- terra::app(
 
 ```{r create hist exdet plot, eval = TRUE}
 
-# re-load as df
-exdet_hist_mean_df <- terra::rast(x =  file.path(
+# re-load
+exdet_hist_mean <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
+    )) 
+# convert to df
+exdet_hist_mean_df <- terra::as.data.frame(exdet_hist_mean, xy = TRUE)
 
 
 # plot mean raster first
@@ -1931,10 +1932,11 @@ exdet_126_mean <- terra::app(
 ```{r create CMIP6 exdet plot- ssp 126, eval = TRUE}
 
 # re-load object as df
-exdet_126_mean_df <- terra::rast(x =  file.path(
+exdet_126_mean <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp126.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
+    )) 
+
+exdet_126_mean_df <- terra::as.data.frame(exdet_126_mean, xy = TRUE)
 
 # plot mean raster first
 exdet_regional_ensemble_126_plot <- map_exdet(
@@ -1991,10 +1993,11 @@ exdet_370_mean <- terra::app(
 ```{r create CMIP6 exdet plot- ssp 370, eval = TRUE}
 
 # re-load object as df
-exdet_370_mean_df <- terra::rast(x =  file.path(
+exdet_370_mean <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp370.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
+    )) 
+
+exdet_370_mean_df <- terra::as.data.frame(exdet_370_mean, xy = TRUE)
 
 # plot mean raster first
 exdet_regional_ensemble_370_plot <- map_exdet(
@@ -2051,10 +2054,11 @@ exdet_585_mean <- terra::app(
 ```{r create CMIP6 exdet plot- ssp 585, eval = TRUE}
 
 # re-load object as df
-exdet_585_mean_df <- terra::rast(x =  file.path(
+exdet_585_mean <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp585.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
+    )) 
+
+exdet_585_mean_df <- terra::as.data.frame(exdet_585_mean, xy = TRUE)
 
 # plot mean raster first
 exdet_regional_ensemble_585_plot <- map_exdet(
@@ -2118,10 +2122,11 @@ exdet_ssp_mean <- terra::app(
 ```{r create CMIP6 exdet plot- ssp mean, eval = TRUE}
 
 # re-load object as df
-exdet_ssp_mean_df <- terra::rast(x =  file.path(
+exdet_ssp_mean <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_GFDL_ssp_mean.asc"
-    )) %>%
-  terra::as.data.frame(xy = TRUE)
+    )) 
+
+exdet_ssp_mean_df <- terra::as.data.frame(exdet_ssp_mean, xy = TRUE)
 
 # plot mean raster first
 exdet_regional_ensemble_mean_plot <- map_exdet(
@@ -2270,7 +2275,7 @@ mic_hist_mean <- terra::app(
 mic_hist_mean_df <- terra::rast(x =  file.path(
     mypath, "models", "slf_regional_ensemble_v1", "mic_slf_regional_ensemble_v1_background_projGlobe_1981-2010.asc"
     )) %>%
-  terra::as.data.frame(xy = TRUE)
+  terra::as.data.frame(., xy = TRUE)
 
 # plot mean raster first
 mic_hist_mean_plot <- ggplot() +

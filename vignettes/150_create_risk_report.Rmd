@@ -134,6 +134,9 @@ unique_name <- IVR_locations_iso %>%
   as.matrix() %>%
   as.character()
 
+unique_name
+unique_iso
+
 ```
 
 ```{r test loop, eval = TRUE}
@@ -155,7 +158,7 @@ for (a in seq_along(unique_iso)) {
     locality.type = "country",
     mypath = file.path(here::here(), "vignette-outputs", "reports", unique_name[a]),
     create.dir = TRUE, # create subdirectory for plots
-    save.report = TRUE,
+    save.report = FALSE,
     buffer.dist = 20000 # distance at which buffers should be drawn on maps to indicate IVR suitability predictions
     )
   
@@ -179,7 +182,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -190,7 +193,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -200,16 +203,13 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
-# save USA report for other uses
-readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_slf_risk_report.rds"))
-
 ```
 
-```{r edit USA reports, eval = TRUE}
+```{r edit USA reports}
 
 ### USA
 # the USA map usually comes including Alaska and hawaii, which we do not want
@@ -255,6 +255,9 @@ ggsave(
   dpi = "retina"
 )
 
+# save USA report for other uses
+readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_slf_risk_report.rds"))
+
 ```
 
 ## China
@@ -267,7 +270,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -278,7 +281,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -289,14 +292,13 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "China"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 # it worked still so thats good
 
-
 # save report for other uses
-readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "China", "china_slf_risk_report.rds"))
+# readr::write_rds(china_slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "China", "china_slf_risk_report.rds"))
 
 ```
 
@@ -607,7 +609,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United Kingdom"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -618,7 +620,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Ireland"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -640,7 +642,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "sweden"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -655,7 +657,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -666,7 +668,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -677,7 +679,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -688,7 +690,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Australia"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -812,7 +814,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Russia"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 # no shapefile data exist
@@ -963,7 +965,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "finland"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1118,7 +1120,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Lativa"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1129,7 +1131,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Lithuania"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1140,7 +1142,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Denmark"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1206,7 +1208,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "Turkey"),
   create.dir = TRUE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1264,7 +1266,7 @@ slfSpread::create_risk_report(
   locality.type = "state_province",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "New Zealand"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
@@ -1290,7 +1292,7 @@ Before I perform this operation, I will save reports as a .Rdata file so that I 
 
 ### Example countries
 
-```{r edit plots}
+```{r example countries}
 
 romania_risk_plot <- romania_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -1461,7 +1463,7 @@ spain_risk_map <- ggplot_gtable(spain_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r Example countries- patchwork}
 
 #layout <- c(
 #  area(t = 1, b = 1, l = 1, r = 1),
@@ -1486,7 +1488,7 @@ example_countries_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- example countries}
 
 ggsave(
   example_countries_patchwork, 
@@ -1501,7 +1503,7 @@ ggsave(
 
 ### US States
 
-```{r edit plots}
+```{r US states}
 
 washington_risk_plot <- washington_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -1670,7 +1672,7 @@ michigan_risk_map <- ggplot_gtable(michigan_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r example states- patchwork}
 
 example_states_patchwork <- (
   # washington top row
@@ -1687,7 +1689,7 @@ example_states_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- example states}
 
 ggsave(
   example_states_patchwork, 
@@ -1702,7 +1704,7 @@ ggsave(
 
 ### Viticultural regions of interest- Oceania
 
-```{r edit plots}
+```{r Oceania}
 
 new_zealand_risk_plot <- new_zealand_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -1876,7 +1878,7 @@ tasmania_risk_map <- ggplot_gtable(tasmania_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r Oceania- patchwork}
 
 oceania_patchwork <- (
   # new_zealand top row
@@ -1896,7 +1898,7 @@ oceania_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- oceania}
 
 ggsave(
   oceania_patchwork, 
@@ -1911,7 +1913,7 @@ ggsave(
 
 ### Viticultural regions of interest- South America
 
-```{r edit plots}
+```{r South America}
 
 chile_risk_plot <- chile_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -2024,7 +2026,7 @@ argentina_risk_map <- ggplot_gtable(argentina_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r South America- patchwork}
 
 SAmerica_patchwork <- (
   chile_risk_plot + argentina_risk_plot +
@@ -2041,7 +2043,7 @@ SAmerica_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- South America}
 
 ggsave(
   SAmerica_patchwork, 
@@ -2056,7 +2058,7 @@ ggsave(
 
 ### Viticultural regions of interest- Western Europe
 
-```{r edit plots}
+```{r Western Europe}
 
 # portugal
 portugal_risk_plot <- portugal_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2283,7 +2285,7 @@ italy_risk_map <- ggplot_gtable(italy_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r western europe- patchwork}
 
 west_europe_patchwork <- (
   portugal_risk_plot + plot_spacer() + portugal_risk_map +
@@ -2301,7 +2303,7 @@ west_europe_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- western europe}
 
 ggsave(
   west_europe_patchwork, 
@@ -2316,7 +2318,7 @@ ggsave(
 
 ### Viticultural regions of interest- Eastern Europe
 
-```{r edit plots}
+```{r Eastern Europe}
 
 # portugal
 austria_risk_plot <- austria_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2541,7 +2543,7 @@ greece_risk_map <- ggplot_gtable(greece_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r eastern europe- patchwork}
 
 east_europe_patchwork <- (
   austria_risk_plot + plot_spacer() + austria_risk_map +
@@ -2559,7 +2561,7 @@ east_europe_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- eastern europe}
 
 ggsave(
   east_europe_patchwork, 
@@ -2574,7 +2576,7 @@ ggsave(
 
 ### Viticultural regions of interest- Africa
 
-```{r edit plots}
+```{r viticulturally important Africa}
 
 # south_africa
 south_africa_risk_plot <- south_africa_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2692,7 +2694,7 @@ algeria_risk_map <- ggplot_gtable(algeria_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r aftric- patchwork}
 
 africa_patchwork <- (
   south_africa_risk_plot + plot_spacer() + south_africa_risk_map +
@@ -2708,7 +2710,7 @@ africa_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- africa}
 
 ggsave(
   africa_patchwork, 
@@ -2723,7 +2725,7 @@ ggsave(
 
 ### Viticultural regions of interest- North America
 
-```{r edit plots}
+```{r North America}
 
 # canada
 canada_risk_plot <- canada_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2843,7 +2845,7 @@ mexico_risk_map <- ggplot_gtable(mexico_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r North America- patchwork}
 
 NAmerica_patchwork <- (
     canada_risk_plot + plot_spacer() + canada_risk_map +
@@ -2859,7 +2861,7 @@ NAmerica_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- North America}
 
 ggsave(
   NAmerica_patchwork, 
@@ -2874,7 +2876,7 @@ ggsave(
 
 ### Viticultural regions of interest- West Asia
 
-```{r edit plots}
+```{r West Asia}
 
 # türkiye
 türkiye_risk_plot <- türkiye_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2994,7 +2996,7 @@ georgia_risk_map <- ggplot_gtable(georgia_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r West Asia- patchwork}
 
 west_asia_patchwork <- (
     türkiye_risk_plot + plot_spacer() + türkiye_risk_map +
@@ -3010,7 +3012,7 @@ west_asia_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- west asia}
 
 ggsave(
   west_asia_patchwork, 
@@ -3025,7 +3027,7 @@ ggsave(
 
 ### Viticultural regions of interest- East Asia
 
-```{r edit plots}
+```{r East Asia}
 
 # china
 china_risk_plot <- china_slf_risk_report[["viticultural_risk_plot"]] +
@@ -3200,7 +3202,7 @@ japan_risk_map <- ggplot_gtable(japan_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r East Asia- patchwork}
 
 east_asia_patchwork <- (
   # china top row
@@ -3220,7 +3222,7 @@ east_asia_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- east asia}
 
 ggsave(
   east_asia_patchwork, 
@@ -3235,7 +3237,7 @@ ggsave(
 
 ### Patchwork USA maps
 
-```{r patchwork USA}
+```{r USA}
 
 USA_risk_map_present <-  united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
   theme(
@@ -3288,7 +3290,7 @@ USA_risk_map_future <- ggplot_gtable(USA_risk_map_future) %>%
   
 ```
 
-```{r patchwork plots}
+```{r USA- patchwork}
 
 USA_patchwork <- (
   # romania top row
@@ -3299,7 +3301,7 @@ USA_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- USA maps}
 
 ggsave(
   USA_patchwork, 
@@ -3314,7 +3316,7 @@ ggsave(
 
 ### Patchwork washington maps
 
-```{r patchwork washington}
+```{r washington}
 
 WA_risk_map_present <-  washington_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
   theme(
@@ -3363,7 +3365,7 @@ WA_risk_map_future <- ggplot_gtable(WA_risk_map_future) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork- washington}
 
 WA_patchwork <- (
   # romania top row
@@ -3374,7 +3376,7 @@ WA_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- washington}
 
 ggsave(
   WA_patchwork, 

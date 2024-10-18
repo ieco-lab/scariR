@@ -46,20 +46,20 @@ We calculate these according to the cloglog MTSS threshold per model
 ```{r import confusion matrices}
 
 # global
-global_conf_matr <- read_csv(file = file.path(mypath, "slf_global_v2", "global_thresh_confusion_matrix_all_iterations.csv")) %>%
+global_conf_matr <- read_csv(file = file.path(mypath, "slf_global_v3", "global_thresh_confusion_matrix_all_iterations.csv")) %>%
   # only MTSS threshold
   slice(7)
 
 
 # regional models
 # native
-regional_native_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_native_v2", "regional_native_thresh_confusion_matrix.csv")) %>%
+regional_native_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_native_v3", "regional_native_thresh_confusion_matrix.csv")) %>%
   slice(7)
 # invaded_asia
-regional_invaded_asian_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_asian_v1", "regional_invaded_asian_thresh_confusion_matrix.csv")) %>%
+regional_invaded_asian_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_thresh_confusion_matrix.csv")) %>%
   slice(7)
 # invaded_NAmerica
-regional_invaded_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_v6", "regional_invaded_thresh_confusion_matrix.csv")) %>%
+regional_invaded_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_thresh_confusion_matrix.csv")) %>%
   slice(7)
 
 ```

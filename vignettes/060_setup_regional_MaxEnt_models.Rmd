@@ -263,6 +263,13 @@ kmz_names_labels <- kmz_names %>%
   dplyr::rename("zone_name" = ".") %>%
   dplyr::mutate(zone_number = 1:32) 
 
+# this naming object will be used for the KG climate map
+kmz_names_factor <- factor(
+  x = kmz_names,
+  levels = unique(kmz_names),
+  ordered = TRUE
+)
+
 ```
 
 I will need to tidy these data by aggregating them to spatial scale I use for the bioclim variables. I will do this using the mode, because this variable is a set of numbers representing a categorical, so I do not want to average or take the median.
@@ -298,6 +305,9 @@ koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir",
 # convert to df
 koeppen_zones_rast_plot_layer <- terra::as.data.frame(koeppen_zones_rast, xy = TRUE)
 
+# join plot layer with names
+koeppen_zones_rast_plot_layer <- koeppen_zones_rast_plot_layer %>%
+  left_join(kmz_names_labels, join_by(koeppen_climate_zones == zone_number))
 
 # plot main layer as example
 KG_climate_map <- ggplot() +
