@@ -1,5 +1,5 @@
 ---
-title: "Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling"
+title: "Bioclim variable rasters: CHELSA"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
@@ -22,7 +22,6 @@ First, I will download the data from CHELSA into a local library. I will then ti
 
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here()
 library(devtools)
 
 # spatial
@@ -670,7 +669,9 @@ for(a in seq_along(env.files)){
 
 ```
 
-### SSP370 {.hidden}
+<!--
+
+### SSP370
 
 ```{r create subdirectories- ssp370}
 
@@ -853,7 +854,7 @@ for(a in seq_along(env.files)){
 
 ```
 
-### SSP585 {.hidden}
+### SSP585
 
 ```{r create subdirectories- ssp585}
 
@@ -1032,6 +1033,8 @@ for(a in seq_along(env.files)){
 }
 
 ```
+
+-->
 
 # 3. Assess Colinearity
 
@@ -1301,17 +1304,19 @@ mypath <- file.path(here::here() %>%
                       "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
 # load in bio 1
-bio1 <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_global.tif")) 
+bio1_df <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_global.tif")) %>%
+  terra::as.data.frame(., xy = TRUE)
 
 bio1_plot <- ggplot() +
-  geom_tile(data = as.data.frame(bio1), 
-              aes(x = x, y = y, fill = `bio1_1981-2010_global`)) +
+  geom_tile(data = bio1_df, aes(x = x, y = y, fill = `CHELSA_bio1_1981-2010_V.2.1`)) +
   xlab("longitude") +
   ylab("latitude") +
   theme_minimal() +
   theme(legend.position = "none") +
   labs(title = "CHELSA bio 1") +
   coord_quickmap()
+
+bio1_plot
 
 ```
 

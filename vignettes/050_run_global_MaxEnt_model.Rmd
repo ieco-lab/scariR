@@ -23,7 +23,7 @@ This vignette has 3 subvignettes (051-053) that each outline and comment the bas
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here() # here::here() starts at the root folder of this package.
+# here::here() starts at the root folder of this package.
 library(devtools)
 
 # SDMtune and dependencies

@@ -37,7 +37,7 @@ Finally, I will plot a range shift map to show the expansion and contraction of 
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here() # here() starts at the root folder of this package.
+# here() starts at the root folder of this package.
 library(devtools)
 library(common)
 

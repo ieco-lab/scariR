@@ -53,7 +53,7 @@ First, I will plot the un-transformed version of the data and then will transfor
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here() # here() starts at the root folder of this package.
+# here() starts at the root folder of this package.
 library(devtools)
 
 # spatial data handling

@@ -74,7 +74,7 @@ I will prepare for this vignette by loading the necessary packages to run this s
 # general tools
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
-here::here() # here() starts at the root folder of this package.
+# here() starts at the root folder of this package.
 library(devtools)
 
 library(dismo) # generate random background points

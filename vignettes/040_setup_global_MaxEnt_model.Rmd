@@ -26,6 +26,8 @@ model_info <- data.frame(
 model_info_kable <- knitr::kable(x = model_info) |>
   kableExtra::kable_styling(bootstrap_options = "striped", full_width = FALSE) |>
   kableExtra::add_header_above(header = c("Global-scale model" = 4))
+
+model_info_kable
   
 ```
 
@@ -38,7 +40,6 @@ I will prepare for this vignette by loading the necessary packages to run this s
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here::here()
 # here() starts at the root folder of this package.
 
 library(devtools)
@@ -174,7 +175,7 @@ write_rds(global_points, file = file.path(here::here(), "data", "global_backgrou
 
 Now, I will plot these points for visualization purposes.
 
-```{r load in files for plotting, eval = TRUE}
+```{r load in files for plotting, eval = TRUE, message = FALSE, warning = FALSE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
@@ -196,6 +197,8 @@ global_background_plot <- ggplot() +
   ggtitle("'global' model background points") +
   map_style +
   theme(legend.position = "none") 
+
+global_background_plot
 
 ```
 
@@ -227,6 +230,8 @@ global_slf_plot <- ggplot() +
   theme(legend.position = "none") +
   labs(title = "'global' model SLF presences") 
 
+global_slf_plot
+
 ```
 
 ```{r save presences plot}
@@ -252,8 +257,9 @@ Now that we have selected the background point datasets and created rasters for 
 
 3. Santana Jr, P. A., Kumar, L., Da Silva, R. S., Pereira, J. L., & Picanço, M. C. (2019). Assessing the impact of climate change on the worldwide distribution of Dalbulus maidis (DeLong) using MaxEnt. Pest Management Science, 75(10), 2706–2715. https://doi.org/10.1002/ps.5379
 
+<!--
 
-# Appendix- Patchwork background and presence plots {.hidden}
+# Appendix- Patchwork background and presence plots 
 
 ```{r patchwork}
 
@@ -312,3 +318,5 @@ ggsave(
   )
 
 ```
+
+-->

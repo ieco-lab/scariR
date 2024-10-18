@@ -54,7 +54,6 @@ knitr::opts_chunk$set(eval = FALSE)
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here::here()
 # here() starts at the root folder of this package.
 library(devtools)
 library(rJava) # for running MaxEnt

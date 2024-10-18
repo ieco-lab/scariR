@@ -1,5 +1,5 @@
 ---
-title: "Retrieve SLF records from various sources and tidy them for MaxEnt modeling"
+title: "SLF occurrence records: GBIF, lydemapR, literature"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
@@ -30,7 +30,6 @@ First, I will load in the necessary packages.
 library(tidyverse)  #data manipulation
 
 library(here) #making directory pathways easier on different instances
-here::here()
 # here() is set at the root folder of this package
 
 library(devtools) # installing packages not from CRAN
@@ -62,7 +61,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ```
 
-I will also download a world map for plotting the data I download from GBIF and lydemapR. I will use the `rnaturalearth` package to download a world map at a scale of 10. 
+I will also download a world map for plotting the data I download from GBIF and lydemapR. I will use the `rnaturalearth` package to download a world map at a scale of 10m. 
 
 ```{r rnaturalearth ne_countries download, eval = TRUE}
 
@@ -131,7 +130,7 @@ Save and close the document.
 
 I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada) and Taiwan. Lin and Liao did a comprehensive survey for SLF in Taiwan to validate SLF presence records in online repositories and found that these records were likely false (Lin and Liao, 2024).
 
-```{r other rgbif operations, eval = TRUE}
+```{r other rgbif operations, eval = TRUE, message = FALSE, warning = FALSE, results = "hide"}
 
 # edit R environment for user credentials
 usethis::edit_r_environ()
@@ -231,7 +230,7 @@ write_csv(x = slf_gbif_download_simple,
 
 ```
 
-```{r retrieve data citation, eval = TRUE}
+```{r retrieve data citation, eval = TRUE, message = FALSE, warning = FALSE, results = "hide"}
 
 gbif_citation('0049348-240626123714530')
 
@@ -439,7 +438,7 @@ write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_co
 
 We want to visualize the difference between the raw coordinates that were pulled from GBIF and the cleaned, spatially thinned version. This is to ensure proper geospatial coverage and the success of the spatial thinning runs.
 
-```{r visualize raw and thinned GBIF records, eval = TRUE}
+```{r visualize raw and thinned GBIF records, eval = TRUE, message = FALSE, warning = FALSE}
 
 # raw data
 gbif_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-08-05.csv"))
@@ -458,7 +457,8 @@ map_gbif_thinned <- ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title = element_blank())
 
 # plot map of Asia
 map_gbif_thinned_Asia <- ggplot() +
@@ -471,17 +471,18 @@ map_gbif_thinned_Asia <- ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title = element_blank())
   
 # patchwork display of plots
 map_gbif_thinned + map_gbif_thinned_Asia +
-  plot_layout(ncol = 2)
+  plot_layout(nrow = 2)
 
 ```
 
 From the mapping, it seems that the spatial thinning reduced the GBIF records, while preserving the same spatial extent. We also zoom in on the invaded range, and indeed every blue point is paired with at least 1 darkorange point. So, our goal was met! We will do the same for the LydemapR data to ensure spatial thinning success.
 
-```{r visualize raw and thinned lydemapr records, eval = TRUE}
+```{r visualize raw and thinned lydemapr records, eval = TRUE,  message = FALSE, warning = FALSE}
 
 # raw data
 lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
@@ -528,7 +529,7 @@ map_lyde_estab <- ggplot() +
 
 # patchwork display of plots
  map_lyde_allRecords + map_lyde_estab +
-  plot_layout(ncol = 2)
+  plot_layout(nrow = 2)
 
 ```
 
@@ -540,7 +541,7 @@ The spatial thinning was successful! However, the first plot does not help us to
 
 In this step, I will combine the records obtained from GBIF and LydemapR with data taken from the literature. I will begin by loading in records taken from the published literature. There are a total of 165 records from China, southeast Asia, Japan, SK and the USA. Most of these records were obtained from genetic studies and represent samples taken from established populations of SLF. Data is scarce for established populations of SLF within its native range (China and southeast Asia), so these records are especially important. These records were taken from both peer-reviewed literature and natural history notes:
 
-```{r kable table of published literature, eval = TRUE}
+```{r kable table of published literature, eval = TRUE,  message = FALSE, warning = FALSE}
 
 # read in .csv of papers
 slf_published_papers <- readr::read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_papers.csv"))
@@ -550,6 +551,8 @@ slf_published_papers <- readr::read_csv(file.path(here::here(), "data-raw", "slf
 slf_published_papers %>%
   dplyr::select(!Notes) %>%
   knitr::kable(format = "pipe")
+
+slf_published_papers
 
 ```
 
@@ -562,7 +565,7 @@ write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publish
 
 ```
 
-```{r map of data from published sources, eval = TRUE}
+```{r map of data from published sources, eval = TRUE, message = FALSE, warning = FALSE}
 
 map_published_Asia <- ggplot() +
   # basemap
@@ -573,7 +576,8 @@ map_published_Asia <- ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title = element_blank())
 
 map_published_NAmerica <- ggplot() +
   # basemap
@@ -584,14 +588,15 @@ map_published_NAmerica <- ggplot() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank()) +
-  theme_bw()
+  theme_bw() +
+  theme(axis.title = element_blank())
 
 # bounding box coords found at: 
 # http://bboxfinder.com/#0.000000,0.000000,0.000000,0.000000
 
 # patchwork
 map_published_Asia + map_published_NAmerica +
-  plot_layout(ncol = 2)
+  plot_layout(nrow = 2)
 
 ```
 
@@ -744,7 +749,7 @@ slf_all_coords2 <- slf_all_coords_report %>%
 
 ```
 
-# 3.2- Save output for MaxEnt
+## 3.2- Save output for MaxEnt
 
 We will finally convert the slf coordinates to the format that will be used by MaxEnt and save it. That is, the first column "species" must be the species name, the second column "x" must be the longitude, and the third column "y" must be the latitude.
 
@@ -778,7 +783,8 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank()) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.title = element_blank())
 
  map_all_NAmerica <- ggplot() +
     # basemap
@@ -789,7 +795,8 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank()) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.title = element_blank())
  
   map_all_Asia <- ggplot() +
     # basemap
@@ -800,17 +807,18 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
     theme(panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           panel.background = element_blank()) +
-    theme_bw()
+    theme_bw() +
+    theme(axis.title = element_blank())
 
-  # patchwork
-  map_all_NAmerica + map_all_Asia +
-  plot_layout(ncol = 2)
+# patchwork
+map_all_NAmerica + map_all_Asia +
+plot_layout(nrow = 2)
   
 ```
 
 From the map, we can see the final points that were selected. We have a good spread across the native range and better spread than before in the invaded range. This version of the total dataset included newer data from lydemapr, so we now have better coverage in the invaded range. I will also check the number of points in the native vs the invaded range.
 
-```{r number points invaded vs native range, eval = TRUE}
+```{r number points invaded vs native range, eval = TRUE, message = FALSE, warning = FALSE}
 
 SLF_by_longitude <- ggplot(data = slf_all_coords3) +
   geom_histogram(aes(x = x)) +
@@ -822,12 +830,20 @@ SLF_by_longitude <- ggplot(data = slf_all_coords3) +
   geom_vline(xintercept = 124.06, linetype = "dashed") +
   theme_minimal()
 
+SLF_by_longitude
+
+```
+
+```{r save slf by latitude}
+
 # save output
-ggsave(SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_all_coords_final_by_longitude.jpg"),
-       height = 8, 
-       width = 10,
-       device = jpeg,
-       dpi = "retina")
+ggsave(
+  SLF_by_longitude, filename = file.path(here::here(), "vignette-outputs", "figures", "SLF_all_coords_final_by_longitude.jpg"),
+  height = 8, 
+  width = 10,
+  device = jpeg,
+  dpi = 500
+  )
 
 ```
 
@@ -846,7 +862,9 @@ We now have half of the data we need to perform SDM! In the next vignette, we wi
 
 4. Lin, Y.-S., & Liao, J.-R. (2024). Multifaceted Investigation into the Absence and Potential Invasion of Spotted Lanternfly (Lycorma delicatula) in Taiwan. Research Square. https://doi.org/10.21203/rs.3.rs-4832573/v1
 
-# Appendix {.hidden}
+<!--
+
+# Appendix 
 
 ## Visualize changes in GBIF records over time
 
@@ -874,3 +892,5 @@ map_slf <- ggplot() +
 # The old points are in blue and the new points are in darkorange
 
 ```
+
+-->

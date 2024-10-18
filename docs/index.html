@@ -94,7 +94,7 @@
   <main id="main" class="col-md-9"><div class="section level1">
 <div class="page-header"><h1 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h1></div>
-<p>Our package <code>slfSpread</code> outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive <em>Lycorma delicatula</em> (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function <a href="/R/create_risk_report.R">create_risk_report</a> to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of <em>Lycorma delicatula</em>, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.</p>
+<p>Our package <code>slfSpread</code> outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive <em>Lycorma delicatula</em> (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function <a href="https://github.com/ieco-lab/slfSpread/blob/master/R/create_risk_report.R" class="external-link">create_risk_report</a> to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of <em>Lycorma delicatula</em>, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.</p>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
@@ -202,52 +202,56 @@ install.packages("ggnewscale", version = '0.4.10')</code></pre>
 </h2>
 <p>For modelers who wish to apply this pipeline for other invasive species, this pipeline can easily be adapted to model the risk of establishment by simply changing the input datasets and modeled scales.</p>
 <p>First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the packages <code>rgbif</code> and <code>taxize</code>:</p>
-<p>```{r get taxa ID and GBIF presence data} # get species ID from gbif database ids &lt;- taxize::get_ids(sci_com = “Emerald Ash Borer”, db = “gbif”)</p>
-</div>
-</div>
-<div class="section level1">
-<h1 id="initiate-download">initiate download<a class="anchor" aria-label="anchor" href="#initiate-download"></a>
-</h1>
-<p>records_gbif &lt;- rgbif::occ_download( # general formatting type = “and”, format = “SIMPLE_CSV”, # inclusion rules pred(“taxonKey”, ids[[1]]), # search by ID, not species name pred(“hasCoordinate”, TRUE), pred(“hasGeospatialIssue”, FALSE), pred(“occurrenceStatus”, “PRESENT”) )</p>
-<pre><code>
-The input covariates would also need to change based on what is biologically relevant for the particular species. I outline the process of choosing input covariates in vignette 030.
-
-Once the input data have been adapted to the user's needs, the regional-scale models will need to be applied per region of interest. Each regional-scale model depends on a spcecific background area selection for MaxEnt that will need to change. I outline the process for choosing this area in vignette 060, in which I subset the presence data by region and intersect these subsets with the Köppen-Geiger climate zones to select the appropriate background area. This resulting polygon would need to be cropped to the region of interest. I use the `kgc`, `terra`, and `sf` packages for this analysis:
-
-```{r get K-G zones and intersect with presence data}
-# get K-G zones
-kmz_data &lt;- kgc::kmz
-
-# generate coordinates
-kmz_lat &lt;- kgc::genCoords(latlon = "lat", full = TRUE)
-kmz_lon &lt;- kgc::genCoords(latlon = "lon", full = TRUE)
-
-# join data and coordinates
-kmz_data &lt;- cbind(kmz_lat, kmz_lon) %&gt;%
-  cbind(., kmz_data) %&gt;%
-  as.data.frame() %&gt;%
-  # relocate column
-  dplyr::select(kmz_lon, everything())
-
-# convert to raster
-KG_zones_rast &lt;- terra::rast(
-  x = kmz_data,
-  type = "xyz",
-  crs = "EPSG:4326"
-  )
-
-# next, convert raster to polygon
-KG_zones_poly &lt;- terra::as.polygons(
-  x = KG_zones_rast,
-  aggregate = TRUE, # combine cells with the same value into one area
-  values = TRUE, # include cell values as attributes
-  crs = "EPSG:4326"
-)
-KG_zones_poly &lt;- sf::st_as_sf(KG_zones_poly)
-
-# intersect polygon and presences
-regional_poly &lt;- sf::st_filter(x = KG_zones_poly, y = presence_data)</code></pre>
+<pre><code><span><span class="co"># get species ID from gbif database</span></span>
+<span><span class="va">ids</span> <span class="op">&lt;-</span> <span class="fu">taxize</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/taxize/reference/get_ids.html" class="external-link">get_ids</a></span><span class="op">(</span>sci_com <span class="op">=</span> <span class="st">"Emerald Ash Borer"</span>, db <span class="op">=</span> <span class="st">"gbif"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># initiate download</span></span>
+<span><span class="va">records_gbif</span> <span class="op">&lt;-</span> <span class="fu">rgbif</span><span class="fu">::</span><span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/occ_download.html" class="external-link">occ_download</a></span><span class="op">(</span></span>
+<span>  <span class="co"># general formatting</span></span>
+<span>  type <span class="op">=</span> <span class="st">"and"</span>,</span>
+<span>  format <span class="op">=</span> <span class="st">"SIMPLE_CSV"</span>,</span>
+<span>  <span class="co"># inclusion rules</span></span>
+<span>  <span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/download_predicate_dsl.html" class="external-link">pred</a></span><span class="op">(</span><span class="st">"taxonKey"</span>, <span class="va">ids</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="co"># search by ID, not species name</span></span>
+<span>  <span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/download_predicate_dsl.html" class="external-link">pred</a></span><span class="op">(</span><span class="st">"hasCoordinate"</span>, <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/download_predicate_dsl.html" class="external-link">pred</a></span><span class="op">(</span><span class="st">"hasGeospatialIssue"</span>, <span class="cn">FALSE</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://docs.ropensci.org/rgbif/reference/download_predicate_dsl.html" class="external-link">pred</a></span><span class="op">(</span><span class="st">"occurrenceStatus"</span>, <span class="st">"PRESENT"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre>
+<p>The input covariates would also need to change based on what is biologically relevant for the particular species. I outline the process of choosing input covariates in vignette 030.</p>
+<p>Once the input data have been adapted to the user’s needs, the regional-scale models will need to be applied per region of interest. Each regional-scale model depends on a spcecific background area selection for MaxEnt that will need to change. I outline the process for choosing this area in vignette 060, in which I subset the presence data by region and intersect these subsets with the Köppen-Geiger climate zones to select the appropriate background area. This resulting polygon would need to be cropped to the region of interest. I use the <code>kgc</code>, <code>terra</code>, and <code>sf</code> packages for this analysis:</p>
+<pre><code><span><span class="co"># get K-G zones</span></span>
+<span><span class="va">kmz_data</span> <span class="op">&lt;-</span> <span class="fu">kgc</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/kgc/man/kmz.html" class="external-link">kmz</a></span></span>
+<span></span>
+<span><span class="co"># generate coordinates</span></span>
+<span><span class="va">kmz_lat</span> <span class="op">&lt;-</span> <span class="fu">kgc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/kgc/man/genCoords.html" class="external-link">genCoords</a></span><span class="op">(</span>latlon <span class="op">=</span> <span class="st">"lat"</span>, full <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">kmz_lon</span> <span class="op">&lt;-</span> <span class="fu">kgc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/kgc/man/genCoords.html" class="external-link">genCoords</a></span><span class="op">(</span>latlon <span class="op">=</span> <span class="st">"lon"</span>, full <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># join data and coordinates</span></span>
+<span><span class="va">kmz_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">kmz_lat</span>, <span class="va">kmz_lon</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://www.math.uzh.ch/pages/spam/reference/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">.</span>, <span class="va">kmz_data</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="co"># relocate column</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">kmz_lon</span>, <span class="fu"><a href="https://tidyselect.r-lib.org/reference/everything.html" class="external-link">everything</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># convert to raster</span></span>
+<span><span class="va">KG_zones_rast</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/rast.html" class="external-link">rast</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">kmz_data</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"xyz"</span>,</span>
+<span>  crs <span class="op">=</span> <span class="st">"EPSG:4326"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="co"># next, convert raster to polygon</span></span>
+<span><span class="va">KG_zones_poly</span> <span class="op">&lt;-</span> <span class="fu">terra</span><span class="fu">::</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/as.polygons.html" class="external-link">as.polygons</a></span><span class="op">(</span></span>
+<span>  x <span class="op">=</span> <span class="va">KG_zones_rast</span>,</span>
+<span>  aggregate <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># combine cells with the same value into one area</span></span>
+<span>  values <span class="op">=</span> <span class="cn">TRUE</span>, <span class="co"># include cell values as attributes</span></span>
+<span>  crs <span class="op">=</span> <span class="st">"EPSG:4326"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">KG_zones_poly</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="va">KG_zones_poly</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># intersect polygon and presences</span></span>
+<span><span class="va">regional_poly</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_join.html" class="external-link">st_filter</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">KG_zones_poly</span>, y <span class="op">=</span> <span class="va">presence_data</span><span class="op">)</span></span></code></pre>
 <p>Once the presence data, covariate data and background points have been chosen, the user might apply this framework for any invasive species and ensemble models for any region of interest.</p>
+</div>
 <div class="section level2">
 <h2 id="computing-information">Computing Information<a class="anchor" aria-label="anchor" href="#computing-information"></a>
 </h2>

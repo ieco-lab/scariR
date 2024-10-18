@@ -15,7 +15,7 @@ I will create a table for some important summary statistics for the models. Thes
 # general tools
 library(tidyverse)  # data manipulation
 library(here) # making directory pathways easier on different instances
-here::here() # here() starts at the root folder of this package.
+# here() starts at the root folder of this package.
 library(devtools)
 
 # SDMtune and dependencies
