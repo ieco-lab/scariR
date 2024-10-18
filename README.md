@@ -1,6 +1,6 @@
 # Overview
 
-Our package `slfSpread` outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+Our package `slfSpread` outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/slfSpread/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
 
 ## Citation
 
@@ -158,7 +158,7 @@ For modelers who wish to apply this pipeline for other invasive species, this pi
 
 First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the packages `rgbif` and `taxize`:
 
-```{r get taxa ID and GBIF presence data}
+```
 # get species ID from gbif database
 ids <- taxize::get_ids(sci_com = "Emerald Ash Borer", db = "gbif")
 
@@ -179,7 +179,7 @@ The input covariates would also need to change based on what is biologically rel
 
 Once the input data have been adapted to the user's needs, the regional-scale models will need to be applied per region of interest. Each regional-scale model depends on a spcecific background area selection for MaxEnt that will need to change. I outline the process for choosing this area in vignette 060, in which I subset the presence data by region and intersect these subsets with the Köppen-Geiger climate zones to select the appropriate background area. This resulting polygon would need to be cropped to the region of interest. I use the `kgc`, `terra`, and `sf` packages for this analysis:
 
-```{r get K-G zones and intersect with presence data}
+```
 # get K-G zones
 kmz_data <- kgc::kmz
 
