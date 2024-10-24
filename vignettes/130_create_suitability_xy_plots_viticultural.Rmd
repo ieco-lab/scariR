@@ -1,5 +1,5 @@
 ---
-title: "Plot shift in SLF suitability for important viticultural regions under climate change"
+title: "Plot shift in SLF risk to important viticultural regions under climate change"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"

@@ -1,5 +1,5 @@
 ---
-title: "Format risk tables for SLF populations and viticultural regions"
+title: "Generate and format figures for publication"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"

@@ -1,3 +1,5 @@
+### * general
+
 url: https://ieco-lab.github.io/slfSpread/
 template:
   bootstrap: 5
@@ -5,20 +7,41 @@ template:
   params:
     bootswatch: united
 
+
+### * home
+
+home:
+  links:
+    - text: iEco Lab
+      href: https://www.iecolab.org
+    - text: Other projects from iEco
+      href: https://github.com/ieco-lab
+    - text: Center for Biodiversity
+      href: https://www.biodiversitycenter.org
+    - text: Temple University Biology
+      href: https://cst.temple.edu/department-biology
+
+### * vignette organization
+
 articles:
+- title: Quantify risk to specific viticultural regions
+  desc: Example usage for `create_risk_report()` for creation of localized reports
+  contents:
+  - 150_create_risk_report
+
 - title: Initialize `slfSpread`
   desc: Initialization of `renv` package for dependencies
   contents:
   - 010_initialize_pkg
 
-- title: Retrieve and tidy input data for MaxEnt
+- title: 1. Retrieve and tidy input data for MaxEnt
   desc: Retrieve occurrence data and climate rasters
   navbar: Retrieve and tidy input data for MaxEnt
   contents:
   - 020_retrieve_SLF_records
   - 030_retrieve_bioclim_variables
 
-- title: SDM modeling pipeline
+- title: 2. SDM modeling pipeline
   desc: Setup and create a global-scale model and 3 regional-scale models
   contents:
   - 040_setup_global_MaxEnt_model
@@ -28,13 +51,13 @@ articles:
   - 080_run_regional_invaded_asian_MaxEnt_model
   - 090_run_regional_native_MaxEnt_model
 
-- title: Ensemble Regional-scale SDMs
+- title: 3. Ensemble Regional-scale SDMs
   desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale models
   contents:
   - 100_run_ExDet_MIC
   - 110_ensemble_regional_models
 
-- title: Analyze SLF risk using SDMs
+- title: 4. Quantify SLF risk and model fit
   desc: Create suitability maps, scatter plots and figures depicting the AUC, var cont and response curves
   contents:
   - 120_create_suitability_maps
@@ -44,36 +67,9 @@ articles:
   - 141_plot_AUC_var_cont
   - 142_calculate_model_fit
 
-- title: Create viticultural region reports
-  desc: Example usage for `create_risk_report()` for creation of localized reports
-  contents:
-  - 150_create_risk_report
-
-- title: Examples and figures
+- title: Workflows and figures
   desc: Format figures for publication and outline specific workflows for functions
   contents:
   - 051_compute_MaxEnt_summary_statistics_workflow
   - 160_generate_format_figures
-
-navbar:
-  structure:
-    left:
-      - text: "Initialize `slfSpread"
-        href: articles/010_initialize_pkg.html
-      - text: "Retrieve and tidy input data for MaxEnt"
-        menu:
-          - text: "Retrieve SLF records and tidy them for MaxEnt modeling"
-            href: articles/020_retrieve_SLF_records.html
-          - text: "Retrieve bioclim variables"
-            href: articles/030_retrieve_bioclim_variables.html
-      - text: "SDM modeling pipeline"
-        menu:
-          - text: "Setup for global-scale MaxEnt model"
-            href: articles/040_setup_global_MaxEnt_model.html
-          - text: "Run global MaxEnt model"
-            href: articles/050_run_global_MaxEnt_model.html
-          - text: "Setup for regional-scale MaxEnt models"
-            href: articles/060_setup_regional_MaxEnt_models.html
-          - text: "Run regional invaded MaxEnt model"
-            href: articles/070_run_regional_invaded_MaxEnt_model.html
 

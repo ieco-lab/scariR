@@ -1,5 +1,5 @@
 ---
-title: "MaxEnt Summary Statistics Output- workflow"
+title: "Workflow for the functions 'compute_MaxEnt_summary_statistics()'"
 author: "Samuel M. Owens"
 contact: "sam.owens@temple.edu"
 date: "2024-08-27"

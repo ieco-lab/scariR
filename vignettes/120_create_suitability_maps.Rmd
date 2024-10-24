@@ -1,5 +1,5 @@
 ---
-title: "Map regional ensemble predictions and intercept with global model"
+title: "Create risk maps of each model scale and intersect predictions"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"

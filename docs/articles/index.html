@@ -15,39 +15,14 @@
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/slfSpread.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Initialize `slfSpread`</h6></li>
-    <li><a class="dropdown-item" href="../articles/010_initialize_pkg.html">Initialization of renv package for dependencies</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Retrieve and format input data</h6></li>
-    <li><a class="dropdown-item" href="../articles/020_retrieve_SLF_records.html">Retrieve SLF records from various sources and tidy them for MaxEnt modeling</a></li>
-    <li><a class="dropdown-item" href="../articles/030_retrieve_bioclim_variables.html">Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>SDM modeling pipeline</h6></li>
-    <li><a class="dropdown-item" href="../articles/040_setup_global_MaxEnt_model.html">Setup for global-scale MaxEnt model</a></li>
-    <li><a class="dropdown-item" href="../articles/050_run_global_MaxEnt_model.html">Run global-scale MaxEnt model</a></li>
-    <li><a class="dropdown-item" href="../articles/060_setup_regional_MaxEnt_models.html">Setup for regional-scale MaxEnt models</a></li>
-    <li><a class="dropdown-item" href="../articles/070_run_regional_invaded_MaxEnt_model.html">Run 'Ri.NAmerica' model trained on SLF invaded region in North America</a></li>
-    <li><a class="dropdown-item" href="../articles/080_run_regional_invaded_asian_MaxEnt_model.html">Run 'Ri.Asia' model trained on SLF invaded range in Japan and South Korea</a></li>
-    <li><a class="dropdown-item" href="../articles/090_run_regional_native_MaxEnt_model.html">Run 'Rn' model trained on SLF native range in east Asia</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Ensemble Regional-scale SDMs</h6></li>
-    <li><a class="dropdown-item" href="../articles/100_run_ExDet_MIC.html">Run an Extrapolation Detection (NT2) analysis and calculate MIC</a></li>
-    <li><a class="dropdown-item" href="../articles/110_ensemble_regional_models.html">Ensemble regional-scale models into a single prediction</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Analyze SLF risk using SDMs</h6></li>
-    <li><a class="dropdown-item" href="../articles/120_create_suitability_maps.html">Map regional ensemble predictions and intercept with global model</a></li>
-    <li><a class="dropdown-item" href="../articles/130_create_suitability_xy_plots_viticultural.html">Plot shift in SLF suitability for important viticultural regions under climate change</a></li>
-    <li><a class="dropdown-item" href="../articles/131_create_suitability_xy_plots_SLF.html">Plot stability of known SLF populations due climate change effects</a></li>
-    <li><a class="dropdown-item" href="../articles/140_plot_response_curves.html">Plot response curves</a></li>
-    <li><a class="dropdown-item" href="../articles/141_plot_AUC_var_cont.html">Plot AUC curves and variable contribution graphs</a></li>
-    <li><a class="dropdown-item" href="../articles/142_calculate_model_fit.html">Calculate model fit statistics</a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Create viticultural region reports</h6></li>
-    <li><a class="dropdown-item" href="../articles/150_create_risk_report.html">Example usage of create_risk_report.R to create reports of key viticultural areas</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Retrieve and tidy input data for MaxEnt</h6></li>
+    <li><a class="dropdown-item" href="../articles/020_retrieve_SLF_records.html">SLF occurrence records: GBIF, lydemapR, literature</a></li>
+    <li><a class="dropdown-item" href="../articles/030_retrieve_bioclim_variables.html">Bioclim variable rasters: CHELSA</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul></li>
@@ -73,6 +48,13 @@
     </div>
 
     <div class="section ">
+      <h3>Quantify risk to specific viticultural regions</h3>
+      <div class="section-desc"><p>Example usage for <code><a href="../reference/create_risk_report.html">create_risk_report()</a></code> for creation of localized reports</p></div>
+
+      <dl><dt><a href="150_create_risk_report.html">Example usage of create_risk_report.R to create reports of key viticultural areas</a></dt>
+        <dd>
+      </dd></dl></div>
+    <div class="section ">
       <h3>Initialize <code>slfSpread</code></h3>
       <div class="section-desc"><p>Initialization of <code>renv</code> package for dependencies</p></div>
 
@@ -80,12 +62,12 @@
         <dd>
       </dd></dl></div>
     <div class="section ">
-      <h3>Retrieve and format input data</h3>
+      <h3>Retrieve and tidy input data for MaxEnt</h3>
       <div class="section-desc"><p>Retrieve occurrence data and climate rasters</p></div>
 
-      <dl><dt><a href="020_retrieve_SLF_records.html">Retrieve SLF records from various sources and tidy them for MaxEnt modeling</a></dt>
+      <dl><dt><a href="020_retrieve_SLF_records.html">SLF occurrence records: GBIF, lydemapR, literature</a></dt>
         <dd>
-        </dd><dt><a href="030_retrieve_bioclim_variables.html">Retrieve bioclim rasters from CHELSA and tidy them for MaxEnt modeling</a></dt>
+        </dd><dt><a href="030_retrieve_bioclim_variables.html">Bioclim variable rasters: CHELSA</a></dt>
         <dd>
       </dd></dl></div>
     <div class="section ">
@@ -111,40 +93,33 @@
 
       <dl><dt><a href="100_run_ExDet_MIC.html">Run an Extrapolation Detection (NT2) analysis and calculate MIC</a></dt>
         <dd>
-        </dd><dt><a href="110_ensemble_regional_models.html">Ensemble regional-scale models into a single prediction</a></dt>
+        </dd><dt><a href="110_ensemble_regional_models.html">Ensemble regional-scale models using a weighted mean</a></dt>
         <dd>
       </dd></dl></div>
     <div class="section ">
-      <h3>Analyze SLF risk using SDMs</h3>
+      <h3>Quantify SLF risk and model fit</h3>
       <div class="section-desc"><p>Create suitability maps, scatter plots and figures depicting the AUC, var cont and response curves</p></div>
 
-      <dl><dt><a href="120_create_suitability_maps.html">Map regional ensemble predictions and intercept with global model</a></dt>
+      <dl><dt><a href="120_create_suitability_maps.html">Create risk maps of each model scale and intersect predictions</a></dt>
         <dd>
-        </dd><dt><a href="130_create_suitability_xy_plots_viticultural.html">Plot shift in SLF suitability for important viticultural regions under climate change</a></dt>
+        </dd><dt><a href="130_create_suitability_xy_plots_viticultural.html">Plot shift in SLF risk to important viticultural regions under climate change</a></dt>
         <dd>
-        </dd><dt><a href="131_create_suitability_xy_plots_SLF.html">Plot stability of known SLF populations due climate change effects</a></dt>
+        </dd><dt><a href="131_create_suitability_xy_plots_SLF.html">Infer stability of known SLF populations due climate change effects</a></dt>
         <dd>
-        </dd><dt><a href="140_plot_response_curves.html">Plot response curves</a></dt>
+        </dd><dt><a href="140_plot_response_curves.html">Analyze biological realism of model response curves</a></dt>
         <dd>
-        </dd><dt><a href="141_plot_AUC_var_cont.html">Plot AUC curves and variable contribution graphs</a></dt>
+        </dd><dt><a href="141_plot_AUC_var_cont.html">Check model goodness of fit via AUC, TSS and confusion matrices</a></dt>
         <dd>
-        </dd><dt><a href="142_calculate_model_fit.html">Calculate model fit statistics</a></dt>
-        <dd>
-      </dd></dl></div>
-    <div class="section ">
-      <h3>Create viticultural region reports</h3>
-      <div class="section-desc"><p>Example usage for <code><a href="../reference/create_risk_report.html">create_risk_report()</a></code> for creation of localized reports</p></div>
-
-      <dl><dt><a href="150_create_risk_report.html">Example usage of create_risk_report.R to create reports of key viticultural areas</a></dt>
+        </dd><dt><a href="142_calculate_model_fit.html">Calculate model fit using confusion matrices</a></dt>
         <dd>
       </dd></dl></div>
     <div class="section ">
-      <h3>Examples and figures</h3>
+      <h3>Workflows and figures</h3>
       <div class="section-desc"><p>Format figures for publication and outline specific workflows for functions</p></div>
 
-      <dl><dt><a href="051_compute_MaxEnt_summary_statistics_workflow.html">MaxEnt Summary Statistics Output- workflow</a></dt>
+      <dl><dt><a href="051_compute_MaxEnt_summary_statistics_workflow.html">Workflow for the functions 'compute_MaxEnt_summary_statistics()'</a></dt>
         <dd>
-        </dd><dt><a href="160_generate_format_figures.html">Format risk tables for SLF populations and viticultural regions</a></dt>
+        </dd><dt><a href="160_generate_format_figures.html">Generate and format figures for publication</a></dt>
         <dd>
       </dd></dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

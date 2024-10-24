@@ -1,5 +1,5 @@
 ---
-title: "Ensemble regional-scale models into a single prediction"
+title: "Ensemble regional-scale models using a weighted mean"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"

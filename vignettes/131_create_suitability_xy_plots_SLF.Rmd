@@ -1,5 +1,5 @@
 ---
-title: "Plot stability of known SLF populations due climate change effects"
+title: "Infer stability of known SLF populations due climate change effects"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"

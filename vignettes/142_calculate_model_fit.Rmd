@@ -1,21 +1,19 @@
 ---
-title: "Calculate model fit statistics"
+title: "Calculate model fit using confusion matrices"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
 date: "2024-08-23"
 ---
 
-I will create a table for some important summary statistics for the models. These include sensitivity, specificity, commission error, and omission error. These are calculated according to the cloglog MTSS threshold per model.
-
 # Setup
 
-```{r library packages, message = FALSE}
+```{r load necesssary packages, message = FALSE}
 
 # general tools
-library(tidyverse)  # data manipulation
-library(here) # making directory pathways easier on different instances
-# here() starts at the root folder of this package.
+library(tidyverse)  #data manipulation
+library(here) #making directory pathways easier on different instances
+# here::here() starts at the root folder of this package.
 library(devtools)
 
 # SDMtune and dependencies
@@ -39,114 +37,169 @@ mypath <- file.path(here::here() %>%
 
 ```
 
-# Sensitivity and Specificity of Models
+```{r style object}
 
-We calculate these according to the cloglog MTSS threshold per model
-
-```{r import confusion matrices}
-
-# global
-global_conf_matr <- read_csv(file = file.path(mypath, "slf_global_v3", "global_thresh_confusion_matrix_all_iterations.csv")) %>%
-  # only MTSS threshold
-  slice(7)
-
-
-# regional models
-# native
-regional_native_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_native_v3", "regional_native_thresh_confusion_matrix.csv")) %>%
-  slice(7)
-# invaded_asia
-regional_invaded_asian_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_thresh_confusion_matrix.csv")) %>%
-  slice(7)
-# invaded_NAmerica
-regional_invaded_conf_matr <- read_csv(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_thresh_confusion_matrix.csv")) %>%
-  slice(7)
+ensemble_colors <- c(
+  "Rn (native)" = "#4daf4a",
+  "Ri.NAmerica" =  "#e41a1c",
+  "Ri.Asia" = "#377eb8"
+)
 
 ```
 
-```{r calculate sens and spec}
+# Variable importance
 
-model_sens_spec <- tibble(
-  metric = rep(c("sensitivity", "specificity", "commission error", "omission error"), 4),
-  description = rep(c("true_positive rate", "true_negative rate", "1 - true_negative rate", "false_negative rate"), 4),
-  thresh = "MTSS.cloglog",
-  thresh_value = c(
-    rep(global_conf_matr$threshold_value, 4), 
-    rep(regional_native_conf_matr$threshold_value, 4), 
-    rep(regional_invaded_conf_matr$threshold_value, 4),
-    rep(regional_invaded_asian_conf_matr$threshold_value, 4)
+```{r load var imp files- regional ensemble}
+
+regional_native_var_imp <- read.csv(file = file.path(mypath, "slf_regional_native_v3", "regional_native_variable_importance.csv"))
+
+regional_invaded_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_v7", "regional_invaded_variable_importance.csv"))
+
+regional_invaded_asian_var_imp <- read.csv(file = file.path(mypath, "slf_regional_invaded_asian_v2", "regional_invaded_asian_variable_importance.csv"))
+
+```
+
+```{r get base plots- regional ensemble}
+
+regional_native_var_imp_plot <- SDMtune::plotVarImp(
+  df = regional_native_var_imp
+) %>%
+  ggplot_build()
+
+# change groups
+regional_native_var_imp_plot[["data"]][[1]][["x"]] <- c(1, 4, 2, 3)
+
+
+
+regional_invaded_var_imp_plot <- SDMtune::plotVarImp(
+  df = regional_invaded_var_imp
+) %>%
+  ggplot_build()
+
+# change groups
+regional_invaded_var_imp_plot[["data"]][[1]][["x"]] <- c(1, 2, 3, 4)
+
+
+
+regional_invaded_asian_var_imp_plot <- SDMtune::plotVarImp(
+  df = regional_invaded_asian_var_imp
+) %>%
+  ggplot_build()
+
+# change groups
+regional_invaded_asian_var_imp_plot[["data"]][[1]][["x"]] <- c(1, 2, 4, 3)
+
+```
+
+```{r var imp plot- regional ensemble}
+
+var_imp_ensemble <- ggplot() +
+  # native model data
+  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "Rn (native)"), color = "black", width = 0.2) +
+  # invaded model data
+  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "Ri.NAmerica"), color = "black", width = 0.2) +
+  # invaded_asian model data
+  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "Ri.Asia"), color = "black", width = 0.2) +
+  labs(
+    title = "Variable Importance for 'regional_ensemble' models",
+    x = "",
+    y = "Permutation importance"
+    ) +
+  scale_x_continuous(
+    breaks = c(1, 2, 3, 4),
+    labels = c("bio 2", "bio 12", "bio 11", "bio 15")
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+    # aes
+  theme_bw() +
+  scale_fill_manual(
+    name = "model",
+    values = ensemble_colors,
+    aesthetics = "fill"
+  ) +
+  theme(legend.position = "bottom") +
+  coord_flip()
+
+```
+
+```{r save plot- regional ensemble, eval = FALSE}
+
+ggsave(
+  var_imp_ensemble, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "Variable_importance_regional_ensemble.jpg"
     ),
-  model = c(
-    rep("global", 4),
-    rep("regional\nnative", 4),
-    rep("regional\ninvaded NAmerica", 4),
-    rep("regional\ninvaded Asia", 4)
-  ),
-  test_pos = c(
-    rep(155, 4), # global
-    rep(328, 4),  # native
-    rep(241, 4), # invaded_NAmerica
-    rep(328, 4) # invaded_Asia
-  ),
-  bg_neg = c(
-    rep(20000, 4), # global
-    rep(10000, 12) # regional
-  ),
-  value = c(
-    # global
-    round(global_conf_matr$tp_mean / 155, 4), round(global_conf_matr$tn_mean / 20000, 4), round(1 - (global_conf_matr$tn_mean / 20000), 4), round((global_conf_matr$fn_mean / 20000), 4),
-    # native
-    round(regional_native_conf_matr$tp / 328, 4), round(regional_native_conf_matr$tn / 10000, 4), round(1 - (regional_native_conf_matr$tn / 10000), 4), round((regional_native_conf_matr$fn / 10000), 4),
-    # invaded_NAmerica
-    round(regional_invaded_conf_matr$tp / 241, 4), round(regional_invaded_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_conf_matr$tn / 10000), 4), round((regional_invaded_conf_matr$fn / 10000), 4),
-    # invaded_asia
-    round(regional_invaded_asian_conf_matr$tp / 328, 4), round(regional_invaded_asian_conf_matr$tn / 10000, 4), round(1 - (regional_invaded_asian_conf_matr$tn / 10000), 4), round((regional_invaded_asian_conf_matr$fn / 10000), 4)
-  )
-)
-
-```
-
-```{r save as .csv, eval = FALSE}
-
-write_csv(model_sens_spec, file.path(here::here(), "vignette-outputs", "data-tables", "model_sensitivity_specificity.csv"))
-
-```
-
-I will also write it to a kable so it can be printed
-
-```{r save tables from above, if desired, eval = FALSE}
-
-# add column formatting
-model_sens_spec <- mutate(model_sens_spec, bg_neg = scales::label_comma() (bg_neg))
-
-# convert to kable
-model_sens_spec_kable <- knitr::kable(x = model_sens_spec, format = "html", escape = FALSE) %>%
-  kableExtra::kable_styling(bootstrap_options = "striped", full_width = TRUE)
-
-# save as .html
-kableExtra::save_kable(
-  model_sens_spec_kable, 
-  file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
-  self_contained = TRUE,
-  bs_theme = "simplex"
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
   )
 
-# initialize webshot by 
-# webshot::install_phantomjs()
-# convert to pdf
-webshot::webshot(
-  url = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.html"),
-  file = file.path(here::here(), "vignette-outputs", "figures", "model_sensitivity_specificity.jpg"),
-  zoom = 2
-)
+```
 
-# model extents
+```{r load var imp files- global}
+
+global_var_imp <- read.csv(file = file.path(mypath, "slf_global_v3", "global_variable_importance.csv"))
 
 ```
 
-# References
+```{r get base plots}
 
-1. Jiménez‐Valverde, A. (2012). Insights into the area under the receiver operating characteristic curve (AUC) as a discrimination measure in species distribution modelling. Global Ecology and Biogeography, 21(4), 498–507. https://doi.org/10.1111/j.1466-8238.2011.00683.x
+global_var_imp_plot <- SDMtune::plotVarImp(
+  df = global_var_imp
+) %>%
+  ggplot_build()
 
-2. Zou, K. H., O’Malley, A. J., & Mauri, L. (2007). Receiver-Operating Characteristic Analysis for Evaluating Diagnostic Tests and Predictive Models. Circulation, 115(5), 654–657. https://doi.org/10.1161/CIRCULATIONAHA.105.594929
+
+```
+
+```{r var imp plot}
+
+var_imp_ensemble_global <- ggplot() +
+  # native model data
+  geom_col(data = global_var_imp_plot$data[[1]], aes(x = x - 0.4, y = y, fill = "global"), color = "black", width = 0.2) +
+  # native model data
+  geom_col(data = regional_native_var_imp_plot$data[[1]], aes(x = x - 0.2, y = y, fill = "Rn (native)"), color = "black", width = 0.2) +
+  # invaded model data
+  geom_col(data = regional_invaded_var_imp_plot$data[[1]], aes(x = x, y = y, fill = "Ri.NAmerica"), color = "black", width = 0.2) +
+  # invaded_asian model data
+  geom_col(data = regional_invaded_asian_var_imp_plot$data[[1]], aes(x = x + 0.2, y = y, fill = "Ri.Asia"), color = "black", width = 0.2) +
+  labs(
+    title = "Variable Importance for 'regional_ensemble' and 'global' models",
+    x = "",
+    y = "Permutation importance"
+    ) +
+  scale_x_continuous(
+    breaks = c(1, 2, 3, 4),
+    labels = c("bio 2", "bio 12", "bio 11", "bio 15")
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+    # aes
+  theme_bw() +
+  scale_fill_manual(
+    name = "model",
+    values = ensemble_colors,
+    aesthetics = "fill"
+  ) +
+  theme(legend.position = "bottom") +
+  coord_flip()
+
+var_imp_ensemble_global
+
+```
+
+```{r save plot, eval = FALSE}
+
+ggsave(
+  var_imp_ensemble_global, 
+  filename = file.path(
+    here::here(), "vignette-outputs", "figures", "Variable_importance_regional_ensemble_global.jpg"
+    ),
+  height = 8, 
+  width = 8,
+  device = "jpeg",
+  dpi = "retina"
+  )
+
+```
 
