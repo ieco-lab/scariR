@@ -12,7 +12,7 @@ In the last vignette, I produced the background point dataset for the global-sca
 
 I begin setup for this model by associating the presence data with the covariates in a data frame that will be fed into MaxEnt. I also separate these data into random folds for cross-validation. Once these are done, I can train the MaxEnt model. Outputs from this model will include a list of summary statistics, suitability maps and point-wise suitability values for all SLF presences and for important viticultural regions. I will also create projected map and suitability outputs for the 3 CMIP6 scenarios I plan to use in my analysis.
 
-This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics_CV.R`, `create_MaxEnt_suitability_maps_CV.R`, and `predict_xy_suitability_CV.R`. Please see these subvignettes for a step-by-step guide to the creation of these functions. This package also has versions of the same functions that are designed for MaxEnt models without cross-validation. These share the same name but without the `_CV` ending and will be used for the regional models.
+This vignette has 3 subvignettes (051-053) that each outline and comment the basic workflow for the 3 R functions created for use in this vignette. These functions include `compute_MaxEnt_summary_statistics_CV()`, `create_MaxEnt_suitability_maps_CV()`, and `predict_xy_suitability_CV()`. Please see these subvignettes for a step-by-step guide to the creation of these functions. This package also has versions of the same functions that are designed for MaxEnt models without cross-validation. These share the same name but without the `_CV` ending and will be used for the regional models.
 
 # Setup
 
@@ -411,7 +411,7 @@ global_model <- global_model_tuned_auc@models[[12]]
 
 ## 2.2 Summary Statistics
 
-I will apply my function `compute_MaxEnt_summary_statistics_CV()` to produce all summary statistics for this model. This list includes marginal and univariate response curves, jackknife tests, variable importance, thresholds and confusion matrices, among other statistics. For the complete and annotated workflow used to create this function, see `051_maxent_workflow.Rmd`.
+I will apply my function `compute_MaxEnt_summary_statistics_CV()` to produce all summary statistics for this model. This list includes marginal and univariate response curves, jackknife tests, variable importance, thresholds and confusion matrices, among other statistics. For the complete and annotated workflow used to create this function, see `vignettes/051_maxent_workflow`.
 
 ```{r compute summary statistics using custom function}
 

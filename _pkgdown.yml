@@ -3,10 +3,8 @@
 url: https://ieco-lab.github.io/slfSpread/
 template:
   bootstrap: 5
-  light-switch: true
-  params:
+  bslib:
     bootswatch: united
-
 
 ### * home
 
@@ -26,23 +24,26 @@ home:
 articles:
 - title: Quantify risk to specific viticultural regions
   desc: Example usage for `create_risk_report()` for creation of localized reports
+  navbar: Quantify risk to specific viticultural regions
   contents:
   - 150_create_risk_report
 
-- title: Initialize `slfSpread`
-  desc: Initialization of `renv` package for dependencies
+- title: Initialize slfSpread
+  desc: Initialization of renv package for dependencies
+  navbar: Initialize slfSpread
   contents:
   - 010_initialize_pkg
 
 - title: 1. Retrieve and tidy input data for MaxEnt
   desc: Retrieve occurrence data and climate rasters
-  navbar: Retrieve and tidy input data for MaxEnt
+  navbar: 1. Retrieve and tidy input data for MaxEnt
   contents:
   - 020_retrieve_SLF_records
   - 030_retrieve_bioclim_variables
 
 - title: 2. SDM modeling pipeline
   desc: Setup and create a global-scale model and 3 regional-scale models
+  navbar: 2. SDM modeling pipeline
   contents:
   - 040_setup_global_MaxEnt_model
   - 050_run_global_MaxEnt_model
@@ -53,12 +54,14 @@ articles:
 
 - title: 3. Ensemble Regional-scale SDMs
   desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale models
+  navbar: 3. Ensemble Regional-scale SDMs
   contents:
   - 100_run_ExDet_MIC
   - 110_ensemble_regional_models
 
 - title: 4. Quantify SLF risk and model fit
   desc: Create suitability maps, scatter plots and figures depicting the AUC, var cont and response curves
+  navbar: 4. Quantify SLF risk and model fit
   contents:
   - 120_create_suitability_maps
   - 130_create_suitability_xy_plots_viticultural

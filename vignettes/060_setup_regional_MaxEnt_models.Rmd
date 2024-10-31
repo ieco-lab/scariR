@@ -106,7 +106,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ```
 
-```{r save tables from above, if desired}
+```{r save tables from above if desired, echo = FALSE}
   
 # model training dataset
 # save as .csv
@@ -336,9 +336,11 @@ KG_climate_map <- ggplot() +
     ) +
   coord_equal()
 
+KG_climate_map
+
 ```
 
-```{r save K-G plot}
+```{r save K-G plot, include = FALSE}
 
 ggsave(
   KG_climate_map, 
@@ -485,9 +487,11 @@ regional_invaded_withSLF_plot <- ggplot() +
   theme(legend.position = "right") +
   coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
+regional_invaded_withSLF_plot
+
 ```
 
-```{r save invaded K-G plot}
+```{r save invaded K-G plot, include = FALSE}
 
 ggsave(
   regional_invaded_withSLF_plot, 
@@ -557,7 +561,7 @@ for(a in seq_along(env.files)){
 
 Lets plot one of the new layers to make sure the cropping worked.
 
-```{r plot to ensure cropping worked, eval = TRUE}
+```{r plot to ensure cropping worked, eval = TRUE, warning = FALSE}
 
 bio11_df <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_KG.asc")) %>%
   # convert to df
@@ -678,7 +682,7 @@ regional_invaded_asian_withSLF <- regional_invaded_asian_withSLF %>%
 
 Now lets plot it for a sanity check.
 
-```{r plot invaded_asian range, eval = TRUE}
+```{r plot invaded_asian range, eval = TRUE, warning = FALSE}
 
 regional_invaded_asian_withSLF_plot <- ggplot() +
   # world map
@@ -701,10 +705,12 @@ regional_invaded_asian_withSLF_plot <- ggplot() +
   theme_classic() +
   theme(legend.position = "right") +
   coord_sf(xlim = c(122.93816, 149.74986), ylim = c(30.49986, 46.58424))
+
+regional_invaded_asian_withSLF_plot
   
 ```
 
-```{r save Ri.Asia K-G plot}
+```{r save Ri.Asia K-G plot, include = FALSE}
 
 ggsave(
   regional_invaded_asian_withSLF_plot, 
@@ -766,7 +772,7 @@ for(a in seq_along(env.files)){
 
 ```
 
-```{r plot for check, eval = TRUE}
+```{r plot for check, eval = TRUE, warning = FALSE}
 
 bio11_invaded_asian <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_invaded_asian_KG.asc")
@@ -945,7 +951,7 @@ regional_native_withSLF <- regional_native_withSLF %>%
 
 Now lets plot it for a sanity check.
 
-```{r plot china, eval = TRUE}
+```{r plot china, eval = TRUE, warning = FALSE}
 
 regional_native_withSLF_plot <- ggplot() +
   # world map
@@ -971,7 +977,7 @@ regional_native_withSLF_plot <- ggplot() +
 
 ```
 
-```{r save Rn K-G plot}
+```{r save Rn K-G plot, include = FALSE}
 
 ggsave(
   regional_native_withSLF_plot, 
@@ -1035,7 +1041,7 @@ for(a in seq_along(env.files)){
 
 Lets plot one of the new layers to make sure the cropping worked.
 
-```{r plot main_layer to ensure cropping worked, eval = TRUE}
+```{r plot main_layer to ensure cropping worked, eval = TRUE, warning = FALSE}
 
 bio11_native <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "bio11_1981-2010_regional_native_KG.asc")) 
 
@@ -1144,7 +1150,7 @@ regional_invaded_background <- read.csv(file.path(here::here(), "vignette-output
 
 ```
 
-```{r plot Ri.NAmerica background, eval = TRUE}
+```{r plot Ri.NAmerica background, eval = TRUE, echo = FALSE}
 
 regional_invaded_background_plot <- ggplot() +
   map_style +
@@ -1159,11 +1165,13 @@ regional_invaded_background_plot <- ggplot() +
   # same coords used to cut other N America plots
   coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
 
+regional_invaded_background_plot
+
 ```
 
 We can see that the background points are isolated to the area selected using the K-G climate zones in North America, so our operation was successful.
 
-```{r save Ri.Namerica background plot}
+```{r save Ri.Namerica background plot, include = FALSE}
 
 ggsave(
   regional_invaded_background_plot, 
@@ -1218,7 +1226,7 @@ write_rds(regional_invaded_asian_points, file = file.path(here::here(), "data", 
 
 Now lets visualize the result.
 
-```{r load in data for plotting and change projection- Ri.Asia, eval = TRUE}
+```{r load in data for plotting and change projection- Ri.Asia, eval = TRUE, message = FALSE, warning = FALSE}
 
 # background raster
 invaded_asian_bio11_df <- terra::rast(x = file.path(mypath, "bio11_1981-2010_regional_invaded_asian_KG.asc")) %>%
@@ -1229,7 +1237,7 @@ regional_invaded_asian_points <- read.csv(file = file.path(here::here(), "vignet
 
 ```
 
-```{r plot Ri.Asia bg, eval = TRUE}
+```{r plot Ri.Asia bg, eval = TRUE, echo = FALSE}
 
 regional_invaded_asian_points_plot <- ggplot() +
   map_style +
@@ -1243,9 +1251,11 @@ regional_invaded_asian_points_plot <- ggplot() +
   scale_x_continuous(limits = c(122.93816, 149.74986), expand = c(0, 0)) +
   scale_y_continuous(limits = c(30.49986, 46.58424), expand = c(0, 0))
 
+regional_invaded_asian_points_plot
+
 ```
 
-```{r save plot- Ri.Asia bg}
+```{r save plot- Ri.Asia bg, include = FALSE}
 
 ggsave(
   regional_invaded_asian_points_plot, 
@@ -1305,7 +1315,7 @@ write_rds(regional_native_points,
   
 ```
 
-```{r load in files for plotting and change projection- Rn, eval = TRUE}
+```{r load in files for plotting and change projection- Rn, eval = TRUE, message = FALSE, warning = FALSE}
 
 regional_native_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_regional_native_KG.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
@@ -1315,7 +1325,7 @@ regional_native_points <- read_csv(file = file.path(here::here(), "vignette-outp
 
 ```
 
-```{r plot points, eval = TRUE}
+```{r plot points, eval = TRUE, echo = FALSE}
 
 regional_native_points_plot <- ggplot() +
   map_style +
@@ -1327,9 +1337,11 @@ regional_native_points_plot <- ggplot() +
   ggtitle("'Rn' model background points") +
   coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
 
+regional_native_points_plot
+
 ```
 
-```{r save plot- Rn bg}
+```{r save plot- Rn bg, include = FALSE}
 
 ggsave(
   regional_native_points_plot, 
@@ -1400,7 +1412,7 @@ write_csv(
 
 Now I will plot these points on the raster to ensure that the bounding box worked.
 
-```{r plot model presences- Ri.NAmerica, eval = TRUE}
+```{r plot model presences- Ri.NAmerica, eval = TRUE, echo = FALSE}
 
 # load in raster
 regional_invaded_df <- terra::rast(x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_KG.asc")) %>%
@@ -1419,10 +1431,12 @@ regional_invaded_slf_plot <- ggplot() +
   geom_point(data = slf_points_invaded, aes(x = x, y = y), color = "darkorange", size = 0.5) +
   labs(title = "'Ri.NAmerica' model SLF presences") +
   coord_sf(xlim = c(-138.66681, -52.58347), ylim = c(19.12534, 60.83319))
+
+regional_invaded_slf_plot
   
 ```
 
-```{r save Ri.NAmerica presence plot}
+```{r save Ri.NAmerica presence plot, include = FALSE}
 
 ggsave(
   regional_invaded_slf_plot, 
@@ -1468,7 +1482,7 @@ write_csv(
 
 ```
 
-```{r plot model presences- Ri.Asia, eval = TRUE}
+```{r plot model presences- Ri.Asia, eval = TRUE, echo = FALSE}
 
 invaded_asian_df <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_invaded_asian_KG.asc")
@@ -1491,9 +1505,11 @@ regional_invaded_asian_slf_plot <- ggplot() +
   scale_x_continuous(limits = c(122.93816, 149.74986), expand = c(0, 0)) +
   scale_y_continuous(limits = c(30.49986, 46.58424), expand = c(0, 0))
 
+regional_invaded_asian_slf_plot
+
 ```
 
-```{r save Ri.Asia presence plot}
+```{r save Ri.Asia presence plot, include = FALSE}
 
 ggsave(
   regional_invaded_asian_slf_plot, 
@@ -1539,7 +1555,7 @@ write_csv(
 
 ```
 
-```{r plot model presences- Rn, eval = TRUE}
+```{r plot model presences- Rn, eval = TRUE, echo = FALSE}
 
 # raster
 regional_native_df <- terra::rast(
@@ -1564,7 +1580,7 @@ regional_native_slf_plot <- ggplot() +
   
 ```
 
-```{r save Rn presence plot}
+```{r save Rn presence plot, include = FALSE}
 
 ggsave(
   regional_native_slf_plot, 
@@ -1665,7 +1681,9 @@ Now we are ready to run all 3 regional models!
 
 9. Xin, B., Zhang, Y., Wang, X., Cao, L., Hoelmer, K. A., Broadley, H. J., & Gould, J. R. (2020). Exploratory survey of spotted lanternfly (Hemiptera: Fulgoridae) and its natural enemies in China. Environmental Entomology, 50(1), 36–45. https://doi.org/10.1093/ee/nvaa137
 
-# Appendix {.hidden}
+<!--
+
+# Appendix 
 
 ## Patchwork together figures for publication
 
@@ -2101,3 +2119,5 @@ ggsave(
   )
 
 ```
+
+-->

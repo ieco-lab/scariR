@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Page not found (404) • slfSpread</title>
-<script src="https://ieco-lab.github.io/slfSpread/lightswitch.js"></script><script src="https://ieco-lab.github.io/slfSpread/deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="https://ieco-lab.github.io/slfSpread/deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="https://ieco-lab.github.io/slfSpread/deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="https://ieco-lab.github.io/slfSpread/deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="https://ieco-lab.github.io/slfSpread/deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
 <link href="https://ieco-lab.github.io/slfSpread/deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
     <a href="https://ieco-lab.github.io/slfSpread/#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top bg-primary" data-bs-theme="dark" aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="https://ieco-lab.github.io/slfSpread/index.html">slfSpread</a>
 
@@ -35,9 +35,35 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Retrieve and tidy input data for MaxEnt</h6></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Quantify risk to specific viticultural regions</h6></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/150_create_risk_report.html">Example usage of create_risk_report() to create reports of key viticultural areas</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Initialize slfSpread</h6></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/010_initialize_pkg.html">Initialization of renv package for dependencies</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>1. Retrieve and tidy input data for MaxEnt</h6></li>
     <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/020_retrieve_SLF_records.html">SLF occurrence records: GBIF, lydemapR, literature</a></li>
     <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/030_retrieve_bioclim_variables.html">Bioclim variable rasters: CHELSA</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>2. SDM modeling pipeline</h6></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/040_setup_global_MaxEnt_model.html">Setup for global-scale MaxEnt model</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/050_run_global_MaxEnt_model.html">Run global-scale MaxEnt model</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/060_setup_regional_MaxEnt_models.html">Setup for regional-scale MaxEnt models</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/070_run_regional_invaded_MaxEnt_model.html">Run 'Ri.NAmerica' model trained on SLF invaded region in North America</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/080_run_regional_invaded_asian_MaxEnt_model.html">Run 'Ri.Asia' model trained on SLF invaded range in Japan and South Korea</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/090_run_regional_native_MaxEnt_model.html">Run 'Rn' model trained on SLF native range in east Asia</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>3. Ensemble Regional-scale SDMs</h6></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/100_run_ExDet_MIC.html">Run an Extrapolation Detection (NT2) analysis and calculate MIC</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/110_ensemble_regional_models.html">Ensemble regional-scale models using a weighted mean</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>4. Quantify SLF risk and model fit</h6></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/120_create_suitability_maps.html">Create risk maps of each model scale and intersect predictions</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/130_create_suitability_xy_plots_viticultural.html">Plot shift in SLF risk to important viticultural regions under climate change</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/131_create_suitability_xy_plots_SLF.html">Infer stability of known SLF populations due climate change effects</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/140_plot_response_curves.html">Analyze biological realism of model response curves</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/141_plot_AUC_var_cont.html">Check model goodness of fit via AUC, TSS and confusion matrices</a></li>
+    <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/142_calculate_model_fit.html">Calculate model fit using confusion matrices</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="https://ieco-lab.github.io/slfSpread/articles/index.html">More articles...</a></li>
   </ul>
@@ -49,14 +75,6 @@
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/ieco-lab/slfSpread/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
-  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
-<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
-    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
-    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
-  </ul>
-</li>
       </ul>
 </div>
 

@@ -393,6 +393,8 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 I will also create suitability maps for the projected 2041-2070 climate data.
 
+<!--
+
 ```{r predict suitability maps for ssp126 data}
 
 slfSpread::create_MaxEnt_suitability_maps(
@@ -448,36 +450,7 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```
 
-Now that all of my models have been trained, I can move on to make check for the level of extrapolation (exdet) and the most important covariate (MIC) for each model's predictions. This is an important step when applying models to climate change and invasive species, due to the non-equilibrium nature of these applications.
-
-# References
-
-1. Elith, J., Phillips, S. J., Hastie, T., Dudík, M., Chee, Y. E., & Yates, C. J. (2011). A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions, 17(1), 43–57. https://doi.org/10.1111/j.1472-4642.2010.00725.x
-
-2. Feng, X. (2022). Shandongfx/nimbios_enm [HTML]. https://github.com/shandongfx/nimbios_enm (Original work published 2018).
-
-3. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
-
-4. Maryam Bordkhani. (n.d.). Threshold rule [Online post].
-
-5. Radosavljevic, A., & Anderson, R. P. (2014). Making better Maxent models of species distributions: Complexity, overfitting and evaluation. Journal of Biogeography, 41(4), 629–643. https://doi.org/10.1111/jbi.12227
-
-6. Sobek-Swant, S., Kluza, D. A., Cuddington, K., & Lyons, D. B. (2012). Potential distribution of emerald ash borer: What can we learn from ecological niche models using Maxent and GARP? Forest Ecology and Management, 281, 23–31. https://doi.org/10.1016/j.foreco.2012.06.017
-
-7. Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
-
-8. Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
-
-9. Steven J. Phillips, Miroslav Dudík, & Robert E. Schapire. (2023). Maxent software for modeling species niches and distributions (Version 3.4.3 (Java)) [Computer software]. http://biodiversityinformatics.amnh.org/open_source/maxent/.
-
-10. Srivastava, V., Roe, A. D., Keena, M. A., Hamelin, R. C., & Griess, V. C. (2021). Oh the places they’ll go: Improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions, 23(1), 297–349. https://doi.org/10.1007/s10530-020-02372-9
-
-11. VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
-
-12. Vignali, S., Barras, A. G., Arlettaz, R., & Braunisch, V. (2020). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evolution, 10(20), 11488–11506. https://doi.org/10.1002/ece3.6786
-
-
-# Appendix {.hidden}
+-->
 
 ## 3.2 Predict suitability for all SLF presences
 
@@ -506,6 +479,8 @@ slfSpread::predict_xy_suitability(
 )
 
 ```
+
+<!--
 
 I will repeat the same process for the CMIP6 data.
 
@@ -551,6 +526,8 @@ slfSpread::predict_xy_suitability(
 
 ```
 
+-->
+
 ## 3.3 Predict suibability for IVR regions
 
 I will perform the same action as above, but for the locations of important wineries around the world.
@@ -587,6 +564,8 @@ slfSpread::predict_xy_suitability(
 )
 
 ```
+
+<!--
 
 Do the same for the SSP scenarios
 
@@ -634,3 +613,33 @@ slfSpread::predict_xy_suitability(
 )
 
 ```
+
+-->
+
+Now that all of my models have been trained, I can move on to make check for the level of extrapolation (exdet) and the most important covariate (MIC) for each model's predictions. This is an important step when applying models to climate change and invasive species, due to the non-equilibrium nature of these applications.
+
+# References
+
+1. Elith, J., Phillips, S. J., Hastie, T., Dudík, M., Chee, Y. E., & Yates, C. J. (2011). A statistical explanation of MaxEnt for ecologists: Statistical explanation of MaxEnt. Diversity and Distributions, 17(1), 43–57. https://doi.org/10.1111/j.1472-4642.2010.00725.x
+
+2. Feng, X. (2022). Shandongfx/nimbios_enm [HTML]. https://github.com/shandongfx/nimbios_enm (Original work published 2018).
+
+3. Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
+
+4. Maryam Bordkhani. (n.d.). Threshold rule [Online post].
+
+5. Radosavljevic, A., & Anderson, R. P. (2014). Making better Maxent models of species distributions: Complexity, overfitting and evaluation. Journal of Biogeography, 41(4), 629–643. https://doi.org/10.1111/jbi.12227
+
+6. Sobek-Swant, S., Kluza, D. A., Cuddington, K., & Lyons, D. B. (2012). Potential distribution of emerald ash borer: What can we learn from ecological niche models using Maxent and GARP? Forest Ecology and Management, 281, 23–31. https://doi.org/10.1016/j.foreco.2012.06.017
+
+7. Phillips, S. J., Anderson, R. P., & Schapire, R. E. (2006). Maximum entropy modeling of species geographic distributions. Ecological Modelling, 190(3), 231–259. https://doi.org/10.1016/j.ecolmodel.2005.03.026
+
+8. Steven Phillips. (2017). A Brief Tutorial on Maxent. http://biodiversityinformatics.amnh.org/open_source/maxent/.
+
+9. Steven J. Phillips, Miroslav Dudík, & Robert E. Schapire. (2023). Maxent software for modeling species niches and distributions (Version 3.4.3 (Java)) [Computer software]. http://biodiversityinformatics.amnh.org/open_source/maxent/.
+
+10. Srivastava, V., Roe, A. D., Keena, M. A., Hamelin, R. C., & Griess, V. C. (2021). Oh the places they’ll go: Improving species distribution modelling for invasive forest pests in an uncertain world. Biological Invasions, 23(1), 297–349. https://doi.org/10.1007/s10530-020-02372-9
+
+11. VanDerWal, J., Shoo, L. P., Graham, C., & Williams, S. E. (2009). Selecting pseudo-absence data for presence-only distribution modeling: How far should you stray from what you know? Ecological Modelling, 220(4), 589–594. https://doi.org/10.1016/j.ecolmodel.2008.11.010
+
+12. Vignali, S., Barras, A. G., Arlettaz, R., & Braunisch, V. (2020). SDMtune: An R package to tune and evaluate species distribution models. Ecology and Evolution, 10(20), 11488–11506. https://doi.org/10.1002/ece3.6786

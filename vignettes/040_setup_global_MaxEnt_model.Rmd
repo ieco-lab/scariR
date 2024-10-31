@@ -66,7 +66,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ```
 
-```{r save tables from above, if desired}
+```{r save tables from above if desired, echo = FALSE}
 
 # model training dataset
 # save as .csv
@@ -189,7 +189,7 @@ global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "da
 
 ```
 
-```{r plot points, eval = TRUE}
+```{r plot points, eval = TRUE, echo = FALSE}
 
 global_background_plot <- ggplot() +
   geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
@@ -221,7 +221,7 @@ ggplot2::ggsave(
 
 Now I will create a plot of all SLF presence locations for reference. These points will represent the known presences in the model.
 
-```{r plot model presences, eval = TRUE}
+```{r plot model presences, eval = TRUE, echo = FALSE}
 
 global_slf_plot <- ggplot() +
   geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +

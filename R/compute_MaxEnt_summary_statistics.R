@@ -232,7 +232,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
            filename = file.path(mypath, "plots", paste0(model.name, "_ROC.jpg")),
            height = 8,
            width = 10,
-           device = "jpeg",
+           device = jpeg,
            dpi = "retina")
 
 
@@ -269,7 +269,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
                filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_univar_resp_curve_", b, ".jpg")),
                height = 8,
                width = 10,
-               device = "jpeg",
+               device = jpeg,
                dpi = "retina")
 
         # remove temp object
@@ -312,7 +312,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
                  filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_marg_resp_curve_", b, "_", c, ".jpg")),
                  height = 8,
                  width = 10,
-                 device = "jpeg",
+                 device = jpeg,
                  dpi = "retina")
 
           # remove temp object
@@ -387,7 +387,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
                filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_", a, "ing.jpg")),
                height = 8,
                width = 10,
-               device = "jpeg",
+               device = jpeg,
                dpi = "retina")
 
         # remove temp object
@@ -420,7 +420,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
            filename = file.path(mypath, "plots", paste0(model.name, "_variable_importance.jpg")),
            height = 8,
            width = 10,
-           device = "jpeg",
+           device = jpeg,
            dpi = "retina")
 
 

@@ -2,7 +2,7 @@
 title: "Ensemble regional-scale models using a weighted mean"
 output: rmarkdown::html_vignette
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University, [Center for Biodiversity](http://www.biodiversitycenter.org/), sam.owens@temple.edu]"
 date: "2024-08-09"
 ---
 
@@ -422,7 +422,9 @@ terra::writeRaster(
 
 I will do the same for the CMIP6 exdet rasters
 
-### SSP 126 {.hidden}
+<!--
+
+### SSP 126 
 
 ```{r exdet CMIP6 stack- SSP126, message = FALSE}
 
@@ -484,7 +486,7 @@ terra::writeRaster(
 
 ```
 
-### SSP 370 {.hidden}
+### SSP 370 
 
 ```{r exdet CMIP6 stack- SSP370, message = FALSE}
 
@@ -546,7 +548,7 @@ terra::writeRaster(
 
 ```
 
-### SSP 585 {.hidden}
+### SSP 585 
 
 ```{r exdet CMIP6 stack- SSP585, message = FALSE}
 
@@ -608,6 +610,8 @@ terra::writeRaster(
 
 ```
 
+-->
+
 ## 3.2 Weight Models using Test AUC
 
 The second step in this weighting process is to also weight each model by its goodness-of-fit. We will use the AUC value for each model and integrate this into the weighting formula so that each model contributes based on this goodness of fit. AUC already ranges from 0-1, so if AUC is 1 then the weight will remain unchanged for that model. However, if AUC is less than 1, it will lessen the weight of that model in the overall ensemble. I will multiply each raster by its AUC value and then save these rasters as ensemble weights.
@@ -662,7 +666,9 @@ terra::writeRaster(
 
 Now, I will perform the same operation to the CMIP6 rasters.
 
-### SSP 126 {.hidden}
+<!--
+
+### SSP 126 
 
 ```{r weight CMIP6 exdet rasters using AUC- SSP126, message = FALSE}
 
@@ -710,7 +716,7 @@ terra::writeRaster(
 
 ```
 
-### SSP 370 {.hidden}
+### SSP 370 
 
 ```{r weight CMIP6 exdet rasters using AUC- SSP370, message = FALSE}
 
@@ -758,7 +764,7 @@ terra::writeRaster(
 
 ```
 
-### SSP 585 {.hidden}
+### SSP 585
 
 ```{r weight CMIP6 exdet rasters using AUC- SSP585, message = FALSE}
 
@@ -805,6 +811,8 @@ terra::writeRaster(
   )
 
 ```
+
+-->
 
 ## 3.3 Apply weighting factor to models
 
@@ -1031,8 +1039,6 @@ MTP_all <- c(MTP_regional_native, MTP_regional_invaded, MTP_regional_invaded_asi
 
 ### MTSS
 
-#### historical
-
 First, I will perform these operations for the historical rasters.
 
 ```{r weights for hist rasters}
@@ -1116,7 +1122,9 @@ MTSS_hist_thresh <- stats::weighted.mean(
 
 Next, I will perform this operation for the CMIP6 rasters
 
-#### ssp126 {.hidden}
+<!--
+
+#### ssp126
 
 ```{r weights for CMIP6 rasters- ssp126}
 
@@ -1197,7 +1205,7 @@ MTSS_126_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp370 {.hidden}
+#### ssp370 
 
 ```{r weights for CMIP6 rasters- ssp370}
 
@@ -1278,7 +1286,7 @@ MTSS_370_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp585 {.hidden}
+#### ssp585 
 
 ```{r weights for CMIP6 rasters- ssp585}
 
@@ -1361,9 +1369,9 @@ MTSS_585_thresh <- stats::weighted.mean(
 
 I need to repeat the above operations for the MTP thresholds as well. I will then put all of these thresholds into a table and save it in the ensemble folder.
 
-### MTP
+-->
 
-#### historical
+### MTP
 
 ```{r weights for hist rasters- MTP- hist}
 
@@ -1442,7 +1450,9 @@ MTP_hist_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp126 {.hidden}
+<!--
+
+#### ssp126 
 
 ```{r weights for CMIP6 rasters- MTP- ssp126}
 
@@ -1521,7 +1531,7 @@ MTP_126_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp370 {.hidden}
+#### ssp370
 
 ```{r weights for CMIP6 rasters- MTP- ssp370}
 
@@ -1600,7 +1610,7 @@ MTP_370_thresh <- stats::weighted.mean(
 
 ```
 
-#### ssp585 {.hidden}
+#### ssp585
 
 ```{r weights for CMIP6 rasters- MTP- ssp585}
 
@@ -1679,6 +1689,8 @@ MTP_585_thresh <- stats::weighted.mean(
 
 ```
 
+-->
+
 ## 4.4 Combine in table and export
 
 Now, I can create a table for these thresholds and export these data.
@@ -1710,9 +1722,7 @@ readr::write_rds(ensemble_thresh_values, file = file.path(here::here(), "data", 
 
 ```
 
-Display table
-
-```{r display table, eval = TRUE}
+```{r display table, eval = TRUE, include = FALSE}
 
 ensemble_thresh_values <- read_rds(file = file.path(here::here(), "data", "ensemble_threshold_values.rds"))
 
@@ -1896,6 +1906,8 @@ exdet_regional_ensemble_hist_plot <- map_exdet(
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
     ) 
 
+exdet_regional_ensemble_hist_plot
+
 ```
 
 ```{r save plot- exdet hist, warning = FALSE}
@@ -1929,7 +1941,7 @@ exdet_126_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 126, eval = TRUE}
+```{r create CMIP6 exdet plot- ssp 126, eval = TRUE, echo = FALSE}
 
 # re-load object as df
 exdet_126_mean <- terra::rast(x =  file.path(
@@ -1957,9 +1969,11 @@ exdet_regional_ensemble_126_plot <- map_exdet(
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
   ) 
 
+exdet_regional_ensemble_126_plot
+
 ```
 
-```{r save plot- exdet ssp126, warning = FALSE}
+```{r save plot- exdet ssp126, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -1990,7 +2004,7 @@ exdet_370_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 370, eval = TRUE}
+```{r create CMIP6 exdet plot- ssp 370, eval = TRUE, echo = FALSE}
 
 # re-load object as df
 exdet_370_mean <- terra::rast(x =  file.path(
@@ -2018,9 +2032,11 @@ exdet_regional_ensemble_370_plot <- map_exdet(
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
   ) 
 
+exdet_regional_ensemble_370_plot
+
 ```
 
-```{r save plot- exdet ssp370, warning = FALSE}
+```{r save plot- exdet ssp370, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -2051,7 +2067,7 @@ exdet_585_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 585, eval = TRUE}
+```{r create CMIP6 exdet plot- ssp 585, eval = TRUE, echo = FALSE}
 
 # re-load object as df
 exdet_585_mean <- terra::rast(x =  file.path(
@@ -2080,9 +2096,11 @@ exdet_regional_ensemble_585_plot <- map_exdet(
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
   ) 
 
+exdet_regional_ensemble_585_plot
+
 ```
 
-```{r save plot- exdet ssp585, warning = FALSE}
+```{r save plot- exdet ssp585, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -2119,7 +2137,7 @@ exdet_ssp_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp mean, eval = TRUE}
+```{r create CMIP6 exdet plot- ssp mean, eval = TRUE, echo = FALSE}
 
 # re-load object as df
 exdet_ssp_mean <- terra::rast(x =  file.path(
@@ -2147,9 +2165,11 @@ exdet_regional_ensemble_mean_plot <- map_exdet(
     subtitle = "Global climate divergence from 'regional_ensemble' model training set"
   ) 
 
+exdet_regional_ensemble_mean_plot
+
 ```
 
-```{r save plot- exdet ssp mean, warning = FALSE}
+```{r save plot- exdet ssp mean, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -2315,7 +2335,9 @@ ggsave(
 
 ```
 
-### ssp 126 {.hidden}
+<!--
+
+### ssp 126 
 
 ```{r ensemble mic rasters and make data frame- ssp126}
 
@@ -2377,7 +2399,7 @@ ggsave(
 
 ```
 
-### ssp 370 {.hidden}
+### ssp 370 
 
 ```{r ensemble mic rasters and make data frame- ssp370}
 
@@ -2439,7 +2461,7 @@ ggsave(
 
 ```
 
-### ssp 585 {.hidden}
+### ssp 585 
 
 ```{r ensemble mic rasters and make data frame- ssp585}
 
@@ -2501,6 +2523,8 @@ ggsave(
 
 ```
 
+-->
+
 ### ssp mode 
 
 ```{r stack mic rasters}
@@ -2524,7 +2548,7 @@ mic_ssp_mode <- terra::app(
 
 ```
 
-```{r create CMIP6 mic plot- ssp mean, eval = TRUE}
+```{r create CMIP6 mic plot- ssp mean, eval = TRUE, echo = FALSE}
 
 # re-load object as df
 mic_ssp_mode_df <- terra::rast(x =  file.path(
@@ -2555,7 +2579,7 @@ mic_ssp_mode_plot <- ggplot() +
 
 ```
 
-```{r save plot- mic ssp mean, warning = FALSE}
+```{r save plot- mic ssp mean, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -2617,7 +2641,7 @@ ensemble_colors <- c(
 
 ```
 
-```{r plot proportions, eval = TRUE}
+```{r plot proportions, eval = TRUE, echo = FALSE}
 
 ensemble_relative_cont_plot <- ggplot() +
   geom_bar(aes(x = names(relative_weights_prop), y = relative_weights_prop, fill = ensemble_colors), stat = "identity", color = "black") +
@@ -2635,7 +2659,7 @@ ensemble_relative_cont_plot <- ggplot() +
 
 ```
 
-```{r save plot- relative weights, warning = FALSE}
+```{r save plot- relative weights, warning = FALSE, include = FALSE}
 
 ggsave(
   ensemble_relative_cont_plot, 
@@ -2658,9 +2682,9 @@ Now that we have created an ensembled prediction for our regional-scale models, 
 
 3. Mesgaran, M. B., Cousens, R. D., & Webber, B. L. (2014). Here be dragons: A tool for quantifying novelty due to covariate range and correlation change when projecting species distribution models. Diversity and Distributions, 20(10), 1147–1159. https://doi.org/10.1111/ddi.12209
 
+<!--
 
-
-# Appendix {.hidden}
+# Appendix 
 
 ## Unweighted mean ensemble
 
@@ -2883,3 +2907,5 @@ ggsave(
   )
 
 ```
+
+-->

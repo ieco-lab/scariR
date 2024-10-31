@@ -1452,11 +1452,11 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   ## return report and save if save.report = TRUE-------------------------------
 
+  # output into global env
+  assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+
+
   if(save.report == TRUE) {
-
-    # return output
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
-
 
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {
@@ -1476,7 +1476,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_present.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
     suppressWarnings(ggsave(
@@ -1484,7 +1484,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_2041-2070_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1494,7 +1494,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_map_2041-2070_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1504,7 +1504,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_plot.jpg")),
       height = 8,
       width = 8,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1579,7 +1579,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   } else if(save.report == FALSE) {
 
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+    cli::cli_alert_success("Report NOT saved to file")
 
   }
 

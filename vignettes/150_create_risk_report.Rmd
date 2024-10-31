@@ -1,5 +1,5 @@
 ---
-title: "Example usage of create_risk_report.R to create reports of key viticultural areas"
+title: "Example usage of create_risk_report() to create reports of key viticultural areas"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
@@ -182,7 +182,7 @@ slfSpread::create_risk_report(
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = FALSE,
+  save.report = TRUE,
   buffer.dist = 20000
 )
 
@@ -214,11 +214,11 @@ slfSpread::create_risk_report(
 ### USA
 # the USA map usually comes including Alaska and hawaii, which we do not want
 
-USA_current <- united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+USA_current <- united_states_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-125, -65) +
   ylim(25, 50)
 
-USA_future <- united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+USA_future <- united_states_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-125, -65) +
   ylim(25, 50)
 
@@ -233,7 +233,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -242,7 +242,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -251,7 +251,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -414,11 +414,11 @@ slfSpread::create_risk_report(
 # The map is zoomed very far out because of some territories belonging to spain.
 # I will try to limiting the x and y coordinates of the plot to zoom in.
 
-spain_current <- spain_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+spain_current <- spain_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-10, 5) +
   ylim(35, 44)
 
-spain_future <- spain_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+spain_future <- spain_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-10, 5) +
   ylim(35, 44)
 
@@ -433,7 +433,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -442,7 +442,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -451,17 +451,17 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "Spain_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
 # the canary islands also have a number of vineyards so I will create maps of just those
-canary_current <- spain_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+canary_current <- spain_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-19, -13) +
   ylim(27, 30) +
   labs(subtitle = "Spain: canary islands")
 
-canary_future <- spain_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+canary_future <- spain_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-19, -13) +
   ylim(27, 30) +
   labs(subtitle = "Spain: canary islands")
@@ -478,7 +478,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -487,7 +487,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -496,7 +496,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Spain", "canary_islands_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -509,11 +509,11 @@ ggsave(
 # The map is zoomed very far out because of some territories belonging to spain.
 # I will try to limiting the x and y coordinates of the plot to zoom in.
 
-portugal_current <- portugal_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+portugal_current <- portugal_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-18, -6) +
   ylim(32, 42)
 
-portugal_future <- portugal_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+portugal_future <- portugal_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-18, -6) +
   ylim(32, 42)
 
@@ -528,7 +528,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -537,7 +537,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -546,7 +546,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Portugal", "portugal_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -555,11 +555,11 @@ ggsave(
 ```{r edit south_africa maps}
 
 
-south_africa_current <- south_africa_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+south_africa_current <- south_africa_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(15, 35) +
   ylim(-35, -22)
 
-south_africa_future <- south_africa_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+south_africa_future <- south_africa_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(15, 35) +
   ylim(-35, -22)
 
@@ -574,7 +574,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -583,7 +583,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -592,7 +592,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "South Africa", "south_africa_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -704,11 +704,11 @@ slfSpread::create_risk_report(
 # The map is zoomed very far out because of some territories belonging to spain.
 # I will try to limiting the x and y coordinates of the plot to zoom in.
 
-new_zealand_current <- new_zealand_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+new_zealand_current <- new_zealand_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(165, 180) +
   ylim(-48, -34)
 
-new_zealand_future <- new_zealand_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+new_zealand_future <- new_zealand_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(165, 180) +
   ylim(-48, -34)
 
@@ -723,7 +723,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -732,7 +732,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -741,7 +741,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "New Zealand", "new_zealand_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -824,11 +824,11 @@ slfSpread::create_risk_report(
 
 ```{r edit australia maps}
 
-australia_current <- australia_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+australia_current <- australia_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(110, 155) +
   ylim(-44, -10)
 
-australia_future <- australia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+australia_future <- australia_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(110, 155) +
   ylim(-44, -10)
 
@@ -843,7 +843,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -852,7 +852,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -861,7 +861,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Australia", "australia_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -869,10 +869,10 @@ ggsave(
 
 ```{r edit russia maps}
 
-russia_current <- russia_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+russia_current <- russia_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(20, 180) 
 
-russia_future <- russia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+russia_future <- russia_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(20, 180) 
 
 russia_shift <- russia_slf_risk_report[["range_shift_map"]] +
@@ -885,7 +885,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -894,7 +894,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -903,7 +903,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Russia", "russia_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -911,10 +911,10 @@ ggsave(
 
 ```{r edit chile maps}
 
-chile_current <- chile_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+chile_current <- chile_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-78, -65) 
 
-chile_future <- chile_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+chile_future <- chile_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-78, -65) 
 
 chile_shift <- chile_slf_risk_report[["range_shift_map"]] +
@@ -927,7 +927,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -936,7 +936,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -945,7 +945,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "Chile", "chile_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -1009,11 +1009,11 @@ slfSpread::create_risk_report(
 
 ```{r edit france maps}
 
-france_current <- france_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+france_current <- france_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   xlim(-5, 10) +
   ylim(41, 51)
 
-france_future <- france_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+france_future <- france_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   xlim(-5, 10) +
   ylim(41, 51)
 
@@ -1028,7 +1028,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_risk_map_present_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -1037,7 +1037,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_risk_map_2055_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -1046,7 +1046,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "reports", "France", "france_range_shift_map_edited.jpg"),
   height = 8,
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
 )
 
@@ -1384,7 +1384,7 @@ spain_risk_plot <- ggplot_gtable(spain_risk_plot) %>%
 
   # edit maps
 
-romania_risk_map <- romania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+romania_risk_map <- romania_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1410,7 +1410,7 @@ romania_risk_map <- ggplot_gtable(romania_risk_map) %>%
 
 
 
-USA_risk_map <-  united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+USA_risk_map <-  united_states_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1495,7 +1495,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "differential_risk_shift_countries.jpg"),
   height = 10, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1595,7 +1595,7 @@ michigan_risk_plot <- ggplot_gtable(michigan_risk_plot) %>%
 
   # edit maps
 
-washington_risk_map <- washington_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+washington_risk_map <- washington_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1621,7 +1621,7 @@ washington_risk_map <- ggplot_gtable(washington_risk_map) %>%
 
 
 
-oregon_risk_map <-  oregon_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+oregon_risk_map <-  oregon_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1646,7 +1646,7 @@ oregon_risk_map <- ggplot_gtable(oregon_risk_map) %>%
  
 
 
-michigan_risk_map <- michigan_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+michigan_risk_map <- michigan_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1696,7 +1696,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "risk_shift_viticultural_states.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1852,7 +1852,7 @@ australia_risk_map <- ggplot_gtable(australia_risk_map) %>%
 
 
 # tasmania
-tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+tasmania_risk_map <- tasmania_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1905,7 +1905,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_oceania.jpg"),
   height = 10, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2000,7 +2000,7 @@ chile_risk_map <- ggplot_gtable(chile_risk_map) %>%
   wrap_ggplot_grob()
 
 
-argentina_risk_map <- argentina_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+argentina_risk_map <- argentina_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2050,7 +2050,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_SAmerica.jpg"),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2235,7 +2235,7 @@ france_risk_map <- ggplot_gtable(france_risk_map) %>%
   wrap_ggplot_grob()
 
 # germany map
-germany_risk_map <- germany_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+germany_risk_map <- germany_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2259,7 +2259,7 @@ germany_risk_map <- ggplot_gtable(germany_risk_map) %>%
   wrap_ggplot_grob()
   
 # italy map
-italy_risk_map <- italy_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+italy_risk_map <- italy_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2310,7 +2310,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_western_europe.jpg"),
   height = 12, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2441,7 +2441,7 @@ greece_risk_plot <- ggplot_gtable(greece_risk_plot) %>%
 
 # edit maps
 # hungary
-austria_risk_map <- austria_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+austria_risk_map <- austria_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2468,7 +2468,7 @@ austria_risk_map <- ggplot_gtable(austria_risk_map) %>%
 
 
 # hungary
-hungary_risk_map <- hungary_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+hungary_risk_map <- hungary_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2493,7 +2493,7 @@ hungary_risk_map <- ggplot_gtable(hungary_risk_map) %>%
   wrap_ggplot_grob()
 
 # czechia map
-czechia_risk_map <- czechia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+czechia_risk_map <- czechia_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2517,7 +2517,7 @@ czechia_risk_map <- ggplot_gtable(czechia_risk_map) %>%
   wrap_ggplot_grob()
   
 # greece map
-greece_risk_map <- greece_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+greece_risk_map <- greece_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2568,7 +2568,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_eastern_europe.jpg"),
   height = 12, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2668,7 +2668,7 @@ south_africa_risk_map <- ggplot_gtable(south_africa_risk_map) %>%
 
 
 # algeria
-algeria_risk_map <- algeria_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+algeria_risk_map <- algeria_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2717,7 +2717,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_africa.jpg"),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2792,7 +2792,7 @@ mexico_risk_plot <- ggplot_gtable(mexico_risk_plot) %>%
 
 # edit maps
 # canada
-canada_risk_map <- canada_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+canada_risk_map <- canada_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2818,7 +2818,7 @@ canada_risk_map <- ggplot_gtable(canada_risk_map) %>%
 
 
 # mexico
-mexico_risk_map <- mexico_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+mexico_risk_map <- mexico_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2868,7 +2868,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_north_america.jpg"),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2943,7 +2943,7 @@ georgia_risk_plot <- ggplot_gtable(georgia_risk_plot) %>%
 
 # edit maps
 # türkiye
-türkiye_risk_map <- türkiye_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+türkiye_risk_map <- türkiye_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -2969,7 +2969,7 @@ türkiye_risk_map <- ggplot_gtable(türkiye_risk_map) %>%
 
 
 # georgia
-georgia_risk_map <- georgia_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+georgia_risk_map <- georgia_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3019,7 +3019,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_west_asia.jpg"),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -3123,7 +3123,7 @@ japan_risk_plot <- ggplot_gtable(japan_risk_plot) %>%
 
   # edit maps
 # new zealand
-china_risk_map <- china_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+china_risk_map <- china_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3150,7 +3150,7 @@ china_risk_map <- ggplot_gtable(china_risk_map) %>%
 
 
 # south_korea
-south_korea_risk_map <- south_korea_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+south_korea_risk_map <- south_korea_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3176,7 +3176,7 @@ south_korea_risk_map <- ggplot_gtable(south_korea_risk_map) %>%
 
 
 # japan
-japan_risk_map <- japan_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+japan_risk_map <- japan_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3229,7 +3229,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "future_viticultural_regions_east_asia.jpg"),
   height = 10, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -3239,7 +3239,7 @@ ggsave(
 
 ```{r USA}
 
-USA_risk_map_present <-  united_states_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+USA_risk_map_present <-  united_states_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3264,7 +3264,7 @@ USA_risk_map_present <- ggplot_gtable(USA_risk_map_present) %>%
  
 
 
-USA_risk_map_future <-  united_states_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+USA_risk_map_future <-  united_states_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3308,7 +3308,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "USA_risk_maps.jpg"),
   height = 10, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -3318,7 +3318,7 @@ ggsave(
 
 ```{r washington}
 
-WA_risk_map_present <-  washington_slf_risk_report[["risk_maps"]][["current_risk_map"]] +
+WA_risk_map_present <-  washington_slf_risk_report[["risk_maps"]][["present_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3341,7 +3341,7 @@ WA_risk_map_present <- ggplot_gtable(WA_risk_map_present) %>%
  
 
 
-WA_risk_map_future <-  washington_slf_risk_report[["risk_maps"]][["2055_risk_map"]] +
+WA_risk_map_future <-  washington_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -3383,7 +3383,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "washington_risk_maps.jpg"),
   height = 10, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

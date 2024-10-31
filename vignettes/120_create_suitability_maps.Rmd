@@ -287,6 +287,8 @@ map_cloglog_output <- function(raster.df, raster.value.name, thresh.MTP, thresh.
 
 ## 1.2 Map cloglog output of models- historical
 
+First, I will map the ensemble of the three regional-scale cloglog outputs.
+
 ```{r map regional ensemble: 1981-2010, eval = TRUE}
 
 regional_ensemble_1995_plot <- map_cloglog_output(
@@ -301,6 +303,8 @@ regional_ensemble_1995_plot <- map_cloglog_output(
     subtitle = "1981-2010",
     caption = "MTP & MTSS thresholds | clamped"
     ) 
+
+regional_ensemble_1995_plot
 
 ```
 
@@ -317,7 +321,7 @@ ggsave(
 
 ```
 
-```{r map global: 1981-2010, eval = TRUE}
+```{r map global: 1981-2010, eval = TRUE, echo = FALSE}
 
 global_1995_plot <- map_cloglog_output(
   raster.df = global_1995_df, # the dataframe of the raster
@@ -332,9 +336,11 @@ global_1995_plot <- map_cloglog_output(
     caption = "MTP & MTSS thresholds | clamped"
     ) 
 
+global_1995_plot
+
 ```
 
-```{r save plot- global hist}
+```{r save plot- global hist, include = FALSE}
 
 ggsave(
   global_1995_plot,
@@ -351,7 +357,9 @@ I will repeat the same process to map the predictions for each ssp scenario for 
 
 ## 1.3 Map cloglog output of models- CMIP6 
 
-### ssp 126 {.hidden}
+<!--
+
+### ssp 126 
 
 ```{r map regional ensemble: ssp126}
 
@@ -415,7 +423,7 @@ ggsave(
 
 ```
 
-### ssp 370 {.hidden}
+### ssp 370
 
 ```{r map regional ensemble: ssp370}
 
@@ -481,7 +489,7 @@ ggsave(
 
 ```
 
-### ssp 585 {.hidden}
+### ssp 585 
 
 ```{r map regional ensemble: ssp585}
 
@@ -545,11 +553,13 @@ ggsave(
 
 ```
 
+-->
+
 ### ssp mean
 
-Finally, I will plot the mean of the three ssp scenarios.
+Finally, I will plot the mean of the three ssp scenarios. First, the regional ensemble.
 
-```{r map regional ensemble: ssp mean, eval = TRUE}
+```{r map regional ensemble: ssp mean, eval = TRUE, echo = FALSE}
 
 # I had to change the row call of the thresholds tibble to row 2 [2, x]
 
@@ -566,9 +576,11 @@ regional_ensemble_2055_ssp_mean_plot <- map_cloglog_output(
     caption = "MTP & MTSS thresholds | clamped"
     ) 
 
+regional_ensemble_2055_ssp_mean_plot
+
 ```
 
-```{r save plot- ensemble ssp mean}
+```{r save plot- ensemble ssp mean, include = FALSE}
 
 ggsave(
   regional_ensemble_2055_ssp_mean_plot,
@@ -581,7 +593,9 @@ ggsave(
 
 ```
 
-```{r map global: ssp_mean, eval = TRUE}
+Now I will plot the global-scale model.
+
+```{r map global: ssp_mean, eval = TRUE, echo = FALSE}
 
 global_2055_ssp_mean_plot <- map_cloglog_output(
   raster.df = global_2055_ssp_mean_df, # the dataframe of the raster
@@ -596,9 +610,11 @@ global_2055_ssp_mean_plot <- map_cloglog_output(
     caption = "MTP & MTSS thresholds | clamped"
     ) 
 
+global_2055_ssp_mean_plot
+
 ```
 
-```{r save plot- global ssp_mean}
+```{r save plot- global ssp_mean, include = FALSE}
 
 ggsave(
   global_2055_ssp_mean_plot,
