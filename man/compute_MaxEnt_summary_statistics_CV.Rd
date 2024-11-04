@@ -94,9 +94,11 @@ The function requires the packages 'tidyverse', 'here', 'devtools', 'rJava', 'di
 }
 \examples{
 
-ARGUMENT USAGE:
-model.obj = global_model
-model.name = "global"
+# ARGUMENT USAGE:
+# model.obj = global_model
+# model.name = "global"
+
+```R
 
 mypath <- file.path(here::here() \%>\%
                     dirname(),
@@ -118,5 +120,7 @@ test.obj = global_test, # data you wish to use to test the model
 jk.test.type = c("train", "test"), # types of jackknife curves to be created
 plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
 )
+
+```
 
 }

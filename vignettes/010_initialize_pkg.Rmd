@@ -1,0 +1,119 @@
+---
+title: "Initialization of renv package for dependencies"
+output: rmarkdown::html_vignette
+author: 
+    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+date: "2024-10-16"
+---
+
+In this file, I will list the dependency packages for slfSpread and initialize the `renv` package to keep my other package versions consistent. End users should only run sections 1 and 2. Section 3 is for troubleshooting common issues. Section 4 should only be used for the first-time initialization of the package.
+
+# Get package dependencies
+
+```{r set global chunk opts, include = FALSE}
+
+library(knitr)
+
+# eval = FALSE so that outputs not overwritten
+knitr::opts_chunk$set(eval = FALSE)
+
+```
+
+```{r library packages}
+
+library(tidyverse)
+library(renv)
+library(here)
+library(devtools)
+
+```
+
+Run this chunk to see the dependencies for the slfSpread package.
+
+```{r get dependencies list}
+
+packages <- renv::dependencies() %>%
+  # select unique package names
+  dplyr::summarize(package = sort(unique(Package))) %>%
+  as.matrix() %>%
+  as.character()
+
+```
+
+# Retrieve correct dependencies for slfSpread
+
+```{r check status}
+
+# first, check the status of your current package versions vs those in renv
+renv::status()
+
+```
+
+```{r restore as necessary}
+
+# you should run this to ensure the correct package versions are used while you are working within this project. This aligns the sys library with the lockfile.
+renv::restore()
+# only use this version if you want to edit your system library to match the renv library
+renv::restore(clean = TRUE)
+
+```
+
+
+# Troubleshooting
+
+The first thing you should try is updating your R and Rtools versions. This messed up my renv for quite awhile.
+
+```{r troubleshooting}
+
+# hydrate() corrected an issue where renv could not discover any local packages in the system library
+renv::hydrate()
+
+# install specific packages (usually needed for packages not on the CRAN)
+# you may need to enter your github credentials into the .Renviron or log into github for this to work
+# first, create a github PAT on website
+usethis::create_github_token()
+# enter created PAT (personal access token) into the .Renviron
+## be sure to use defaults and allow download and upload of packages
+gitcreds::gitcreds_set()
+# now install packages not on the CRAN
+devtools::install_github("densitymodelling/dsmextra") # dsmextra
+devtools::install_github("ieco-lab/lydemapr") # lydemapr
+devtools::install_github("jasonleebrown/humboldt") # humboldt
+devtools::install_github("ropensci/rnaturalearthhires")# rnaturalearthhires
+
+# renv restore to previous package versions
+# only use if the current package version need to be reverted to a previous state
+renv::history()
+renv::revert(project = "slfSpread", commit = "")
+
+# repair common issues
+renv::repair()
+
+# update renv to latest version in this project (but this will differ from the source download of this project folder)
+renv::upgrade()
+
+# run this to rebuild and reinstall all packages in the library- this starts them from a clean slate
+renv::rebuild()
+
+```
+
+# one-time renv initialization
+
+I created this section to initialize the renv package for the first time ONLY. DO NOT run this section if you have downloaded this package as an outside user.
+
+```{r one-time initialization}
+
+# initialization of project renv
+# only run once
+renv::init()
+
+# record newest package versions in lockfile
+renv::snapshot()
+
+# update packages
+# only run as needed if a package breaks or something
+renv::update()
+# alternatively, install the latest CRAN versions:
+renv::install()
+
+```

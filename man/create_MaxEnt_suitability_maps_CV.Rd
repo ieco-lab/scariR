@@ -172,6 +172,8 @@ Map style default options:
 \examples{
 
 # ARGUMENT USAGE:
+
+```R
 mypath <- file.path(here::here() \%>\%
                     dirname(),
                      "maxent/models/slf_global_v3")
@@ -196,5 +198,7 @@ map.thresh = TRUE, # whether thresholded versions of these maps should be create
 map.thresh.extra = "MTP",
 summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 )
+
+```
 
 }

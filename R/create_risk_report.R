@@ -23,11 +23,12 @@
 #'@param save.report Logical. Should the report be saved to file? File location
 #'specified by `mypath`. Note, this requires the use of Google Chrome.
 #'
-#'@param mypath Character. A file path to the sub directory where the model
-#'output will be stored. Should be used with the [file.path()] function
-#'(i.e. with '/' instead of '\\'). If this sub directory does not already exist
-#'and should be created by the function, set `create.dir` = TRUE. This will
-#'create a folder from the last part of the filepath in `mypath`.
+#'@param mypath Character. Only required if saving the report to file.
+#'A file path to the sub directory where the model output will be stored.
+#'Should be used with the [file.path()] function (i.e. with '/' instead of '\\').
+#'If this sub directory does not already exist and should be created by the
+#'function, set `create.dir` = TRUE. This will create a folder from the last
+#'part of the filepath in `mypath`.
 #'
 #'@param raster.path Character. A file path to the directory containing the rasters
 #'necessary to build this function. See details for the rasters that should be
@@ -112,6 +113,9 @@
 #'@examples
 #'
 #'# EXAMPLE USAGE:
+#'
+#'```R
+#'
 #'slfSpread::create_risk_report(
 #' locality.iso = "aus",
 #' locality.name = "australia",
@@ -122,14 +126,23 @@
 #' buffer.dist = 20000 # this is only used for buffered predictions, default is NA for simple predictions.
 #')
 #'
+#'```
+#'
 #'# ARGUMENT USAGE:
+#'
+#'```R
+#'
 #'map_style <- list(
 #' xlab("longitude"),
 #' ylab("latitude"),
 #' theme_classic()
 #')
 #'
+#'```
+#'
 #'# The output is in list format, so it should be called using this notation:
+#'
+#'```R
 #'
 #'# find viticultural regions in locality
 #'viticultural_regions <- slf_risk_report[[2]]
@@ -148,8 +161,10 @@
 #'
 #'readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
 #'
+#'```
+#'
 #'@export
-create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA, buffer.dist = NA) {
+create_risk_report <- function(locality.iso, locality.name = locality.iso, locality.type, save.report = FALSE, mypath = NA, raster.path = file.path(here::here(), "vignette-outputs", "rasters"), create.dir = FALSE, map.style = NA, buffer.dist = NA) {
 
   # Error checks----------------------------------------------------------------
 
@@ -170,7 +185,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     stop()
   }
 
-  if (is.character(mypath) == FALSE) {
+  if (!is.na(mypath) & is.character(mypath) == FALSE) {
     cli::cli_abort("Parameter 'mypath' must be of type character")
     stop()
   }
@@ -197,8 +212,11 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   ## Create sub directory for files---------------------------------------------
 
   if (create.dir == FALSE) {
+
     # print message
     cli::cli_alert_info("proceeding without creating report output subdirectory folder")
+
+  } else if (create.dir == TRUE) {
 
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {
@@ -206,7 +224,6 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       cli::cli_alert_danger(paste0("Report output will not be saved because directory does not exist:\n", mypath))
     }
 
-  } else if (create.dir == TRUE) {
     # create sub directory from ending of mypath object
     dir.create(mypath)
     # print message
@@ -1435,11 +1452,11 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   ## return report and save if save.report = TRUE-------------------------------
 
+  # output into global env
+  assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+
+
   if(save.report == TRUE) {
-
-    # return output
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
-
 
     # check if directory exists
     if(dir.exists(mypath) == FALSE) {
@@ -1459,7 +1476,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_present.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
     suppressWarnings(ggsave(
@@ -1467,7 +1484,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_risk_map_2041-2070_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1477,7 +1494,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_range_shift_map_2041-2070_ssp_126_370_585_GFDL-ESM4.jpg")),
       height = 8,
       width = 10,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1487,7 +1504,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
       filename = file.path(mypath, paste0(locality_name_internal, "_L_delicatula_report_viticultural_risk_plot.jpg")),
       height = 8,
       width = 8,
-      device = "jpeg",
+      device = jpeg,
       dpi = "retina"
     ))
 
@@ -1562,7 +1579,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
   } else if(save.report == FALSE) {
 
-    assign(paste0(locality_name_internal, "_slf_risk_report"), slf_risk_report, envir = .GlobalEnv)
+    cli::cli_alert_success("Report NOT saved to file")
 
   }
 

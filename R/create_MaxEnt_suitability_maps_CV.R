@@ -145,6 +145,8 @@
 #'@examples
 #'
 #'# ARGUMENT USAGE:
+#'
+#'```R
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_global_v3")
@@ -169,6 +171,8 @@
 #'map.thresh.extra = "MTP",
 #'summary.file = file.path(mypath, "global_summary_all_iterations.csv")
 #')
+#'
+#'```
 #'
 #'@export
 create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, create.dir = FALSE, env.covar.obj, describe.proj = NA, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, thresh = NA, map.thresh = FALSE, map.thresh.extra = NA, map.style = NA, summary.file = NA) {
@@ -324,7 +328,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
              filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), b, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), "_", a, ".jpg")),
              height = 8,
              width = 12,
-             device = "jpeg",
+             device = jpeg,
              dpi = "retina")
 
       # end of loop-------------------------------------------------------------
@@ -542,7 +546,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
             filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, "_", map.thresh.extra_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
             height = 8,
             width = 12,
-            device = "jpeg",
+            device = jpeg,
             dpi = "retina"
             )
 
@@ -576,7 +580,7 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
                  filename = file.path(mypath, "plots", paste0(model.name, "_pred_suit", ifelse(clamp.pred == TRUE, "_clamped_", "_"), "cloglog_", toupper(i), "_thresholded_", thresh_name, ifelse(is.na(describe.proj), "", paste0("_", describe.proj)), ".jpg")),
                  height = 8,
                  width = 12,
-                 device = "jpeg",
+                 device = jpeg,
                  dpi = "retina")
 
           # message of completion

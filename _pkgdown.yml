@@ -1,6 +1,100 @@
 url: https://ieco-lab.github.io/slfSpread/
 template:
   bootstrap: 5
-  light-switch: true
-  params:
-    bootswatch: spacelab
+  bootswatch: united
+home:
+  links:
+  - text: iEco Lab
+    href: https://www.iecolab.org
+  - text: Other projects from iEco
+    href: https://github.com/ieco-lab
+  - text: Center for Biodiversity
+    href: https://www.biodiversitycenter.org
+  - text: Temple University Biology
+    href: https://cst.temple.edu/department-biology
+navbar:
+  structure:
+    left:
+    - intro
+    - articles
+    right:
+    - reference
+    - news
+    - github
+    - search
+search:
+  exclude: news/index.html
+reference:
+- title: Create localized risk reports
+  desc: Quantify SLF risk to viticultural areas at the state/provincial or country
+    level
+  contents: create_risk_report
+- title: Global-scale MaxEnt model functions
+  subtitle: Created for cross-validated MaxEnt models
+  desc: Calculate summary statistics, predict risk via maps or point-wise predictions
+  contents:
+  - compute_MaxEnt_summary_statistics_CV
+  - create_MaxEnt_suitability_maps_CV
+  - predict_xy_suitability_CV
+- title: Regional-scale MaxEnt model functions
+  subtitle: Created for MaxEnt models without cross-validation
+  desc: Calculate summary statistics, predict risk via maps or point-wise predictions
+  contents:
+  - compute_MaxEnt_summary_statistics
+  - create_MaxEnt_suitability_maps
+  - predict_xy_suitability
+- title: Quadrant plot functions
+  desc: Helper functions to format point-wise suitability predictions for visualization
+    in quadrant plots
+  contents:
+  - rescale_cloglog_suitability
+  - calculate_risk_quadrant
+articles:
+- title: Quantify risk to specific viticultural regions
+  desc: Example usage for `create_risk_report()` for creation of localized reports
+  navbar: Quantify risk to specific viticultural regions
+  contents: 150_create_risk_report
+- title: Initialize slfSpread
+  desc: Initialization of renv package for dependencies
+  navbar: Initialize slfSpread
+  contents: 010_initialize_pkg
+- title: Retrieve and tidy input data for MaxEnt
+  desc: Retrieve occurrence data and climate rasters
+  navbar: 1. Retrieve and tidy input data for MaxEnt
+  contents:
+  - 020_retrieve_SLF_records
+  - 030_retrieve_bioclim_variables
+- title: SDM modeling pipeline
+  desc: Setup and create a global-scale model and 3 regional-scale models
+  navbar: 2. SDM modeling pipeline
+  contents:
+  - 040_setup_global_MaxEnt_model
+  - 050_run_global_MaxEnt_model
+  - 060_setup_regional_MaxEnt_models
+  - 070_run_regional_invaded_MaxEnt_model
+  - 080_run_regional_invaded_asian_MaxEnt_model
+  - 090_run_regional_native_MaxEnt_model
+- title: Ensemble Regional-scale SDMs
+  desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale
+    models
+  navbar: 3. Ensemble Regional-scale SDMs
+  contents:
+  - 100_run_ExDet_MIC
+  - 110_ensemble_regional_models
+- title: Quantify SLF risk and model fit
+  desc: Create suitability maps, scatter plots and figures depicting the AUC, var
+    cont and response curves
+  navbar: 4. Quantify SLF risk and model fit
+  contents:
+  - 120_create_suitability_maps
+  - 130_create_suitability_xy_plots_viticultural
+  - 131_create_suitability_xy_plots_SLF
+  - 140_plot_response_curves
+  - 141_plot_AUC_var_cont
+  - 142_calculate_model_fit
+- title: Workflows and figures
+  desc: Format figures for publication and outline specific workflows for functions
+  contents:
+  - 051_compute_MaxEnt_summary_statistics_workflow
+  - 160_generate_format_figures
+

@@ -1,7 +1,8 @@
-pandoc: 3.1.11
+pandoc: '3.2'
 pkgdown: 2.1.0
 pkgdown_sha: ~
 articles:
+  010_initialize_pkg: 010_initialize_pkg.html
   020_retrieve_SLF_records: 020_retrieve_SLF_records.html
   030_retrieve_bioclim_variables: 030_retrieve_bioclim_variables.html
   040_setup_global_MaxEnt_model: 040_setup_global_MaxEnt_model.html
@@ -21,7 +22,8 @@ articles:
   142_calculate_model_fit: 142_calculate_model_fit.html
   150_create_risk_report: 150_create_risk_report.html
   160_generate_format_figures: 160_generate_format_figures.html
-last_built: 2024-09-03T21:23Z
+  slfSpread: slfSpread.html
+last_built: 2024-11-02T20:18Z
 urls:
   reference: https://ieco-lab.github.io/slfSpread/reference
   article: https://ieco-lab.github.io/slfSpread/articles

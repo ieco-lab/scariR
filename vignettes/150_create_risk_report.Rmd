@@ -1501,7 +1501,7 @@ ggsave(
 
 ### US States
 
-```{r edit plots}
+```{r edit plots- US States}
 
 washington_risk_plot <- washington_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -1670,7 +1670,7 @@ michigan_risk_map <- ggplot_gtable(michigan_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- US states}
 
 example_states_patchwork <- (
   # washington top row
@@ -1687,7 +1687,7 @@ example_states_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- US states}
 
 ggsave(
   example_states_patchwork, 
@@ -1702,7 +1702,7 @@ ggsave(
 
 ### Viticultural regions of interest- Oceania
 
-```{r edit plots}
+```{r edit plots- Oceania}
 
 new_zealand_risk_plot <- new_zealand_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -1876,7 +1876,7 @@ tasmania_risk_map <- ggplot_gtable(tasmania_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- Oceania}
 
 oceania_patchwork <- (
   # new_zealand top row
@@ -1896,7 +1896,7 @@ oceania_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- Oceania}
 
 ggsave(
   oceania_patchwork, 
@@ -1911,7 +1911,7 @@ ggsave(
 
 ### Viticultural regions of interest- South America
 
-```{r edit plots}
+```{r edit plots- SAmerica}
 
 chile_risk_plot <- chile_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
@@ -2024,7 +2024,7 @@ argentina_risk_map <- ggplot_gtable(argentina_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- SAmerica}
 
 SAmerica_patchwork <- (
   chile_risk_plot + argentina_risk_plot +
@@ -2041,7 +2041,7 @@ SAmerica_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- SAmerica}
 
 ggsave(
   SAmerica_patchwork, 
@@ -2056,7 +2056,7 @@ ggsave(
 
 ### Viticultural regions of interest- Western Europe
 
-```{r edit plots}
+```{r edit plots- western europe}
 
 # portugal
 portugal_risk_plot <- portugal_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2283,7 +2283,7 @@ italy_risk_map <- ggplot_gtable(italy_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- western europe}
 
 west_europe_patchwork <- (
   portugal_risk_plot + plot_spacer() + portugal_risk_map +
@@ -2301,7 +2301,7 @@ west_europe_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- western europe}
 
 ggsave(
   west_europe_patchwork, 
@@ -2316,7 +2316,7 @@ ggsave(
 
 ### Viticultural regions of interest- Eastern Europe
 
-```{r edit plots}
+```{r edit plots- eastern europe}
 
 # portugal
 austria_risk_plot <- austria_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2541,7 +2541,7 @@ greece_risk_map <- ggplot_gtable(greece_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- eastern europe}
 
 east_europe_patchwork <- (
   austria_risk_plot + plot_spacer() + austria_risk_map +
@@ -2559,7 +2559,7 @@ east_europe_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- eastern europe}
 
 ggsave(
   east_europe_patchwork, 
@@ -2574,7 +2574,7 @@ ggsave(
 
 ### Viticultural regions of interest- Africa
 
-```{r edit plots}
+```{r edit plots- africa}
 
 # south_africa
 south_africa_risk_plot <- south_africa_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2692,7 +2692,7 @@ algeria_risk_map <- ggplot_gtable(algeria_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- africa}
 
 africa_patchwork <- (
   south_africa_risk_plot + plot_spacer() + south_africa_risk_map +
@@ -2708,7 +2708,7 @@ africa_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- africa}
 
 ggsave(
   africa_patchwork, 
@@ -2723,7 +2723,7 @@ ggsave(
 
 ### Viticultural regions of interest- North America
 
-```{r edit plots}
+```{r edit plots- north america}
 
 # canada
 canada_risk_plot <- canada_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2843,7 +2843,7 @@ mexico_risk_map <- ggplot_gtable(mexico_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- north america}
 
 NAmerica_patchwork <- (
     canada_risk_plot + plot_spacer() + canada_risk_map +
@@ -2859,7 +2859,7 @@ NAmerica_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- north america}
 
 ggsave(
   NAmerica_patchwork, 
@@ -2874,7 +2874,7 @@ ggsave(
 
 ### Viticultural regions of interest- West Asia
 
-```{r edit plots}
+```{r edit plots- west asia}
 
 # türkiye
 türkiye_risk_plot <- türkiye_slf_risk_report[["viticultural_risk_plot"]] +
@@ -2994,7 +2994,7 @@ georgia_risk_map <- ggplot_gtable(georgia_risk_map) %>%
 
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- west asia}
 
 west_asia_patchwork <- (
     türkiye_risk_plot + plot_spacer() + türkiye_risk_map +
@@ -3010,7 +3010,7 @@ west_asia_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- west asia}
 
 ggsave(
   west_asia_patchwork, 
@@ -3025,7 +3025,7 @@ ggsave(
 
 ### Viticultural regions of interest- East Asia
 
-```{r edit plots}
+```{r edit plots- east asia}
 
 # china
 china_risk_plot <- china_slf_risk_report[["viticultural_risk_plot"]] +
@@ -3200,7 +3200,7 @@ japan_risk_map <- ggplot_gtable(japan_risk_map) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- east asia}
 
 east_asia_patchwork <- (
   # china top row
@@ -3220,7 +3220,7 @@ east_asia_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- east asia}
 
 ggsave(
   east_asia_patchwork, 
@@ -3288,7 +3288,7 @@ USA_risk_map_future <- ggplot_gtable(USA_risk_map_future) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots- USA}
 
 USA_patchwork <- (
   # romania top row
@@ -3299,7 +3299,7 @@ USA_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- USA}
 
 ggsave(
   USA_patchwork, 
@@ -3363,7 +3363,7 @@ WA_risk_map_future <- ggplot_gtable(WA_risk_map_future) %>%
   
 ```
 
-```{r patchwork plots}
+```{r patchwork plots WA}
 
 WA_patchwork <- (
   # romania top row
@@ -3374,7 +3374,7 @@ WA_patchwork <- (
 
 ```
 
-```{r save plot}
+```{r save plot- WA}
 
 ggsave(
   WA_patchwork, 

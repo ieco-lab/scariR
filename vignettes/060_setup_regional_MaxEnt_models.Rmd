@@ -135,7 +135,7 @@ webshot::webshot(
 
 ```
 
-```{r ggplot object for map style}
+```{r ggplot object for map style, eval = TRUE}
 
 map_style <- list(
   xlab("longitude"),
@@ -160,7 +160,7 @@ First, I will use the [kgc](https://cran.r-project.org/web/packages/kgc/index.ht
 
 I need to set up a path to my directory and the necessary bioclimatic raster layers.
 
-```{r set wd 1}
+```{r set wd 1, eval = TRUE}
 
 # path to directory
   mypath <- file.path(here::here() %>% 
@@ -214,7 +214,7 @@ minmax(kmz_data_rast)
 
 ```
 
-```{r retrieve names for zones and make factor}
+```{r retrieve names for zones and make factor, eval = TRUE}
 
 # retrieve names of zones
 kmz_names <- kgc::getZone(1:32)
@@ -324,7 +324,7 @@ terra::writeVector(
 
 ```
 
-```{r re-import datasets}
+```{r re-import datasets, eval = TRUE, message = FALSE}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
@@ -339,7 +339,7 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 First, I will overlay SLF presence points and use these to select which climate regions to keep. I will use these to create a reference layer. Then, I will use this layer to mask the layers that have already been cropped to N America.
 
-```{r filter presences from invaded range}
+```{r filter presences from invaded range, eval = TRUE}
 
 # extent object for North America
 ext.obj <- terra::ext(-140.976563, -51.064453, 15.182421, 60.586967)
@@ -537,7 +537,7 @@ I need to find a way to clip the climate zones by native vs invaded region, beca
 
 ### Intersect points and KG zones
 
-```{r import datasets- Ri.Asia}
+```{r import datasets- Ri.Asia, eval = TRUE}
 
 koeppen_zones_rast <- terra::rast(x = file.path(mypath, "models", "working_dir", "koeppen_climate_zones.asc")) 
 
@@ -548,7 +548,7 @@ slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables"
 
 I just want the presences from the invaded east asian range. I will manually filter out some points that accidentally got into both the native and Ri.Asia models.
 
-```{r filter presences from Ri.Asia range}
+```{r filter presences from Ri.Asia range, eval = TRUE}
 
 # extent object for Japan and SK
 ext.obj <- terra::ext(122.93816, 153.98561, 24.21210, 45.52041)
@@ -808,7 +808,7 @@ We will use this shapefile to cut out the KG climate zones, then will intersect 
 
 I will import the SLF presences and KG shapefile first.
 
-```{r import datasets- Rn}
+```{r import datasets- Rn, eval = TRUE}
 
 # slf presences
 slf_points <- read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
@@ -1022,7 +1022,7 @@ rm(ext.obj.crop)
 
 Now, I need to use the rasters I just created to choose the background points, which are used by MaxEnt to sample the climate and compare that sample with known SLF presences. The background points should be randomized because they are a stand-in for true absences, so I will generate them using `dismo::randomPoints()`.
 
-```{r set wd 2}
+```{r set wd 2, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
@@ -1227,7 +1227,7 @@ ggsave(regional_invaded_asian_points_plot,
 
 ## 3.3 Native region (Rn model)
 
-```{r set wd 3}
+```{r set wd 3, eval = TRUE}
 
 # path to directory
 mypath <- file.path(here::here() %>% 
@@ -1322,7 +1322,7 @@ ggsave(regional_native_points_plot,
 
 Next, I will use bounding boxes to isolate SLF presences from each major region. This would not normally be sufficient to select the correct points, but each region is isolated from the others in a fashion that a bounding box easily separates the points by region in this case.
 
-```{r set wd 4}
+```{r set wd 4, eval = TRUE}
 
 mypath <- file.path(here::here() %>% 
                      dirname(),
@@ -1535,6 +1535,11 @@ write_csv(
 regional_native <- terra::rast(
   x = file.path(mypath, "historical_climate_rasters", "chelsa2.1_30arcsec", "v1_maxent_10km", "atc_2015_regional_native_KG.asc")
   )
+
+# re-import point data
+slf_points_native <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_native_train_slf_presences_v3.csv"))
+
+
 # also convert to df
 regional_native_df <- terra::as.data.frame(regional_native, xy = TRUE)
 
@@ -1663,7 +1668,7 @@ Now we are ready to run all 3 regional models!
 
 ## Patchwork together figures for publication
 
-```{r set wd 5}
+```{r set wd 5, eval = TRUE}
 
 # path to directory
   mypath <- file.path(here::here() %>% 

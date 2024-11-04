@@ -97,7 +97,7 @@ file.remove(file.path(here::here(), "vignette-outputs", "figures", "global_model
 
 ```
 
-```{r ggplot object for map style}
+```{r ggplot object for map style, eval = TRUE}
 
 map_style <- list(
   xlab("longitude"),
@@ -122,7 +122,7 @@ MaxEnt requires a set of "background" or "pseudoabsence" points that it will use
 
 First, I will load in known SLF presences so that background sampling does not occur in those grid cells.
 
-```{r load in SLF presence}
+```{r load in SLF presence, eval = TRUE}
 
 # dismo requires the base function (not tidyverse)
 slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
@@ -131,7 +131,7 @@ slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_fi
 
 ```
 
-```{r set wd}
+```{r set wd, eval = TRUE}
 
 # file path to local directory
 mypath <- file.path(here::here() %>% 

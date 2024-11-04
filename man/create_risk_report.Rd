@@ -9,7 +9,7 @@ create_risk_report(
   locality.name = locality.iso,
   locality.type,
   save.report = FALSE,
-  mypath,
+  mypath = NA,
   raster.path = file.path(here::here(), "vignette-outputs", "rasters"),
   create.dir = FALSE,
   map.style = NA,
@@ -35,11 +35,12 @@ included.}
 \item{save.report}{Logical. Should the report be saved to file? File location
 specified by \code{mypath}. Note, this requires the use of Google Chrome.}
 
-\item{mypath}{Character. A file path to the sub directory where the model
-output will be stored. Should be used with the \code{\link[=file.path]{file.path()}} function
-(i.e. with '/' instead of '\\'). If this sub directory does not already exist
-and should be created by the function, set \code{create.dir} = TRUE. This will
-create a folder from the last part of the filepath in \code{mypath}.}
+\item{mypath}{Character. Only required if saving the report to file.
+A file path to the sub directory where the model output will be stored.
+Should be used with the \code{\link[=file.path]{file.path()}} function (i.e. with '/' instead of '\\').
+If this sub directory does not already exist and should be created by the
+function, set \code{create.dir} = TRUE. This will create a folder from the last
+part of the filepath in \code{mypath}.}
 
 \item{raster.path}{Character. A file path to the directory containing the rasters
 necessary to build this function. See details for the rasters that should be
@@ -130,6 +131,9 @@ These rasters are located in \code{root/vignette-outputs/rasters}, These are the
 \examples{
 
 # EXAMPLE USAGE:
+
+```R
+
 slfSpread::create_risk_report(
 locality.iso = "aus",
 locality.name = "australia",
@@ -140,14 +144,23 @@ save.report = FALSE,
 buffer.dist = 20000 # this is only used for buffered predictions, default is NA for simple predictions.
 )
 
+```
+
 # ARGUMENT USAGE:
+
+```R
+
 map_style <- list(
 xlab("longitude"),
 ylab("latitude"),
 theme_classic()
 )
 
-The output is in list format, so it should be called using this notation:
+```
+
+# The output is in list format, so it should be called using this notation:
+
+```R
 
 # find viticultural regions in locality
 viticultural_regions <- slf_risk_report[[2]]
@@ -162,8 +175,10 @@ map_current <- slf_risk_report[["risk_maps"]][["current_risk_map"]] +
 xlim(-10, 5) +
 ylim(35, 44)
 
-If you need to save the report Rdata object and use those figures elsewhere:
+# If you need to save the report Rdata object and use those figures elsewhere:
 
 readr::write_rds(slf_risk_report, file = file.path(here::here(), "vignette-outputs", "reports", "slf_risk_report.rds"))
+
+```
 
 }

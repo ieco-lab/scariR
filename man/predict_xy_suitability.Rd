@@ -92,7 +92,9 @@ clamping should be applied if they are not within the training are (clamp.pred =
 }
 \examples{
 
-#'# simple predict method
+```R
+
+# simple predict method
 slfSpread::predict_xy_suitability(
 xy.obj = IVR_regions,
 xy.type = "IVR regions",
@@ -119,5 +121,6 @@ buffer.dist = 20000, # in meters
 buffer.fun = c("min", "max")
 )
 
+```
 
 }

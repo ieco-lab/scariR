@@ -79,6 +79,8 @@
 #'# model.obj = global_model
 #'# model.name = "global"
 #'
+#'```R
+#'
 #'mypath <- file.path(here::here() %>%
 #'                     dirname(),
 #'                      "maxent/models/slf_global_v3")
@@ -99,6 +101,8 @@
 #' jk.test.type = c("train", "test"), # types of jackknife curves to be created
 #' plot.type = c("cloglog", "logistic") # types of univariate and marginal response curves to be created
 #')
+#'
+#'```
 #'
 #'@export
 compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL", mypath, create.dir = FALSE, env.covar.obj, train.obj, trainFolds.obj, test.obj, plot.fun = "mean", plot.type = "cloglog", jk.test.type = "test") {
@@ -227,7 +231,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
              filename = file.path(mypath, "plots", paste0(model.name, "_", "iteration", a, "_ROC.jpg")),
              height = 8,
              width = 10,
-             device = "jpeg",
+             device = jpeg,
              dpi = "retina")
 
       # remove temp object
@@ -267,7 +271,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
                filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_univar_resp_curve_", b, ".jpg")),
                height = 8,
                width = 10,
-               device = "jpeg",
+               device = jpeg,
                dpi = "retina")
 
         # remove temp object
@@ -308,7 +312,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
                  filename = file.path(mypath, "plots", paste0(model.name, "_", a, "_marg_resp_curve_", b, "_", c, ".jpg")),
                  height = 8,
                  width = 10,
-                 device = "jpeg",
+                 device = jpeg,
                  dpi = "retina")
 
           # remove temp object
@@ -412,7 +416,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
                filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_all_iterations_training.jpg")),
                height = 8,
                width = 10,
-               device = "jpeg",
+               device = jpeg,
                dpi = "retina")
 
 
@@ -448,7 +452,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
                  filename = file.path(mypath, "plots", paste0(model.name, "_jackknife_iteration", a, "_", b, "ing.jpg")),
                  height = 8,
                  width = 10,
-                 device = "jpeg",
+                 device = jpeg,
                  dpi = "retina")
 
           # remove temp object
@@ -481,7 +485,7 @@ compute_MaxEnt_summary_statistics_CV <- function(model.obj, model.name = "MODEL"
            filename = file.path(mypath, "plots", paste0(model.name, "_variable_importance.jpg")),
            height = 8,
            width = 10,
-           device = "jpeg",
+           device = jpeg,
            dpi = "retina")
 
     ## Confusion Matrix for common threshold values-----------------------------

@@ -165,6 +165,9 @@ Map style default options:
 \examples{
 
 # ARGUMENT USAGE:
+
+```R
+
 mypath <- file.path(here::here() \%>\%
                     dirname(),
                      "maxent/models/slf_regional_native_v3")
@@ -189,5 +192,7 @@ slfSpread::create_MaxEnt_suitability_maps(
  map.thresh.extra = "MTP",
  summary.file = file.path(mypath, "regional_native_summary.csv")
 )
+
+```
 
 }

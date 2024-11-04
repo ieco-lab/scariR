@@ -33,6 +33,7 @@ library(tidygeocoder) # analysis 7
 # table aesthetics
 library(scales)
 library(grid)
+library(patchwork)
 library(formattable)
 library(kableExtra)
 library(webshot)
@@ -633,7 +634,7 @@ USA_risk_plot$data[[5]]$size <- 1.5
 #USA_risk_plot$data[[3]]$linewidth <- 0.1
 
 USA_risk_plot <- ggplot_gtable(USA_risk_plot) %>%
-  wrap_ggplot_grob()
+  patchwork::wrap_ggplot_grob()
 
 
 # france
@@ -664,7 +665,7 @@ CHN_risk_plot$data[[5]]$size <- 1.5
 #CHN_risk_plot$data[[3]]$linewidth <- 0.1
 
 CHN_risk_plot <- ggplot_gtable(CHN_risk_plot) %>%
-  wrap_ggplot_grob()
+  patchwork::wrap_ggplot_grob()
 
 # JPN
 JPN_risk_plot <- slf_plots_output[["JPN"]] +
@@ -692,7 +693,7 @@ JPN_risk_plot$data[[5]]$size <- 1.5
 #JPN_risk_plot$data[[3]]$linewidth <- 0.1
 
 JPN_risk_plot <- ggplot_gtable(JPN_risk_plot) %>%
-  wrap_ggplot_grob()
+  patchwork::wrap_ggplot_grob()
 
 
 # italy
@@ -721,7 +722,7 @@ KOR_risk_plot$data[[5]]$size <- 1.5
 #KOR_risk_plot$data[[3]]$linewidth <- 0.1
 
 KOR_risk_plot <- ggplot_gtable(KOR_risk_plot) %>%
-  wrap_ggplot_grob()
+  patchwork::wrap_ggplot_grob()
   
   
 ```

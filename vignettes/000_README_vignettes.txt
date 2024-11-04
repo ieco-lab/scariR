@@ -12,7 +12,7 @@ This README is for the vignettes subfolder, which contains workflows for my pack
 ########## FILES ##########
 ###########################
 
-----------010_initialize_pkg.R----------
+----------010_initialize_pkg.Rmd----------
 
 ## About
 
@@ -22,6 +22,7 @@ Initializes renv, saves data objects for internal use
 
 v0- initial version
 v1- 2024-08-26
+v2- 2024-10-16- changed to .Rmd, fixed renv errors with project
 
 
 ----------020_retrieve_SLF_records.Rmd----------
@@ -51,6 +52,7 @@ v0- initial version
 v1
 v2
 v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
+v4- 2024-10-01- cleaned and simplified workflow.
 
 
 
@@ -64,7 +66,6 @@ Preparations for running the global-scale model, including cropping rasters, cho
 
 v0- initial version
 v1- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- added cropping of other ssp scenario rasters
-
 
 ----------050_run_global_MaxEnt_model.Rmd----------
 
@@ -108,6 +109,7 @@ v3- did not weight easternUSA model. Moved section on weighting to supp material
 v4- added koeppen climate download and use for selecting background points
 v5- added table indicating number of training points per model, added plot faceting
 v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios
+v7- 2024-10-09- cleaned and simplified workflow
 
 
 
@@ -172,6 +174,7 @@ v0- initial version- in sandbox/vignettes_old
 v1- added ExDet and MIC for global model
 v2- added grey area to each figure to represent bg area
 v3- 2024-08-09- rework- updated SLF presence data and inclusion of other SSP scenarios
+v4- 2024-10-18- changed plotting to re-load rasters so that vignette could be rendered without dsmextra package (will retire because its not available for R 4.4)
 
 
 
