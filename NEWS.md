@@ -7,3 +7,4 @@
 * future updates include:
   * retire usage of `taxize`, `humboldt`, `raster`, and `dsmextra`
   * update version of R to 4.4.1
+  * change package naming
