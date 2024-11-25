@@ -1,6 +1,8 @@
 # Overview
 
-Our package `slfSpread` outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/slfSpread/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+The `slfSpread` framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
+
+We apply this framework to quantify the risk of establishment for the destructive invasive species *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/SCARIF-sdm/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
 
 ## Citation
 
@@ -58,10 +60,10 @@ Before diving into this project and our modeling workflow, an end user should:
 ## Computing Information
 
 This package was developed and its vignettes were rendered on a Dell Precision desktop PC with the following characteristics:
-* Core: intel Xeon CPU, 3.60 GHz
+* Core: Intel Xeon CPU, 3.60 GHz
 * RAM memory: 64 GB
 * Operating System: Windows 10 Enterprise, version 22H2
-* R version: 4.4.1
+* R version: 4.2.3 (R core team, 2023)
 
 # References
 
