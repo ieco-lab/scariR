@@ -1,8 +1,8 @@
 ---
 title: "Generate and format figures for publication"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-16"
 ---
 
@@ -750,7 +750,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_risk_plots_by_country.jpg"),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -799,7 +799,12 @@ IVR_points_plot <- ggplot() +
     geom_point(data = IVR_locations, aes(x = x, y = y), fill = "purple3", shape = 21, size = 1, stroke = 0.3) +
     ggtitle("globally important viticultural regions") +
     map_style +
-    theme(legend.position = "none") 
+    theme(
+      legend.position = "none",
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank()
+      ) 
 
 ```
 
@@ -810,7 +815,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "global_viticultural_regions.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

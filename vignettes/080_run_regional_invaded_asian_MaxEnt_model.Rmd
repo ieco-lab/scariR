@@ -1,8 +1,8 @@
 ---
 title: "Run 'Ri.Asia' model trained on SLF invaded range in Japan and South Korea"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-08"
 ---
 
@@ -339,7 +339,7 @@ mypath <- file.path(here::here() %>%
                        dirname(),
                      "maxent/models/slf_regional_invaded_asian_v2")
 
-slfSpread::compute_MaxEnt_summary_statistics(
+scarifSDM::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_asian_model, 
   model.name = "regional_invaded_asian", 
   mypath = mypath, 
@@ -378,7 +378,7 @@ regional_invaded_asian_model <- read_rds(file = file.path(mypath, "regional_inva
 
 ```{r predict mean and thresholded suitability maps for historical data}
 
-slfSpread::create_MaxEnt_suitability_maps(
+scarifSDM::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_asian_model,
   model.name = "regional_invaded_asian", 
   mypath = mypath, 
@@ -400,7 +400,7 @@ I will also create suitability maps for the projected 2041-2070 climate data.
 
 ```{r predict suitability maps for ssp126 data}
 
-slfSpread::create_MaxEnt_suitability_maps(
+scarifSDM::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_asian_model,
   model.name = "regional_invaded_asian", 
   mypath = mypath, 
@@ -418,7 +418,7 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```{r predict suitability maps for ssp370 data}
 
-slfSpread::create_MaxEnt_suitability_maps(
+scarifSDM::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_asian_model,
   model.name = "regional_invaded_asian", 
   mypath = mypath, 
@@ -436,7 +436,7 @@ slfSpread::create_MaxEnt_suitability_maps(
 
 ```{r predict suitability maps for ssp585 data}
 
-slfSpread::create_MaxEnt_suitability_maps(
+scarifSDM::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_asian_model,
   model.name = "regional_invaded_asian", 
   mypath = mypath, 
@@ -475,7 +475,7 @@ slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "da
 
 ```{r predictions for known SLF populations- historical}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_hist_env_covariates,
@@ -493,7 +493,7 @@ I will repeat the same process for the CMIP6 data.
 
 ```{r predictions for known SLF populations- ssp126}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_126_env_covariates,
@@ -507,7 +507,7 @@ slfSpread::predict_xy_suitability(
 
 ```{r predictions for known SLF populations- ssp370}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_370_env_covariates,
@@ -521,7 +521,7 @@ slfSpread::predict_xy_suitability(
 
 ```{r predictions for known SLF populations- ssp585}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_585_env_covariates,
@@ -555,7 +555,7 @@ IVR_regions <- wineries %>%
 
 ```{r predictions for IVR coordinate data- historical}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_hist_env_covariates,
@@ -574,7 +574,7 @@ Do the same for the SSP scenarios
 
 ```{r predictions for IVR coordinate data- ssp126}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_126_env_covariates,
@@ -589,7 +589,7 @@ slfSpread::predict_xy_suitability(
 
 ```{r predictions for IVR coordinate data- ssp370}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_370_env_covariates,
@@ -604,7 +604,7 @@ slfSpread::predict_xy_suitability(
 
 ```{r predictions for IVR coordinate data- ssp585}
 
-slfSpread::predict_xy_suitability(
+scarifSDM::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_585_env_covariates,

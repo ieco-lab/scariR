@@ -6,7 +6,7 @@ author:
 date: "2024-10-16"
 ---
 
-In this file, I will list the dependency packages for slfSpread and initialize the `renv` package to keep my other package versions consistent. End users should only run sections 1 and 2. Section 3 is for troubleshooting common issues. Section 4 should only be used for the first-time initialization of the package.
+In this file, I will list the dependency packages for scarifSDM and initialize the `renv` package to keep my other package versions consistent. End users should only run sections 1 and 2. Section 3 is for troubleshooting common issues. Section 4 should only be used for the first-time initialization of the package.
 
 # Get package dependencies
 
@@ -28,7 +28,7 @@ library(devtools)
 
 ```
 
-Run this chunk to see the dependencies for the slfSpread package.
+Run this chunk to see the dependencies for the scarifSDM package.
 
 ```{r get dependencies list}
 
@@ -40,7 +40,7 @@ packages <- renv::dependencies() %>%
 
 ```
 
-# Retrieve correct dependencies for slfSpread
+# Retrieve correct dependencies for scarifSDM
 
 ```{r check status}
 
@@ -84,7 +84,7 @@ devtools::install_github("ropensci/rnaturalearthhires")# rnaturalearthhires
 # renv restore to previous package versions
 # only use if the current package version need to be reverted to a previous state
 renv::history()
-renv::revert(project = "slfSpread", commit = "")
+renv::revert(project = "scarifSDM", commit = "")
 
 # repair common issues
 renv::repair()

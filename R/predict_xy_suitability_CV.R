@@ -85,7 +85,7 @@
 #'```R
 #'
 #'# simple predict method
-#'slfSpread::predict_xy_suitability_CV(
+#'scarifSDM::predict_xy_suitability_CV(
 #' xy.obj = IVR_regions,
 #' xy.type = "IVR regions",
 #' env.covar.obj = x_global_hist_env_covariates,
@@ -97,7 +97,7 @@
 #' )
 #'
 #' # buffered predict method
-#'slfSpread::predict_xy_suitability_CV(
+#'scarifSDM::predict_xy_suitability_CV(
 #' xy.obj = IVR_regions,
 #' xy.type = "IVR regions",
 #' env.covar.obj = x_global_hist_env_covariates,

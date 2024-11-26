@@ -1,8 +1,8 @@
 ---
 title: "Ensemble regional-scale models using a weighted mean"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, [Center for Biodiversity](http://www.biodiversitycenter.org/), sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-09"
 ---
 
@@ -1876,7 +1876,7 @@ exdet_hist_mean <- terra::app(
 
 ```
 
-```{r create hist exdet plot, eval = TRUE}
+```{r create hist exdet plot, eval = TRUE, warning = FALSE}
 
 # re-load
 exdet_hist_mean <- terra::rast(x =  file.path(
@@ -1918,7 +1918,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1941,7 +1941,7 @@ exdet_126_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 126, eval = TRUE, echo = FALSE}
+```{r create CMIP6 exdet plot- ssp 126, eval = TRUE, echo = FALSE, warning = FALSE}
 
 # re-load object as df
 exdet_126_mean <- terra::rast(x =  file.path(
@@ -1981,7 +1981,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2004,7 +2004,7 @@ exdet_370_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 370, eval = TRUE, echo = FALSE}
+```{r create CMIP6 exdet plot- ssp 370, eval = TRUE, echo = FALSE, warning = FALSE}
 
 # re-load object as df
 exdet_370_mean <- terra::rast(x =  file.path(
@@ -2044,7 +2044,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2067,7 +2067,7 @@ exdet_585_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp 585, eval = TRUE, echo = FALSE}
+```{r create CMIP6 exdet plot- ssp 585, eval = TRUE, echo = FALSE, warning = FALSE}
 
 # re-load object as df
 exdet_585_mean <- terra::rast(x =  file.path(
@@ -2108,7 +2108,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2137,7 +2137,7 @@ exdet_ssp_mean <- terra::app(
 
 ```
 
-```{r create CMIP6 exdet plot- ssp mean, eval = TRUE, echo = FALSE}
+```{r create CMIP6 exdet plot- ssp mean, eval = TRUE, echo = FALSE, warning = FALSE}
 
 # re-load object as df
 exdet_ssp_mean <- terra::rast(x =  file.path(
@@ -2177,7 +2177,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp_mean_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2289,7 +2289,7 @@ mic_hist_mean <- terra::app(
 
 ```
 
-```{r create MIC plot- hist, eval = TRUE}
+```{r create MIC plot- hist, eval = TRUE, echo = FALSE, warning=FALSE}
 
 # make df
 mic_hist_mean_df <- terra::rast(x =  file.path(
@@ -2319,9 +2319,11 @@ mic_hist_mean_plot <- ggplot() +
     subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
     ) 
 
+mic_hist_mean_plot
+
 ```
 
-```{r save plot- mic hist, warning = FALSE}
+```{r save plot- mic hist, warning = FALSE, include = FALSE}
 
 # save plot
 ggsave(
@@ -2329,7 +2331,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2393,7 +2395,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2455,7 +2457,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2517,7 +2519,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2548,7 +2550,7 @@ mic_ssp_mode <- terra::app(
 
 ```
 
-```{r create CMIP6 mic plot- ssp mean, eval = TRUE, echo = FALSE}
+```{r create CMIP6 mic plot- ssp mean, eval = TRUE, echo = FALSE, warning = FALSE}
 
 # re-load object as df
 mic_ssp_mode_df <- terra::rast(x =  file.path(
@@ -2577,6 +2579,8 @@ mic_ssp_mode_plot <- ggplot() +
     subtitle = "Covariate causing most extrapolation from 'regional_ensemble' model training set"
   ) 
 
+mic_ssp_mode_plot
+
 ```
 
 ```{r save plot- mic ssp mean, warning = FALSE, include = FALSE}
@@ -2587,7 +2591,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "mic_slf_regional_ensemble_v1_background_projGlobe_2041-2070_ssp_mode_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2641,7 +2645,7 @@ ensemble_colors <- c(
 
 ```
 
-```{r plot proportions, eval = TRUE, echo = FALSE}
+```{r plot proportions, eval = TRUE, echo = FALSE, warning = FALSE}
 
 ensemble_relative_cont_plot <- ggplot() +
   geom_bar(aes(x = names(relative_weights_prop), y = relative_weights_prop, fill = ensemble_colors), stat = "identity", color = "black") +
@@ -2657,6 +2661,8 @@ ensemble_relative_cont_plot <- ggplot() +
   scale_y_continuous(labels = scales::percent) +
   scale_fill_manual(name = "model", values = c("#e41a1c", "#377eb8", "#4daf4a"), labels = c("Ri.NAmerica", "Ri.Asia", "Rn (native)"))
 
+ensemble_relative_cont_plot
+
 ```
 
 ```{r save plot- relative weights, warning = FALSE, include = FALSE}
@@ -2666,7 +2672,7 @@ ggsave(
   filename = file.path(
     here::here(), "vignette-outputs", "figures", "regional_ensemble_model_relative_contributions.jpg"
     ),
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2902,7 +2908,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_regional_ensemble_background_projGlobe_patchwork.jpg"),
   height = 14, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

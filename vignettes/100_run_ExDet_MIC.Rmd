@@ -1,8 +1,8 @@
 ---
 title: "Run an Extrapolation Detection (NT2) analysis and calculate MIC"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-10-18"
 ---
 
@@ -807,7 +807,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v3_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -852,7 +852,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v3_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -951,7 +951,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -992,7 +992,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v3_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1087,7 +1087,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1128,7 +1128,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v3_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1223,7 +1223,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_native_v3_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1264,7 +1264,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_native_v3_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1361,7 +1361,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v7_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1401,7 +1401,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v7_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1495,7 +1495,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1535,7 +1535,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1630,7 +1630,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1670,7 +1670,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1765,7 +1765,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1805,7 +1805,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_v7_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1901,7 +1901,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1942,7 +1942,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v2_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2036,7 +2036,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2076,7 +2076,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2170,7 +2170,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2210,7 +2210,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2304,7 +2304,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2344,7 +2344,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_regional_invaded_asian_v2_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2438,7 +2438,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v3_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2471,7 +2471,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v3_background_projGlobe_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2557,7 +2557,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v3_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2591,7 +2591,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v3_background_projGlobe_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2676,7 +2676,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v3_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2710,7 +2710,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v3_background_projGlobe_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2795,7 +2795,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "ExDet_slf_global_v3_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2829,7 +2829,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_global_v3_background_projGlobe_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2938,7 +2938,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_native_v3_background_projGlobe_patchwork.jpg"),
   height = 14, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -3034,7 +3034,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_invaded_v7_background_projGlobe_patchwork.jpg"),
   height = 14, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -3135,7 +3135,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "MIC_slf_invaded_asian_v2_background_projGlobe_patchwork.jpg"),
   height = 14, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

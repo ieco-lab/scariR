@@ -1,9 +1,9 @@
 ---
 title: "Workflow for the functions 'compute_MaxEnt_summary_statistics()'"
-author: "Samuel M. Owens"
-contact: "sam.owens@temple.edu"
+output: rmarkdown::html_document
+author: 
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-27"
-output: html_document
 ---
 
 *Note* This vignette is an example of the workflow for the function within this package called `compute_MaxEnt_summary_statistics()`, which is used in vignette 050 to obtain the final results. This vignette does not need to be run to obtain the final results of the workflow.
@@ -102,7 +102,7 @@ dir.create(path = file.path(mypath, "slf_global_v3_TEST", "plots"))
 
 ```
 
-*NOTE* the output created from this point to the end of the vignette can be created using the function `slfSpread::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`.
+*NOTE* the output created from this point to the end of the vignette can be created using the function `scarifSDM::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`.
 
 ```{r save model as RDS file}
 

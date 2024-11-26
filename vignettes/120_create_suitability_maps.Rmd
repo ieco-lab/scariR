@@ -1,8 +1,8 @@
 ---
 title: "Create risk maps of each model scale and intersect predictions"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-14"
 
 ---
@@ -315,7 +315,7 @@ ggsave(
   filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_1981-2010.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -347,7 +347,7 @@ ggsave(
   filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_1981-2010.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -385,7 +385,7 @@ ggsave(
   filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp126.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -417,7 +417,7 @@ ggsave(
   filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp126.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -451,7 +451,7 @@ ggsave(
   filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -483,7 +483,7 @@ ggsave(
   filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp370.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -517,7 +517,7 @@ ggsave(
   filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp585.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -547,7 +547,7 @@ ggsave(
   filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp585.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -587,7 +587,7 @@ ggsave(
   filename = file.path(mypath, "slf_regional_ensemble_v1", "plots", "regional_ensemble_pred_suit_globe_2041-2070_GFDL_ssp_mean.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -621,7 +621,7 @@ ggsave(
   filename = file.path(mypath, "slf_global_v3", "plots", "global_pred_suit_globe_2041-2070_GFDL_ssp_mean.jpg"),
   height = 8,
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1409,7 +1409,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1522,7 +1522,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_2041-2070_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1589,7 +1589,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_2041-2070_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1656,7 +1656,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_2041-2070_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1723,7 +1723,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_2041-2070_ssp_mean_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2188,7 +2188,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_ssp126_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2371,7 +2371,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_ssp370_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2552,7 +2552,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_ssp585_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2733,7 +2733,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_range_shift_summed_ssp_mean_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2825,7 +2825,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_countries_1981-2010.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2850,7 +2850,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_summed_countries_2041-2070_ssp_mean_GFDL.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2913,7 +2913,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "slf_binarized_risk_patchwork_ssp_mean.jpg"),
   height = 8, 
   width = 12,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

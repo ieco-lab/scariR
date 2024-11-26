@@ -1,8 +1,8 @@
 ---
 title: "Setup for regional-scale MaxEnt models"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-10-07"
 ---
 
@@ -1577,6 +1577,8 @@ regional_native_slf_plot <- ggplot() +
   geom_point(data = slf_points_native, aes(x = x, y = y), color = "darkorange", size = 1) +
   labs(title = "'Rn' model SLF presences") +
   coord_sf(xlim = c(72.666527, 140.999860), ylim = c(-9.666806, 53.249861))
+
+regional_native_slf_plot
   
 ```
 

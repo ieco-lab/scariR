@@ -89,7 +89,7 @@
 #'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 #'
 #'# EXAMPLE USAGE:
-#'slfSpread::compute_MaxEnt_summary_statistics_CV(
+#'scarifSDM::compute_MaxEnt_summary_statistics_CV(
 #' model.obj = global_model,
 #' model.name = "global",
 #' mypath = mypath,

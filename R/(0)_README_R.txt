@@ -2,7 +2,7 @@
 ########## ABOUT ##########
 ###########################
 
-# slfSpread
+# scarifSDM
 # folder: R
 # descriptions and changelog
 

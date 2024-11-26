@@ -1,8 +1,8 @@
 ---
 title: "Analyze biological realism of model response curves"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-23"
 ---
 
@@ -11,6 +11,8 @@ date: "2024-08-23"
 In this vignette, I will plot the marginal and univariate response curves for the global and each of the regional-scale models. These plots will help me to explore the biological realism of our modeled scales. 
 
 I hypothesized that the regional models would have more nuanced responses to the environmental variables than the global model, so these plots will allow me to explore the differences in response curves between these models. These regional models should more closely  is because the regional models are trained on a smaller subset of the global data, and thus may be more sensitive to the range of our covariates present in each region.
+
+**Note** for unsmoothed versions of the same curves, simply change the `geom_smooth` functions to `geom_line` and remove the `se` and `method` arguments.
 
 # Setup
 
@@ -196,7 +198,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -299,7 +301,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -402,7 +404,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -505,7 +507,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -644,7 +646,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -747,7 +749,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -850,7 +852,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -953,7 +955,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1100,7 +1102,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1136,7 +1138,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1171,7 +1173,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1206,7 +1208,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1309,7 +1311,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1345,7 +1347,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1380,7 +1382,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1415,7 +1417,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1508,7 +1510,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1565,7 +1567,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1622,7 +1624,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1679,7 +1681,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1793,7 +1795,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1850,7 +1852,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1907,7 +1909,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -1964,7 +1966,7 @@ ggsave(
     ),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2084,7 +2086,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2103,7 +2105,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_half1.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2122,7 +2124,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_half2.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2172,7 +2174,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_main.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2222,7 +2224,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_univar_resp_curve_cloglog_supp.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -2314,7 +2316,7 @@ ggsave(
   filename = file.path(here::here(), "vignette-outputs", "figures", "regional_ensemble_global_combined_marginal_resp_curve_cloglog.jpg"),
   height = 8, 
   width = 10,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

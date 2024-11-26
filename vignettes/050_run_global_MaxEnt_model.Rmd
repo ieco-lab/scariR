@@ -1,8 +1,8 @@
 ---
 title: "Run global-scale MaxEnt model"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-05"
 ---
 
@@ -420,7 +420,7 @@ mypath <- file.path(here::here() %>%
                        dirname(),
                      "maxent/models/slf_global_v3")
 
-slfSpread::compute_MaxEnt_summary_statistics_CV(
+scarifSDM::compute_MaxEnt_summary_statistics_CV(
   model.obj = global_model, 
   model.name = "global", 
   mypath = mypath, 
@@ -477,7 +477,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 ```{r predict suitability maps for historical data}
 
-slfSpread::create_MaxEnt_suitability_maps_CV(
+scarifSDM::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
@@ -497,7 +497,7 @@ I will also create suitability maps for each of the projected 2041-2070 climate 
 
 ```{r predict suitability maps for SSP126 data}
 
-slfSpread::create_MaxEnt_suitability_maps_CV(
+scarifSDM::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
@@ -515,7 +515,7 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 ```{r predict suitability maps for SSP370 data}
 
-slfSpread::create_MaxEnt_suitability_maps_CV(
+scarifSDM::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
@@ -533,7 +533,7 @@ slfSpread::create_MaxEnt_suitability_maps_CV(
 
 ```{r predict suitability maps for SSP585 data}
 
-slfSpread::create_MaxEnt_suitability_maps_CV(
+scarifSDM::create_MaxEnt_suitability_maps_CV(
   model.obj = global_model,
   model.name = "global", 
   mypath = mypath, 
@@ -569,7 +569,7 @@ slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "da
 
 ```{r predict for SLF coordinate data- historical}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_hist_env_covariates,
@@ -586,7 +586,7 @@ I will repeat the same process for the CMIP6 data.
 
 ```{r predict for SLF coordinates- SSP126}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_126_env_covariates,
@@ -601,7 +601,7 @@ slfSpread::predict_xy_suitability_CV(
 
 ```{r predict for SLF coordinates- SSP370}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_370_env_covariates,
@@ -616,7 +616,7 @@ slfSpread::predict_xy_suitability_CV(
 
 ```{r predict for SLF coordinates- SSP585}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_585_env_covariates,
@@ -649,7 +649,7 @@ IVR_regions <- wineries %>%
 
 ```{r predict for IVR coordinate data- historical}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_hist_env_covariates,
@@ -668,7 +668,7 @@ I will repeat the same process for the CMIP6 data.
 
 ```{r predict for IVR coordinate data- ssp126}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_126_env_covariates,
@@ -684,7 +684,7 @@ slfSpread::predict_xy_suitability_CV(
 
 ```{r predict for IVR coordinate data- ssp370}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_370_env_covariates,
@@ -700,7 +700,7 @@ slfSpread::predict_xy_suitability_CV(
 
 ```{r predict for IVR coordinate data- ssp585}
 
-slfSpread::predict_xy_suitability_CV(
+scarifSDM::predict_xy_suitability_CV(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_585_env_covariates,

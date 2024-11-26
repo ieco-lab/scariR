@@ -1,8 +1,8 @@
 ---
 title: "Calculate model fit using confusion matrices"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-23"
 ---
 
@@ -131,7 +131,7 @@ ggsave(
     ),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 
@@ -197,7 +197,7 @@ ggsave(
     ),
   height = 8, 
   width = 8,
-  device = "jpeg",
+  device = jpeg,
   dpi = "retina"
   )
 

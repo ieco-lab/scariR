@@ -14,8 +14,8 @@
 #'
 #'@param xy.predicted Data import. A predicted cloglog suitability with
 #'longitude and latitude data. This output should be taken from one of the
-#'internal package functions: [slfSpread::predict_xy_suitability()] or
-#'[slfSpread::predict_xy_suitability_CV()]. See details for specifics of formatting.
+#'internal package functions: [scarifSDM::predict_xy_suitability()] or
+#'[scarifSDM::predict_xy_suitability_CV()]. See details for specifics of formatting.
 #'
 #'@param thresh Numeric or Character. This may be imported manually
 #'(numeric), or may be selected from one of the thresholds for the model
@@ -33,9 +33,9 @@
 #'
 #'For a global or regional model, this will be a file containing summary
 #'statistics that is created by one of the following internal package functions:
-#'[slfSpread::compute_MaxEnt_summary_statistics()], with a filename ending in
+#'[scarifSDM::compute_MaxEnt_summary_statistics()], with a filename ending in
 #'"_summary.csv", or
-#'[slfSpread::compute_MaxEnt_summary_statistics_CV()], with a filename ending in
+#'[scarifSDM::compute_MaxEnt_summary_statistics_CV()], with a filename ending in
 #'"_summary_all_iterations.csv".
 #'
 #'For the regional_ensemble model, this file should end in "_threshold_values.csv"
@@ -94,7 +94,7 @@
 #'
 #'```R
 #'
-#'xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
+#'xy_regional_ensemble_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
 #' xy.predicted = xy_regional_ensemble_1995,
 #' thresh = "MTSS", # max training and sensitivity plus specificity
 #' exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),

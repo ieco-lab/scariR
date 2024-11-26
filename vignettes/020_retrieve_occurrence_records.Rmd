@@ -1,8 +1,8 @@
 ---
 title: "SLF occurrence records: GBIF, lydemapR, literature"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-05"
 ---
 
@@ -101,7 +101,7 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
 
 ```
 
-Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `slfSpread` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). 
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `SCARIF-sdm` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). 
 
 # 1. Retrieve data from GBIF and lydemapR and tidy
 
@@ -130,7 +130,7 @@ Save and close the document.
 
 I will also retrieve a list of country abbreviations to tailor the download. I will be excluding countries in North America (USA, Mexico, Canada) and Taiwan. Lin and Liao did a comprehensive survey for SLF in Taiwan to validate SLF presence records in online repositories and found that these records were likely false (Lin and Liao, 2024).
 
-```{r other rgbif operations, eval = TRUE, message = FALSE, warning = FALSE, results = "hide"}
+```{r other rgbif operations}
 
 # edit R environment for user credentials
 usethis::edit_r_environ()
@@ -153,7 +153,7 @@ Next, retrieve `GBIF` records using `occ_download()`. I will be editing the foll
 -   hasGeospatialIssue: exclude any records with an issue in the coordinate data
 -   country: the country of the record
 
-```{r retrieve SLF records from GBIF, eval = TRUE}
+```{r retrieve SLF records from GBIF}
   
 # initiate download
 slf_gbif <- rgbif::occ_download(
@@ -175,7 +175,7 @@ slf_gbif <- rgbif::occ_download(
 # be sure to open slf_gbif and retrieve the download key
 
 # check on download status using key
-occ_download_wait('0049348-240626123714530')
+rgbif::occ_download_wait('0049348-240626123714530')
 
 ```
 
@@ -187,12 +187,12 @@ First, I will import the dataset to my working directory. I will also retrieve t
 
 
 # download the data as a zip to PC
-slf_gbif_download <- occ_download_get(
+slf_gbif_download <- rgbif::occ_download_get(
   key = '0049348-240626123714530',
   path = file.path(here::here(), "data-raw"),
   # overwrite = TRUE
   ) %>% 
-  occ_download_import()
+  rgbif::occ_download_import()
 
 
 # .zip file
@@ -232,7 +232,7 @@ write_csv(x = slf_gbif_download_simple,
 
 ```{r retrieve data citation, eval = TRUE, message = FALSE, warning = FALSE, results = "hide"}
 
-gbif_citation('0049348-240626123714530')
+rgbif::gbif_citation('0049348-240626123714530')
 
 ```
 
@@ -834,7 +834,7 @@ SLF_by_longitude
 
 ```
 
-```{r save slf by latitude}
+```{r save slf by latitude, eval = FALSE}
 
 # save output
 ggsave(

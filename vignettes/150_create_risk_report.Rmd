@@ -1,8 +1,8 @@
 ---
 title: "Example usage of create_risk_report() to create reports of key viticultural areas"
-output: rmarkdown::html_vignette
+output: rmarkdown::html_document
 author: 
-    - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
+    - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-08-23"
 ---
 
@@ -152,7 +152,7 @@ for (i in seq_along(unique_iso)){
 # loop thru country iso codes and names together
 for (a in seq_along(unique_iso)) {
   
-  slfSpread::create_risk_report(
+  scarifSDM::create_risk_report(
     locality.iso = unique_iso[a], # iso codes
     locality.name = unique_name[a], # names
     locality.type = "country",
@@ -176,18 +176,18 @@ Alternatively, I will create individualized reports and maps for key viticultura
 
 ```{r USA reports, eval = TRUE}
 
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "united states",
   locality.type = "country",
   mypath = file.path(here::here(), "vignette-outputs", "reports", "United States"),
   create.dir = FALSE,
-  save.report = TRUE,
+  save.report = FALSE,
   buffer.dist = 20000
 )
 
 # try state level
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "california",
   locality.type = "state_province",
@@ -197,7 +197,7 @@ slfSpread::create_risk_report(
   buffer.dist = 20000
 )
 
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "pennsylvania",
   locality.type = "state_province",
@@ -264,7 +264,7 @@ readr::write_rds(united_states_slf_risk_report, file = file.path(here::here(), "
 
 ```{r china, eval = TRUE}
 
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "chn", 
   locality.name = "china",
   locality.type = "country",
@@ -275,7 +275,7 @@ slfSpread::create_risk_report(
 )
 
 # this report should have 2 IVR points
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "chn",
   locality.name = "shandong",
   locality.type = "state_province",
@@ -286,7 +286,7 @@ slfSpread::create_risk_report(
 )
 
 # this report should have no IVR records
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "chn",
   locality.name = "yunnan",
   locality.type = "state_province",
@@ -339,7 +339,7 @@ Meanwhile, the following areas may increase in suitabiliy due to warming winter 
 ```{r countries experiencing a loss of Vitis suitability}
 
 # spain
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "esp",
   locality.name = "spain",
   locality.type = "country",
@@ -350,7 +350,7 @@ slfSpread::create_risk_report(
 )
 
 # italy
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "ita",
   locality.name = "italy",
   locality.type = "country",
@@ -361,7 +361,7 @@ slfSpread::create_risk_report(
 )
 
 # portugal
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "prt",
   locality.name = "portugal",
   locality.type = "country",
@@ -372,7 +372,7 @@ slfSpread::create_risk_report(
 )
 
 # türkiye
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "tur",
   locality.name = "türkiye",
   locality.type = "country",
@@ -384,7 +384,7 @@ slfSpread::create_risk_report(
 
 
 # south africa
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "zaf",
   locality.name =  "south africa",
   locality.type = "country",
@@ -395,7 +395,7 @@ slfSpread::create_risk_report(
 )
 
 # mexico
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "mex",
   locality.name = "mexico",
   locality.type = "country",
@@ -603,7 +603,7 @@ ggsave(
 ```{r countries with a gain in vitis suitability}
 
 # united kingdom
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "gbr",
   locality.name = "united kingdom",
   locality.type = "country",
@@ -614,7 +614,7 @@ slfSpread::create_risk_report(
 )
 
 # Ireland
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "irl",
   locality.name = "Ireland",
   locality.type = "country",
@@ -625,7 +625,7 @@ slfSpread::create_risk_report(
 )
 
 # New zealand
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "nzl",
   locality.name = "new zealand",
   locality.type = "country",
@@ -636,7 +636,7 @@ slfSpread::create_risk_report(
 )
 
 # sweden
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "swe",
   locality.name = "sweden",
   locality.type = "country",
@@ -651,7 +651,7 @@ slfSpread::create_risk_report(
 ```{r states with projected increase in viticultural suitability}
 
 # michigan
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "michigan",
   locality.type = "state_province",
@@ -662,7 +662,7 @@ slfSpread::create_risk_report(
 )
 
 # oregon
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "oregon",
   locality.type = "state_province",
@@ -673,7 +673,7 @@ slfSpread::create_risk_report(
 )
 
 # washington
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "usa",
   locality.name = "washington",
   locality.type = "state_province",
@@ -684,7 +684,7 @@ slfSpread::create_risk_report(
 )
 
 # tasmania
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "aus",
   locality.name = "tasmania",
   locality.type = "state_province",
@@ -753,7 +753,7 @@ ggsave(
 
 # countries of interest
 # chile
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "chl",
   locality.name = "chile",
   locality.type = "country",
@@ -764,7 +764,7 @@ slfSpread::create_risk_report(
 )
 
 # australia
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "aus",
   locality.name = "australia",
   locality.type = "country",
@@ -775,7 +775,7 @@ slfSpread::create_risk_report(
 )
 
 # romania
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "rou",
   locality.name = "romania",
   locality.type = "country",
@@ -786,7 +786,7 @@ slfSpread::create_risk_report(
 )
 
 # argentina
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "arg",
   locality.name = "argentina",
   locality.type = "country",
@@ -797,7 +797,7 @@ slfSpread::create_risk_report(
 )
 
 # georgia
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "geo",
   locality.name = "georgia",
   locality.type = "country",
@@ -808,7 +808,7 @@ slfSpread::create_risk_report(
 )
 
 # russia
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "rus",
   locality.name = "russia",
   locality.type = "country",
@@ -959,7 +959,7 @@ These areas experienced a significant increase in SLF risk on the main global ma
 
 # finland
 # projected gain of slf suitability here
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "fin",
   locality.name = "finland",
   locality.type = "country",
@@ -980,7 +980,7 @@ slfSpread::create_risk_report(
 ```{r western europe}
 
 # germany
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "DEU",
   locality.name = "germany",
   locality.type = "country",
@@ -992,7 +992,7 @@ slfSpread::create_risk_report(
 
 
 # france
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "fra",
   locality.name = "france",
   locality.type = "country",
@@ -1057,7 +1057,7 @@ ggsave(
 ```{r eastern europe}
 
 # greece
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "GRC",
   locality.name = "greece",
   locality.type = "country",
@@ -1069,7 +1069,7 @@ slfSpread::create_risk_report(
 
 
 # austria
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "AUT",
   locality.name = "austria",
   locality.type = "country",
@@ -1080,7 +1080,7 @@ slfSpread::create_risk_report(
 )
 
 # hungary
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "HUN",
   locality.name = "hungary",
   locality.type = "country",
@@ -1091,7 +1091,7 @@ slfSpread::create_risk_report(
 )
 
 # czech republic (Czechia)
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "CZE",
   locality.name = "Czechia",
   locality.type = "country",
@@ -1103,7 +1103,7 @@ slfSpread::create_risk_report(
 
 # other
 # estonia
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "est",
   locality.name = "estonia",
   locality.type = "country",
@@ -1114,7 +1114,7 @@ slfSpread::create_risk_report(
 )
 
 # latvia
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "lva",
   locality.name = "lativa",
   locality.type = "country",
@@ -1125,7 +1125,7 @@ slfSpread::create_risk_report(
 )
 
 # lithuania
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "ltu",
   locality.name = "lithuania",
   locality.type = "country",
@@ -1136,7 +1136,7 @@ slfSpread::create_risk_report(
 )
 
 # denmark
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "dnk",
   locality.name = "denmark",
   locality.type = "country",
@@ -1147,7 +1147,7 @@ slfSpread::create_risk_report(
 )
 
 # poland
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "pol",
   locality.name = "poland",
   locality.type = "country",
@@ -1164,7 +1164,7 @@ slfSpread::create_risk_report(
 ```{r Africa}
 
 # algeria
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "DZA",
   locality.name = "algeria",
   locality.type = "country",
@@ -1183,7 +1183,7 @@ slfSpread::create_risk_report(
 ```{r N America}
 
 # canada
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "CAN",
   locality.name = "canada",
   locality.type = "country",
@@ -1202,7 +1202,7 @@ slfSpread::create_risk_report(
 ```{r west asia}
 
 # turkey
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "TUR",
   locality.name = "turkey",
   locality.type = "country",
@@ -1224,7 +1224,7 @@ slfSpread::create_risk_report(
 ## china above
 
 # south korea
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "KOR",
   locality.name = "south korea",
   locality.type = "country",
@@ -1235,7 +1235,7 @@ slfSpread::create_risk_report(
 )
 
 # japan
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "JPN",
   locality.name = "japan",
   locality.type = "country",
@@ -1260,7 +1260,7 @@ readr::write_rds(south_korea_slf_risk_report, file = file.path(here::here(), "vi
 ## doesnt work for some reason
 
 # New zealand
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
   locality.iso = "nzl",
   locality.name = "marlborough",
   locality.type = "state_province",
@@ -1354,7 +1354,7 @@ united_states_risk_plot <- ggplot_gtable(united_states_risk_plot) %>%
 
   
 
-spain_risk_plot <- spain_slf_risk_report[["viticultural_risk_plot"]] +
+australia_risk_plot <- australia_slf_risk_report[["viticultural_risk_plot"]] +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1369,16 +1369,16 @@ spain_risk_plot <- spain_slf_risk_report[["viticultural_risk_plot"]] +
     plot.tag = element_text(face = "bold", size = 20)
     )
 
-spain_risk_plot <- spain_risk_plot %>%
+australia_risk_plot <- australia_risk_plot %>%
   gginnards::delete_layers(match_type = "GeomLabel") %>%
   ggplot_build()
 # edit point size
-spain_risk_plot$data[[4]]$size <- 1.5
-spain_risk_plot$data[[5]]$size <- 1.5
+australia_risk_plot$data[[4]]$size <- 1.5
+australia_risk_plot$data[[5]]$size <- 1.5
 # edit linewidth
-#spain_risk_plot$data[[3]]$linewidth <- 0.1
+#australia_risk_plot$data[[3]]$linewidth <- 0.1
 
-spain_risk_plot <- ggplot_gtable(spain_risk_plot) %>%
+australia_risk_plot <- ggplot_gtable(australia_risk_plot) %>%
   wrap_ggplot_grob()
 
 
@@ -1437,7 +1437,7 @@ USA_risk_map <- ggplot_gtable(USA_risk_map) %>%
  
 
 
-spain_risk_map <- spain_future +
+australia_risk_map <- australia_future +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -1449,15 +1449,15 @@ spain_risk_map <- spain_future +
   labs(tag = "F") +
   theme(
     legend.position = "none", 
-    plot.tag.position = c(0.1, 0.9),
+    plot.tag.position = c(0.15, 0.9),
     plot.tag = element_text(face = "bold", size = 20)
     )
   
-spain_risk_map <- ggplot_build(spain_risk_map)
+australia_risk_map <- ggplot_build(australia_risk_map)
 # edit point size
-spain_risk_map$data[[3]]$size <- 1.5
+australia_risk_map$data[[3]]$size <- 1.5
 # rebuild plot
-spain_risk_map <- ggplot_gtable(spain_risk_map) %>%
+australia_risk_map <- ggplot_gtable(australia_risk_map) %>%
   wrap_ggplot_grob()
   
   
@@ -1479,8 +1479,8 @@ example_countries_patchwork <- (
   romania_risk_plot + plot_spacer() + romania_risk_map + 
   # USA 2nd row
   united_states_risk_plot + plot_spacer() + USA_risk_map + 
-  # spain 3rd row
-  spain_risk_plot + plot_spacer() + spain_risk_map
+  # australia 3rd row
+  australia_risk_plot + plot_spacer() + australia_risk_map
   ) +
   # annotation
   plot_annotation(title = "Differential risk shift due to climate change among countries") +
@@ -1496,7 +1496,7 @@ ggsave(
   height = 10, 
   width = 8,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```
@@ -1697,7 +1697,7 @@ ggsave(
   height = 8, 
   width = 10,
   device = jpeg,
-  dpi = "retina"
+  dpi = 500
   )
 
 ```

@@ -1,10 +1,11 @@
 ### * general
 
-url: https://ieco-lab.github.io/slfSpread/
+url: https://ieco-lab.github.io/scarifSDM/
 template:
   bootstrap: 5
-  bslib:
-    bootswatch: united
+  bootswatch: united
+development:
+  mode: auto
 
 ### * home
 
@@ -19,6 +20,46 @@ home:
     - text: Temple University Biology
       href: https://cst.temple.edu/department-biology
 
+### * navbar
+
+navbar:
+  structure:
+    left: [intro, articles]
+    right: [reference, news, github, search]
+
+### * search
+
+search:
+  exclude: ['news/index.html']
+
+### * reference
+
+reference:
+- title: Create localized risk reports
+  desc: Quantify SLF risk to viticultural areas at the state/provincial or country level
+  contents:
+  - create_risk_report
+- title: Global-scale MaxEnt model functions
+  subtitle: Created for cross-validated MaxEnt models
+  desc: Calculate summary statistics, predict risk via maps or point-wise predictions
+  contents:
+  - compute_MaxEnt_summary_statistics_CV
+  - create_MaxEnt_suitability_maps_CV
+  - predict_xy_suitability_CV
+- title: Regional-scale MaxEnt model functions
+  subtitle: Created for MaxEnt models without cross-validation
+  desc: Calculate summary statistics, predict risk via maps or point-wise predictions
+  contents:
+  - compute_MaxEnt_summary_statistics
+  - create_MaxEnt_suitability_maps
+  - predict_xy_suitability
+- title: Quadrant plot functions
+  desc: Helper functions to format point-wise suitability predictions for visualization in quadrant plots
+  contents:
+  - rescale_cloglog_suitability
+  - calculate_risk_quadrant
+
+
 ### * vignette organization
 
 articles:
@@ -28,20 +69,20 @@ articles:
   contents:
   - 150_create_risk_report
 
-- title: Initialize slfSpread
+- title: Initialize scarifSDM
   desc: Initialization of renv package for dependencies
-  navbar: Initialize slfSpread
+  navbar: Initialize scarifSDM
   contents:
   - 010_initialize_pkg
 
-- title: 1. Retrieve and tidy input data for MaxEnt
+- title: Retrieve and tidy input data for MaxEnt
   desc: Retrieve occurrence data and climate rasters
   navbar: 1. Retrieve and tidy input data for MaxEnt
   contents:
   - 020_retrieve_SLF_records
   - 030_retrieve_bioclim_variables
 
-- title: 2. SDM modeling pipeline
+- title: SDM modeling pipeline
   desc: Setup and create a global-scale model and 3 regional-scale models
   navbar: 2. SDM modeling pipeline
   contents:
@@ -52,14 +93,14 @@ articles:
   - 080_run_regional_invaded_asian_MaxEnt_model
   - 090_run_regional_native_MaxEnt_model
 
-- title: 3. Ensemble Regional-scale SDMs
+- title: Ensemble Regional-scale SDMs
   desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale models
   navbar: 3. Ensemble Regional-scale SDMs
   contents:
   - 100_run_ExDet_MIC
   - 110_ensemble_regional_models
 
-- title: 4. Quantify SLF risk and model fit
+- title: Quantify SLF risk and model fit
   desc: Create suitability maps, scatter plots and figures depicting the AUC, var cont and response curves
   navbar: 4. Quantify SLF risk and model fit
   contents:

@@ -2,11 +2,11 @@
 ########## ABOUT ##########
 ###########################
 
-# slfSpread
+# scarifSDM (formerly slfSpread)
 # folder: vignettes
 # descriptions and changelog
 
-This README is for the vignettes subfolder, which contains workflows for my package slfSpread. Outputs from these vignettes are stored in "data" or "vignette-outputs".
+This README is for the vignettes subfolder, which contains workflows for my package scarifSDM. Outputs from these vignettes are stored in "data" or "vignette-outputs".
 
 ###########################
 ########## FILES ##########
@@ -25,7 +25,7 @@ v1- 2024-08-26
 v2- 2024-10-16- changed to .Rmd, fixed renv errors with project
 
 
-----------020_retrieve_SLF_records.Rmd----------
+----------020_retrieve_occurrence_records.Rmd----------
 
 ## About
 

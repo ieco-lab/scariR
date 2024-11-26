@@ -1,10 +1,12 @@
 # Overview
 
-Our package `slfSpread` outlines a workflow for conducting species distribution modeling (SDM) for the risk of establishment of the invasive *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/slfSpread/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+The `scarifSDM` (Shifting Climate Assessment of Risk from Invasives) framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
+
+We apply this framework to quantify the risk of establishment for the destructive invasive species *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
 
 ## Citation
 
-The package `slfSpread` is a research compendium for our manuscript, Owens and Helmus, 2024:
+The package `scarifSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
 
 **insert citation**
 
@@ -15,13 +17,13 @@ This package should be first be downloaded and installed from GitHub by running 
 ```
 require(devtools)
 # install.packages("devtools") # if devtools is not installed yet
-devtools::install_github("ieco-lab/slfSpread")
-library(slfSpread)
+devtools::install_github("ieco-lab/scarifSDM")
+library(scarifSDM)
 ```
 
 The **dependency** packages should then be installed for the package to run properly:
 
-Here are the main packages that `slfSpread` depends on:
+Here are the main packages that `scarifSDM` depends on:
 
 ```
 install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'gginnards', 'ggplot2', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
@@ -36,21 +38,21 @@ remotes::install_version("ggnewscale", version = "0.4.10")
 
 ## Sitemap
 
-This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/slfSpread/tree/master/vignettes) follow this general order: 
+This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/scarifSDM/tree/master/vignettes) follow this general order: 
 
-* 010: Initialize `slfSpread`: initialization of `renv` package for dependencies
+* 010: Initialize `scarifSDM`: initialization of `renv` package for dependencies
 * 020-030: Retrieve and tidy input data for MaxEnt
 * 040-090: SDM modeling pipeline: train global and 3 regional-scale models
 * 100-110: Ensemble Regional-scale SDMs
 * 120-142: Quantify SLF risk and model fit
-* 150: Quantify risk to specific viticultural regions using our function [create_risk_report()](https://github.com/ieco-lab/slfSpread/blob/master/vignettes/150_create_risk_report.Rmd)
+* 150: Quantify risk to specific viticultural regions using our function [create_risk_report()](https://github.com/ieco-lab/scarifSDM/blob/master/vignettes/150_create_risk_report.Rmd)
 
 # How to Use this Project
 
 Before diving into this project and our modeling workflow, an end user should:
 1. read the [companion paper](), which outlines the conceptual underpinnings for this project
 2. install the package `renv`, which ensures that R package versions are consistent for running this package (this craetes a projct-specific R package library, so it should not affect your main library)
-3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/slfSpread/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
+3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/scarifSDM/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
 4. See "Get Started" for help in using our package to:
 4.1 Produce localized reports on SLF risk to viticulture, and
 4.2 Recreate our analysis for another invasive species of interest
