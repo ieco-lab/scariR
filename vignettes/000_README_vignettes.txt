@@ -25,7 +25,24 @@ v1- 2024-08-26
 v2- 2024-10-16- changed to .Rmd, fixed renv errors with project
 
 
-----------020_retrieve_occurrence_records.Rmd----------
+
+----------020_retrieve_bioclim_variables.Rmd----------
+
+## About
+
+This vignette downloads and tidies the bioclimatic covariates for our models. It also outlines the process for choosing the final set for our models via reducing co-linearity.
+
+## Changelog
+
+v0- initial version
+v1
+v2
+v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
+v4- 2024-10-01- cleaned and simplified workflow. Switched order in workflow to 020
+
+
+
+----------030_retrieve_occurrence_records.Rmd----------
 
 ## About
 
@@ -38,21 +55,8 @@ v1
 v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF workflow
 v3- 2024-07-29- rework methods and data update- using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
 v4- 2024-08-05- swapped workflow from scrubr (deprecated) to coordinateCleaner R package, removed Taiwan records based on new paper pre-print
+v5- 2025-02-08- retired use of Humboldt and spThin packages. Replaced usage with GeoThinneR package. Changed spatial thinning method to thin using the bioclimatic grid cells rather than simple pairwise distances. Switched order in workflow to 030
 
-
-----------030_retrieve_bioclim_variables.Rmd----------
-
-## About
-
-This vignette downloads and tidies the bioclimatic covariates for our models. It also outlines the process for choosing the final set for our models via reducing co-linearity.
-
-## Changelog
-
-v0- initial version
-v1
-v2
-v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
-v4- 2024-10-01- cleaned and simplified workflow.
 
 
 

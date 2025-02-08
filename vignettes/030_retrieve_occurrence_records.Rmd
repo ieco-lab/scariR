@@ -3,10 +3,12 @@ title: "SLF occurrence records: GBIF, lydemapR, literature"
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-08-05"
+date: "2025-02-08"
 ---
 
 # Overview
+
+In the last vignette, we downloaded bioclimatic rasters from CHELSA....
 
 This vignette will provide instructions to retrieve *Lycorma delicatula* (SLF) presence records for the future creation of MaxEnt models. MaxEnt is a presence-only modeling software, and so it does not require recorded absence data to predict the suitable area for SLF. Four categories of data sources will be used in this analysis: [GBIF](https://www.gbif.org/) (Global Biodiversity Information Facility), [lydemapR](https://github.com/ieco-lab/lydemapr), various pieces of peer-reviewed literature, and natural history notes. These data will then be tidied, spatially thinned and compiled into a single `.rds` file of SLF presence records that can be loaded into MaxEnt.
 
@@ -18,37 +20,33 @@ The second step will be to combine these records with data gathered from peer-re
 
 The final step of this analysis will be to organize the different datasets into a single `.rds` file that can be loaded into MaxEnt. MaxEnt requires that input datasets contain only 3 columns, in this order: `species` (the scientific name of the species), `x` (longitude), and `y` (latitude). Lastly, the data will go through a second round of spatial thinning now that the datasets have been joined.
 
-Note, many of these chunks require high memory allocation or simply take a long time to run. The chunks that use `humboldt::humboldt.occ.rarefy()` for spatial thinning will take a very long time to run. The chunks that use `spThin::thin()` require a high memory allocation.
-
-
 # Setup
 
 First, I will load in the necessary packages.
 
 ```{r load necesssary packages, message = FALSE}
 
+# general tools
 library(tidyverse)  #data manipulation
-
 library(here) #making directory pathways easier on different instances
 # here() is set at the root folder of this package
+library(devtools) # installing packages not from CRA
 
-library(devtools) # installing packages not from CRAN
+# species occurrence data
 # devtools::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
 library(lydemapr) # field survey data for SLF
 library(rgbif) #query gbif and format as a dataframe
-
-library(spThin) # spatial thinning of occurrence points
-# remotes::install_github("jasonleebrown/humboldt")
-# library(humboldt) # spatial thinning of points
-## this package is used but we will be retiring it soon as part of an update, # out for now
+library(GeoThinneR)
 library(CoordinateCleaner) # tidying of points
 
-library(patchwork) #nice plots
-library(knitr) # nice rmd tables
-
+# shapefiles
 library(rnaturalearth)
 # remotes::install_github("ropensci/rnaturalearthhires")
-# library(rnaturalearthhires)
+library(rnaturalearthhires)
+
+# aesthetics
+library(patchwork) #nice plots
+library(knitr) # nice rmd tables
 
 ```
 
@@ -101,7 +99,7 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
 
 ```
 
-Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `scarifSDM` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `humboldt` makes for easy spatial thinning of points, while `spThin` is more thorough and evocative for thinning (both will be used). 
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `scarifSDM` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `GeoThinneR` makes for easy spatial thinning of points and can employ a grid-based algorithm, so I will use this package.
 
 # Validation points- globally important viticultural regions
 
@@ -358,15 +356,15 @@ unique(slf_gbif_coords1$name)
 
 ```
 
-Next, we will use `humboldt::humboldt.occ.rarefy()` to spatially thin the occurrence data. The `Humboldt` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
+Next, we will use `GeoThinneR::thin_points` to spatially thin the occurrence data. The `GeoThinneR` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
 
-In `humboldt::humboldt.occ.rarefy()`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. The resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
+In `GeoThinneR::thin_points()`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km. The resolution of the climate data we will use from `CHELSA` (30 arc-seconds, roughly 1km at the equator), but we will be aggregating it at 10km and taking the mean value per cell. This way, no more than one occurrence will be left per grid cell.
 
 ```{r spatial thinning- GBIF}
 
 set.seed(997)
 
-slf_gbif_coords2 <- humboldt::humboldt.occ.rarefy(
+slf_gbif_coords2 <- GeoThinneR::thin_points(
   in.pts = slf_gbif_coords1, 
   colxy = 2:3, # coordinate columns
   rarefy.dist = 10, 
@@ -480,7 +478,7 @@ Again, the majority were duplicates, followed by those that fell into bodies of 
 
 set.seed(998)
 
-slf_lyde2 <- humboldt::humboldt.occ.rarefy(
+slf_lyde2 <- GeoThinneR::thin_points(
   in.pts = slf_lyde1, 
   colxy = 4:5, # coordinate columns
   rarefy.dist = 10, 

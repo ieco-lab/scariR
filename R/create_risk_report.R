@@ -83,15 +83,7 @@
 #'* slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
 #'* slf_range_shift_summed.asc                                          | created in vignette 120
 #'
-#'## raster.path
-#'
-#'Here is a list of the rasters that should be included in this data import.
-#'These rasters are located in `root/vignette-outputs/rasters`, These are the files:
-#'
-#'* slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
-#'* slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
-#'* slf_range_shift_summed_ssp_mean_GFDL.asc                            | created in vignette 120
-#'
+#'Additionally, `root/vignette-outputs/rasters` is the default path for the `raster.path()` argument.
 #'
 #'@return
 #'
