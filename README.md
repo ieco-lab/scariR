@@ -1,16 +1,18 @@
-# Overview
+# scarifSDM <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
+
+## Overview
 
 The `scarifSDM` (Shifting Climate Assessment of Risk from Invasives) framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
 
 We apply this framework to quantify the risk of establishment for the destructive invasive species *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
 
-## Citation
+### Citation
 
 The package `scarifSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
 
 **insert citation**
 
-## Installation
+### Installation
 
 This package should be first be downloaded and installed from GitHub by running the following code:
 
@@ -26,7 +28,7 @@ The **dependency** packages should then be installed for the package to run prop
 Here are the main packages that `scarifSDM` depends on:
 
 ```
-install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'gginnards', 'ggplot2', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'ggplot2', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
 
 # we also suggest installing the following packages:
 install.packages(c("blockCV", "knitr", "rmarkdown"))
@@ -36,7 +38,7 @@ library(remotes)
 remotes::install_version("ggnewscale", version = "0.4.10")
 ```
 
-## Sitemap
+### Sitemap
 
 This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/scarifSDM/tree/master/vignettes) follow this general order: 
 
@@ -47,7 +49,7 @@ This project is organized into general sections of our modeling pipeline: Our [v
 * 120-142: Quantify SLF risk and model fit
 * 150: Quantify risk to specific viticultural regions using our function [create_risk_report()](https://github.com/ieco-lab/scarifSDM/blob/master/vignettes/150_create_risk_report.Rmd)
 
-# How to Use this Project
+## How to Use this Project
 
 Before diving into this project and our modeling workflow, an end user should:
 1. read the [companion paper](), which outlines the conceptual underpinnings for this project
@@ -57,7 +59,7 @@ Before diving into this project and our modeling workflow, an end user should:
 4.1 Produce localized reports on SLF risk to viticulture, and
 4.2 Recreate our analysis for another invasive species of interest
 
-## Computing Information
+### Computing Information
 
 This package was developed and its vignettes were rendered on a Dell Precision desktop PC with the following characteristics:
 * Core: intel Xeon CPU, 3.60 GHz
@@ -65,7 +67,7 @@ This package was developed and its vignettes were rendered on a Dell Precision d
 * Operating System: Windows 10 Enterprise, version 22H2
 * R version: 4.4.1
 
-# References
+## References
 
 Gallien, L., Douzet, R., Pratte, S., Zimmermann, N. E., & Thuiller, W. (2012). Invasive species distribution models – how violating the equilibrium assumption can create new insights. Global Ecology and Biogeography, 21(11), 1126–1136. https://doi.org/10.1111/j.1466-8238.2012.00768.x
 
