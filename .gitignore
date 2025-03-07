@@ -2,7 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-vignette-outputs
+vignette-outputs/data-tables
+vignette-outputs/figures
+vignette-outputs/shapefiles
+vignette-outputs/reports
 data
 data-raw
 sandbox
