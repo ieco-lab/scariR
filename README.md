@@ -1,5 +1,8 @@
 # scarifSDM <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
 
+
+
+
 ## Overview
 
 The `scarifSDM` (Shifting Climate Assessment of Risk from Invasives) framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
@@ -65,7 +68,7 @@ This package was developed and its vignettes were rendered on a Dell Precision d
 * Core: intel Xeon CPU, 3.60 GHz
 * RAM memory: 64 GB
 * Operating System: Windows 10 Enterprise, version 22H2
-* R version: 4.4.1
+* R version: 4.4.2
 
 ## References
 

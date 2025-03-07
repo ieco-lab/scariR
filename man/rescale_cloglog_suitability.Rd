@@ -109,7 +109,7 @@ Thresh presets list:
 
 ```R
 
-xy_regional_ensemble_1995_rescaled <- slfSpread::rescale_cloglog_suitability(
+xy_regional_ensemble_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
 xy.predicted = xy_regional_ensemble_1995,
 thresh = "MTSS", # max training and sensitivity plus specificity
 exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),

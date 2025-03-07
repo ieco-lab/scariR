@@ -117,3 +117,23 @@ renv::update()
 renv::install()
 
 ```
+
+# remove renv
+
+As needed, you may need to completely remove renv and restart from a fresh install.
+
+```{r remove renv}
+
+# deactivate renv
+renv::deactivate()
+
+# remove renv from project
+renv::deactivate(clean = TRUE)
+
+# completely remove renv from the system
+root <- renv::paths$root()
+unlink(root, recursive = TRUE)
+utils::remove.packages("renv")
+
+```
+

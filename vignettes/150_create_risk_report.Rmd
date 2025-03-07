@@ -28,6 +28,8 @@ library(sf)
 library(rnaturalearth)
 # remotes::install_github("ropensci/rnaturalearthhires")
 library(rnaturalearthhires)
+# remotes::install_github("ropensci/rnaturalearthdata")
+library(rnaturalearthdata)
 
 # aesthetics
 library(kableExtra)

@@ -23,7 +23,6 @@ Imports:
     devtools,
     dismo,
     dplyr,
-    dsmextra,
     ENMTools,
     formattable,
     GeoThinneR,

@@ -179,7 +179,7 @@ theme_classic()
 )
 
 # EXAMPLE USAGE:
-slfSpread::create_MaxEnt_suitability_maps(
+scarifSDM::create_MaxEnt_suitability_maps(
  model.obj = regional_native_model,
  model.name = "regional_native",
  mypath = mypath,

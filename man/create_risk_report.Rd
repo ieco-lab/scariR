@@ -117,16 +117,8 @@ Additionally, 3 rasters are used to create maps. These rasters are located in
 \item slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
 \item slf_range_shift_summed.asc                                          | created in vignette 120
 }
-\subsection{raster.path}{
 
-Here is a list of the rasters that should be included in this data import.
-These rasters are located in \code{root/vignette-outputs/rasters}, These are the files:
-\itemize{
-\item slf_binarized_summed_1981-2010.asc                                  | created in vignette 120
-\item slf_binarized_summed_2041-2070_ssp_mean_GFDL.asc                    | created in vignette 120
-\item slf_range_shift_summed_ssp_mean_GFDL.asc                            | created in vignette 120
-}
-}
+Additionally, \code{root/vignette-outputs/rasters} is the default path for the \code{raster.path()} argument.
 }
 \examples{
 
@@ -134,7 +126,7 @@ These rasters are located in \code{root/vignette-outputs/rasters}, These are the
 
 ```R
 
-slfSpread::create_risk_report(
+scarifSDM::create_risk_report(
 locality.iso = "aus",
 locality.name = "australia",
 locality.type = "country",
