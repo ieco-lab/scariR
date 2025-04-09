@@ -79,8 +79,8 @@ articles:
   desc: Retrieve occurrence data and climate rasters
   navbar: 1. Retrieve and tidy input data for MaxEnt
   contents:
-  - 020_retrieve_SLF_records
-  - 030_retrieve_bioclim_variables
+  - 020_retrieve_bioclim_variables
+  - 030_retrieve_occurrence_records
 
 - title: SDM modeling pipeline
   desc: Setup and create a global-scale model and 3 regional-scale models

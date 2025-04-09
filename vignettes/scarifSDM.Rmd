@@ -238,7 +238,20 @@ Users should explore the other localities and data types available with this fun
 
 For modelers who wish to apply this pipeline for other invasive species, this pipeline can easily be adapted to model the risk of establishment by simply changing the input datasets and modeled scales. 
 
-First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the package `rgbif`:
+First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the package `rgbif`. Before I perform this operation, I will need to enter my user credentials for gbif; to keep these private, I will edit the .Renviron and call them from there. Once this chunk is run and the .Renviron pops up, enter your username, password and email credentials in the following format on lines 1-3:
+
+-   GBIF_USER=" "
+-   GBIF_PWD=" "
+-   GBIF_EMAIL=" "
+
+```{r add user credentials}
+
+# edit R environment for user credentials
+usethis::edit_r_environ()
+
+```
+
+Save and close the document, and restart R. Now I will search for species occurrence records using GBIF.
 
 ```{r retrieve SLF records using rgbif}
 
