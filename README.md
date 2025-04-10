@@ -1,4 +1,4 @@
-# Scaling Context Assessments for Risk of Invasions
+# Shifting Climate Assessments for Risk of Invasions
 ## `scari` R Package Overview
 <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scarifSDM website" /></a>
 
