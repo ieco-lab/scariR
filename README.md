@@ -1,6 +1,6 @@
 # `scari` Scaling Context Assessments for Risk of Invasions
 <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
-![scari]("man/figures/logo.png")
+
 ## Overview
 
 `scariSDM` (Scaling Context Assessment for Risk of Invasion) is a multiscale Species Distribution Modeling (SDM) workflow to forecast establishment risk of species invasions to vulnerable ecosystems within and among nations.
