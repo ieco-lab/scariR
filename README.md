@@ -1,13 +1,10 @@
-<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
 # `scari` Scaling Context Assessments for Risk of Invasions
-## `R` package and research compendium 
-
-
 ## Overview
+<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="139" alt="scarifSDM website" /></a>
 
-`scariSDM` (Scaling Context Assessment for Risk of Invasion) is a multiscale Species Distribution Modeling (SDM) workflow to forecast establishment risk of species invasions to vulnerable ecosystems within and among nations.
+`scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion within and among nations.
 
-We developed this workflow to quantify the risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
+We developed this workflow to quantify the shifting risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
 
 ### Citation
 
@@ -22,13 +19,13 @@ This package should be first be downloaded and installed from GitHub by running 
 ```
 require(devtools)
 # install.packages("devtools") # if devtools is not installed yet
-devtools::install_github("ieco-lab/scariSDM")
-library(scarifSDM)
+devtools::install_github("ieco-lab/scari")
+library(scari)
 ```
 
 The **dependency** packages should then be installed for the package to run properly:
 
-Here are the main packages that `scarifSDM` depends on:
+Here are the main packages that `scari` depends on:
 
 ```
 install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'ggplot2', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
