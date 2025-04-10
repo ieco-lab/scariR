@@ -1,6 +1,6 @@
-# `scari` Scaling Context Assessments for Risk of Invasions
-## Overview
-<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="139" alt="scarifSDM website" /></a>
+# Scaling Context Assessments for Risk of Invasions
+## `scari` R Package Overview
+<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scarifSDM website" /></a>
 
 `scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion within and among nations.
 
@@ -8,7 +8,7 @@ We developed this workflow to quantify the shifting risk of future establishment
 
 ### Citation
 
-The package `scariSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
+The package `scari` is a research compendium for our manuscript, Owens and Helmus, 2024:
 
 **insert citation**
 
