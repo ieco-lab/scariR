@@ -4,9 +4,9 @@
 
 ## Overview
 
-The `scarifSDM` (Shifting Climate Assessment of Risk from Invasives) framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
+`scariSDM` (Scaling Context Assessment for Risk of Invasion) is a multiscale Species Distribution Modeling (SDM) workflow to forecast establishment risk of species invasions to vulnerable ecosystems within and among nations.
 
-We apply this framework to quantify the risk of establishment for the destructive invasive species *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+We apply this workflow to quantify the risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
 
 ### Citation
 
