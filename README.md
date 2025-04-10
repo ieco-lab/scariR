@@ -6,11 +6,11 @@
 
 `scariSDM` (Scaling Context Assessment for Risk of Invasion) is a multiscale Species Distribution Modeling (SDM) workflow to forecast establishment risk of species invasions to vulnerable ecosystems within and among nations.
 
-We apply this workflow to quantify the risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+We developed this workflow to quantify the risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
 
 ### Citation
 
-The package `scarifSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
+The package `scariSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
 
 **insert citation**
 
@@ -21,7 +21,7 @@ This package should be first be downloaded and installed from GitHub by running 
 ```
 require(devtools)
 # install.packages("devtools") # if devtools is not installed yet
-devtools::install_github("ieco-lab/scarifSDM")
+devtools::install_github("ieco-lab/scariSDM")
 library(scarifSDM)
 ```
 
