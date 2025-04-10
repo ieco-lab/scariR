@@ -1,5 +1,7 @@
-# `scari` Scaling Context Assessments for Risk of Invasions
 <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
+# `scari` Scaling Context Assessments for Risk of Invasions
+## `R` package and research compendium 
+
 
 ## Overview
 
