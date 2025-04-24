@@ -1,6 +1,5 @@
 # Shifting Climate Assessments for Risk of Invasions
-## `scariR
-` R Package Overview
+## `scariR` R Package Overview
 <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scarifSDM website" /></a>
 
 `scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion within and among nations.
