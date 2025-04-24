@@ -1,18 +1,18 @@
-# scarifSDM <a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/logo.png" align="right" height="139" alt="scarifSDM website" /></a>
+# Shifting Climate Assessments for Risk of Invasions
+## `scari` R Package Overview
+<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scarifSDM website" /></a>
 
+`scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion as it shifts with climate change.
 
-
-## Overview
-
-The `scarifSDM` (Shifting Climate Assessment of Risk from Invasives) framework outlines a workflow for Species Distribution Modeling (SDM) to address the compounding effect of climate change on species invasions worldwide.
-
-We apply this framework to quantify the risk of establishment for the destructive invasive species *Lycorma delicatula* (spotted lanternfly or SLF) under climate change. We primarily provide tools and resources for viticulturists to assess and respond to the risk SLF for viticulture at their locality. Viticulturists should apply our function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) to create risk maps, range shift maps, risk plots and other outputs at the scale of countries or states/provinces. We also apply a novel multi-scale approach to model the global risk for establishment of *Lycorma delicatula*, which modelers should adapt and apply to other potential invaders under climate change. We find that our multi-scale approach of ensembling MaxEnt models at the regional-scale provides more refined predictions than our global-scale model and highlights important biological limitations on the spread of SLF.
+We developed this workflow to quantify the shifting risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
 
 ### Citation
 
-The package `scarifSDM` is a research compendium for our manuscript, Owens and Helmus, 2024:
+The package `scari` is a research compendium for:
 
-**insert citation**
+Owens, S. M. (2024). Multi-scale Modeling of the Spotted Lanternfly Lycorma delicatula (Hemiptera: Fulgoridae) Reveals Displaced Risk to Viticulture and Regional Range Expansion Due to Climate Change [M.S., Temple University]. In ProQuest Dissertations and Theses (3099643448). https://www.proquest.com/dissertations-theses/multi-scale-modeling-spotted-lanternfly-em/docview/3099643448/se-2?accountid=130527
+![image](https://github.com/user-attachments/assets/c840b94d-0c42-40bb-9134-cae1c31bb7e3)
+
 
 ### Installation
 
@@ -21,13 +21,13 @@ This package should be first be downloaded and installed from GitHub by running 
 ```
 require(devtools)
 # install.packages("devtools") # if devtools is not installed yet
-devtools::install_github("ieco-lab/scarifSDM")
-library(scarifSDM)
+devtools::install_github("ieco-lab/scari")
+library(scari)
 ```
 
 The **dependency** packages should then be installed for the package to run properly:
 
-Here are the main packages that `scarifSDM` depends on:
+Here are the main packages that `scari` depends on:
 
 ```
 install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'ggplot2', 'gitcreds' 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
