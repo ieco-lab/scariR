@@ -8,9 +8,11 @@ We developed this workflow to quantify the shifting risk of future establishment
 
 ### Citation
 
-The package `scari` is a research compendium for our manuscript, Owens and Helmus, 2024:
+The package `scari` is a research compendium for:
 
-**insert citation**
+Owens, S. M. (2024). Multi-scale Modeling of the Spotted Lanternfly Lycorma delicatula (Hemiptera: Fulgoridae) Reveals Displaced Risk to Viticulture and Regional Range Expansion Due to Climate Change [M.S., Temple University]. In ProQuest Dissertations and Theses (3099643448). https://www.proquest.com/dissertations-theses/multi-scale-modeling-spotted-lanternfly-em/docview/3099643448/se-2?accountid=130527
+![image](https://github.com/user-attachments/assets/c840b94d-0c42-40bb-9134-cae1c31bb7e3)
+
 
 ### Installation
 
