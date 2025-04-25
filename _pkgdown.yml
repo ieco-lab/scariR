@@ -69,9 +69,9 @@ articles:
   contents:
   - 150_create_risk_report
 
-- title: Initialize scarifSDM
+- title: Initialize scari
   desc: Initialization of renv package for dependencies
-  navbar: Initialize scarifSDM
+  navbar: Initialize scari
   contents:
   - 010_initialize_pkg
 

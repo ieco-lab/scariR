@@ -2,11 +2,11 @@
 ########## ABOUT ##########
 ###########################
 
-# scarifSDM (formerly slfSpread)
+# scari (formerly slfSpread)
 # folder: vignettes
 # descriptions and changelog
 
-This README is for the vignettes subfolder, which contains workflows for my package scarifSDM. Outputs from these vignettes are stored in "data" or "vignette-outputs".
+This README is for the vignettes subfolder, which contains workflows for my package scari. Outputs from these vignettes are stored in "data" or "vignette-outputs".
 
 ###########################
 ########## FILES ##########

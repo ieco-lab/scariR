@@ -76,7 +76,7 @@
 #'@param summary.file Data import. Does not need to be defined if
 #'`map.thresh = FALSE`. Should be a .csv file or data frame that contains the
 #'summary statistics output created by
-#'[scarifSDM::compute_MaxEnt_summary_statistics_CV()] (filename ending in
+#'[scari::compute_MaxEnt_summary_statistics_CV()] (filename ending in
 #'"summary_all_iterations.csv"). If an import, file path should be in the format
 #'produced by the [file.path()] function (i.e. with '/' instead of '\\').
 #'
@@ -158,7 +158,7 @@
 #' )
 #'
 #'# EXAMPLE USAGE:
-#'scarifSDM::create_MaxEnt_suitability_maps_CV(
+#'scari::create_MaxEnt_suitability_maps_CV(
 #'model.obj = global_model,
 #'model.name = "global",
 #'mypath = mypath,

@@ -2,7 +2,7 @@
 ########## ABOUT ##########
 ###########################
 
-# scarifSDM
+# scari
 # folder: R
 # descriptions and changelog
 

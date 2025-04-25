@@ -84,7 +84,7 @@
 #'plot.type <- c("cloglog", "logistic") # used to produce marginal and univariate response curves
 #'
 #'# EXAMPLE USAGE:
-#'scarifSDM::compute_MaxEnt_summary_statistics(
+#'scari::compute_MaxEnt_summary_statistics(
 #' model.obj = regional_native_model,
 #' model.name = "regional_native",
 #' mypath = mypath,

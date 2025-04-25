@@ -1,10 +1,10 @@
 # Shifting Climate Assessments for Risk of Invasions
 ## `scari` R Package Overview
-<a href="https://ieco-lab.github.io/scarifSDM/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scarifSDM website" /></a>
+<a href="https://ieco-lab.github.io/scari/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scari website" /></a>
 
 `scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion as it shifts with climate change.
 
-We developed this workflow to quantify the shifting risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scarifSDM/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
+We developed this workflow to quantify the shifting risk of future establishment of the invasive species *Lycorma delicatula* (spotted lanternfly or SLF) in important viticulture regions worldwide. The `R` function [create_risk_report](https://github.com/ieco-lab/scari/blob/master/R/create_risk_report.R) produces risk maps, range shift estimates, risk plots and other outputs at the scale of countries or smaller geopolitical units.
 
 ### Citation
 
@@ -42,21 +42,21 @@ remotes::install_version("ggnewscale", version = "0.4.10")
 
 ### Sitemap
 
-This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/scarifSDM/tree/master/vignettes) follow this general order: 
+This project is organized into general sections of our modeling pipeline: Our [vignettes](https://github.com/ieco-lab/scari/tree/master/vignettes) follow this general order: 
 
-* 010: Initialize `scarifSDM`: initialization of `renv` package for dependencies
+* 010: Initialize `scari`: initialization of `renv` package for dependencies
 * 020-030: Retrieve and tidy input data for MaxEnt
 * 040-090: SDM modeling pipeline: train global and 3 regional-scale models
 * 100-110: Ensemble Regional-scale SDMs
 * 120-142: Quantify SLF risk and model fit
-* 150: Quantify risk to specific viticultural regions using our function [create_risk_report()](https://github.com/ieco-lab/scarifSDM/blob/master/vignettes/150_create_risk_report.Rmd)
+* 150: Quantify risk to specific viticultural regions using our function [create_risk_report()](https://github.com/ieco-lab/scari/blob/master/vignettes/150_create_risk_report.Rmd)
 
 ## How to Use this Project
 
 Before diving into this project and our modeling workflow, an end user should:
 1. read the [companion paper](), which outlines the conceptual underpinnings for this project
 2. install the package `renv`, which ensures that R package versions are consistent for running this package (this craetes a projct-specific R package library, so it should not affect your main library)
-3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/scarifSDM/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
+3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/scari/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
 4. See "Get Started" for help in using our package to:
 4.1 Produce localized reports on SLF risk to viticulture, and
 4.2 Recreate our analysis for another invasive species of interest

@@ -179,7 +179,7 @@ theme_classic()
 )
 
 # EXAMPLE USAGE:
-scarifSDM::create_MaxEnt_suitability_maps(
+scari::create_MaxEnt_suitability_maps(
  model.obj = regional_native_model,
  model.name = "regional_native",
  mypath = mypath,

@@ -108,7 +108,7 @@
 #'
 #'```R
 #'
-#'scarifSDM::create_risk_report(
+#'scari::create_risk_report(
 #' locality.iso = "aus",
 #' locality.name = "australia",
 #' locality.type = "country",
@@ -917,7 +917,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   ### tidy data-----------------------------------------------------------------
 
   # apply internal function rescale_cloglog_suitability
-  xy_global_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
+  xy_global_1995_rescaled <- scari::rescale_cloglog_suitability(
     xy.predicted = xy_global_1995,
     thresh = "MTSS",
     exponential.file = threshold_exponential_values,
@@ -930,7 +930,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   xy_global_1995_rescaled <- xy_global_1995_rescaled[[1]]
 
 
-  xy_global_2055_rescaled <- scarifSDM::rescale_cloglog_suitability(
+  xy_global_2055_rescaled <- scari::rescale_cloglog_suitability(
     xy.predicted = xy_global_2055,
     thresh = "MTSS",  # the global model only has 1 MTSS thresh
     exponential.file = threshold_exponential_values,
@@ -944,7 +944,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
 
 
-  xy_regional_ensemble_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
+  xy_regional_ensemble_1995_rescaled <- scari::rescale_cloglog_suitability(
     xy.predicted = xy_regional_ensemble_1995,
     thresh = "MTSS",
     exponential.file = threshold_exponential_values,
@@ -958,7 +958,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
 
 
 
-  xy_regional_ensemble_2055_rescaled <- scarifSDM::rescale_cloglog_suitability(
+  xy_regional_ensemble_2055_rescaled <- scari::rescale_cloglog_suitability(
     xy.predicted = xy_regional_ensemble_2055,
     thresh = "MTSS.CC", # the way the thresholds are calculated for the regional_ensemble model means that the threshold will be slightly different for climate change
     exponential.file = threshold_exponential_values,
@@ -1100,13 +1100,13 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   # calculate risk quadrants
   IVR_locations_risk <- IVR_locations_joined %>%
     dplyr::mutate(
-      risk_1995 = scarifSDM::calculate_risk_quadrant(
+      risk_1995 = scari::calculate_risk_quadrant(
         suit.x = IVR_locations_joined$xy_global_1995_rescaled,
         suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
         thresh.x = global_MTSS, # this threshold remains the same
         thresh.y = regional_ensemble_MTSS_1995
       ),
-      risk_2055 = scarifSDM::calculate_risk_quadrant(
+      risk_2055 = scari::calculate_risk_quadrant(
         suit.x = IVR_locations_joined$xy_global_2055_rescaled,
         suit.y = IVR_locations_joined$xy_regional_ensemble_2055_rescaled,
         thresh.x = global_MTSS,

@@ -99,7 +99,7 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
 
 ```
 
-Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `scarifSDM` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `GeoThinneR` makes for easy spatial thinning of points and can employ a grid-based algorithm, so I will use this package.
+Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `scari` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `GeoThinneR` makes for easy spatial thinning of points and can employ a grid-based algorithm, so I will use this package.
 
 # Validation points- globally important viticultural regions
 

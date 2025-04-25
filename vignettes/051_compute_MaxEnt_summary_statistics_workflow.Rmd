@@ -102,7 +102,7 @@ dir.create(path = file.path(mypath, "slf_global_v3_TEST", "plots"))
 
 ```
 
-*NOTE* the output created from this point to the end of the vignette can be created using the function `scarifSDM::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`.
+*NOTE* the output created from this point to the end of the vignette can be created using the function `scari::compute_MaxEnt_summary_statistics()`. This does not include the ending appendix or the chunks that create an output using `SDMtune::predict()`.
 
 ```{r save model as RDS file}
 

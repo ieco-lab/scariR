@@ -126,7 +126,7 @@ Additionally, \code{root/vignette-outputs/rasters} is the default path for the \
 
 ```R
 
-scarifSDM::create_risk_report(
+scari::create_risk_report(
 locality.iso = "aus",
 locality.name = "australia",
 locality.type = "country",

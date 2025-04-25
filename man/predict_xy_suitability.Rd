@@ -95,7 +95,7 @@ clamping should be applied if they are not within the training are (clamp.pred =
 ```R
 
 # simple predict method
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
 xy.obj = IVR_regions,
 xy.type = "IVR regions",
 env.covar.obj = x_regional_native_hist_env_covariates,
@@ -107,7 +107,7 @@ output.name = "regional_native_wineries_1981-2010"
 )
 
 # buffered predict method
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
 xy.obj = IVR_regions,
 xy.type = "IVR regions",
 env.covar.obj = x_regional_native_hist_env_covariates,

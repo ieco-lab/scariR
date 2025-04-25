@@ -222,7 +222,7 @@ slf_populations <- read_rds(file.path(here::here(), "data", "slf_all_coords_fina
 
 ##  import and tidy xy suitability
 
-These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `scarifSDM::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
+These scatter plots will be based on the suitability for the IVR points in both the global and regional_ensemble models. I have already calculated the xy suitability for the global model based on these points, using the function `scari::predict_xy_suitability()`. This function will not work for the regional_ensemble because it calls for a model object, which we did not use to predict the ensemble suitability. So, I will use `terra::extract()` to perform this action.
 
 I will load in the global model datasets and create the regional_ensemble datasets. I will also do some tidying of my datasets for the plots I will create.
 
@@ -479,7 +479,7 @@ readr::write_rds(
 
 I will plot the suitability values in two different ways- I will plot the raw xy suitability and I will transform the data so that the MTSS threshold is the center of the scatter plot. This way, movement across the minimum suitability threshold is more easily visualized. I will transform all 4 vectors of suitability values, 2 per model, in preparation for plotting.
 
-I created the function `scarifSDM::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
+I created the function `scari::rescale_cloglog_suitability()` to accomplish this task. This function uses a vector of exponential transformations for the specified value of `thresh` to apply an exponential equation to the vector of suitability values. It then applies the equation `y = c1 * c2^x + c3` to the vector, where x is the input suitability values, y is the transformed version of those values, c1 and c3 are the maximum and its inverse, and c2 is the interpolated value of the input `thresh`. The transformed suitability vector is re-scaled so that `thresh` is the median (0.5) on a 0-1 scale and all other values are transformed to fit this scale.
 
 ```{r re-laod slf populations dataset, eval = TRUE}
 
@@ -501,7 +501,7 @@ xy_regional_ensemble_2055 <- read_rds(file = file.path(here::here(), "data", "re
 
 ```{r transform global xy data, eval = TRUE}
 
-xy_global_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
+xy_global_1995_rescaled <- scari::rescale_cloglog_suitability(
   xy.predicted = xy_global_1995,
   thresh = "MTSS",
   exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
@@ -515,7 +515,7 @@ xy_global_1995_rescaled <- xy_global_1995_rescaled[[1]]
 
 
 
-xy_global_2055_rescaled <- scarifSDM::rescale_cloglog_suitability(
+xy_global_2055_rescaled <- scari::rescale_cloglog_suitability(
   xy.predicted = xy_global_2055,
   thresh = "MTSS",  # the global model only has 1 MTSS thresh
   exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
@@ -531,7 +531,7 @@ xy_global_2055_rescaled <- xy_global_2055_rescaled[[1]]
 
 ```{r transform regional_ensemble xy data, eval = TRUE}
 
-xy_regional_ensemble_1995_rescaled <- scarifSDM::rescale_cloglog_suitability(
+xy_regional_ensemble_1995_rescaled <- scari::rescale_cloglog_suitability(
   xy.predicted = xy_regional_ensemble_1995,
   thresh = "MTSS",
   exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
@@ -545,7 +545,7 @@ xy_regional_ensemble_1995_rescaled <- xy_regional_ensemble_1995_rescaled[[1]]
 
 
 
-xy_regional_ensemble_2055_rescaled <- scarifSDM::rescale_cloglog_suitability(
+xy_regional_ensemble_2055_rescaled <- scari::rescale_cloglog_suitability(
   xy.predicted = xy_regional_ensemble_2055,
   thresh = "MTSS.CC", # the way the thresholds are calculated for the regional_ensemble model means that the threshold will be slightly different for climate change
   exponential.file = file.path(here::here(), "data-raw", "threshold_exponential_values.csv"),
@@ -840,7 +840,7 @@ write_rds(
 
 # 4. Create summary table of transformed plot
 
-I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `scarifSDM::calculate_risk_quadrant()`. 
+I will now create a summary table to explain the rescaled plots from step 4. The table will depict the quadrant placement of the point in the quadrant plot, both before and after climate change. From this, I will calculate the total number of movements into and out of each quadrant. I will apply the internal function `scari::calculate_risk_quadrant()`. 
 
 I will create a summary table of the quadrant placement (and thus the level of risk) for each point in the IVR_locations dataset. I will use `calculate_risk_quadrant()` to accomplish this.
 
@@ -853,13 +853,13 @@ slf_populations_joined <- left_join(slf_populations, xy_joined_rescaled, by = c(
 # calculate risk quadrants
 slf_populations_risk <- slf_populations_joined %>%
   mutate(
-    risk_1995 = scarifSDM::calculate_risk_quadrant(
+    risk_1995 = scari::calculate_risk_quadrant(
       suit.x = slf_populations_joined$xy_global_1995_rescaled,
       suit.y = slf_populations_joined$xy_regional_ensemble_1995_rescaled,
       thresh.x = global_MTSS, # this threshold remains the same
       thresh.y = regional_ensemble_MTSS_1995
     ),
-    risk_2055 = scarifSDM::calculate_risk_quadrant(
+    risk_2055 = scari::calculate_risk_quadrant(
       suit.x = slf_populations_joined$xy_global_2055_rescaled,
       suit.y = slf_populations_joined$xy_regional_ensemble_2055_rescaled,
       thresh.x = global_MTSS,

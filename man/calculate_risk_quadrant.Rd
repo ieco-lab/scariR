@@ -53,7 +53,7 @@ or extracted from a raster using \code{terra::extract()}, as needed.
 
 ```R
 
-IVR_locations_risk <- dplyr::mutate(IVR_locations_risk, risk_1995 = scarifSDM::calculate_risk_quadrant(
+IVR_locations_risk <- dplyr::mutate(IVR_locations_risk, risk_1995 = scari::calculate_risk_quadrant(
  suit.x = IVR_locations_joined$xy_global_1995_rescaled,
  suit.y = IVR_locations_joined$xy_regional_ensemble_1995_rescaled,
  thresh.x = global_MTSS, # this threshold remains the same

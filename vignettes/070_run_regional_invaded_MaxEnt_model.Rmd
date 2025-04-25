@@ -353,7 +353,7 @@ mypath <- file.path(here::here() %>%
                        dirname(),
                      "maxent/models/slf_regional_invaded_v7")
 
-scarifSDM::compute_MaxEnt_summary_statistics(
+scari::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_model, 
   model.name = "regional_invaded", 
   mypath = mypath, 
@@ -391,7 +391,7 @@ regional_invaded_model <- read_rds(file = file.path(mypath, "regional_invaded_mo
 
 ```{r predict mean and thresholded suitability maps for historical data}
 
-scarifSDM::create_MaxEnt_suitability_maps(
+scari::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
@@ -413,7 +413,7 @@ I will also create suitability maps for ssp scenarios of the projected 2041-2070
 
 ```{r predict suitability maps for ssp126 data}
 
-scarifSDM::create_MaxEnt_suitability_maps(
+scari::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
@@ -431,7 +431,7 @@ scarifSDM::create_MaxEnt_suitability_maps(
 
 ```{r predict suitability maps for ssp370 data}
 
-scarifSDM::create_MaxEnt_suitability_maps(
+scari::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
@@ -449,7 +449,7 @@ scarifSDM::create_MaxEnt_suitability_maps(
 
 ```{r predict suitability maps for ssp585 data}
 
-scarifSDM::create_MaxEnt_suitability_maps(
+scari::create_MaxEnt_suitability_maps(
   model.obj = regional_invaded_model,
   model.name = "regional_invaded", 
   mypath = mypath, 
@@ -483,7 +483,7 @@ slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "da
 
 ```{r predictions for known SLF populations- historical}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_hist_env_covariates,
@@ -501,7 +501,7 @@ I will repeat the same process for the CMIP6 data.
 
 ```{r predictions for known SLF populations- ssp126}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_126_env_covariates,
@@ -515,7 +515,7 @@ scarifSDM::predict_xy_suitability(
 
 ```{r predictions for known SLF populations- ssp370}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_370_env_covariates,
@@ -529,7 +529,7 @@ scarifSDM::predict_xy_suitability(
 
 ```{r predictions for known SLF populations- ssp585}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = slf_presences,
   xy.type = "Lycorma delicatula",
   env.covar.obj = x_global_585_env_covariates,
@@ -563,7 +563,7 @@ IVR_regions <- wineries %>%
 
 ```{r predictions for IVR coordinate data- historical}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_hist_env_covariates,
@@ -582,7 +582,7 @@ I will do the same for the SSP scenarios.
 
 ```{r predictions for IVR coordinate data- ssp126}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_126_env_covariates,
@@ -597,7 +597,7 @@ scarifSDM::predict_xy_suitability(
 
 ```{r predictions for IVR coordinate data- ssp370}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_370_env_covariates,
@@ -612,7 +612,7 @@ scarifSDM::predict_xy_suitability(
 
 ```{r predictions for IVR coordinate data- ssp585}
 
-scarifSDM::predict_xy_suitability(
+scari::predict_xy_suitability(
   xy.obj = IVR_regions,
   xy.type = "IVR regions",
   env.covar.obj = x_global_585_env_covariates,

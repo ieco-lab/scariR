@@ -185,7 +185,7 @@ theme_classic()
 )
 
 # EXAMPLE USAGE:
-scarifSDM::create_MaxEnt_suitability_maps_CV(
+scari::create_MaxEnt_suitability_maps_CV(
 model.obj = global_model,
 model.name = "global",
 mypath = mypath,
