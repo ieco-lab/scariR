@@ -1,44 +1,36 @@
-### * general
-
 url: https://ieco-lab.github.io/scari/
 template:
   bootstrap: 5
   bootswatch: united
 development:
   mode: auto
-
-### * home
-
 home:
   links:
-    - text: iEco Lab
-      href: https://www.iecolab.org
-    - text: iEco's GitHub
-      href: https://github.com/ieco-lab
-    - text: Center for Biodiversity
-      href: https://www.biodiversitycenter.org
-    - text: Temple University Biology
-      href: https://cst.temple.edu/department-biology
-
-### * navbar
-
+  - text: iEco Lab
+    href: https://www.iecolab.org
+  - text: iEco's GitHub
+    href: https://github.com/ieco-lab
+  - text: Center for Biodiversity
+    href: https://www.biodiversitycenter.org
+  - text: Temple University Biology
+    href: https://cst.temple.edu/department-biology
 navbar:
   structure:
-    left: [intro, articles]
-    right: [reference, news, github, search]
-
-### * search
-
+    left:
+    - intro
+    - articles
+    right:
+    - reference
+    - news
+    - github
+    - search
 search:
-  exclude: ['news/index.html']
-
-### * reference
-
+  exclude: news/index.html
 reference:
 - title: Create localized risk reports
-  desc: Quantify SLF risk to viticultural areas at the state/provincial or country level
-  contents:
-  - create_risk_report
+  desc: Quantify SLF risk to viticultural areas at the state/provincial or country
+    level
+  contents: create_risk_report
 - title: Global-scale MaxEnt model functions
   subtitle: Created for cross-validated MaxEnt models
   desc: Calculate summary statistics, predict risk via maps or point-wise predictions
@@ -54,34 +46,26 @@ reference:
   - create_MaxEnt_suitability_maps
   - predict_xy_suitability
 - title: Quadrant plot functions
-  desc: Helper functions to format point-wise suitability predictions for visualization in quadrant plots
+  desc: Helper functions to format point-wise suitability predictions for visualization
+    in quadrant plots
   contents:
   - rescale_cloglog_suitability
   - calculate_risk_quadrant
-
-
-### * vignette organization
-
 articles:
 - title: Quantify risk to specific viticultural regions
   desc: Example usage for `create_risk_report()` for creation of localized reports
   navbar: Quantify risk to specific viticultural regions
-  contents:
-  - 150_create_risk_report
-
+  contents: 150_create_risk_report
 - title: Initialize scari
   desc: Initialization of renv package for dependencies
   navbar: Initialize scari
-  contents:
-  - 010_initialize_pkg
-
+  contents: 010_initialize_pkg
 - title: Retrieve and tidy input data for MaxEnt
   desc: Retrieve occurrence data and climate rasters
   navbar: 1. Retrieve and tidy input data for MaxEnt
   contents:
   - 020_retrieve_bioclim_variables
   - 030_retrieve_occurrence_records
-
 - title: SDM modeling pipeline
   desc: Setup and create a global-scale model and 3 regional-scale models
   navbar: 2. SDM modeling pipeline
@@ -92,16 +76,16 @@ articles:
   - 070_run_regional_invaded_MaxEnt_model
   - 080_run_regional_invaded_asian_MaxEnt_model
   - 090_run_regional_native_MaxEnt_model
-
 - title: Ensemble Regional-scale SDMs
-  desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale models
+  desc: Analyze extrapolation and use as weighting factor to ensemble regional-scale
+    models
   navbar: 3. Ensemble Regional-scale SDMs
   contents:
   - 100_run_ExDet_MIC
   - 110_ensemble_regional_models
-
 - title: Quantify SLF risk and model fit
-  desc: Create suitability maps, scatter plots and figures depicting the AUC, var cont and response curves
+  desc: Create suitability maps, scatter plots and figures depicting the AUC, var
+    cont and response curves
   navbar: 4. Quantify SLF risk and model fit
   contents:
   - 120_create_suitability_maps
@@ -110,7 +94,6 @@ articles:
   - 140_plot_response_curves
   - 141_plot_AUC_var_cont
   - 142_calculate_model_fit
-
 - title: Workflows and figures
   desc: Format figures for publication and outline specific workflows for functions
   contents:
