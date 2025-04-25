@@ -1,6 +1,5 @@
 # Shifting Climate Assessments for Risk of Invasions
-## `scari` R Package Overview
-<a href="https://ieco-lab.github.io/scari/"><img src="man/figures/scari_logo_v1_0.png" align="right" height="180" alt="scari website" /></a>
+## `scari` R Package Overview <a href="https://ieco-lab.github.io/scari/"><img src="man/figures/logo.png" align="right" height="120" alt="scari website" /></a>
 
 `scari` is an R package and research compendium that documents a multiscale species distribution modeling (SDM) workflow to forecast establishment and impact risk of a species invasion as it shifts with climate change.
 

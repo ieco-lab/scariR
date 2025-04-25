@@ -3,7 +3,7 @@
 ## Release Notes
 
 * built on R 4.4.1
-* retired used of `taxize`, `humboldt`, `raster`, `dsmextra`, `rgdal`, and `rgeos`
+* retired used of `taxize`, `humboldt`, `rgdal`, and `rgeos`
 
 # slfSpread 0.1.0
 
