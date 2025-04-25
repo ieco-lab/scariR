@@ -1,7 +1,7 @@
 ---
-title: "Get started using scarifSDM"
+title: "Get started using scari"
 output: rmarkdown::html_document
-author: 
+author:
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
 date: "2024-10-23"
 ---
@@ -61,8 +61,8 @@ scarifSDM::create_risk_report(
 
 ```
 
-You should first note the three most important outputs of this function: 
-1. the risk maps 
+You should first note the three most important outputs of this function:
+1. the risk maps
 2. the accompanying viticultural risk quadrant plot
 3. tabled list of viticultural regions in this locality
 
@@ -86,7 +86,7 @@ USA_current
 USA_future <- usa_slf_risk_report[["risk_maps"]][["2041-2070_risk_map"]] +
   # you may need to crop the map due to outlying territories, as we have done here
   xlim(-125, -65) +
-  ylim(25, 50) 
+  ylim(25, 50)
 
 USA_future
 
@@ -112,19 +112,19 @@ USA_risk_plot
 
 **Fig. 3:** Projected shift in the risk for *Lycorma delicatula* establishment at key viticultural regions due to climate change | USA
 
-The accompanying table provides a list of key viticultural regions and their geographical region (state/province), with predicted risk levels: 
+The accompanying table provides a list of key viticultural regions and their geographical region (state/province), with predicted risk levels:
 
 **Table 1:** List of viticultural regions and their projected risk
 
 ```{r retrieve risk table USA, echo = FALSE, message = FALSE, warning = FALSE, results = "hide"}
 
 # use this if you want to run this vignette locally
-#USA_viticultural_regions <- usa_slf_risk_report[["viticultural_regions_list"]] 
+#USA_viticultural_regions <- usa_slf_risk_report[["viticultural_regions_list"]]
 
 # I generated the figure this way so as to show the table in the vignette
 USA_viticultural_regions <- read_csv(file = file.path(here::here(), "vignette-outputs", "reports", "United States", "united_states_L_delicatula_report_viticultural_regions_list.csv")) %>%
   dplyr::slice(208:223)
-  
+
 USA_viticultural_regions
 
 ```
@@ -139,7 +139,7 @@ scarifSDM::create_risk_report(
   locality.name = "washington", # the name must be specified
   locality.type = "state_province", # we have changed the report type
   buffer.dist = 20000, # in meters
-  create.dir = FALSE, 
+  create.dir = FALSE,
   save.report = FALSE
 )
 
@@ -179,7 +179,7 @@ washington_future
 
 **Fig. 4:** Projected future risk of *Lycorma delicatula* establishment under climate change | Washington, USA
 
-Based on the viticultural risk quadrant plot, we can now see that Washington state exhibits a totally different trend from the rest of the country. While viticultural regions across the united states exhibit a range of risk levels, regions in Washington are either at high or extreme risk for SLF establishment, and this pattern does not change under predicted climate change levels. 
+Based on the viticultural risk quadrant plot, we can now see that Washington state exhibits a totally different trend from the rest of the country. While viticultural regions across the united states exhibit a range of risk levels, regions in Washington are either at high or extreme risk for SLF establishment, and this pattern does not change under predicted climate change levels.
 
 *Note* At this scale, we can see the buffer zones used to assess viticultural region risk.
 
@@ -199,7 +199,7 @@ washington_risk_plot
 
 **Fig. 5:** Projected shift in the risk for *Lycorma delicatula* establishment at key viticultural regions due to climate change | Washington, USA
 
-In our more localized analysis, we might also be interested in quantifying the total area at risk for SLF or the total number of viticultural regions at risk for SLF establishment. For this, we will look at two additional outputs from `create_risk_report()`: 
+In our more localized analysis, we might also be interested in quantifying the total area at risk for SLF or the total number of viticultural regions at risk for SLF establishment. For this, we will look at two additional outputs from `create_risk_report()`:
 
 1. risk map area table- this quantifies the areas and proportions of the total occupied by each risk category on the risk map
 2. viticultural risk table- this quantifies the number of winegrowing regions that are projected to fall into each risk category, both now and in the future under climate change
@@ -216,7 +216,7 @@ washington_prop_area
 
 ```
 
-We can see from this table that the total unsuitable area decreased under climate change, from 8.6% to 7.4%, but this change was mostly found in the regional-scale model ensemble, which predicted ~9% more suitable arae under climate change. Our modeled scales also diverged in the agreed suitable area (suitable_agreement decreased by ~9%). 
+We can see from this table that the total unsuitable area decreased under climate change, from 8.6% to 7.4%, but this change was mostly found in the regional-scale model ensemble, which predicted ~9% more suitable arae under climate change. Our modeled scales also diverged in the agreed suitable area (suitable_agreement decreased by ~9%).
 
 Next, lets look at the viticultural risk table:
 
@@ -236,7 +236,7 @@ Users should explore the other localities and data types available with this fun
 
 ## 2. Recreate the analysis for another invasive species of interest
 
-For modelers who wish to apply this pipeline for other invasive species, this pipeline can easily be adapted to model the risk of establishment by simply changing the input datasets and modeled scales. 
+For modelers who wish to apply this pipeline for other invasive species, this pipeline can easily be adapted to model the risk of establishment by simply changing the input datasets and modeled scales.
 
 First, a modeler would need to change the input datasets, outlined in vignettes 020-040. In vignette 020, I retrieved input data from GBIF, which hosts datasets for thousands of other species. I recommend including extra data from other databases and the literature as I did in my analysis, but GBIF is a great starting point for data retrieval. Here is an example using the package `rgbif`. Before I perform this operation, I will need to enter my user credentials for gbif; to keep these private, I will edit the .Renviron and call them from there. Once this chunk is run and the .Renviron pops up, enter your username, password and email credentials in the following format on lines 1-3:
 
@@ -244,7 +244,7 @@ First, a modeler would need to change the input datasets, outlined in vignettes 
 -   GBIF_PWD=" "
 -   GBIF_EMAIL=" "
 
-```{r add user credentials}
+```{r add user credentials, message = FALSE, warning = FALSE}
 
 # edit R environment for user credentials
 usethis::edit_r_environ()
@@ -277,7 +277,7 @@ records_gbif <- rgbif::occ_download(
 
 ```
 
-The input covariates would also need to change based on what is biologically relevant for the particular species. I outline the process of choosing input covariates in vignette 030. 
+The input covariates would also need to change based on what is biologically relevant for the particular species. I outline the process of choosing input covariates in vignette 030.
 
 Once the input data have been adapted to the user's needs, the regional-scale models will need to be applied per region of interest. Each regional-scale model depends on a spcecific background area selection for MaxEnt that will need to change. I outline the process for choosing this area in vignette 060, in which I subset the presence data by region and intersect these subsets with the Köppen-Geiger climate zones to select the appropriate background area. This resulting polygon would need to be cropped to the region of interest. I use the `kgc`, `terra`, and `sf` packages for this analysis:
 
@@ -304,7 +304,7 @@ kmz_data <- cbind(kmz_lat, kmz_lon) %>%
   cbind(., kmz_data) %>%
   as.data.frame() %>%
   # relocate column
-  dplyr::select(kmz_lon, everything()) 
+  dplyr::select(kmz_lon, everything())
 
 # convert to raster
 KG_zones_rast <- terra::rast(
