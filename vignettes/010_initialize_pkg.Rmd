@@ -78,7 +78,6 @@ gitcreds::gitcreds_set()
 # now install packages not on the CRAN
 devtools::install_github("densitymodelling/dsmextra") # dsmextra
 devtools::install_github("ieco-lab/lydemapr") # lydemapr
-devtools::install_github("jasonleebrown/humboldt") # humboldt
 devtools::install_github("ropensci/rnaturalearthhires")# rnaturalearthhires
 
 # renv restore to previous package versions

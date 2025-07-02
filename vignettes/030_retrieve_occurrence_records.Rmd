@@ -626,7 +626,11 @@ The spatial thinning was successful! However, the first plot does not help us to
 
 ## 2.1- SLF data from published sources
 
-In this step, I will combine the records obtained from GBIF and LydemapR with data taken from the literature. I will begin by loading in records taken from the published literature. There are a total of 165 records from China, southeast Asia, Japan, SK and the USA. Most of these records were obtained from genetic studies and represent samples taken from established populations of SLF. Data is scarce for established populations of SLF within its native range (China and southeast Asia), so these records are especially important. These records were taken from both peer-reviewed literature and natural history notes:
+In this step, I will combine the records obtained from GBIF and LydemapR with data taken from the literature. I will begin by loading in records taken from the published literature. There are a total of 165 records from China, southeast Asia, Japan, SK and the USA. Most of these records were obtained from genetic studies and represent samples taken from established populations of SLF. Data is scarce for established populations of SLF within its native range (China and southeast Asia), so these records are especially important. These records were taken from both peer-reviewed literature and natural history notes.
+
+I had to transform many records using a coordinate converted; I used a few sites:
+- epsg.io: https://epsg.io/transform#s_srs=4326&t_srs=54017&x=NaN&y=NaN
+- UMinn PCG: https://applications.pgc.umn.edu/convert/
 
 ```{r kable table of published literature, eval = TRUE,  message = FALSE, warning = FALSE}
 
@@ -941,6 +945,10 @@ We now have half of the data we need to perform SDM! In the next vignette, we wi
 4. Lin, Y.-S., & Liao, J.-R. (2024). Multifaceted Investigation into the Absence and Potential Invasion of Spotted Lanternfly (Lycorma delicatula) in Taiwan. Research Square. https://doi.org/10.21203/rs.3.rs-4832573/v1
 
 5. Mestre-Tomás, J. (2024). GeoThinneR: An R package for simple spatial thinning methods in ecological and spatial analysis. R package version 1.0.0, https://github.com/jmestret/GeoThinneR
+
+6. epsg.io, powered by MapTiler. Transform coordinates - GPS online converter [Internet]. Available from: https://epsg.io/transform#s_srs=4326&t_srs=54017&x=NaN&y=NaN
+
+7. Coordinate Converter – Polar Geospatial Center [Internet]. Available from: https://applications.pgc.umn.edu/convert/
 
 <!--
 

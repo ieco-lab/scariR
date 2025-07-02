@@ -2,11 +2,13 @@
 ########## ABOUT ##########
 ###########################
 
-# scari (formerly slfSpread)
+# scari
 # folder: vignettes
 # descriptions and changelog
 
-This README is for the vignettes subfolder, which contains workflows for my package scari. Outputs from these vignettes are stored in "data" or "vignette-outputs".
+This README is for the vignettes subfolder, which contains workflows for my package scari.
+Outputs from these vignettes are stored in "data" or "vignette-outputs".
+Old versions of these vignettes are stored in scari/scari_sandbox (scari in this case is not the package root folder, but is one folder above that in OneDrive).
 
 ###########################
 ########## FILES ##########
@@ -39,6 +41,7 @@ v1
 v2
 v3- 2024-07-29- rework- updated SLF presence data and inclusion of other SSP scenarios- adds SSP126 and SSP585 to analyses
 v4- 2024-10-01- cleaned and simplified workflow. Switched order in workflow to 020
+v5- 2025-07-01- shifted workflow to utilize equal area projection EPSG:54017 (Behrmann), retired usage of access to cities variable for masking
 
 
 

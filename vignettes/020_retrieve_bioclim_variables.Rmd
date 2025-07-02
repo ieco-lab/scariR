@@ -3,7 +3,7 @@ title: "Bioclim variable rasters: CHELSA"
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-10-01"
+date: "2025-07-01"
 ---
 
 # Overview
@@ -32,6 +32,8 @@ library(patchwork)
 ```
 
 **Note:** I will be setting the global options of this document so that only certain code chunks are rendered in the final .html file. I will set the `eval = FALSE` so that none of the code is re-run (preventing files from being overwritten during knitting) and will simply overwrite this in chunks with plots.
+
+ONLY RUN WITH FINAL RUN THROUGH
 
 ```{r set global chunk opts, include = FALSE}
 
@@ -197,24 +199,33 @@ First, I will load in the reference layers
 # set path to external directory
 mypath <- file.path(here::here() %>% 
                           dirname(),
-                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+                        "maxent/historical_climate_rasters")
 
 ```
 
 ```{r load in main layer}
 
 # 1st chelsa bioclim layer as reference
-ref_chelsa_bio1_main <- terra::rast(x = file.path(mypath, "originals", "CHELSA_bio1_1981-2010_V.2.1.tif"))
+ref_chelsa_bio1_main <- terra::rast(x = file.path(mypath, "chelsa2.1_30arcsec", "originals", "CHELSA_bio1_1981-2010_V.2.1.tif"))
 
 ```
 
 ```{r load in mask layer}
 
-ref_atc_mask <- terra::rast(x = file.path(mypath, "originals", "2015_accessibility_to_cities_v1.0.tif"))
+ref_wc_bio1_mask <- terra::rast(x = file.path(mypath, "wc2.1_30arcsec", "originals", "wc2.1_30s_bio_1.tif"))
 
 ```
 
 We will get a list of the files that I need to modify. We will also create an object containing the new names assigned to the files to simplify the naming.
+
+```{r set wd extra}
+
+# set path to external directory
+mypath <- file.path(here::here() %>% 
+                          dirname(),
+                        "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+```
 
 ```{r get file names 1}
 
@@ -233,9 +244,7 @@ output.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.
   tolower()
 # more edits to file names
 output.files <- output.files %>%
-  gsub(pattern = "chelsa_", replacement = "") %>%
-  # specifically edit the access to cities naming
-  gsub(pattern = "2015_accessibility_to_cities_v1.0", replacement = "atc_2015")
+  gsub(pattern = "chelsa_", replacement = "") 
 
 ```
 
@@ -243,7 +252,7 @@ output.files <- output.files %>%
 
 ```{r isolate only final variables 1}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2|bio11|bio12|bio15", env.files, value = TRUE)
   
@@ -257,70 +266,114 @@ Now that we have our files and reference layers loaded in and names chosen, we c
 
 ## 2.2 Prepare reference layers
 
-In this chunk, we will create 2 reference layers. `ref_chelsa_bio1_main` will be used for resampling the data, while `ref_atc_mask` will be used for masking. First, I will crop the layers, set their origins, and resample them to the same resolution. I will also keep the rasters consistently to `EPSG:4326` for now. 
+In this chunk, we will create 2 reference layers. `ref_chelsa_bio1_main` will be used for resampling the data, while `ref_wc_bio1_mask` will be used for masking. First, I will crop the layers, set their origins, and resample them to the same resolution. I will also keep the rasters consistently to `EPSG:4326` for now. 
 
 ```{r check for reference layer differences}
 # resolutions
 res(ref_chelsa_bio1_main)
-res(ref_atc_mask)
+res(ref_wc_bio1_mask)
 # they are identical
 
 # ext of the reference layers
 ext(ref_chelsa_bio1_main)
-ext(ref_atc_mask)
+ext(ref_wc_bio1_mask)
 # the extents will need to be corrected
 
 terra::crs(ref_chelsa_bio1_main, parse = TRUE)
-terra::crs(ref_atc_mask, parse = TRUE)
+terra::crs(ref_wc_bio1_mask, parse = TRUE)
 # crs of reference layers is epsg:4326 so no change needed
 
 # check origin
 terra::origin(ref_chelsa_bio1_main)
-terra::origin(ref_atc_mask)
-# the origin of ref_atc_mask will need to be changed to match the others
+terra::origin(ref_wc_bio1_mask)
+# the origin of ref_wc_bio1_mask will need to be changed to match the others
 
 ```
 
-I will need to change the origin and extent of these reference layers. I will crop them to the same extent first, then unify their origins. Their extents will be matched to the smallest, `ref_atc_mask`, while their origins will be matched to the bioclim layer `ref_chelsa_bio1_main`. 
+I will need to change the origin and extent of these reference layers. I will crop them to the same extent first, then unify their origins. Their extents will be matched to the smallest, `ref_wc_bio1_mask`, while their origins will be matched to the bioclim layer `ref_chelsa_bio1_main`. 
 
 ```{r harmonize reference layers}
 
-# project 
-## UNNECESSARY NOW THAT THE CRS IS CORRECT
-# ref_chelsa_bio1_main <- terra::project(x = ref_chelsa_bio1_main, y = "ESPG:4326", method = "bilinear", threads = TRUE)
-# ref_atc_mask <- terra::project(x = ref_atc_mask, y = "ESPG:4326", method = "bilinear", threads = TRUE)
-
 # set extent
 # set ext to the smallest whole number shared between the layers
-ext.obj <- terra::ext(-180, 179, -60, 83)
-# create main layer for future cropping, crop to new ext
+ext.obj <- terra::ext(-179, 179, -89, 83.9)
+#  main layer for future cropping, crop to new ext
 ref_chelsa_bio1_main <- terra::crop(x = ref_chelsa_bio1_main, y = ext.obj)
-# create a mask layer specifically for the cropping and masking
-ref_atc_mask <- terra::crop(x = ref_atc_mask, y = ext.obj)
+#  a mask layer specifically for the cropping and masking
+ref_wc_bio1_mask <- terra::crop(x = ref_wc_bio1_mask, y = ext.obj)
 
 # unify origins
-# set origin of ref_atc_mask
-terra::origin(ref_atc_mask) <- c(-0.0001396088, -0.0001392488)
+# set origin of ref_wc_bio1_mask
+terra::origin(ref_wc_bio1_mask) <- c(-0.0001396088, -0.0001392488)
 # resample mask to origin of main layer- most rasters will already have the origin of the bio1 layer
-ref_atc_mask <- terra::resample(x = ref_atc_mask, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
+ref_wc_bio1_mask <- terra::resample(x = ref_wc_bio1_mask, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
 
 # check
 terra::ext(ref_chelsa_bio1_main)
-terra::ext(ref_atc_mask)
+terra::ext(ref_wc_bio1_mask)
 terra::origin(ref_chelsa_bio1_main)
-terra::origin(ref_atc_mask)
+terra::origin(ref_wc_bio1_mask)
 
 ```
+
+Before any visualization (in later vignettes), these layers will be projected to an equal-area projection. I have chosen the [Behrmann cylindrical equal-area projection](https://epsg.io/54017), `ESRI:54017`. Our analysis emphasizes distributional areas, so use of an equal-area projection is important for preserving and calculating area correctly. 
 
 ```{r check projection details}
 
 crs("EPSG:4326", parse = TRUE)
 
+crs("ESRI:54017", parse = TRUE)
+
+```
+
+```{r obtain origin coordinates}
+
+esri_54017_origin <- terra::project(x = ref_chelsa_bio1_main, y = "ESRI:54017", method = "bilinear", threads = TRUE)
+
+# check new UTM units
+terra::origin(esri_54017_origin)
+terra::res(esri_54017_origin)
+terra::ext(esri_54017_origin)
+
+```
+
+The origin of the reference layers in the new crs is `332.2808, 349.4412` (measured in UTMs).
+The resolution of the new reference layer is `787.4796, 787.4796`.
+The extent of the new projection is `-17271057.5661649, 17271138.5730376, -7340730.14787058, 7300285.39497913`
+
+Finally, I will reproject the main reference layer to the new CRS, `ESRI:54017`. The mask layer will stay in `EPSG:4326` because it is used before the reprojection step.
+
+```{r reproject main reference layer}
+
+# main
+ref_chelsa_bio1_main <- terra::project(x = ref_chelsa_bio1_main, y = "ESRI:54017", method = "bilinear", threads = TRUE)
+
+```
+```{r one last check for consistency}
+# resolutions
+res(ref_chelsa_bio1_main)
+res(ref_wc_bio1_mask)
+# they are identical
+
+# ext of the reference layers
+ext(ref_chelsa_bio1_main)
+ext(ref_wc_bio1_mask)
+# the extents will need to be corrected
+
+terra::crs(ref_chelsa_bio1_main, parse = TRUE)
+terra::crs(ref_wc_bio1_mask, parse = TRUE)
+# crs of reference layers is epsg:4326 so no change needed
+
+# check origin
+terra::origin(ref_chelsa_bio1_main)
+terra::origin(ref_wc_bio1_mask)
+# the origin of ref_wc_bio1_mask will need to be changed to match the others
+
 ```
 
 ## 2.3 Tidying historical data
 
-Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in `global_atc` to `NAs`. I will also ensure the crs is correct and resample the rasters. The rasters will be resampled to the resolution of `global_bio1` so they have the same resolution. The output files will be saved in `v1`.
+Here is where we get into tidying the data. We will crop the rasters using the extent object created from the reference layers. We will follow up the cropping with masking, which will convert cells in `x` that do not have a value in worldclim's bio 1 variable to `NAs`. I will also ensure the crs is correct and resample the rasters. The rasters will be resampled to the resolution of wordlclim bio 1 so they have the same resolution. The output files will be saved in `v1`.
 
 ```{r set wd 2}
 
@@ -334,7 +387,7 @@ In this first chunk, I will:
 
 -   crop the layers to the correct extent
 -   mask the layers to the outlines of the continents
--   set the CRS to `EPSG:4326`
+-   set the CRS to the new equal area projection, `ESRI:54017`
 -   set the origin to match the reference layers
 -   crop the layers again to ensure the aggregation doesn't increase the extent
 
@@ -357,22 +410,26 @@ for(a in seq_along(env.files)) {
   # crop new rasters to extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
   
-  # mask the bioclim layers by global_atc
-  rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
-  
-  # project crs
-  rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+  # mask the bioclim layers by worldclim bio 1
+  rast.hold <- terra::mask(x = rast.hold, mask = ref_wc_bio1_mask)
   
   # set origin
   terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
   
-  #resample to fit the extent/resolution of the main layer global_bio1
-  #use bilinear interpolation, since values are continuous
+  # project crs to new ESRI:54017
+  rast.hold <- terra::project(x = rast.hold, y = "ESRI:54017", method = "bilinear", threads = TRUE)
+  
+  # resample to fit the extent/resolution of the main layer global_bio1
+  # use bilinear interpolation, since values are continuous
   rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main, method = "bilinear", threads = TRUE)
   
+  # run checks
+  terra::res(rast.hold)
+  terra::ext(rast.hold)
+  terra::origin(rast.hold)
+  terra::crs(rast.hold)
   
-  
-  #write out the new resampled rasters!
+  # write out the new resampled rasters!
   terra::writeRaster(
     x = rast.hold, 
     filename = file.path(mypath, "v1", paste0(output.files[a], "_global", ".tif")), 
@@ -386,6 +443,19 @@ for(a in seq_along(env.files)) {
 }
 
 ```
+
+```{r check for raster success}
+
+test_rast <- terra::rast(x = file.path(mypath, "v1", "bio3_1981-2010_global.tif"))
+ext(test_rast)
+
+res(test_rast)
+ext(test_rast)
+terra::crs(test_rast, parse = TRUE)
+terra::origin(test_rast)
+
+```
+
 
 We will convert the rasters to the `.ascii` format required by MaxEnt.
 
@@ -404,42 +474,19 @@ output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", 
 
 ```{r isolate only final variables 2}
 
-if(FALSE) {
+if(TRUE) {
 
-  env.files <- grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", env.files, value = TRUE)
+  env.files <- grep("bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", env.files, value = TRUE)
   
-  output.files <- grep("atc_2015_global|bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", output.files, value = TRUE)
+  output.files <- grep("bio2_1981-2010_global|bio11_1981-2010_global|bio12_1981-2010_global|bio15_1981-2010_global", output.files, value = TRUE)
   
 }
 
 ```
 
-```{r conversion of .tif to .asc files- hist}
-
-# loop to convert to .ascii
-for(a in seq_along(env.files)){
-  
-  # holding object  
-  rast.hold <- terra::rast(env.files[a])
-  
-  # write output
-  terra::writeRaster(
-    x = rast.hold, 
-    filename = file.path(mypath, "v1_maxent", output.files[a]), 
-    filetype = "AAIGrid", 
-    overwrite = FALSE
-    )
-  
-  # remove object once its done
-  rm(rast.hold)
-    
-  }
-
-```
-
 Finally, I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
 
-```{r aggregation of rasters to 10km}
+```{r aggregation of rasters to 10km and conversion to AAI grid}
   
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -447,9 +494,10 @@ for(a in seq_along(env.files)){
   # holding object  
   rast.hold <- terra::rast(env.files[a])
   
-  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-  # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will  be an NA value.
-  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE, threads = TRUE)
+  # aggregate to 10km scale. cells are 786.3904m sided squares, so I will aggregate by a factor of 12 so that the rasters will be at about 9.5km (as close as I can get to 10 without going over)
+  # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will be an NA value.
+  # take the mean for fun
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
@@ -526,7 +574,7 @@ output.files <- output.files %>%
 
 ```{r isolate only final variables 3}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2|bio11|bio12|bio15", env.files, value = TRUE)
   
@@ -555,14 +603,14 @@ for(a in seq_along(env.files)) {
   # crop new rasters to extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
   
-  # mask the bioclim layer by global_atc
-  rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
-  
-  # set crs
-  rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+  # mask the bioclim layer by worldclim bio 1
+  rast.hold <- terra::mask(x = rast.hold, mask = ref_wc_bio1_mask)
   
   # set origin
   terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+  
+  # set crs
+  rast.hold <- terra::project(x = rast.hold, y = "ESRI:54017", method = "bilinear", threads = TRUE)
   
   #resample to fit the extent/resolution of the main layer global_bio1
   #use bilinear interpolation, since values are continuous
@@ -587,6 +635,18 @@ for(a in seq_along(env.files)) {
 
 ```
 
+```{r check for raster success 2}
+
+test_rast <- terra::rast(x = file.path(mypath, "2041-2070_ssp126_GFDL", "v1", "bio15_2041-2070_gfdl_126_global.tif"))
+
+
+res(test_rast)
+ext(test_rast)
+terra::crs(test_rast, parse = TRUE)
+terra::origin(test_rast)
+
+```
+
 ```{r get file names 4}
 
 # directory of files to modify
@@ -602,7 +662,7 @@ output.files <- list.files(path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1
 
 ```{r isolate only final variables 4}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2_2041-2070_gfdl_126_global|bio11_2041-2070_gfdl_126_global|bio12_2041-2070_gfdl_126_global|bio15_2041-2070_gfdl_126_global", env.files, value = TRUE)
   
@@ -614,31 +674,7 @@ if(FALSE) {
 
 This code chunk was added later so I will only grab the rasters I need downstream.
 
-```{r conversion of .tif to .asc files- ssp126}
-  
-# loop to convert to .ascii
-for(a in seq_along(env.files)) {
-  
-  # holding object  
-  rast.hold <- terra::rast(env.files[a])
-  
-  # write output
-  terra::writeRaster(
-    x = rast.hold, 
-    filename = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent", output.files[a]), 
-    filetype = "AAIGrid", 
-    overwrite = FALSE
-    )
-  
-  # remove object once its done
-  rm(rast.hold)
-    
-  }
-  
-
-```
-
-```{r on-demand aggregation of rasters- ssp126}
+```{r on-demand aggregation of rasters and conversion to AAIGrid- ssp126}
 
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -646,8 +682,8 @@ for(a in seq_along(env.files)){
   # holding object  
   rast.hold <- terra::rast(env.files[a])
   
-  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE, threads = TRUE)
+  # aggregate to 10km scale. cells are 786.3904m sided squares, so I will aggregate by a factor of 12 so that the rasters will be at about 9.5km (as close as I can get to 10 without going over)
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
@@ -667,11 +703,9 @@ for(a in seq_along(env.files)){
 
 ```
 
-<!--
-
 ### SSP370
 
-```{r create subdirectories- ssp370}
+```{r create subdirectories- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1"))
@@ -684,7 +718,7 @@ dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names 5}
+```{r get file names 5, eval = FALSE, warning = FALSE, message = FALSE}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -707,9 +741,9 @@ output.files <- output.files %>%
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 5}
+```{r isolate only final variables 5, eval = FALSE, warning = FALSE, message = FALSE}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2|bio11|bio12|bio15", env.files, value = TRUE)
   
@@ -721,7 +755,7 @@ if(FALSE) {
 
 #### tidy
 
-```{r loop to tidy rasters- ssp370}
+```{r loop to tidy rasters- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
   
 # view list of filetypes for terra, use .ascii
   terra::gdal(drivers = TRUE)
@@ -738,14 +772,14 @@ if(FALSE) {
     # crop new rasters to extent
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
     
-    # mask the bioclim layer by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
-    
-    # set crs
-    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+    # mask the bioclim layer by worldclim bio 1
+    rast.hold <- terra::mask(x = rast.hold, mask = ref_wc_bio1_mask)
     
     # set origin
     terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "ESRI:54017", method = "bilinear", threads = TRUE)
     
     #resample to fit the extent/resolution of the main layer global_bio1
     #use bilinear interpolation, since values are continuous
@@ -769,10 +803,10 @@ if(FALSE) {
 
 ```
 
-```{r get file names 6}
+```{r get file names 6, eval = FALSE, warning = FALSE, message = FALSE}
 
 # directory of files to modify
-env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE)
 
 # output file names
 output.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
@@ -782,9 +816,9 @@ output.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 6}
+```{r isolate only final variables 6, eval = FALSE, warning = FALSE, message = FALSE}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2_2041-2070_gfdl_370_global|bio11_2041-2070_gfdl_370_global|bio12_2041-2070_gfdl_370_global|bio15_2041-2070_gfdl_370_global", env.files, value = TRUE)
   
@@ -794,34 +828,7 @@ if(FALSE) {
 
 ```
 
-```{r conversion of .tif to .asc files- ssp370}
-
-if(FALSE){
-  
-  # loop to convert to .ascii
-  for(a in seq_along(env.files)) {
-    
-    # holding object  
-    rast.hold <- terra::rast(env.files[a])
-    
-    # write output
-    terra::writeRaster(
-      x = rast.hold, 
-      filename = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent", output.files[a]),
-      filetype = "AAIGrid", 
-      overwrite = FALSE
-      )
-    
-    # remove object once its done
-    rm(rast.hold)
-      
-    }
-    
-}
-
-```
-
-```{r on-demand aggregation of rasters- ssp370}
+```{r on-demand aggregation of rasters and coversion to AAIgrid- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
 
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -829,8 +836,7 @@ for(a in seq_along(env.files)){
   # holding object  
   rast.hold <- terra::rast(env.files[a])
   
-  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE, threads = TRUE)
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
@@ -854,7 +860,7 @@ for(a in seq_along(env.files)){
 
 ### SSP585
 
-```{r create subdirectories- ssp585}
+```{r create subdirectories- ssp585, eval = FALSE, warning = FALSE, message = FALSE}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1"))
@@ -867,7 +873,7 @@ dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names 7}
+```{r get file names 7, eval = FALSE, warning = FALSE, message = FALSE}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -890,9 +896,9 @@ output.files <- output.files %>%
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 7}
+```{r isolate only final variables 7, eval = FALSE, warning = FALSE, message = FALSE}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2|bio11|bio12|bio15", env.files, value = TRUE)
   
@@ -902,7 +908,7 @@ if(FALSE) {
 
 ```
 
-```{r loop to tidy rasters- ssp 585}
+```{r loop to tidy rasters- ssp 585, eval = FALSE, warning = FALSE, message = FALSE}
 
 # view list of filetypes for terra, use .ascii
   terra::gdal(drivers = TRUE)
@@ -919,14 +925,14 @@ if(FALSE) {
     # crop new rasters to extent
     rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
     
-    # mask the bioclim layer by global_atc
-    rast.hold <- terra::mask(x = rast.hold, mask = ref_atc_mask)
-    
-    # set crs
-    rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+    # mask the bioclim layer by worldclim bio 1
+    rast.hold <- terra::mask(x = rast.hold, mask = ref_wc_bio1_mask)
     
     # set origin
     terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+    
+    # set crs
+    rast.hold <- terra::project(x = rast.hold, y = "ESRI:54017", method = "bilinear", threads = TRUE)
     
     #resample to fit the extent/resolution of the main layer global_bio1
     #use bilinear interpolation, since values are continuous
@@ -952,7 +958,7 @@ if(FALSE) {
 
 #### tidy
 
-```{r get file names 8}
+```{r get file names 8, eval = FALSE, warning = FALSE, message = FALSE}
 
 # directory of files to modify
 env.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) 
@@ -965,9 +971,9 @@ output.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 8}
+```{r isolate only final variables 8, eval = FALSE, warning = FALSE, message = FALSE}
 
-if(FALSE) {
+if(TRUE) {
 
   env.files <- grep("bio2_2041-2070_gfdl_585_global|bio11_2041-2070_gfdl_585_global|bio12_2041-2070_gfdl_585_global|bio15_2041-2070_gfdl_585_global", env.files, value = TRUE)
   
@@ -977,31 +983,7 @@ if(FALSE) {
 
 ```
 
-```{r conversion of .tif to .asc files- ssp585}
-
-  
-# loop to convert to .ascii
-for(a in seq_along(env.files)) {
-  
-  # holding object  
-  rast.hold <- terra::rast(env.files[a])
-  
-  # write output
-  terra::writeRaster(
-    x = rast.hold, 
-    filename = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent", output.files[a]), 
-    filetype = "AAIGrid", 
-    overwrite = FALSE
-    )
-  
-  # remove object once its done
-  rm(rast.hold)
-    
-  }
-
-```
-
-```{r on-demand aggregation of rasters- ssp585}
+```{r on-demand aggregation of rasters and convert to AAIgrid- ssp585, eval = FALSE, warning = FALSE, message = FALSE}
   
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -1009,8 +991,7 @@ for(a in seq_along(env.files)){
   # holding object  
   rast.hold <- terra::rast(env.files[a])
   
-  # aggregate to 10km scale. cells are roughly 1km, so aggregate by factor of 10
-  rast.hold <- terra::aggregate(x = rast.hold, fact = 10, fun = "mean", na.rm = TRUE, threads = TRUE)
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
   rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
@@ -1032,8 +1013,6 @@ for(a in seq_along(env.files)){
 
 ```
 
--->
-
 # 3. Assess Colinearity
 
 Now that these different climatologies have been tidied for use, we need to decide which variables are the most logical to use in a model for *Lycorma delicatula*. This can be done by assessing the level of co-linearity between the variables and assessing their biological relevance to SLF.
@@ -1051,9 +1030,13 @@ mypath <- file.path(here::here() %>%
                     "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
 
 #list env layers, load
-env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE)
-output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE)
-# I had to modify "pattern" to not include any .tif.aux.xml files
+env.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = TRUE) %>%
+  # only grab bioclim variables
+  grep(pattern = "bio", value = TRUE)
+
+output.files <- list.files(path = file.path(mypath, "v1"), pattern = "\\.tif$", full.names = FALSE) %>%
+  # only grab bioclim variables
+  grep(pattern = "bio", value = TRUE)
 
 # loop to downsample rasters for colinearity analysis
 # code taken from Huron et.al
@@ -1068,7 +1051,8 @@ for(a in seq_along(env.files)){
     fun = "mean", # take mean of these cells
     # expand = TRUE, # a carryover from raster::aggregate, terra does this automatically
     na.rm = TRUE, 
-    filename = file.path(mypath, "v1_downsampled", output.files[a]), overwrite = FALSE
+    filename = file.path(mypath, "v1_downsampled", output.files[a]), 
+    overwrite = FALSE
     )
   
   # remove object once its done
@@ -1084,7 +1068,7 @@ We will use `ENMTools::raster.cor.matrix()` to perform the correlation analysis.
 
 ```{r Take pearson correlation of raster layers}
 
-if(FALSE){
+if(TRUE){
   
   mypath <- file.path(here::here() %>% 
                         dirname(),
@@ -1108,17 +1092,22 @@ if(FALSE){
   env.cor <- ENMTools::raster.cor.matrix(env = env, method = "pearson")
   
   # write out correlations as .csv.
-  write.csv(x = env.cor, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v2.csv"), col.names = TRUE, row.names = TRUE)
+  write.csv(
+    x = env.cor, 
+    file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v3.csv"), 
+    col.names = TRUE, 
+    row.names = TRUE
+    )
   
 }
 
 ```
 
-The correlation values have been saved as a 24x24 matrix. Now that the values have been saved as a .csv file, we need to tidy the data into a more readable format. We will simplify the column and row names and reorder them. We will also convert the correlations to their absolute values so that we can analyze the differences between the layers on a 0-1 scale.
+The correlation values have been saved as a 19x19 matrix. Now that the values have been saved as a .csv file, we need to tidy the data into a more readable format. We will simplify the column and row names and reorder them. We will also convert the correlations to their absolute values so that we can analyze the differences between the layers on a 0-1 scale.
 
 ```{r tidy env.cor}
 
-env.cor2 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v2.csv")) 
+env.cor2 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_v3.csv")) 
 
 env.cor2 <- as.data.frame(env.cor2) 
 # convert rownames column to rownames
@@ -1152,7 +1141,12 @@ env.cor4 <- env.cor3 %>%
   dplyr::select(!var) # take out temp column
 
 # write tidied data
-write.csv(x = env.cor4, file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v2.csv"), col.names = TRUE, row.names = TRUE)
+write.csv(
+  x = env.cor4, 
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v3.csv"), 
+  col.names = TRUE, 
+  row.names = TRUE
+  )
 
 ```
 
@@ -1164,7 +1158,7 @@ Now that they are in a more readable format and have been converted to an absolu
 
 ```{r prepare data to visualize, eval = TRUE}
 
-env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v2.csv"))
+env.cor5 <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "env_cor_chelsa_downsampled_abs_v3.csv"))
 
 row.names(env.cor5) <- env.cor5$X
 
@@ -1242,7 +1236,7 @@ I will save this plot and produce a binarized version before I continue choosing
 
 # save correlation heatmap
 ggsave(
-  env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2.jpg"),
+  env.cor_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v3.jpg"),
   height = 8, 
   width = 10,
   device = jpeg,
@@ -1284,7 +1278,7 @@ Indeed, the choice is much clearer on this plot. Mean temp of the coldest quarte
 ```{r save binary heatmap}
 
 ggsave(
-  env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v2_binary.jpg"),
+  env.cor_binary_plot, filename = file.path(here::here(), "vignette-outputs", "figures", "env_cor_CHELSA_v3_binary.jpg"),
   height = 8, 
   width = 10,
   device = jpeg,
@@ -1307,8 +1301,8 @@ bio1_df <- terra::rast(x = file.path(mypath, "v1_downsampled", "bio1_1981-2010_g
 
 bio1_plot <- ggplot() +
   geom_tile(data = bio1_df, aes(x = x, y = y, fill = `CHELSA_bio1_1981-2010_V.2.1`)) +
-  xlab("longitude") +
-  ylab("latitude") +
+  xlab("meters easting") +
+  ylab("meters northing") +
   theme_minimal() +
   theme(legend.position = "none") +
   labs(title = "CHELSA bio 1") +
@@ -1331,8 +1325,6 @@ The final 4 variables have been selected for SDM of Lycorma delicatula, which in
 4. Krasting, J. P., John, J. G., Blanton, C., McHugh, C., Nikonov, S., Radhakrishnan, A., Rand, K., Zadeh, N. T., Balaji, V., Durachta, J., Dupuis, C., Menzel, R., Robinson, T., Underwood, S., Vahlenkamp, H., Dunne, K. A., Gauthier, P. P., Ginoux, P., Griffies, S. M., … Zhao, M. (2018). NOAA-GFDL GFDL-ESM4 model output prepared for CMIP6 CMIP [Dataset]. Earth System Grid Federation. https://doi.org/10.22033/ESGF/CMIP6.1407
 
 5. Lee, J.-S., Kim, I.-K., Koh, S.-H., Cho, S. J., Jang, S.-J., Pyo, S.-H., & Choi, W. I. (2011). Impact of minimum winter temperature on Lycorma delicatula (Hemiptera: Fulgoridae) egg mortality. Journal of Asia-Pacific Entomology, 14(1), 123–125. https://doi.org/10.1016/j.aspen.2010.09.004
-
-6. Weiss, D. J., Nelson, A., Gibson, H. S., Temperley, W., Peedell, S., Lieber, A., Hancher, M., Poyart, E., Belchior, S., Fullman, N., Mappin, B., Dalrymple, U., Rozier, J., Lucas, T. C. D., Howes, R. E., Tusting, L. S., Kang, S. Y., Cameron, E., Bisanzio, D., … Gething, P. W. (2018). A global map of travel time to cities to assess inequalities in accessibility in 2015. Nature, 553(7688), 333–336. https://doi.org/10.1038/nature25181
 
 # Appendix
 
