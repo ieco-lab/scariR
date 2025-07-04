@@ -65,8 +65,8 @@ Before diving into this project and our modeling workflow, an end user should:
 This package was developed and its vignettes were rendered on a Dell Precision desktop PC with the following characteristics:
 * Core: intel Xeon CPU, 3.60 GHz
 * RAM memory: 64 GB
-* Operating System: Windows 10 Enterprise, version 22H2
-* R version: 4.4.2
+* Operating System: Windows 11 Enterprise, version 24H2
+* R version: 4.5.1
 
 ## References
 
