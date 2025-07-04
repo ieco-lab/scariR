@@ -53,7 +53,8 @@ packages <- renv::dependencies() %>%
 
 # one-time renv initialization
 
-I created this section to initialize the renv package for the first time ONLY. DO NOT run this section if you have downloaded this package as an outside user.
+I created this section to initialize the renv package for the first time ONLY.
+Prior to running this chunk, you should build and install the scari package internally.
 
 ```{r one-time initialization}
 
@@ -63,6 +64,8 @@ remotes::install_github("ropensci/rnaturalearthhires")
 remotes::install_github("ropensci/rnaturalearthdata")
 remotes::install_github("densitymodelling/dsmextra")
 # if these continue to throw errors, you might exit the scari Rproject session and install them. Then, re-open the Rproject.
+
+# please also 
 
 # initialization of project renv
 # only run once

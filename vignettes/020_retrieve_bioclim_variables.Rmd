@@ -333,6 +333,9 @@ terra::origin(esri_54017_origin)
 terra::res(esri_54017_origin)
 terra::ext(esri_54017_origin)
 
+# need to redefine ext.obj for new crs
+ext.obj_transformed <- c(-17271057.5661649, 17271138.5730376, -7340730.14787058, 7300285.39497913)
+
 ```
 
 The origin of the reference layers in the new crs is `332.2808, 349.4412` (measured in UTMs).
@@ -345,27 +348,6 @@ Finally, I will reproject the main reference layer to the new CRS, `ESRI:54017`.
 
 # main
 ref_chelsa_bio1_main <- terra::project(x = ref_chelsa_bio1_main, y = "ESRI:54017", method = "bilinear", threads = TRUE)
-
-```
-```{r one last check for consistency}
-# resolutions
-res(ref_chelsa_bio1_main)
-res(ref_wc_bio1_mask)
-# they are identical
-
-# ext of the reference layers
-ext(ref_chelsa_bio1_main)
-ext(ref_wc_bio1_mask)
-# the extents will need to be corrected
-
-terra::crs(ref_chelsa_bio1_main, parse = TRUE)
-terra::crs(ref_wc_bio1_mask, parse = TRUE)
-# crs of reference layers is epsg:4326 so no change needed
-
-# check origin
-terra::origin(ref_chelsa_bio1_main)
-terra::origin(ref_wc_bio1_mask)
-# the origin of ref_wc_bio1_mask will need to be changed to match the others
 
 ```
 
@@ -485,7 +467,7 @@ if(TRUE) {
 Finally, I will aggregate selected rasters to a lower resolution, with roughly 10km grid cells. We want to aggregate at 10km because we will be downsampling the resolution of our analysis to account for survey bias.
 
 ```{r aggregation of rasters to 10km and conversion to AAI grid}
-  
+
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
   
@@ -498,7 +480,8 @@ for(a in seq_along(env.files)){
   rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
-  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  # use transformed extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj_transformed)
   
   # write output
   terra::writeRaster(
@@ -684,7 +667,7 @@ for(a in seq_along(env.files)){
   rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
-  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj_transformed)
   
   # write output
   terra::writeRaster(
@@ -839,7 +822,7 @@ for(a in seq_along(env.files)){
   rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
-  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj_transformed)
   
   
   
@@ -994,7 +977,7 @@ for(a in seq_along(env.files)){
   rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
   
   # crop again to ensure aggregation doesnt increase extent
-  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj_transformed)
   
   
   
