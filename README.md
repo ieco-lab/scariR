@@ -29,13 +29,18 @@ The **dependency** packages should then be installed for the package to run prop
 Here are the main packages that `scari` depends on:
 
 ```
-install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'dplyr', 'dsmextra', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'ggplot2', 'gitcreds', 'grid', 'here', 'humboldt', 'kableExtra', 'kgc', 'knitr', 'lydemapr', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'readr', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tibble', 'tidygeocoder', 'tidyr', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'gitcreds', 'grid', 'here', 'kableExtra', 'kgc', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tidygeocoder', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
 
 # we also suggest installing the following packages:
-install.packages(c("blockCV", "knitr", "rmarkdown"))
+install.packages("blockCV")
+
+# Install package which cannot be obtained from the CRAN
+library(devtools)
+remotes::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
+remotes::install_github("ropensci/rnaturalearthhires")
+remotes::install_github("densitymodelling/dsmextra")
 
 # install specific version of ggnewscale
-library(remotes)
 remotes::install_version("ggnewscale", version = "0.4.10")
 ```
 

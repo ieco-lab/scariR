@@ -8,6 +8,16 @@ date: "2024-10-16"
 
 In this file, I will list the dependency packages for scari and initialize the `renv` package to keep my other package versions consistent. End users should only run sections 1 and 2. Section 3 is for troubleshooting common issues. Section 4 should only be used for the first-time initialization of the package.
 
+## Notes about using this package's code
+
+Here are a few things any user should keep in mind as they run the code in this package.
+
+I have done some custom work to ensure this package's .html files render correctly and that the code is not overly cumbersome to run. Here are a few of the conventions I have used:
+
+- I have added a number of `if()` statements throughout my vignettes, usually to prevent data from being downloaded again unnecessarily. Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk. This is to prevent re-downloading.
+- I have a chunk near the beginning of every vignette that sets the global chunk options: `knitr::opts_chunk$set(eval = FALSE)`. This prevents the code from running automatically when the vignette is rendered. You can change this to `TRUE` if you want to run the code in that chunk.
+- I have added html comment tags (`<!-- -->`) to the code chunks that I do not want to run automatically as the website is rendered. Much of the code that is commented out is redundant, but I have left it in the code for reference so as not to disrupt the true workflow. You can remove these comments if you want to run the code in those chunks. (Basically, the rendered version of these files is usually much shorter than the R code is.).
+
 # Get package dependencies
 
 ```{r set global chunk opts, include = FALSE}

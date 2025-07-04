@@ -12,8 +12,6 @@ This vignette will walk through the process of downloading and tidying these cli
 
 First, I will download the data from CHELSA into a local library. I will then tidy, harmonize and put the datasets in the proper format for MaxEnt. We will then choose the covariates for our models via an assessment of the level of co-linearity between the rasters. I will also consider biological relevance in selecting the final set of covariates.
 
-**Note:** I have added a number of `if()` statements throughout my vignettes, usually to prevent data from being downloaded again unnecessarily. Simply change the `FALSE` within the `if()` statement to `TRUE` to run a chunk. This is to prevent re-downloading.
-
 # Setup
 
 ```{r load necesssary packages, message = FALSE}
@@ -703,9 +701,11 @@ for(a in seq_along(env.files)){
 
 ```
 
+<!--
+
 ### SSP370
 
-```{r create subdirectories- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
+```{r create subdirectories- ssp370}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1"))
@@ -718,7 +718,7 @@ dir.create(file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names 5, eval = FALSE, warning = FALSE, message = FALSE}
+```{r get file names 5}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -741,7 +741,7 @@ output.files <- output.files %>%
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 5, eval = FALSE, warning = FALSE, message = FALSE}
+```{r isolate only final variables 5}
 
 if(TRUE) {
 
@@ -755,7 +755,7 @@ if(TRUE) {
 
 #### tidy
 
-```{r loop to tidy rasters- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
+```{r loop to tidy rasters- ssp370}
   
 # view list of filetypes for terra, use .ascii
   terra::gdal(drivers = TRUE)
@@ -803,7 +803,7 @@ if(TRUE) {
 
 ```
 
-```{r get file names 6, eval = FALSE, warning = FALSE, message = FALSE}
+```{r get file names 6}
 
 # directory of files to modify
 env.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE)
@@ -816,7 +816,7 @@ output.files <- list.files(path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 6, eval = FALSE, warning = FALSE, message = FALSE}
+```{r isolate only final variables 6}
 
 if(TRUE) {
 
@@ -828,7 +828,7 @@ if(TRUE) {
 
 ```
 
-```{r on-demand aggregation of rasters and coversion to AAIgrid- ssp370, eval = FALSE, warning = FALSE, message = FALSE}
+```{r on-demand aggregation of rasters and coversion to AAIgrid- ssp370}
 
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -860,7 +860,7 @@ for(a in seq_along(env.files)){
 
 ### SSP585
 
-```{r create subdirectories- ssp585, eval = FALSE, warning = FALSE, message = FALSE}
+```{r create subdirectories- ssp585}
 
 # v1 for tidied rasters
 dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1"))
@@ -873,7 +873,7 @@ dir.create(file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"))
 
 ```
 
-```{r get file names 7, eval = FALSE, warning = FALSE, message = FALSE}
+```{r get file names 7}
  
 # I will load in the files and then get the new names I would like to give them
 
@@ -896,7 +896,7 @@ output.files <- output.files %>%
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 7, eval = FALSE, warning = FALSE, message = FALSE}
+```{r isolate only final variables 7}
 
 if(TRUE) {
 
@@ -908,7 +908,7 @@ if(TRUE) {
 
 ```
 
-```{r loop to tidy rasters- ssp 585, eval = FALSE, warning = FALSE, message = FALSE}
+```{r loop to tidy rasters- ssp 585}
 
 # view list of filetypes for terra, use .ascii
   terra::gdal(drivers = TRUE)
@@ -958,7 +958,7 @@ if(TRUE) {
 
 #### tidy
 
-```{r get file names 8, eval = FALSE, warning = FALSE, message = FALSE}
+```{r get file names 8}
 
 # directory of files to modify
 env.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1"), pattern = "\\.tif$", full.names = TRUE) 
@@ -971,7 +971,7 @@ output.files <- list.files(path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1
 
 *Note* In this version of the vignette, I have isolated only the variables I selected for the final analysis. If you would like to tidy and compare all variables, simply skip this next chunk.
 
-```{r isolate only final variables 8, eval = FALSE, warning = FALSE, message = FALSE}
+```{r isolate only final variables 8}
 
 if(TRUE) {
 
@@ -983,7 +983,7 @@ if(TRUE) {
 
 ```
 
-```{r on-demand aggregation of rasters and convert to AAIgrid- ssp585, eval = FALSE, warning = FALSE, message = FALSE}
+```{r on-demand aggregation of rasters and convert to AAIgrid- ssp585}
   
 # loop to aggregate and convert to .ascii
 for(a in seq_along(env.files)){
@@ -1012,6 +1012,8 @@ for(a in seq_along(env.files)){
 }
 
 ```
+
+-->
 
 # 3. Assess Colinearity
 
