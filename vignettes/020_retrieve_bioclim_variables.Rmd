@@ -318,7 +318,7 @@ terra::origin(ref_wc_bio1_mask)
 
 Before any visualization (in later vignettes), these layers will be projected to an equal-area projection. I have chosen the [Behrmann cylindrical equal-area projection](https://epsg.io/54017), `ESRI:54017`. Our analysis emphasizes distributional areas, so use of an equal-area projection is important for preserving and calculating area correctly. 
 
-```{r check projection details}
+```{r check projection details, eval = TRUE}
 
 crs("EPSG:4326", parse = TRUE)
 
