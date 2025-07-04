@@ -37,6 +37,7 @@ install.packages("blockCV")
 # Install package which cannot be obtained from the CRAN
 library(devtools)
 remotes::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
+remotes::install_github("ropensci/rnaturalearthdata")
 remotes::install_github("ropensci/rnaturalearthhires")
 remotes::install_github("densitymodelling/dsmextra")
 

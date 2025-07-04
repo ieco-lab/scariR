@@ -3,7 +3,7 @@ title: "Initialization of renv package for dependencies"
 output: rmarkdown::html_vignette
 author: 
     - "Samuel M. Owens^[Temple University, sam.owens@temple.edu]"
-date: "2024-10-16"
+date: "2025-07-04"
 ---
 
 In this file, I will list the dependency packages for scari and initialize the `renv` package to keep my other package versions consistent. End users should only run sections 1 and 2. Section 3 is for troubleshooting common issues. Section 4 should only be used for the first-time initialization of the package.
@@ -35,18 +35,59 @@ library(tidyverse)
 library(renv)
 library(here)
 library(devtools)
+library(gitcreds)
 
 ```
 
 Run this chunk to see the dependencies for the scari package.
 
-```{r get dependencies list}
+```{r get dependencies list, eval = TRUE}
 
 packages <- renv::dependencies() %>%
   # select unique package names
   dplyr::summarize(package = sort(unique(Package))) %>%
   as.matrix() %>%
   as.character()
+
+```
+
+# one-time renv initialization
+
+I created this section to initialize the renv package for the first time ONLY. DO NOT run this section if you have downloaded this package as an outside user.
+
+```{r one-time initialization}
+
+# ensure that developer packages are installed prior to activation
+remotes::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
+remotes::install_github("ropensci/rnaturalearthhires")
+remotes::install_github("ropensci/rnaturalearthdata")
+remotes::install_github("densitymodelling/dsmextra")
+# if these continue to throw errors, you might exit the scari Rproject session and install them. Then, re-open the Rproject.
+
+# initialization of project renv
+# only run once
+renv::init(project = file.path(here::here()))
+
+# check status
+renv::status()
+
+# you may need to call this if the dependencies are used and installed, but not recorded
+renv::snapshot()
+
+```
+
+If the above installation does not work, you may first need to have git installed, found here: https://git-scm.com/downloads. Then, open the windows command prompt and run the following code to ensure that R can find git. "git --version" should return the version of git installed on your computer. If it does not, you may need to adjust the system environmental variables by adding system environmental variables. Click on system variables > path and add the following paths:
+
+`C:\Program Files\Git\cmd`
+`C:\Program Files\Git\bin`
+
+Windows should be able to locate git now.
+
+If R cant find git, run this code in Rstudio:
+
+```{r git installation}
+
+Sys.setenv(PATH = paste("C:/Program Files/Git/cmd", Sys.getenv("PATH"), sep = ";"))  # adjust path as needed
 
 ```
 
@@ -73,14 +114,27 @@ renv::restore(clean = TRUE)
 
 The first thing you should try is updating your R and Rtools versions. This messed up my renv for quite awhile.
 
+```{r remove and reinstall packages as necessary}
+
+# these were the packages initially giving errors for "missing description files"
+remove.packages(c("lydemapr", "rnaturalearthhires", "rnaturalearthdata", "dsmextra"))
+renv::remove(c("lydemapr", "rnaturalearthhires", "rnaturalearthdata", "dsmextra"))
+#reinstall
+renv::install(c("lydemapr", "rnaturalearthhires", "rnaturalearthdata", "dsmextra"))
+
+renv::status()
+
+```
+
 ```{r troubleshooting}
 
 # hydrate() corrected an issue where renv could not discover any local packages in the system library
 renv::hydrate()
 
 # install specific packages (usually needed for packages not on the CRAN)
-# you may need to enter your github credentials into the .Renviron or log into github for this to work
-# first, create a github PAT on website
+# you may need to enter your github credentials into the .Renviron or log into github for this to work:
+usethis::edit_r_environ()
+# then, create a github PAT on website. 
 usethis::create_github_token()
 # enter created PAT (personal access token) into the .Renviron
 ## be sure to use defaults and allow download and upload of packages
@@ -106,24 +160,14 @@ renv::rebuild()
 
 ```
 
-# one-time renv initialization
-
-I created this section to initialize the renv package for the first time ONLY. DO NOT run this section if you have downloaded this package as an outside user.
-
-```{r one-time initialization}
-
-# initialization of project renv
-# only run once
-renv::init()
-
-# record newest package versions in lockfile
-renv::snapshot()
-
+``` {r update packages or renv}
 # update packages
 # only run as needed if a package breaks or something
 renv::update()
 # alternatively, install the latest CRAN versions:
 renv::install()
+# record newest package versions in lockfile
+renv::snapshot()
 
 ```
 
@@ -134,10 +178,10 @@ As needed, you may need to completely remove renv and restart from a fresh insta
 ```{r remove renv}
 
 # deactivate renv
-renv::deactivate()
+renv::deactivate(project = file.path(here::here()))
 
 # remove renv from project
-renv::deactivate(clean = TRUE)
+renv::deactivate(project = file.path(here::here()), clean = TRUE)
 
 # completely remove renv from the system
 root <- renv::paths$root()

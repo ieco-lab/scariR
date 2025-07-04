@@ -25,6 +25,7 @@ Initializes renv, saves data objects for internal use
 v0- initial version
 v1- 2024-08-26
 v2- 2024-10-16- changed to .Rmd, fixed renv errors with project
+v3- 2025-07-04- added some descriptions to file
 
 
 
@@ -59,7 +60,7 @@ v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF wo
 v3- 2024-07-29- rework methods and data update- using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
 v4- 2024-08-05- swapped workflow from scrubr (deprecated) to coordinateCleaner R package, removed Taiwan records based on new paper pre-print
 v5- 2025-02-08- retired use of Humboldt and spThin packages. Replaced usage with GeoThinneR package. Changed spatial thinning method to thin using the bioclimatic grid cells rather than simple pairwise distances. Switched order in workflow to 030
-
+v6- 2025-07-04- reran file with new datasets, updated workflow to depend on Behrmann projection instead of lat/lon mercator
 
 
 
