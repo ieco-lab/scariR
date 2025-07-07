@@ -60,7 +60,7 @@ v2- 2024-01-05- retired use of spocc package and replaced with rgbif for GBIF wo
 v3- 2024-07-29- rework methods and data update- using new GBIF and lydeMapR data (up until 2023 and including TN and chicago)
 v4- 2024-08-05- swapped workflow from scrubr (deprecated) to coordinateCleaner R package, removed Taiwan records based on new paper pre-print
 v5- 2025-02-08- retired use of Humboldt and spThin packages. Replaced usage with GeoThinneR package. Changed spatial thinning method to thin using the bioclimatic grid cells rather than simple pairwise distances. Switched order in workflow to 030
-v6- 2025-07-04- reran file with new datasets, updated workflow to depend on Behrmann projection instead of lat/lon mercator
+v6- 2025-07-04- reran file with new datasets, transformed final dataset into Behrmann projection
 
 
 
@@ -74,6 +74,7 @@ Preparations for running the global-scale model, including cropping rasters, cho
 
 v0- initial version
 v1- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- added cropping of other ssp scenario rasters
+v2- 2025-07-07- rerun for v4 of model
 
 ----------050_run_global_MaxEnt_model.Rmd----------
 
@@ -87,7 +88,7 @@ v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old. creates v1 of the global model
 v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
 v3- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
-
+v4- 2025-07-07- rerun for v4 of model
 
 
 ----------051_compute_MaxEnt_summary_statistics_workflow.Rmd----------

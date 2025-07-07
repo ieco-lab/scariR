@@ -3,7 +3,7 @@ title: "Setup for global-scale MaxEnt model"
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-10-07"
+date: "2025-07-07"
 ---
 
 # Overview
@@ -125,7 +125,7 @@ First, I will load in known SLF presences so that background sampling does not o
 ```{r load in SLF presence, eval = TRUE}
 
 # dismo requires the base function (not tidyverse)
-slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
+slf_points <- read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2025-07-07.rds")) %>%
   dplyr::select(-species) %>%
   as.data.frame()
 
@@ -150,6 +150,8 @@ Note that I will be running this analysis at the 10km scale, so I need to use th
 global_bio2 <- raster::raster(x = file.path(mypath, "bio2_1981-2010_global.asc"))
 # check number of cells
 terra::ncell(global_bio2)
+# check crs
+terra::crs(global_bio2)
 # plenty of cells to work with if we remove those with SLF points
 
 # set seed so that the random points for this dataset are the same the next time this code is run
@@ -160,15 +162,15 @@ global_points <- dismo::randomPoints(
   n = 20000, # double the default number used by maxent
   p = slf_points,
   excludep = TRUE, # exclude cells where slf has been found
-  lonlatCorrection = TRUE, # weight samples by latitude because cell size is larger closer to equator
+  lonlatCorrection = FALSE, # was previously true but not necessary in ESRI 54017
   warn = 2 # higher number gives most warnings, including if sample size not reached
   ) %>%
   as.data.frame(.)
 
 # save as csv
-write_csv(x = global_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+write_csv(x = global_points, file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v4.csv"))
 # save as rds file
-write_rds(global_points, file = file.path(here::here(), "data", "global_background_points_v3.rds"))
+write_rds(global_points, file = file.path(here::here(), "data", "global_background_points_v4.rds"))
   
   
 ```
@@ -185,7 +187,7 @@ mypath <- file.path(here::here() %>%
 global_bio2_df <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc")) %>%
   terra::as.data.frame(., xy = TRUE)
 # points
-global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v3.csv"))
+global_points <- read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_v4.csv"))
 
 ```
 
@@ -202,13 +204,11 @@ global_background_plot
 
 ```
 
-The points seem to sufficiently cover the global extent. I can also see the latitude weighting, as the areas nearest the poles are less densely covered with points than areas near the equator.
-
 ```{r save bg plot}
 
 ggplot2::ggsave(
   global_background_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points_v3.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_background_points_v4.jpg"),
   height = 8, 
   width = 12,
   device = jpeg,
@@ -225,7 +225,7 @@ Now I will create a plot of all SLF presence locations for reference. These poin
 
 global_slf_plot <- ggplot() +
   geom_raster(data = global_bio2_df, aes(x = x, y = y), fill = "azure1") +
-  geom_point(data = slf_points, aes(x = x, y = y), color = "darkorange", size = 0.1) +
+  geom_point(data = slf_points, aes(x = utm_easting, y = utm_northing), color = "darkorange", size = 0.1) +
   map_style +
   theme(legend.position = "none") +
   labs(title = "'global' model SLF presences") 
@@ -238,7 +238,7 @@ global_slf_plot
 
 ggsave(
   global_slf_plot, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points_v3.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_presence_points_v4.jpg"),
   height = 8, 
   width = 12,
   device = jpeg,
@@ -310,7 +310,7 @@ global_patchwork <- (global_slf_plot / global_background_plot) +
 
 ggsave(
   global_patchwork, 
-  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_v3_summary.jpg"),
+  filename = file.path(here::here(), "vignette-outputs", "figures", "global_model_v4_summary.jpg"),
   height = 8, 
   width = 10,
   device = jpeg,

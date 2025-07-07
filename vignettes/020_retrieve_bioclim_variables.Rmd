@@ -334,7 +334,7 @@ terra::res(esri_54017_origin)
 terra::ext(esri_54017_origin)
 
 # need to redefine ext.obj for new crs
-ext.obj_transformed <- c(-17271057.5661649, 17271138.5730376, -7340730.14787058, 7300285.39497913)
+ext.obj_transformed <- terra::ext(-17271057.5661649, 17271138.5730376, -7340730.14787058, 7300285.39497913)
 
 ```
 
@@ -345,6 +345,9 @@ The extent of the new projection is `-17271057.5661649, 17271138.5730376, -73407
 Finally, I will reproject the main reference layer to the new CRS, `ESRI:54017`. The mask layer will stay in `EPSG:4326` because it is used before the reprojection step.
 
 ```{r reproject main reference layer}
+
+#reproject as a reference layer used later
+ref_chelsa_bio1_main_4326 <- ref_chelsa_bio1_main
 
 # main
 ref_chelsa_bio1_main <- terra::project(x = ref_chelsa_bio1_main, y = "ESRI:54017", method = "bilinear", threads = TRUE)
@@ -499,6 +502,127 @@ for(a in seq_along(env.files)){
 ```
 
 These data can now be used in a MaxEnt model!
+
+### Create reference layer for geothinning
+
+In the next vignette, I will use a raster to perform geothinning of species distribution data. The package I chose to use [CoordinateCleaner](https://docs.ropensci.org/CoordinateCleaner/) requires the use of latitude and longitude data as a georeference. I will create a reference layer for that process by performing the same process above, except that the raster will be projected into the EPSG:4326 projection.
+
+```{r set wd reference}
+
+mypath <- file.path(here::here() %>% 
+                      dirname(),
+                    "maxent/historical_climate_rasters/chelsa2.1_30arcsec")
+
+```
+
+```{r get file name reference}
+
+# I will load in the files and then get the new names I would like to give them
+
+# load in bioclim layers to be cropped- the original .tif files
+env.files <- list.files(path = file.path(mypath, "originals"), pattern = "\\.tif$", full.names = TRUE)
+# only bio 2
+env.files <- grep("bio2", env.files, value = TRUE)
+
+# output file names
+output.files <- "geothinning_ref_layer_epsg4326_bio2"
+
+```
+This process is exactly the same as above, except that it is projected into the `EPSG:4326` crs.
+
+```{r loop to tidy rasters- reference}
+  
+# view list of filetypes for terra, use .ascii
+terra::gdal(drivers = TRUE)
+
+# loop to crop extent for all files
+for(a in seq_along(env.files)) {
+  
+  # load each raster into temp object
+  rast.hold <- terra::rast(env.files[a])
+  
+  
+  
+  # begin edits
+  # crop new rasters to extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  
+  # mask the bioclim layers by worldclim bio 1
+  rast.hold <- terra::mask(x = rast.hold, mask = ref_wc_bio1_mask)
+  
+  # set origin
+  terra::origin(rast.hold) <- c(-0.0001396088, -0.0001392488)
+  
+  # project crs to new ESRI:54017
+  rast.hold <- terra::project(x = rast.hold, y = "EPSG:4326", method = "bilinear", threads = TRUE)
+  
+  # resample to fit the extent/resolution of the main layer global_bio1
+  # use bilinear interpolation, since values are continuous
+  rast.hold <- terra::resample(x = rast.hold, y = ref_chelsa_bio1_main_4326, method = "bilinear", threads = TRUE)
+  
+  # run checks
+  terra::res(rast.hold)
+  terra::ext(rast.hold)
+  terra::origin(rast.hold)
+  terra::crs(rast.hold)
+  
+  # write out the new resampled rasters!
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "v1", paste0(output.files[a], ".tif")), 
+    filetype = "GTiff", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+
+}
+
+```
+
+```{r get file names- reference}
+
+# get the reference layer
+env.files <- list.files(path = file.path(mypath, "v1"), pattern = "geothinning", full.names = TRUE) 
+
+# output file name
+output.files <- list.files(path = file.path(mypath, "v1"), pattern = "geothinning", full.names = FALSE) %>%
+  gsub(pattern = ".tif", replacement = ".asc")
+
+```
+
+```{r aggregation of rasters to 10km and conversion to AAI grid- reference layer}
+
+# loop to aggregate and convert to .ascii
+for(a in seq_along(env.files)){
+  
+  # holding object  
+  rast.hold <- terra::rast(env.files[a])
+  
+  # aggregate to 10km scale. cells are 786.3904m sided squares, so I will aggregate by a factor of 12 so that the rasters will be at about 9.5km (as close as I can get to 10 without going over)
+  # the na.rm argument is incredibly important because if any of the cells are NAs, the aggregated cell will be an NA value.
+  # take the mean for fun
+  rast.hold <- terra::aggregate(x = rast.hold, fact = 12, fun = "mean", na.rm = TRUE, threads = TRUE)
+  
+  # crop again to ensure aggregation doesnt increase extent
+  # use transformed extent
+  rast.hold <- terra::crop(x = rast.hold, y = ext.obj)
+  
+  # write output
+  terra::writeRaster(
+    x = rast.hold, 
+    filename = file.path(mypath, "v1_maxent_10km", output.files[a]), 
+    filetype = "AAIGrid", 
+    overwrite = FALSE
+    )
+  
+  # remove object once its done
+  rm(rast.hold)
+    
+}
+
+```
 
 ## 2.4 Tidying CMIP6 data
 

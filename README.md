@@ -29,7 +29,7 @@ The **dependency** packages should then be installed for the package to run prop
 Here are the main packages that `scari` depends on:
 
 ```
-install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'ENMTools', 'formattable', 'GeoThinneR', 'gginnards', 'gitcreds', 'grid', 'here', 'kableExtra', 'kgc', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'remotes', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tidygeocoder', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'ENMTools', 'formattable', 'gginnards', 'gitcreds', 'grid', 'here', 'kableExtra', 'kgc', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'remotes', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tidygeocoder', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
 
 # we also suggest installing the following packages:
 install.packages("blockCV")
@@ -41,8 +41,9 @@ remotes::install_github("ropensci/rnaturalearthdata")
 remotes::install_github("ropensci/rnaturalearthhires")
 remotes::install_github("densitymodelling/dsmextra")
 
-# install specific version of ggnewscale
-remotes::install_version("ggnewscale", version = "0.4.10")
+# install specific versions of packages
+remotes::install_version("ggnewscale", version = "0.4.10") # due to issue with color scales
+remotes::install_version("GeoThinneR", version = "1.1.0") # due to issue with thin_points
 ```
 
 ### Sitemap
@@ -73,6 +74,11 @@ This package was developed and its vignettes were rendered on a Dell Precision d
 * RAM memory: 64 GB
 * Operating System: Windows 11 Enterprise, version 24H2
 * R version: 4.5.1
+
+### Other software:
+
+Be sure to download and install Java to use this package: https://www.java.com/en/download/manual.jsp
+
 
 ## References
 

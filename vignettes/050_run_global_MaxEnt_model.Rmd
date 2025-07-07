@@ -3,7 +3,7 @@ title: "Run global-scale MaxEnt model"
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-08-05"
+date: "2025-07-07"
 ---
 
 # Overview
@@ -16,7 +16,7 @@ This vignette has 3 subvignettes (051-053) that each outline and comment the bas
 
 # Setup
 
-*CURRENT MODEL VERSION: v3*
+*CURRENT MODEL VERSION: v4*
 
 ```{r load necesssary packages, message = FALSE}
 

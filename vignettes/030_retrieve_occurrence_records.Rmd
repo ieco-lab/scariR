@@ -30,18 +30,20 @@ First, I will load in the necessary packages.
 library(tidyverse)  #data manipulation
 library(here) #making directory pathways easier on different instances
 # here() is set at the root folder of this package
-library(devtools) # installing packages not from CRA
+library(devtools) # installing packages not from CRAN
 
 # species occurrence data
-# devtools::install_github("ieco-lab/lydemapr", build_vignettes = FALSE)
 library(lydemapr) # field survey data for SLF
 library(rgbif) #query gbif and format as a dataframe
 library(GeoThinneR) # spatial thinning of species occurrences
 library(CoordinateCleaner) # tidying of points
 
-# shapefiles
+# shapefile data
 library(rnaturalearth)
 library(rnaturalearthhires)
+
+# spatial
+library(terra)
 
 # aesthetics
 library(patchwork) #nice plots
@@ -96,17 +98,13 @@ if (!file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_adm
   
   }
 
-# transform crs
-countries_sf <- countries_sf %>%
-  sf::st_transform(crs = "ESRI:54017") # UTM 33N
-
 ```
 
 Most of this compendium and its functions are built on the `tidyverse` language. The `here` package starts file pathing from the root folder of my `scari` package, allowing easier sharing. The `rgbif` package will be used to query records from `GBIF`, while the `lydemapr` package will be used to retrieve field survey data in the United States. `GeoThinneR` makes for easy spatial thinning of points and can employ a grid-based algorithm, so I will use this package.
 
 # Validation points- globally important viticultural regions
 
-First, I will visualize the points we will use to validate our future MaxEnt models. These were retrieved by Huron et al, 2022 and represent 1,074 of the most important global viticultural regions. 
+First, I will visualize the points we will use to validate our future MaxEnt models. These were retrieved by Huron et al, 2022 and represent 1,074 of the most important global viticultural regions. I will also create a transformed version for use with the Behrmann CRS (ESRI:54017).
 
 ```{r ggplot object for map style, eval = TRUE}
 
@@ -149,8 +147,8 @@ IVR_locations_sv <- terra::vect(IVR_locations, geom = c("x", "y"), crs = "EPSG:4
 IVR_locations_UTM <- terra::as.data.frame(IVR_locations_sv) %>%
     dplyr::select(-c(geom, part, hole))
 
-# save for future use
-readr::write_rds(x = IVR_locations_UTM, file = file.path(here::here(), "data", "wineries_tidied_UTM.rds"))
+# save transformation for future use
+readr::write_rds(x = IVR_locations_UTM, file = file.path(here::here(), "data", "wineries_tidied_esri54017.rds"))
 
 ```
 
@@ -249,13 +247,13 @@ slf_gbif <- rgbif::occ_download(
   # exclusion rules
   pred_not(pred_in("basisOfRecord", "FOSSIL_SPECIMEN")), # exclude fossil records
   pred_not(pred_in("country", c("US", "MX", "CA"))), # exclude USA, Canada and mexico
-  pred_not(pred_in("country", c("TW")))
+  pred_not(pred_in("country", c("TW"))) # exclude Taiwan
 )
 
 # be sure to open slf_gbif and retrieve the download key
 
 # check on download status using key
-rgbif::occ_download_wait('0093963-250525065834625')
+rgbif::occ_download_wait('0103080-250525065834625')
 
 ```
 
@@ -268,7 +266,7 @@ First, I will import the dataset to my working directory. I will also retrieve t
 
 # download the data as a zip to PC
 slf_gbif_download <- rgbif::occ_download_get(
-  key = '0093963-250525065834625',
+  key = '0103080-250525065834625',
   path = file.path(here::here(), "data-raw"),
   # overwrite = TRUE
   ) %>% 
@@ -278,16 +276,16 @@ slf_gbif_download <- rgbif::occ_download_get(
 # .zip file
 # unzip
 utils::unzip(
-  zipfile = file.path(here::here(), "data-raw", "0093963-250525065834625.zip"),
+  zipfile = file.path(here::here(), "data-raw", "0103080-250525065834625.zip"),
   exdir =  file.path(here::here(), "data-raw")
   )
 # rename .csv file
 file.rename(
-  from = file.path(here::here(), "data-raw", "0093963-250525065834625.csv"),
+  from = file.path(here::here(), "data-raw", "0103080-250525065834625.csv"),
   to = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_query_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
   )
 # delete original zip
-file.remove(file.path(here::here(), "data-raw", "0093963-250525065834625.zip"))
+file.remove(file.path(here::here(), "data-raw", "0103080-250525065834625.zip"))
 
 
 
@@ -302,28 +300,13 @@ slf_gbif_download_simple <- slf_gbif_download %>%
          "key" = "gbifID"
   )
 
-# transform CRS of downloaded data
-slf_gbif_download_simple_sv <- terra::vect(slf_gbif_download_simple, geom = c("longitude", "latitude"), crs = "EPSG:4326") %>%
-    terra::project(y = "ESRI:54017") %>% # convert to UTM 33N
-# convert to geom, which gets coordinates of a spatVector
-    terra::geom()
-# convert back to data frame
-slf_gbif_download_simple_UTM <- terra::as.data.frame(slf_gbif_download_simple_sv) %>%
-  dplyr::select(-c(geom, part, hole)) %>%
-  # join original dataset back for data
-  cbind(., slf_gbif_download_simple) %>%
-  # remove lat long and other edits
-  dplyr::select(-c(longitude, latitude)) %>%
-  dplyr::rename(utm_easting = x, utm_northing = y) %>%
-  dplyr::relocate(name)
-
 # save .csv both outputs for use
 write_csv(x = slf_gbif_download_simple, 
           file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), ".csv"))
 )
 
 write_csv(x = slf_gbif_download_simple_UTM, 
-          file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), "_UTM.csv"))
+          file = file.path(here::here(), "data-raw", paste0("slf_gbif_raw_coords_", format(Sys.Date(), "%Y-%m-%d"), "_esri54017.csv"))
 )
 
 
@@ -331,13 +314,14 @@ write_csv(x = slf_gbif_download_simple_UTM,
 
 ```{r retrieve data citation, eval = TRUE, message = FALSE, warning = FALSE, results = "hide"}
 
-rgbif::gbif_citation('0093963-250525065834625')
+rgbif::gbif_citation('0103080-250525065834625')
 
 ```
 
-Here is the data citation: "GBIF Occurrence Download https://doi.org/10.15468/dl.6b75qq Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2025-07-04"
+Here is the data citation: "GBIF Occurrence Download https://doi.org/10.15468/dl.h4zzpe Accessed from R via rgbif (https://github.com/ropensci/rgbif) on 2025-07-07"
 
 There are 2154 total records from GBIF.
+Datasets = NULL
 
 ### Coordinate veracity
 
@@ -355,7 +339,7 @@ First, we want to check the coordinate veracity using the `CoordinateCleaner` pa
 ```{r coordinate veracity- GBIF}
 
 # read in data
-slf_gbif_coords1 <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-08-05.csv"))
+slf_gbif_coords1 <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2025-07-07.csv"))
 
 # set random seed
 set.seed(999)
@@ -369,7 +353,8 @@ slf_gbif_report <- CoordinateCleaner::clean_coordinates(
   tests = c("centroids", "duplicates", "equal", "gbif", "institutions", "seas", "zeros"),
   # test details
   seas_scale = 110,
-  centroids_detail = "both"
+  centroids_detail = "both",
+  verbose = TRUE
 ) %>%
   as.data.frame()
 
@@ -390,18 +375,16 @@ unique(slf_gbif_coords1$name)
 
 # there is only one naming convention
 
-# rename species name
-#slf_gbif_coords1$name <- "Lycorma delicatula"
-
 ```
+This process left 1913 of 2154 total points.
 
 Next, we will use `GeoThinneR::thin_points` to spatially thin the occurrence data. The `GeoThinneR` package was chosen to perform the initial thinning because it preserves non-coordinate data in its output. So, we can save a spatially thinned version of the data with other information (such as unique keys or dates) that might be useful later.
 
-In `GeoThinneR::thin_points()`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km, which is the current resolution of the climate data we used from `CHELSA`.`GeoThinneR` has a `grid` function that will thin species data based on a predetermined raster, so we will use the `CHELSA` rasters we tidied and aggregated in the last vignette. These rasters originally came at a resolution of 30 arc-seconds (roughly 1km at the equator) but we aggregated them at 10km by taking the mean value per cell. We will also perform this process separately for different countries.
+In `GeoThinneR::thin_points()`, The data will be rarefied to 10km over 10 passes. This will be done once more on the final dataset. Spatial thinning should reduce autocorrelation and sampling bias. I have programmed this function to rarefy at 10km, which is the current resolution of the climate data we used from `CHELSA`.`GeoThinneR` has a `grid` function that will thin species data based on a predetermined raster, so we will use the `CHELSA` rasters we tidied and aggregated in the last vignette. These rasters originally came at a resolution of 30 arc-seconds (roughly 1km at the equator) but we aggregated them at 10km by taking the mean value per cell. We will also perform this process separately for different countries. I am using a special reference layer I created that is identical to the rasters that will be used for the MaxEnt models, except that it is projected into the `EPSG:4326` coordinate reference system (CRS), instead of the `ESRI:54107` crs.
 
 ```{r load in raster for spatial thinning, eval = TRUE}
 
-geothinner_raster <- terra::rast(x = file.path(mypath, "bio2_1981-2010_global.asc"))
+geothinner_raster <- terra::rast(x = file.path(mypath, "geothinning_ref_layer_epsg4326_bio2.asc"))
 
 ```
 
@@ -426,7 +409,7 @@ slf_gbif_coords2 <- slf_gbif_coords2[[1]] %>% dplyr::select(name:key)
 
 ```
 
-Spatial thinning left 545 of 1323 total records. It left 505 of 1,489 observations with the old `Humboldt` package.
+Spatial thinning left 656 of 1323 total records. It left 505 of 1,489 observations with the old `Humboldt` package.
 
 We will save the results of the cleaning we just performed so they can be referenced or called later in our analysis. Later in this vignette, we will be combining these records with those from other data sources into a final dataset that is prepared for MaxEnt.
 
@@ -434,10 +417,10 @@ We will save the results of the cleaning we just performed so they can be refere
 
 if(FALSE){
   
-  write_csv(slf_gbif_coords2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-08-05.csv"))
+  write_csv(slf_gbif_coords2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2025-07-07.csv"))
   
   # also save as a .rds file
-  write_rds(slf_gbif_coords2, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2024-08-05.rds"))
+  write_rds(slf_gbif_coords2, file = file.path(here::here(), "data", "slf_gbif_cleaned_coords_2025-07-07.rds"))
   
 }
 
@@ -464,13 +447,10 @@ The next chunk is an import from an unpublished version of the lydemapr dataset.
 
 if (FALSE) {
   
-  slf_lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
-
-  # tidy
-  slf_lyde_raw <- dplyr::select(slf_lyde_raw, -survey) 
+  slf_lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2025-07-07.csv"))
   
   # overwrite save original version
-  write_csv(x = slf_lyde_raw, file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+  write_csv(x = slf_lyde_raw, file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2025-07-07.csv"))
   
 }
 
@@ -483,7 +463,7 @@ Lastly, I will pull records only from areas where SLF have established a populat
 ```{r select only desired records}
 
 # read in data
-slf_lyde <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+slf_lyde <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2025-07-07.csv"))
 
 # unique values for collection method
 unique(slf_lyde$collection_method)
@@ -497,7 +477,7 @@ slf_lyde1 <- slf_lyde %>%
 
 ```
 
-The data that fit our needs are about 39,000 records total.
+The data that fit our needs are about 55,000 records total.
 
 ### Coordinate veracity
 
@@ -546,14 +526,14 @@ slf_lyde2 <- slf_lyde2[[1]] %>% dplyr::select(source:species)
 
 ```
 
-Spatial thinning for the `lyde` dataset left 1421 points out of the 39,000 points that fit our needs. Previous usage of the Humboldt package left 366 points out of 39,000.
+Spatial thinning for the `lyde` dataset left 1386 points out of the 39,000 points that fit our needs. Previous usage of the Humboldt package left 366 points out of 39,000.
 
 ```{r save cleaned data- lydemapR}
 
-write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+write_csv(slf_lyde2, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2025-07-07.csv"))
 
 # also save as a .rds file
-write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2024-07-29.rds"))
+write_rds(slf_lyde2, file = file.path(here::here(), "data", "slf_lyde_cleaned_coords_2025-07-07.rds"))
 
 ```
 
@@ -564,10 +544,10 @@ We want to visualize the difference between the raw coordinates that were pulled
 ```{r visualize raw and thinned GBIF records, eval = TRUE, message = FALSE, warning = FALSE}
 
 # raw data
-gbif_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2024-08-05.csv"))
+gbif_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_gbif_raw_coords_2025-07-07.csv"))
 
 # thinned data
-gbif_thinned <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-08-05.csv"))
+gbif_thinned <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2025-07-07.csv"))
 
 # plot world map
 map_gbif_thinned <- ggplot() +
@@ -608,10 +588,10 @@ From the mapping, it seems that the spatial thinning reduced the GBIF records, w
 ```{r visualize raw and thinned lydemapr records, eval = TRUE,  message = FALSE, warning = FALSE}
 
 # raw data
-lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2024-07-29.csv"))
+lyde_raw <- readr::read_csv(file = file.path(here::here(), "data-raw", "slf_lyde_raw_coords_2025-07-07.csv"))
 
 # thinned data
-lyde_thinned <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+lyde_thinned <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2025-07-07.csv"))
 
 # ensure data points represent presences
 lyde_raw <- lyde_raw %>%
@@ -685,10 +665,10 @@ slf_published_papers
 
 ```{r load in records from literature, eval = TRUE}
 
-slf_published <- readr::read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_v2.csv"))
+slf_published <- readr::read_csv(file.path(here::here(), "data-raw", "slf_publishedOccurrenceRecords_v3.csv"))
 
 # save as .rds before proceeding
-write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publishedOccurrenceRecords_v2.rds"))
+write_rds(x = slf_published, file = file.path(here::here(), "data", "slf_publishedOccurrenceRecords_v3.rds"))
 
 ```
 
@@ -735,9 +715,9 @@ Now, I will load in the cleaned coordinates from GBIF and LydemapR that we produ
 
 ```{r load in GBIF and lyde data}
 
-slf_gbif_coords3 <- readr::read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2024-08-05.csv"))
+slf_gbif_coords3 <- readr::read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_gbif_cleaned_coords_2025-07-07.csv"))
 
-slf_lyde3 <- readr::read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2024-07-29.csv"))
+slf_lyde3 <- readr::read_csv(file.path(here::here(), "vignette-outputs", "data-tables", "slf_lyde_cleaned_coords_2025-07-07.csv"))
 
 ```
 
@@ -795,7 +775,7 @@ slf_all_coords <- slf_gbif_coords3 %>%
 
 ```{r save joined dataset}
 
-write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2024-08-05.csv"))
+write_csv(x = slf_all_coords, file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_2025-07-07.csv"))
 
 ```
 
@@ -822,7 +802,7 @@ slf_all_coords1 <- slf_all_coords1[[1]]
 
 ```
 
-This thinning method left 2057 of 2143 records.
+This thinning method left 2131 of 2240 records.
 
 ```{r de-duplicate}
 
@@ -845,7 +825,7 @@ slf_all_coords2 <- slf_all_coords_report %>%
 
 ```
 
-This thinning method removed an additional ~40 records, reducing the final number to 2016. 
+This thinning method removed an additional ~40 records, reducing the final number to 2090. 
 
 Finally, I will re-run the `GeoThinneR` method, additionally using a raw distance metric 
 
@@ -866,37 +846,58 @@ slf_all_coords3 <- slf_all_coords3[[1]]
 
 ```
 
-This method removed a lot of coordinates- reducing the final count from 2016 to 1083 records.
+This method removed a lot of coordinates- reducing the final count from 2040 to 1282 records.
 
 ## 3.2- Save output for MaxEnt
 
-We will finally convert the slf coordinates to the format that will be used by MaxEnt and save it. That is, the first column "species" must be the species name, the second column "x" must be the longitude, and the third column "y" must be the latitude.
+We will finally convert the slf coordinates to the format that will be used by MaxEnt and save it. That is, the first column "species" must be the species name, the second column "x" must be the longitude, and the third column "y" must be the latitude. We will also need to transform the coordinates to the `ESRI:54017` coordinate reference system (CRS) we used in the previous vignette.
 
 ```{r maxent conversion and save}
+
+# save EPSG4326 version before transformation
+write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2025-07-07_epsg4326.csv")))
 
 # rename columns
 slf_all_coords4 <- slf_all_coords3 %>%
   rename("x" = "longitude",
          "y" = "latitude")
 
+# transform CRS of downloaded data
+slf_all_coords4 <- terra::vect(slf_all_coords4, geom = c("x", "y"), crs = "EPSG:4326") %>%
+    terra::project(y = "ESRI:54017") %>% # convert to UTM 33N
+# convert to geom, which gets coordinates of a spatVector
+    terra::geom()
+# convert back to data frame
+slf_all_coords5 <- terra::as.data.frame(slf_all_coords4) %>%
+  dplyr::select(-c(geom, part, hole)) %>%
+  # join original dataset back for data
+  cbind(., slf_all_coords3) %>%
+  # remove lat long and other edits
+  dplyr::select(-c(longitude, latitude)) %>%
+  dplyr::rename(utm_easting = x, utm_northing = y) %>%
+  dplyr::relocate(species)
+
+
+```
+
+```{r save work}
 
 # save
-write_csv(x = slf_all_coords3, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2024-08-05.csv")))
+write_csv(x = slf_all_coords5, file = file.path(here::here(), "vignette-outputs", "data-tables", paste0("slf_all_coords_final_2025-07-07.csv")))
 
 # also save as a .rds file
-write_rds(slf_all_coords3, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2024-08-05.rds")))
+write_rds(slf_all_coords5, file = file.path(here::here(), "data", paste0("slf_all_coords_final_2025-07-07.rds")))
   
-
 ```
 
 ```{r map all points, eval = TRUE}
 
-slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv"))
+slf_all_coords_df <- readr::read_csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07_epsg4326.csv"))
 
  map_all <- ggplot() +
     # basemap
     geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
+    geom_point(data = slf_all_coords_df, aes(x = longitude, y = latitude), color = "darkorange", size = 1) +
     coord_sf(xlim = c(-164.5, 163.5), ylim = c(-55, 85)) +
     ggtitle("All SLF presences") +
     theme(panel.grid.major = element_blank(),
@@ -908,7 +909,7 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
  map_all_NAmerica <- ggplot() +
     # basemap
     geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
+    geom_point(data = slf_all_coords_df, aes(x = longitude, y = latitude), color = "darkorange", size = 1) +
     coord_sf(xlim = c(-133.593750, -52.294922), ylim = c(25.085599, 55.304138)) +
     ggtitle("SLF presences N America") +
     theme(panel.grid.major = element_blank(),
@@ -920,7 +921,7 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
   map_all_Asia <- ggplot() +
     # basemap
     geom_sf(data = countries_sf, aes(geometry = geometry), fill = NA, color = "black", lwd = 0.15) +
-    geom_point(data = slf_all_coords3, aes(x = x, y = y), color = "darkorange", size = 1) +
+    geom_point(data = slf_all_coords_df, aes(x = longitude, y = latitude), color = "darkorange", size = 1) +
     coord_sf(xlim = c(68.906250, 152.534180), ylim = c(8.928487, 45.920587)) +
     ggtitle("SLF presences Asia") +
     theme(panel.grid.major = element_blank(),
@@ -932,6 +933,8 @@ slf_all_coords3 <- readr::read_csv(file = file.path(here::here(), "vignette-outp
 # patchwork
 map_all_NAmerica + map_all_Asia +
 plot_layout(nrow = 2)
+
+map_all
   
 ```
 
@@ -939,8 +942,8 @@ From the map, we can see the final points that were selected. We have a good spr
 
 ```{r number points invaded vs native range, eval = TRUE, message = FALSE, warning = FALSE}
 
-SLF_by_longitude <- ggplot(data = slf_all_coords3) +
-  geom_histogram(aes(x = x)) +
+SLF_by_longitude <- ggplot(data = slf_all_coords_df) +
+  geom_histogram(aes(x = longitude)) +
   ggtitle("count of SLF presence records invaded vs native range") +
   labs(caption = "the longitudinal range between the two dashed lines represents the native range for SLF") +
   xlab("longitude") +

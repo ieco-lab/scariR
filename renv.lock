@@ -375,10 +375,10 @@
     },
     "GeoThinneR": {
       "Package": "GeoThinneR",
-      "Version": "2.0.0",
+      "Version": "1.1.0",
       "Source": "Repository",
       "Type": "Package",
-      "Title": "Efficient Spatial Thinning of Species Occurrences",
+      "Title": "Simple Spatial Thinning for Ecological and Spatial Analysis",
       "Authors@R": "person(\"Jorge\", \"Mestre-Tomás\", , \"jorge.mestre.tomas@csic.es\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-8983-3417\"))",
       "Description": "Provides efficient geospatial thinning algorithms to reduce the density of coordinate data while maintaining spatial relationships. Implements K-D Tree and brute-force distance-based thinning, as well as grid-based and precision-based thinning methods. For more information on the methods, see Elseberg et al. (2012) <https://hdl.handle.net/10446/86202>.",
       "License": "MIT + file LICENSE",
@@ -389,14 +389,10 @@
       ],
       "Imports": [
         "data.table",
-        "doParallel",
         "fields",
-        "foreach",
-        "graphics",
-        "grDevices",
         "matrixStats",
         "nabor",
-        "sf",
+        "Rcpp",
         "stats",
         "terra"
       ],
@@ -404,8 +400,12 @@
         "ggplot2",
         "knitr",
         "rmarkdown",
+        "sf",
         "testthat (>= 3.0.0)",
         "tibble"
+      ],
+      "LinkingTo": [
+        "Rcpp"
       ],
       "VignetteBuilder": "knitr",
       "BuildVignettes": "true",
@@ -414,10 +414,10 @@
       "Language": "en-US",
       "LazyData": "true",
       "RoxygenNote": "7.3.1",
-      "NeedsCompilation": "no",
+      "NeedsCompilation": "yes",
       "Author": "Jorge Mestre-Tomás [aut, cre] (<https://orcid.org/0000-0002-8983-3417>)",
       "Maintainer": "Jorge Mestre-Tomás <jorge.mestre.tomas@csic.es>",
-      "Repository": "CRAN"
+      "Repository": "RSPM"
     },
     "KernSmooth": {
       "Package": "KernSmooth",
