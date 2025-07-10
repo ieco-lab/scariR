@@ -29,7 +29,7 @@ The **dependency** packages should then be installed for the package to run prop
 Here are the main packages that `scari` depends on:
 
 ```
-install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'ENMTools', 'formattable', 'gginnards', 'gitcreds', 'grid', 'here', 'kableExtra', 'kgc', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'remotes', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'spThin', 'stats', 'stringr', 'terra', 'tidygeocoder', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
+install.packages(c('cli', 'common', 'CoordinateCleaner', 'devtools', 'dismo', 'ENMTools', 'formattable', 'gginnards', 'gitcreds', 'grid', 'here', 'httr', 'kableExtra', 'kgc', 'patchwork', 'pkgdown', 'plotROC', 'pROC', 'raster', 'rasterVis', 'remotes', 'renv', 'rgbif', 'rJava', 'rmarkdown', 'rnaturalearth', 'rnaturalearthhires', 'scales', 'SDMtune', 'sf', 'sp', 'stats', 'stringr', 'terra', 'tidygeocoder', 'tidyverse', 'usethis', 'utils', 'viridis', 'webshot', 'webshot2'))
 
 # we also suggest installing the following packages:
 install.packages("blockCV")
@@ -61,11 +61,12 @@ This project is organized into general sections of our modeling pipeline: Our [v
 
 Before diving into this project and our modeling workflow, an end user should:
 1. read the [companion paper](), which outlines the conceptual underpinnings for this project
-2. install the package `renv`, which ensures that R package versions are consistent for running this package (this craetes a projct-specific R package library, so it should not affect your main library)
-3. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/scari/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
-4. See "Get Started" for help in using our package to:
-4.1 Produce localized reports on SLF risk to viticulture, and
-4.2 Recreate our analysis for another invasive species of interest
+2. download, build and install this package locally
+3. install the package `renv`, which ensures that R package versions are consistent for running this package (this creates a project-specific R package library, so it should not affect your main library)
+4. run the first vignette, [010_initialize_renv](https://github.com/ieco-lab/scari/blob/master/vignettes/010_initialize_pkg.Rmd), which initializes `renv` and lists our package's dependencies.
+5. See "Get Started" for help in using our package to:
+  - Produce localized reports on SLF risk to viticulture, and
+  - Recreate our analysis for another invasive species of interest
 
 ### Computing Information
 
@@ -77,7 +78,7 @@ This package was developed and its vignettes were rendered on a Dell Precision d
 
 ### Other software:
 
-Be sure to download and install Java to use this package: https://www.java.com/en/download/manual.jsp
+Be sure to download and install Java to use this package: https://www.oracle.com/java/technologies/downloads/#java24. Be sure to install the correct bit version for your OS.
 
 
 ## References

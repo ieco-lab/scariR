@@ -1,3 +1,10 @@
+
+# scari 0.3.0
+
+* built on R 4.5.1
+* uses `renv` for package management
+* changed main map projections used for models to [Behrmann Equal Area, ESRI:54017](https://epsg.io/54017) 
+
 # scari 0.2.0
 
 ## Release Notes

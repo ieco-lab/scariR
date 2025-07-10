@@ -39,6 +39,9 @@ library(sf)
 
 library(viridis)
 
+# you should also build and install this package 
+library(scari)
+
 library(blockCV) # appendix, not necessary to run this vignette
 
 ```
@@ -52,7 +55,7 @@ knitr::opts_chunk$set(eval = FALSE)
 
 ```
 
-`SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system.
+`SDMtune` will run MaxEnt through java via the `rJava` package. You will need to ensure that your machine has the proper version of java installed (x32 or x64) for your operating system. 
 
 ```{r check maxent installation, eval = TRUE}
 
@@ -83,11 +86,11 @@ First, I will load in the SLF presence dataset created in vignette 020 and the b
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- readr::read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2024-08-05.rds")) %>%
+p_slf_points <- readr::read_rds(file = file.path(here::here(), "data", "slf_all_coords_final_2025-07-07.rds")) %>%
   dplyr::select(-species) 
 
 # entire eastern USA background point set
-a_global_background_points <- readr::read_rds(file = file.path(here::here(), "data", "global_background_points_v3.rds")) 
+a_global_background_points <- readr::read_rds(file = file.path(here::here(), "data", "global_background_points_v4.rds")) 
 
 ```
 
@@ -120,25 +123,18 @@ I will load in 3 sets of CMIP6 covariates, 1 per ssp scenario (126/370/585).
 # SSP126
 x_global_126_env_covariates_list <- list.files(
   path = file.path(mypath, "2041-2070_ssp126_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
-  # dont include Access to cities
-  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+  ) 
 
 
 # SSP370
 x_global_370_env_covariates_list <- list.files(
   path = file.path(mypath, "2041-2070_ssp370_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
-  # dont include Access to cities
-  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
-
+  )
 
 ## SSP585
 x_global_585_env_covariates_list <- list.files(
   path = file.path(mypath, "2041-2070_ssp585_GFDL", "v1_maxent_10km"), pattern = "\\_global.asc$", full.names = TRUE
-  ) %>%
-  # dont include Access to cities
-  grep(pattern = "atc_2015", value = TRUE, invert = TRUE)
+  ) 
 
 ```
 
@@ -159,9 +155,9 @@ x_global_hist_env_covariates <- terra::rast(x = x_global_hist_env_covariates_lis
 # attributes
 nlyr(x_global_hist_env_covariates)
 names(x_global_hist_env_covariates)
-minmax(x_global_hist_env_covariates)
-# ext(x_global_hist_env_covariates)
-# crs(x_global_hist_env_covariates)
+minmax(x_global_hist_env_covariates) 
+ext(x_global_hist_env_covariates)
+crs(x_global_hist_env_covariates)
 
 
 # I will change the name of the variables because they are throwing errors in SDMtune
@@ -250,8 +246,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save SWD file}
 
 SDMtune::swd2csv(swd = global_SWD, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv"),
-  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v4.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v4.csv")
   ))
 
 ```
@@ -401,11 +397,11 @@ if (FALSE) {
 
 We get slightly different results based on the test TSS metric. We see that the highest value was attributed to the model with a regularization multiplier of 1.5 and lqpht (ALL) features (model 12).
 
-We will need to choose either model 11 or model 12. Since the difference in test AUC and TSS are incredibly small between both models (0.002), I will choose model 12 because this model has been consistently more fit across model versions. These tuned parameters will also be applied to all future models performed for SLF at the regional scale.
+We will need to choose either model 11 or model 12. Since the difference in test AUC and TSS are incredibly small between both models (0.002), I will choose model 7 because this model has been consistently more fit across model versions. These tuned parameters will also be applied to all future models performed for SLF at the regional scale.
 
 ```{r select optimal model}
 
-global_model <- global_model_tuned_auc@models[[12]]
+global_model <- global_model_tuned_auc@models[[7]]
 
 ```
 
@@ -418,7 +414,7 @@ I will apply my function `compute_MaxEnt_summary_statistics_CV()` to produce all
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v3")
+                     "maxent/models/slf_global_v4")
 
 scari::compute_MaxEnt_summary_statistics_CV(
   model.obj = global_model, 
@@ -457,7 +453,7 @@ readr::write_rds(global_model_tuned_tss, file = file.path(mypath, "global_model_
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v3")
+                     "maxent/models/slf_global_v4")
 
 ```
 
@@ -559,10 +555,10 @@ Later in my analysis, I will use these point-wise suitability predictions to cre
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v3")
+                     "maxent/models/slf_global_v4")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07.csv")) %>%
   dplyr::select(-species)
 
 ```

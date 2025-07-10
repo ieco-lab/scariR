@@ -120,8 +120,8 @@
 #'
 #'Map style default options:
 #'
-#'* `xlab("longitude")`
-#'* `ylab("latitude")`
+#'* `xlab("UTM Easting")`
+#'* `ylab("UTM Northing")`
 #'* `labs(fill = "Suitability for SLF")`
 #'* `theme_classic()`
 #'* `theme(legend_position = "bottom")`
@@ -152,8 +152,8 @@
 #'                      "maxent/models/slf_global_v3")
 #'
 #'map_style <- list(
-#' xlab("longitude"),
-#' ylab("latitude"),
+#' xlab("UTM Easting"),
+#' ylab("UTM Northing"),
 #' theme_classic()
 #' )
 #'
@@ -248,8 +248,8 @@ create_MaxEnt_suitability_maps_CV <- function(model.obj, model.name, mypath, cre
   if (is.na(map.style)) {
 
     map_style <- list(
-      xlab("longitude"),
-      ylab("latitude"),
+      xlab("UTM Easting"),
+      ylab("UTM Northing"),
       theme_classic(),
       theme(legend.position = "bottom",
             panel.background = element_rect(fill = "lightblue2",

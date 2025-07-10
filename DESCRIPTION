@@ -1,7 +1,7 @@
 Package: scari
 Type: Package
 Title: "Research Compendium: Multi-scale modeling of the spotted lanternfly Lycorma delicatula (Hemiptera: Fulgoridae) reveals displaced risk to viticulture and regional range expansion due to climate change"
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: c(
     person(given = "Samuel M. Owens", email = "sam.owens@temple.edu", role = c("aut", "cre"), comment = c(ORCID = "0009-0001-2338-7928")),
     person(given = "Matthew R. Helmus", email = "mrhelmus@temple.edu", role = "aut", comment = c(ORCID = "0000-0003-3977-0507"))
@@ -25,12 +25,13 @@ Imports:
     dsmextra,
     ENMTools,
     formattable,
-    GeoThinneR,
+    GeoThinneR (== 1.1.0),
     gginnards,
     ggnewscale (== 0.4.10),
     gitcreds,
     grid,
     here,
+    httr,
     kableExtra,
     kgc,
     lydemapr,
@@ -53,7 +54,6 @@ Imports:
     SDMtune,
     sf,
     sp,
-    spThin,
     stats,
     stringr,
     terra,
