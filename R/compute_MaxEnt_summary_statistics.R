@@ -142,7 +142,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
       # print message
       cli::cli_alert_info("proceeding without creating model subdirectory folder")
       # create plots subfolder
-      dir.create(mypath, "plots")
+      dir.create(path = file.path(mypath, "plots"))
 
     } else if (create.dir == TRUE) {
       # create sub directory from ending of mypath object
@@ -150,7 +150,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
       # print message
       cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
       # create plots folder within
-      dir.create(mypath, "plots")
+      dir.create(path = file.path(mypath, "plots"))
 
     } else {
       cli::cli_abort("'create.dir' must be of type 'logical'")

@@ -1,26 +1,34 @@
 #' Downloads CHELSA version 2.1 High Resolution Climatologies from server
 #'
-#'@description
+#'@description Download climatologies from the CHELSA v2.1.1 server, which can be used
+#'to run various types of models.
 #'
 #'@param var.type The group of climatological variables to be accessed.
 #'One of "climatologies" (bioclimatic variables), "monthly", or "daily". Default is "climatologies".
 #'
 #'@param var.subtype The type of climatological variable to be downloaded from server.
-#'See Description for choices depending on whether `var.type` is "daily", "monthly" or "climatologies".
+#'Use `var.subtype = "bio"` to download bioclimatic variables. See description
+#'for choices depending on whether `var.type` is "daily", "monthly" or "climatologies".
 #'If more than one is specified, it should be formatted as follows: `c("subtype1", "subtype2")`.
-#'
-#'@param var.value If there are multiple versions of a variable, the number which indicates which variable to download.
-#'For example, if `var.type` = "bio" and `var.value` = 12, this will download the 12th bioclimatic variable (annual precipitation).
 #'
 #'@param var.period The date or range of years for which to download the variable data.
 #'If a date range is supplied, it should be formatted as follows: `c("date_range_start", "date_range_end")`.
 #'See Description for choices depending on whether `var.type` is "daily", "monthly", or "climatologies".
 #'
-#'@param ssp If the variable is a projected variable, the Shared Socioeconomic Pathway (SSP) scenario to be downloaded.
+#'@param bioclim.type Used only if downloading bioclimatic variables (`var.type` = "climatologies" and `var.subtype` = "bio".)
+#'The type of bioclimatic variable to be downloaded. Normal  See details
+#'
+#'@param bioclim.number Used only if downloading bioclimatic variables (`var.type` = "climatologies" and `var.subtype` = "bio".)
+#'
+#'@param bioclim.period Used only if downloading bioclimatic variables (`var.type` = "climatologies" and `var.subtype` = "bio".)
+#'
+#'@param bioclim.ssp Used only if downloading bioclimatic variables (`var.type` = "climatologies" and `var.subtype` = "bio".)
+#'If the variable is a projected variable, the Shared Socioeconomic Pathway (SSP) scenario to be downloaded.
 #'Choices include "ssp126", "ssp245", "ssp370", and "ssp585".
 #'Default is NA, which will download historical bioclim data.
 #'
-#'@param model If the variable is a projected variable, the climate model chosen to be downloaded.
+#'@param bioclim.model Used only if downloading bioclimatic variables (`var.type` = "climatologies" and `var.subtype` = "bio".)
+#'If the variable is a projected variable, the climate model chosen to be downloaded.
 #'Choices include "gfdl-esm4", "ukesm10-ll", "mpi-esm1-2-hr", "ipslcm6a-lr", and "mriesm2-0" (see technical specifications below for details).
 #'Default is NA, which will download historical bioclim data.
 #'
@@ -41,7 +49,7 @@
 #'
 #'@details
 #'
-#'Requires the following packages: "cli", "dplyr", "httr", "terra", "utils"
+#'Requires the following packages: "cli", "httr", "terra", "tidyverse", "utils"
 #'
 #'See (CHELSA v2.1 Technical Specifications)[https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf] for more detail on specific climatologies, including their units, usage, and interpretation.
 #'
@@ -84,7 +92,7 @@
 #'- "vpd" (vapor pressure deficit)
 #'
 #'# var.period
-#'#'For the argument `var.period`, the date range should be formatted differently, depending on the input for `var.type`:
+#'For the argument `var.period`, the date range should be formatted differently, depending on the input for `var.type`:
 #'
 #'`var.type` == "daily":
 #'Date format should be "MM_DD_YYYY" for a single date, or c("MM-DD-YYYY", "MM-DD-YYYY") for a range of days.
@@ -94,6 +102,13 @@
 #'
 #'`var.type` == "climatologies":
 #'Date format should be a range years. Choices are "1981-2010" (historical data), "2011-2040", "2041-2070", or "2071-2100" (projected data).
+#'
+#'# bioclim.type
+#'
+#'
+#'# bioclim.number
+#'
+#'# bioclim.period
 #'
 #'*Note* Please include all quotation marks in above formats
 #'
@@ -105,36 +120,39 @@
 #'
 #'@examples
 #'
-#'# ARGUMENT USAGE:
+#'# download historical bioclimatic variables:
+#'scari::import_chelsa_v2(
+#' var.type = "climatologies",
+#' var.subtype = "bio",
+#' var.period = "1981-2010", # historical data
+#' bioclim.type = "bioclim",
+#' bioclim.number = 1:19, # all bioclimatic variables
+#' bioclim.period = "1981-2010",
+#' bioclim.ssp = NA, # historical data
+#' bioclim.model = NA, # historical data
+#' save.output = FALSE
+#')
 #'
+#'# download projected bioclimatic variables under climate change:
+#'scari::import_chelsa_v2(
+#' var.type = "climatologies",
+#' var.subtype = "bio",
+#' var.period = "1981-2010", # historical data
+#' bioclim.type = "bioclim",
+#' bioclim.number = 1:19, # all bioclimatic variables
+#' bioclim.period = "1981-2010",
+#' bioclim.ssp = 'ssp126', # historical data
+#' bioclim.model = 'gfdl-esm4', # historical data
+#' save.output = FALSE
+#')
 #'
 #'@export
-import_chelsa_v2 <- function(var.type = "bio", var.subtype = "bio", var.value = NA, var.period, ssp = NA, model = NA, mypath = NA, create.dir = FALSE, save.output = FALSE) {
+import_chelsa_v2 <- function(var.type = "bio", var.subtype = "bio", var.period, bioclim.type = NA, bioclim.number = NA, bioclim.ssp = NA, bioclim.model = NA, mypath = NA, create.dir = FALSE, save.output = FALSE) {
 
-  # Error checks----------------------------------------------------------------
+  # Data and argument import, error checks--------------------------------------
 
-  # type numeric
-  if (is.numeric(var.value) == FALSE) {
-    cli::cli_alert_info("Parameter 'var.value' must be of type numeric")
-    stop()
-  }
+  ## var.type-------------------------------------------------------------------
 
-  # type character
-  if (!is.na(model) & !is.character(model)) {
-    cli::cli_alert_info("Parameter 'model' must be of type character")
-    stop()
-
-  }
-
-  if (!is.na(ssp) & !is.character(ssp)) {
-    cli::cli_alert_info("Parameter 'ssp' must be of type character")
-    stop()
-  }
-
-
-  # Data and argument import----------------------------------------------------
-
-  # var.type
   var.type_internal <- tolower(var.type)
 
   ## check to ensure proper variables entered for var.type
@@ -144,13 +162,103 @@ import_chelsa_v2 <- function(var.type = "bio", var.subtype = "bio", var.value = 
   }
 
 
-  # var.subtype
+  ## var.subtype----------------------------------------------------------------
+  ## first, make list of presets for error checking
+
+  if (var.type_internal == "daily") {
+
+    # create tibble of var.subtype presets
+    var.subtype_presets <- tibble::tibble(
+      "preset" = c("pr", "rsds", "tas", "tasmax", "tasmin"),
+      "description" = c(
+        "Precipitation amount",
+        "Surface downwelling shortwave flux in air",
+        "Mean air temperature",
+        "Mean maximum air temperature",
+        "Mean minimum air temperature"
+      )
+    )
+
+  } else if (var.type_internal == "monthly") {
+
+    # create tibble of var.subtype presets
+    var.subtype_presets <- tibble::tibble(
+      "preset" = c("clt", "cmi", "hurs", "pet", "pr", "rsds", "sfcWind", "tas", "tasmax", "tasmin", "vpd"),
+      "description" = c(
+        NA,
+        "Climatic moisture index",
+        "Near surface relative humidity",
+        "Potential evapotranspiration",
+        "Precipitation amount",
+        "Surface downwelling shortwave flux in air",
+        "Near-surface wind speed",
+        "Mean air temperature",
+        "Mean maximum air temperature",
+        "Mean minimum air temperature",
+        "Vapor pressure deficit"
+      )
+    )
+
+  } else if (var.type_internal == "climatologies") {
+    var.subtype_presets <- tibble::tibble(
+      "preset" = c("ai", "bio", "clt", "cmi", "hurs", "pet", "pr", "rsds", "sfcWind", "tas", "tasmax", "tasmin", "vpd"),
+      "description" = c(
+        "Aridity index",
+        "Bioclimatic variables",
+        NA,
+        "Climatic moisture index",
+        "Near surface relative humidity",
+        "Potential evapotranspiration",
+        "Precipitation amount",
+        "Surface downwelling shortwave flux in air",
+        "Near-surface wind speed",
+        "Mean air temperature",
+        "Mean maximum air temperature",
+        "Mean minimum air temperature",
+        "Vapor pressure deficit"
+      )
+    )
+
+  }
+
+  # make tolower
   var.subtype_internal <- tolower(var.subtype)
 
-  # var.period
-  ## establish var.period-----------------------------------------------------------
+  # throw warnings if not a preset
+  if (!is.element(var.subtype_internal, var.subtype_presets[[1]]) & var.type_internal == "daily") {
 
-  # dates will be fed into date_input object
+    # warning message
+    cli::cli_alert_danger("'var.subtype' must be one of the options in column 'preset':")
+    # return list
+    print(var.subtype_presets)
+
+    stop()
+
+  } else if (!is.element(var.subtype_internal, var.subtype_presets[[1]]) & var.type_internal == "monthly") {
+
+    # warning message
+    cli::cli_alert_danger("'var.subtype' must be one of the options in column 'preset':")
+    # return list
+    print(var.subtype_presets)
+
+    stop()
+
+  } else if (!is.element(var.subtype_internal, var.subtype_presets[[1]]) & var.type_internal == "climatologies") {
+
+    # warning message
+    cli::cli_alert_danger("'var.subtype' must be one of the options in column 'preset':")
+    # return list
+    print(var.subtype_presets)
+
+    stop()
+
+  }
+
+
+
+  ## var.period-----------------------------------------------------------------
+
+  ## dates will be fed into date_input object
 
   # if daily, parse dates into mdy
   if(var.type_internal == "daily") {
@@ -287,20 +395,51 @@ import_chelsa_v2 <- function(var.type = "bio", var.subtype = "bio", var.value = 
         }
 
 
-        # if var.type is climatologies
+        ### if var.type is climatologies----------------------------------------
       } else if (var.type_internal == "climatologies") {
 
-        # if an ssp scenario is provided, go with format of projected data
-        if (!is.na(ssp)) {
-          # format: https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL/climatologies/2041-2070/GFDL-ESM4/ssp126/bio/CHELSA_bio14_2041-2070_gfdl-esm4_ssp126_V.2.1.tif
 
-          url_obj <- file.path("https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL", var.type_internal, a, toupper(model), ssp, var.type, paste0("CHELSA_", var.type, var.value, "_", a, tolower(model), "_V.2.1.tif"))
+        #### import bioclim-specific parameters---------------------------------
+
+        bioclim.type
+        bioclim.number
+        bioclim.period
+        bioclim.ssp
+        bioclim.model
+
+        #### run error checks---------------------------------------------------
+
+
+
+        if (!is.na(bioclim.model) & !is.character(bioclim.model)) {
+          cli::cli_alert_info("Parameter 'bioclim.model' must be of type character")
+          stop()
+
+        }
+
+        if (!is.na(bioclim.ssp) & !is.character(bioclim.ssp)) {
+          cli::cli_alert_info("Parameter 'bioclim.ssp' must be of type character")
+          stop()
+        }
+
+
+
+
+        # if an ssp scenario is provided, go with format of projected data
+        if (!is.na(bioclim.ssp)) {
+          # format: https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL/climatologies/2041-2070/GFDL-ESM4/ssp126/bio/CHELSA_bio14_2041-2070_gfdl-esm4_ssp126_V.2.1.tif
+                  #https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL/climatologies/1981-2010/clt/CHELSA_clt_01_1981-2010_V.2.1.tif
+          url_obj <- file.path("https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL", var.type_internal, a, toupper(bioclim.model), bioclim.ssp, var.type, paste0("CHELSA_", var.type, var.value, "_", a, tolower(bioclim.model), "_V.2.1.tif"))
 
           # if an ssp scenario isnt provided, go with format of historical data
         } else {
           # format: https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL/climatologies/1981-2010/bio/CHELSA_ai_1981-2010_V.2.1.tif
 
           url_obj <- file.path("https://os.zhdk.cloud.switch.ch/chelsav2/GLOBAL", var.type_internal, a, var.type, paste0("CHELSA_", var.type, var.value, "_", a, "_V.2.1.tif"))
+
+
+
+
 
         }
 

@@ -41,6 +41,7 @@ First used in vignette 050
 
 v0-
 v1- 2024-02-13- name changed and version without _CV created
+v2- 2025-07-11- bug fixes
 
 
 
@@ -59,7 +60,7 @@ First used in vignette 070
 
 v0-
 v1- 2024-02-13- this version created to deal with maxent models without cross validation (no _CV)
-
+v2- 2025-07-11- bug fixes
 
 
 
@@ -153,7 +154,7 @@ First used in vignette 050
 
 v0- 2024-02-13- name changed and version without _CV created
 v1- 2024-08-07- added method to make predictions based on buffer around points- take the max value within the buffer rather than the exact point value
-
+v2- 2025-07-11- bug fixes
 
 
 
@@ -172,7 +173,7 @@ First used in vignette 070
 
 v0- 2024-02-13- this version created to deal with maxent models without cross validation (no _CV)
 v1- 2024-08-07- added method to make predictions based on buffer around points- take the max value within the buffer rather than the exact point value
-
+v2- 2025-07-11- bug fixes
 
 
 

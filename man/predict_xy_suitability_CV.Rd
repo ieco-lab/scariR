@@ -16,6 +16,7 @@ predict_xy_suitability_CV(
   buffer.pred = FALSE,
   buffer.fun = c("min", "mean", "max"),
   buffer.dist = 20000,
+  crs = "ESRI:54017",
   output.name
 )
 }
@@ -68,6 +69,9 @@ the suitability value for the buffer around a point. Possible values include:
 \item{buffer.dist}{Numeric. The distance from each xy coordinate at which to
 calculate the suitability value.}
 
+\item{crs}{Character. The crs of the projection used in building the input species data.
+Default is "ESRI:54017", the Behrmann Equal Area projection.}
+
 \item{output.name}{The name of the file output. Separate words with _. Relevant
 information might include the name of the model used to predict, the spatial
 scale, the temporal scale, and the type of data points that are being used for
@@ -78,8 +82,8 @@ This function returns 3+ .csv files.
 \itemize{
 \item \code{xy_with_data}: contains the input xy coordinates with the value of each
 given environmental covariate at that location.
-\item \code{xy_no_data}: contains the contains any coordinates that could not be
-predicted because of an NA value for one or more covariates at that location.
+\item \code{xy_no_data}: contains any coordinates that could not be predicted because
+of an NA value for one or more covariates at that location.
 \item \code{xy_pred_suit}: This is the main result file, which contains each coordinate,
 the type of record and the predicted suitability value. One result file will
 be returned per predict.type, predict.fun and buffer.fun combination.

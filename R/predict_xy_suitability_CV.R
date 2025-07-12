@@ -54,6 +54,9 @@
 #'@param buffer.dist Numeric. The distance from each xy coordinate at which to
 #'calculate the suitability value.
 #'
+#'@param crs Character. The crs of the projection used in building the input species data.
+#'Default is "ESRI:54017", the Behrmann Equal Area projection.
+#'
 #'@param output.name The name of the file output. Separate words with _. Relevant
 #'information might include the name of the model used to predict, the spatial
 #'scale, the temporal scale, and the type of data points that are being used for
@@ -72,8 +75,8 @@
 #'
 #'* `xy_with_data`: contains the input xy coordinates with the value of each
 #'given environmental covariate at that location.
-#'* `xy_no_data`: contains the contains any coordinates that could not be
-#'predicted because of an NA value for one or more covariates at that location.
+#'* `xy_no_data`: contains any coordinates that could not be predicted because
+#'of an NA value for one or more covariates at that location.
 #'* `xy_pred_suit`: This is the main result file, which contains each coordinate,
 #'the type of record and the predicted suitability value. One result file will
 #'be returned per predict.type, predict.fun and buffer.fun combination.
@@ -114,7 +117,7 @@
 #' ```
 #'
 #'@export
-predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, output.name) {
+predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj, mypath, predict.fun = "mean", predict.type = "cloglog", clamp.pred = TRUE, buffer.pred = FALSE, buffer.fun = c("min", "mean", "max"), buffer.dist = 20000, crs = "ESRI:54017", output.name) {
 
   # Error checks----------------------------------------------------------------
 
@@ -183,8 +186,6 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
     stop()
   }
 
-
-
   # prepare swd of environmental covariates and xy------------------------------
 
   # status
@@ -201,7 +202,13 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
   # save to file
   SDMtune::swd2csv(xy_import_withdata_SWD, file_name = file.path(mypath, paste0(output.name, "_xy_with_data.csv")))
 
-
+  # modify xy_import before proceeding
+  # create a joining column for the xy data- this is because UTMs are too sensitive to join properly
+  xy_import <- xy_import %>%
+    dplyr::mutate(
+      join_col_x = round(x, 5),
+      join_col_y = round(y, 4) # rounding to the 1000s (1km) place to prevent overly sensitive exclusions for UTM data
+    )
 
   # Create table of points with no data-----------------------------------------
 
@@ -214,11 +221,18 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
   # make X and Y columns lower case
   colnames(xy_import_withdata)[3:4] <- c("x", "y")
 
-  # join with original dataset to find presences with no data
-  xy_nodata <- anti_join(x = xy_import, y = xy_import_withdata, by = c("x", "y"))
+  # create a joining column for the xy data- this is because UTMs are too sensitive to join properly
+  xy_import_withdata <- xy_import_withdata %>%
+    dplyr::mutate(
+      join_col_x = round(x, 5),
+      join_col_y = round(y, 4) # rounding to prevent overly sensitive exclusions for UTM data
+    )
 
-  # write to csv
-  write_csv(x = xy_nodata, file = file.path(mypath, paste0(output.name, "_xy_no_data.csv")))
+  # join with original dataset to find presences with no data
+  # rounding done to prevent overly sensitive exclusions for UTM data
+  xy_nodata <- dplyr::anti_join(x = xy_import, y = xy_import_withdata, by = c("join_col_x", "join_col_y"))
+  # write to csv, excluding join columns
+  write_csv(x = xy_nodata[, 1:2], file = file.path(mypath, paste0(output.name, "_xy_no_data.csv")))
 
 
 
@@ -229,23 +243,27 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
 
   # for simple point prediction method
   # tidy dataset for sdmtune::predict
-  xy_covariates <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
+  xy_covariates <- semi_join(x = xy_import_withdata, y = xy_import, by = c("join_col_x", "join_col_y")) %>%
     # select only data columns
-    dplyr::select(5:length(.))
+    dplyr::select(5:length(.)) %>%
+    dplyr::select(-c(join_col_x, join_col_y)) # remove join columns
 
   # for buffer point prediction method
-  xy_sv <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
-    # select only lat lon columns
+  xy_sv <- semi_join(x = xy_import_withdata, y = xy_import, by = c("join_col_x", "join_col_y")) %>%
+    # select only coordinate columns
     dplyr::select(3:4) %>%
     as.data.frame()
 
   # convert to spatvector
   xy_sv <- terra::vect(
     x = xy_sv,
-    crs = "EPSG:4326",
+    crs = crs,
     geom = c("x", "y")
     )
 
+  # final edit to xy_import_withdata to remove points with no data
+  # UNSURE why this works but it does
+  xy_import_withdata <- semi_join(x = xy_import_withdata, y = xy_import, by = c("join_col_x", "join_col_y"))
 
 
   # loop for every function listed
@@ -328,7 +346,7 @@ predict_xy_suitability_CV <- function(xy.obj, xy.type, env.covar.obj, model.obj,
 
 
        # create table for loop
-       xy_predict_output <- semi_join(x = xy_import_withdata, y = xy_import, by = c("x", "y")) %>%
+       xy_predict_output <- semi_join(x = xy_import_withdata, y = xy_import, by = c("join_col_x", "join_col_y")) %>%
          # select only lat lon columns
          dplyr::select(3:4)
 

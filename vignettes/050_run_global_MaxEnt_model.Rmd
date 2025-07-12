@@ -369,7 +369,7 @@ if (FALSE) {
 
 ```
 
-Based on the test AUC metric, the highest value was attributed to the model with a regularization multiplier of 1.5 and qpht features (model 11). I will also check based on the TSS.
+Based on the test AUC metric, the highest value was attributed to two models: model 11 with regularization multiplier of 1.5 and qpht features, and model 7 with a reg multiplier of 1 and only hinge features. Model 11 was chosen more frequently across previous model versions, so I will choose this model for the next step of tuning. I will also use this model as the base model for all future models performed for SLF at the regional scale. Lets also check the TSS to be sure.
 
 ```{r tune based on test TSS}
   
@@ -395,13 +395,13 @@ if (FALSE) {
 
 ```
 
-We get slightly different results based on the test TSS metric. We see that the highest value was attributed to the model with a regularization multiplier of 1.5 and lqpht (ALL) features (model 12).
+We get slightly different results based on the test TSS metric. We see that the highest value was attributed to the model with a regularization multiplier of 0.25 and qpht features (model 2).
 
-We will need to choose either model 11 or model 12. Since the difference in test AUC and TSS are incredibly small between both models (0.002), I will choose model 7 because this model has been consistently more fit across model versions. These tuned parameters will also be applied to all future models performed for SLF at the regional scale.
+We will need to choose either model 11 or model 2. Since the difference in test and training TSS are incredibly small between both models (0.001), I will choose model 11 because this model has been consistently more fit across model versions. These tuned parameters will also be applied to all future models performed for SLF at the regional scale.
 
 ```{r select optimal model}
 
-global_model <- global_model_tuned_auc@models[[7]]
+global_model <- global_model_tuned_auc@models[[11]]
 
 ```
 
@@ -572,6 +572,7 @@ scari::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE, # clamp predictions
+  buffer.pred = FALSE, # will not buffer for SLF occurrence data because this is more accurate than viticultural region data
   predict.type = c("cloglog", "logistic"),
   output.name = "global_slf_all_coords_1981-2010"
 )
@@ -633,12 +634,12 @@ I will perform the same action as above, but for the locations of over 1,000 imp
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_global_v3")
+                     "maxent/models/slf_global_v4")
 
 # load in all IVR points
-load(file = file.path(here::here(), "data", "wineries.rda")) 
+IVR_regions <- readr::read_rds(file.path(here::here(), "data", "wineries_tidied_esri54017.rds"))
 
-IVR_regions <- wineries %>%
+IVR_regions <- IVR_regions %>%
   dplyr::select(x, y)
 
 ```
@@ -652,10 +653,9 @@ scari::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  buffer.pred = TRUE, # 20km buffer around points
   predict.type = c("cloglog", "logistic"),
-  output.name = "global_wineries_1981-2010",
-  # buffer
-  buffer.pred = TRUE
+  output.name = "global_wineries_1981-2010"
 )
 
 ```
@@ -671,9 +671,9 @@ scari::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  buffer.pred = TRUE,
   predict.type = c("cloglog", "logistic"),
-  output.name = "global_wineries_2041-2070_GFDL_ssp126",
-  buffer.pred = TRUE
+  output.name = "global_wineries_2041-2070_GFDL_ssp126"
 )
 
 ```
@@ -687,9 +687,9 @@ scari::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  buffer.pred = TRUE,
   predict.type = c("cloglog", "logistic"),
-  output.name = "global_wineries_2041-2070_GFDL_ssp370",
-  buffer.pred = TRUE
+  output.name = "global_wineries_2041-2070_GFDL_ssp370"
 )
 
 ```
@@ -703,9 +703,9 @@ scari::predict_xy_suitability_CV(
   model.obj = global_model,
   mypath = mypath,
   clamp.pred = TRUE,
+  buffer.pred = TRUE,
   predict.type = c("cloglog", "logistic"),
-  output.name = "global_wineries_2041-2070_GFDL_ssp585",
-  buffer.pred = TRUE
+  output.name = "global_wineries_2041-2070_GFDL_ssp585"
 )
 
 ```
@@ -718,7 +718,7 @@ In the next vignette, I will set up for training each of the 3 regional models.
 
 summary_global <- read_csv(file.path(mypath, "global_summary_all_iterations.csv"))
 
-readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v3.rds"))
+readr::write_rds(summary_global, file = file.path(here::here(), "data", "global_summary_all_iterations_v4.rds"))
 
 ```
 
@@ -802,14 +802,14 @@ I attempted this method because of the body of literature that says blocked cros
 
 #presences
 global_presences_with_data <- read_csv(
-  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_slf_presences_with_data_v4.csv")
   ) %>%
   # add presence/absence column
   mutate(pa = 1)
 
 # background points
 global_background_with_data <-  read_csv(
-  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v3.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "global_background_points_with_data_v4.csv")
   ) %>%
   mutate(pa = 0)
 

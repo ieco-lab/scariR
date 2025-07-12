@@ -317,7 +317,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   } else if (file.exists(file.path(here::here(), "data-raw", "ne_countries", "ne_10m_admin_0_countries.shp")) == FALSE) {
 
     # create directories for shapefiles
-    dir.create(here::here(), "data-raw", "ne_countries")
+    dir.create(path = file.path(here::here(), "data-raw", "ne_countries"))
 
     # retrieve data
     countries_sf <- rnaturalearth::ne_download(
@@ -348,7 +348,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
   } else if (file.exists(file.path(here::here(), "data-raw", "ne_states_provinces", "ne_10m_admin_1_states_provinces.shp")) == FALSE) {
 
     # create directory for file
-    dir.create(here::here(), "data-raw", "ne_states_provinces")
+    dir.create(path = file.path(here::here(), "data-raw", "ne_states_provinces"))
 
     # download
     states_provinces_sf <- rnaturalearth::ne_download(

@@ -149,8 +149,8 @@ You can check for naming consistency using \code{\link[=names]{names()}}.
 
 Map style default options:
 \itemize{
-\item \code{xlab("longitude")}
-\item \code{ylab("latitude")}
+\item \code{xlab("UTM Easting")}
+\item \code{ylab("UTM Northing")}
 \item \code{labs(fill = "Suitability for SLF")}
 \item \code{theme_classic()}
 \item \code{theme(legend_position = "bottom")}
@@ -173,8 +173,8 @@ mypath <- file.path(here::here() \%>\%
                      "maxent/models/slf_regional_native_v3")
 
 map_style <- list(
-xlab("longitude"),
-ylab("latitude"),
+xlab("UTM Easting"),
+ylab("UTM Northing"),
 theme_classic()
 )
 

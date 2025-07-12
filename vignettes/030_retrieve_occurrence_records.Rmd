@@ -145,7 +145,14 @@ IVR_locations_sv <- terra::vect(IVR_locations, geom = c("x", "y"), crs = "EPSG:4
     terra::geom()
 # convert back to data frame
 IVR_locations_UTM <- terra::as.data.frame(IVR_locations_sv) %>%
-    dplyr::select(-c(geom, part, hole))
+    dplyr::select(-c(geom, part, hole)) %>%
+    dplyr::rename("x_utm" = "x", "y_utm" = "y") 
+
+# bind OG data
+IVR_locations_UTM <- cbind(IVR_locations_UTM, IVR_locations) %>% 
+  dplyr::select(-c(x, y)) %>% 
+  dplyr::rename("x" = "x_utm", "y" = "y_utm") %>%
+  dplyr::relocate(ID)
 
 # save transformation for future use
 readr::write_rds(x = IVR_locations_UTM, file = file.path(here::here(), "data", "wineries_tidied_esri54017.rds"))
