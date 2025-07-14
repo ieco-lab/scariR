@@ -3,7 +3,7 @@ title: "Run 'Ri.Asia' model trained on SLF invaded range in Japan and South Kore
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-08-08"
+date: "2025-07-14"
 ---
 
 # Overview
@@ -12,7 +12,7 @@ This vignette trains the second regional-scale model, the Ri.Asia model, which i
 
 # Setup
 
-*CURRENT MODEL VERSION: v2*
+*CURRENT MODEL VERSION: v3*
 
 ```{r load necesssary packages, message = FALSE}
 
@@ -33,6 +33,8 @@ library(raster)
 library(terra) 
 
 library(viridis)
+
+library(scari)
 
 ```
 
@@ -221,21 +223,21 @@ I need to also load in the SLF presence and background points datasets created i
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
+p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07.csv")) %>%
   dplyr::select(-species)
 
 # training presences
 p_slf_points_invaded_asian_train <- read.csv(
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_v2.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_v3.csv")
   )
 # test presences
 p_slf_points_invaded_asian_test <- read.csv(
-  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_v2.csv")
+  file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_v3.csv")
   )
 
 # entire eastern USA background point set
 a_regional_invaded_asian_background_points <- read.csv(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v2.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_v3.csv")
   )
 
 ```
@@ -267,8 +269,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save training SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_asian_train, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_with_data_v2.csv"),
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_with_data_v2.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_train_slf_presences_with_data_v3.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_background_points_with_data_v3.csv")
   ))
 
 ```
@@ -296,7 +298,7 @@ regional_invaded_asian_test@data # extracted data from
 ```{r save testing SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_asian_test, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_with_data_v2.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_asian_test_slf_presences_with_data_v3.csv"),
   file.path(here::here(), "vignette-outputs", "data-tables", "NULL.csv")
   ))
 
@@ -320,7 +322,7 @@ I will use the following list of hyperparameters to train the initial model, whi
 regional_invaded_asian_model <- SDMtune::train(
   method = "Maxent",
   data = regional_invaded_asian_train,
-  fc = "lqpht", # feature classes set to ALL
+  fc = "qpht", # feature classes set to ALL except linear
   reg = 1.5,
   iter = 5000, # number of iterations
   progress = TRUE
@@ -337,7 +339,7 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_asian_v2")
+                     "maxent/models/slf_regional_invaded_asian_v3")
 
 scari::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_asian_model, 
@@ -349,7 +351,6 @@ scari::compute_MaxEnt_summary_statistics(
   test.obj = regional_invaded_asian_test, # data you wish to use to test the model
   plot.type = c("cloglog", "logistic"), # types of univariate and marginal response curves to be created
   jk.test.type = c("train", "test") # types of jackknife curves to be created
-
   )
 
 ```
@@ -366,7 +367,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_asian_v2")
+                     "maxent/models/slf_regional_invaded_asian_v3")
 
 ```
 
@@ -465,10 +466,10 @@ During data analysis, I will create a scatter plot of these suitability values i
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_asian_v2")
+                     "maxent/models/slf_regional_invaded_asian_v3")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07.csv")) %>%
   dplyr::select(-species)
 
 ```
@@ -543,12 +544,12 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_asian_v2")
+                     "maxent/models/slf_regional_invaded_asian_v3")
 
 # load in all IVR points
-load(file = file.path(here::here(), "data", "wineries.rda")) 
+IVR_regions <- readr::read_rds(file.path(here::here(), "data", "wineries_tidied_esri54017.rds"))
 
-IVR_regions <- wineries %>%
+IVR_regions <- IVR_regions %>%
   dplyr::select(x, y)
 
 ```

@@ -74,7 +74,7 @@ Preparations for running the global-scale model, including cropping rasters, cho
 
 v0- initial version
 v1- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- added cropping of other ssp scenario rasters
-v2- 2025-07-07- rerun for v4 of model
+v2- 2025-07-07- rerun for v4 of model, transformed final dataset into Behrmann projection
 
 ----------050_run_global_MaxEnt_model.Rmd----------
 
@@ -88,7 +88,7 @@ v0- initial version- in sandbox/vignettes_old
 v1- in sandbox/vignettes_old. creates v1 of the global model
 v2- creates v2 of the global model- changed procedure for global model cross-validation from k-fold random selection to k-fold blocked selection (multiple papers said this was more rigorous)- added blockCV package usage- LATER: reverted to k-fold random CV because blocked CV did not work- creates
 v3- 2024-07-31- rework- updated SLF presence data and inclusion of other SSP scenarios- creates v3 of the global model, fixed some methods for cross validation of model, added other SSP scenario predictions for model
-v4- 2025-07-07- rerun for v4 of model
+v4- 2025-07-07- rerun for v4 of model, transformed final dataset into Behrmann projection
 
 
 ----------051_compute_MaxEnt_summary_statistics_workflow.Rmd----------
@@ -119,7 +119,7 @@ v4- added koeppen climate download and use for selecting background points
 v5- added table indicating number of training points per model, added plot faceting
 v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios
 v7- 2024-10-09- cleaned and simplified workflow
-
+v8- 2025-07-14- rerun for new versions of models using Behrmann projection
 
 
 ----------070_run_regional_invaded_MaxEnt_model.Rmd----------
@@ -137,7 +137,7 @@ v3- creates the v3 of the regional_invaded model in maxent/models. In sandbox/vi
 v4- creates the v4 of the regional_invaded model in maxent/models. reverted to regional background method that uses entire eastern USA background area
 v5
 v6- 2024-08-02- rework- updated SLF presence data and inclusion of other SSP scenarios- changed validation (testing) region to Ri.Asia training region (see citation)- creates v7 of the regional_invaded model
-
+v7- 2025-07-07- v8 of model-transformed final dataset into Behrmann projection
 
 
 ----------080_run_regional_invaded_asian_MaxEnt_model.Rmd----------
@@ -151,7 +151,7 @@ This vignette creates all data objects needed to run the regional_invaded_asian 
 v0- initial version
 v1-
 v2- 2024-08-08- rework- updated SLF presence data and inclusion of other SSP scenarios, creates v2 of the regional_invaded_asian model
-
+v3- 2025-07-07- rework- v3 of model-transformed final dataset into Behrmann projection
 
 
 
@@ -168,6 +168,7 @@ v1- in sandbox/vignettes_old
 v2- creates the v1 of the regional_native_model in maxent/models. Removed gridSearch and used model settings from global instead.
 v3
 v4- 2024-08-08- rework- updated SLF presence data and inclusion of other SSP scenarios, creates v3 of the regional_native model
+v5- 2025-07-07- rework- v4 of model-transformed final dataset into Behrmann projection
 
 
 

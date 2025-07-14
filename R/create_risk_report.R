@@ -217,7 +217,7 @@ create_risk_report <- function(locality.iso, locality.name = locality.iso, local
     }
 
     # create sub directory from ending of mypath object
-    dir.create(mypath)
+    dir.create(path = file.path(mypath))
     # print message
     cli::cli_alert_info(paste0("sub directory for files created at:\n", mypath))
 

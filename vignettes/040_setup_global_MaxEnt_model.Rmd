@@ -18,8 +18,8 @@ In this vignette, I will set up to run the global model and project it for clima
 
 model_info <- data.frame(
   "train_test_method" = "10-fold random cross validation, 80% train / 20% test",
-  "train_presences" = "618",
-  "test_presences" = "155",
+  "train_presences" = "1026",
+  "test_presences" = "256",
   "background_points" = "20,000"
 )
 
@@ -82,7 +82,7 @@ kableExtra::save_kable(
 
 # initialize webshot by 
 # webshot::install_phantomjs()
-# convert to pdf
+# convert to jpg
 webshot::webshot(
   url = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.html"),
   file = file.path(here::here(), "vignette-outputs", "figures", "global_models_info.jpg"),

@@ -146,7 +146,7 @@ compute_MaxEnt_summary_statistics <- function(model.obj, model.name = "MODEL", m
 
     } else if (create.dir == TRUE) {
       # create sub directory from ending of mypath object
-      dir.create(mypath)
+      dir.create(path = file.path(mypath))
       # print message
       cli::cli_alert_info(paste0("sub directory for files created at: ", mypath))
       # create plots folder within

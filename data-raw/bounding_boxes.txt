@@ -1,0 +1,116 @@
+This file contains the coordinates for the bounding boxes used to clip climate rasters in maxent models.
+
+############################
+###### Currently Used ######
+############################
+
+--------N America--------
+
+## OLD: 
+
+long: -135, -60 
+lat: 25, 60
+
+## 2023-01-10:
+
+Retrieved from: http://bboxfinder.com
+
+long: -133.593750, -52.294922
+lat: 25.085599, 55.304138
+
+## 2023-07-21:
+
+Retrieved from: http://bboxfinder.com
+
+long: -136.968747,-51.363278
+lat: 15.182421, 58.022064
+
+## 2023-11-30:
+
+Retrieved from: http://bboxfinder.com
+
+long: -140.976563,-51.064453
+lat: 15.182421, 60.586967
+
+## 2025-07-14
+
+Transformation of previous coordinates to ESRI:54017
+Used website: https://epsg.io/transform#s_srs=4326&t_srs=54017&x=NaN&y=NaN
+
+x UTM (was long) = -13602303.87696733, -4927019.123016734
+y UTM (was lat) = 1914870.4341456166, 6388905.495064239
+
+
+--------Japan and SK (used to train regional_invaded_asian model)--------
+
+## 2024-03-27: 
+
+retrieved using sf package
+
+long = 122.93816, 153.98561
+lat = 24.21210, 45.52041
+
+## 2025-07-14
+
+Transformation of previous coordinates to ESRI:54017
+Used website: https://epsg.io/transform#s_srs=4326&t_srs=54017&x=NaN&y=NaN
+
+x UTM (was long) = 11861845.759289555, 14857498.721065253
+y UTM (was lat) = 2999956.334646307, 5227150.879943501
+
+
+
+--------East and southeast Asia--------
+
+## 2024-02-02
+
+Retrieved using sf package
+
+long: 89.43514, 126.05626  
+lat: 20.23827, 53.32406 
+
+*Note* this is not the extent used to train the native_regional model- it is a bounding box of the shapefile used to cut the bioclim rasters for the model
+
+## 2025-07-14
+
+Used extent of bounding box from vig 060
+
+x UTM (was long) = 7009531, 13605773
+y UTM (was lat) = -1221040, 5856473
+
+
+#################
+###### OLD ######
+#################
+
+--------eastern USA (Used to train invaded_regional model)--------
+
+## 2023-07-21:
+
+Retrieved from: http://bboxfinder.com
+
+This bounding box was retrieved for use in the initial background selection step of my analysis. 
+This box was validated to contain all known SLF records at the time, according to the NYSIPM SLF map
+- the most westward point was in Iowa and the most southward point was in NC, at the time
+- I also wanted to include Nova Scotia because early models indicated it was likely suitable for invasion
+- https://lookerstudio.google.com/u/0/reporting/b0bae43d-c65f-4f88-bc9a-323f3189cd35/page/QUCkC
+
+long: -96.503906, -59.589844
+lat: 28.304381, 47.457809
+
+## 2024-01-08: 
+
+This bounding box is only different from the 1st one in that it extends the lower latitude boundard down to the tropic of cancer, as SLF is likely not a tropical bug.
+
+long: -96.503906, -59.589844
+lat: 23.5, 47.457809
+
+
+--------state of CA--------
+
+retrieved from: https://anthonylouisdagostino.com/bounding-boxes-for-all-us-states/
+2022-11-28
+
+long: -124.4095, -114.1312
+lat: 32.534156, 42.009518
+

@@ -3,7 +3,7 @@ title: "Run 'Ri.NAmerica' model trained on SLF invaded region in North America"
 output: rmarkdown::html_document
 author: 
     - "Samuel M. Owens^[Temple University\n[Center for Biodiversity](http://www.biodiversitycenter.org/)\n[iEco Lab](https://www.iecolab.org/)\nsam.owens@temple.edu]"
-date: "2024-08-02"
+date: "2025-07-07"
 ---
 
 # Overview
@@ -14,7 +14,7 @@ Just to reiterate, I hypothesize that by creating models at multiple spatial sca
 
 # Setup
 
-*CURRENT MODEL VERSION: v7*
+*CURRENT MODEL VERSION: v8*
 
 ```{r load necesssary packages, message = FALSE}
 
@@ -35,6 +35,8 @@ library(raster)
 library(terra) 
 
 library(viridis)
+
+library(scari)
 
 ```
 
@@ -225,11 +227,11 @@ I need to also load in the SLF presence and background points datasets created i
 ```{r load in points datasets}
 
 # slf presences
-p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
+p_slf_points <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07.csv")) %>%
   dplyr::select(-species)
 
 # entire eastern USA background point set
-a_regional_invaded_background_points <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v7.csv"))
+a_regional_invaded_background_points <- read.csv(file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_v8.csv"))
 
 ```
 
@@ -239,7 +241,7 @@ I will need to combine the above covariates, presence and background point datas
 
 ```{r import training points}
 
-p_slf_invaded_train <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_v7.csv"))
+p_slf_invaded_train <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_v8.csv"))
 
 ```
 
@@ -275,8 +277,8 @@ I usually look at how many records were dropped before I save it, because SDMtun
 ```{r save training SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_train, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v7.csv"),
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v7.csv")
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_train_slf_presences_with_data_v8.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_background_points_with_data_v8.csv")
   ))
 
 ```
@@ -287,7 +289,7 @@ The testing / validation SWD object will be created in the same fashion, except 
 
 ```{r import test points}
 
-p_slf_invaded_test <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v7.csv"))
+p_slf_invaded_test <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_v8.csv"))
 
 ```
 
@@ -310,7 +312,7 @@ regional_invaded_test@data # extracted data from
 ```{r save testing SWD file}
 
 SDMtune::swd2csv(swd = regional_invaded_test, file_name = c(
-  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v7.csv"),
+  file.path(here::here(), "vignette-outputs", "data-tables", "regional_invaded_test_slf_presences_with_data_v8.csv"),
   file.path(here::here(), "vignette-outputs", "data-tables", "NULL.csv")
   ))
 
@@ -334,7 +336,7 @@ I will use the following list of hyperparameters to train the initial model, whi
 regional_invaded_model <- SDMtune::train(
   method = "Maxent",
   data = regional_invaded_train,
-  fc = "lqpht", # feature classes set to ALL
+  fc = "qpht", # feature classes set to ALL
   reg = 1.5,
   iter = 5000, # number of iterations
   progress = TRUE
@@ -351,13 +353,13 @@ This function produces all summary statistics for this model. For the complete a
 # output directory
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v7")
+                     "maxent/models/slf_regional_invaded_v8")
 
 scari::compute_MaxEnt_summary_statistics(
   model.obj = regional_invaded_model, 
   model.name = "regional_invaded", 
   mypath = mypath, 
-  create.dir = TRUE, # create subdirectory
+  create.dir = FALSE, # create subdirectory
   env.covar.obj = x_invaded_env_covariates, # env covariates raster stacked
   train.obj = regional_invaded_train, # training data used to create model
   test.obj = regional_invaded_test, # data you wish to use to test the model
@@ -379,7 +381,7 @@ I will retrieve the specific value for the MTSS threshold for this model and use
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v7")
+                     "maxent/models/slf_regional_invaded_v8")
 
 ```
 
@@ -473,10 +475,10 @@ scari::create_MaxEnt_suitability_maps(
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v7")
+                     "maxent/models/slf_regional_invaded_v8")
 
 # slf presence data
-slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2024-08-05.csv")) %>%
+slf_presences <- read.csv(file = file.path(here::here(), "vignette-outputs", "data-tables", "slf_all_coords_final_2025-07-07.csv")) %>%
   dplyr::select(-species)
 
 ```
@@ -551,12 +553,12 @@ I will perform the same action as above, but for the locations of important wine
 
 mypath <- file.path(here::here() %>% 
                        dirname(),
-                     "maxent/models/slf_regional_invaded_v7")
+                     "maxent/models/slf_regional_invaded_v8")
 
 # load in all IVR points
-load(file = file.path(here::here(), "data", "wineries.rda")) 
+IVR_regions <- readr::read_rds(file.path(here::here(), "data", "wineries_tidied_esri54017.rds"))
 
-IVR_regions <- wineries %>%
+IVR_regions <- IVR_regions %>%
   dplyr::select(x, y)
 
 ```
